@@ -1,4 +1,4 @@
-import { test, expect, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
+import { openSection, openInspectorTab, test, expect, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
 
 test('short numbers stay compact and conditional colour stays with the paint', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -17,7 +17,7 @@ test('short numbers stay compact and conditional colour stays with the paint', a
       const row = input.closest('.fld');
       return input.getBoundingClientRect().left - row.querySelector('.fld-prefix').getBoundingClientRect().right;
     })).toBeLessThanOrEqual(12);
-    await inspector.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
+    await openInspectorTab(page, t, 'inspector.tab.look');
     const rules = inspector.locator('[data-section="value-color"]');
     await expect(rules).toBeVisible();
     expect(await rules.evaluate(node => {
@@ -37,10 +37,10 @@ test('shape groups separate fill, transparency, outline and corners in both them
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'shape');
   const inspector = page.locator('#inspector');
-  // Shapes have only Look properties, so the inspector omits the tab strip.
+  for (const id of ['shape', 'color', 'behavior']) await openSection(page, id);
   const panel = inspector;
-  expect(await panel.locator(':scope > [data-section]').evaluateAll(nodes => nodes.map(node => node.dataset.section).filter(key => !['position', 'actions', 'membership'].includes(key))))
-    .toEqual(['shape', 'color', 'picture', 'outline', 'corners', 'transparency', 'sensor-motion']);
+  expect(await panel.locator(':scope > [data-inspector-section]').evaluateAll(nodes => nodes.map(node => node.dataset.inspectorSection)))
+    .toEqual(['layout', 'shape', 'color', 'behavior']);
   await expect(panel.locator('[data-section="transparency"]').getByRole('slider', { name: t('inspector.opacity'), exact: true })).toBeVisible();
   await inspector.getByRole('button', { name: t('insp.cornersEach'), exact: true }).click();
   const corners = inspector.locator('.corner-radii');
@@ -59,21 +59,21 @@ test('shape groups separate fill, transparency, outline and corners in both them
   expect(errors).toEqual([]);
 });
 
-test('membership stays visible across tabs and changing a card keeps Undo', async ({ page, t }) => {
+test('membership stays visible across independent sections and changing a card keeps Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'card');
   await clickAddWidget(page, t, 'bar');
   const inspector = page.locator('#inspector');
-  const membership = inspector.locator(':scope > [data-section="membership"]');
+  const membership = inspector.locator('[data-section="membership"]');
   const card = membership.getByRole('combobox', { name: t('widget.card'), exact: true });
   const parent = await card.inputValue();
   expect(parent).not.toBe('');
   for (const tab of ['look', 'data']) {
-    await inspector.getByRole('tab', { name: t(`inspector.tab.${tab}`), exact: true }).click();
+    await openInspectorTab(page, t, `inspector.tab.${tab}`);
     await expect(card).toBeVisible();
-    await expect(inspector.locator('.inspector-type select')).toBeVisible();
+    await expect(inspector.getByRole('group', { name: t('insp.type'), exact: true })).toBeVisible();
   }
   await card.selectOption('');
   await expect(membership.getByRole('combobox', { name: t('card.face'), exact: true })).toHaveCount(0);

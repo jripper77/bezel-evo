@@ -1,6 +1,6 @@
 // The inspector (artboards Main's right panel, GraphData/Look, PlayerData/Look).
 import { fileURLToPath } from 'node:url';
-import { setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 
 const t = translator('it');
@@ -9,6 +9,7 @@ async function standalone(app, kind) {
   await setPanelWidths(app.page, { inspector: 360 });
   await app.page.reload();
   if (kind) await app.add(kind);
+  for (const section of await app.page.locator('#inspector > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));
 }
 const inspector = (app) => app.page.locator('#inspector');
 /** "Change background…", then one of its sources opened. */
@@ -26,6 +27,18 @@ export default {
   }],
   artboards: ['Main', 'GraphData', 'GraphLook', 'PlayerData', 'PlayerLook'],
   states: [
+    { name: 'ux2-ring-closed', run: async app => { await standalone(app, 'ring'); await app.page.locator('#inspector [data-inspector-section="data"] .accordion-toggle').click({ modifiers: ['Alt'] }); } },
+    { name: 'ux2-ring-open', run: async app => {
+      await standalone(app, 'ring');
+      for (const id of ['layout', 'data', 'shape', 'color', 'behavior']) await openSection(app.page, id);
+      await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+    } },
+    { name: 'ux2-main', run: app => app.add('ring') },
+    { name: 'ux2-theme', run: async app => {
+      await standalone(app, null);
+      await openSection(app.page, 'color'); await openSection(app.page, 'behavior');
+    } },
+
     { name: 'theme', run: async () => {} },
     // The background in use and its chooser (D-2026-10-16-studio-redesign-fidelity-25, artboards BgCurrent, BgChooser, BgStates).
     { name: 'bg-computer-image', run: async (app) => {
@@ -64,28 +77,28 @@ export default {
       await inspector(app).getByRole('button', { name: t('insp.bgChange'), exact: true }).click();
     } },
     { name: 'ring', run: (app) => app.add('ring') },
-    { name: 'ring-look', run: async (app) => { await app.add('ring'); await app.inspectorTab(1); } },
+    { name: 'ring-look', run: async (app) => { await app.add('ring'); await openInspectorTab(app.page, t, 'inspector.tab.look'); } },
     { name: 'graph', run: (app) => standalone(app, 'graph') },
     { name: 'graph-auto', run: async (app) => {
       await standalone(app, 'graph');
       await app.page.locator('#inspector').getByRole('button', { name: t('insp.automatic'), exact: true }).click();
     } },
-    { name: 'graph-look', run: async (app) => { await standalone(app, 'graph'); await app.inspectorTab(1); } },
+    { name: 'graph-look', run: async (app) => { await standalone(app, 'graph'); await openInspectorTab(app.page, t, 'inspector.tab.look'); } },
     { name: 'player', run: (app) => standalone(app, 'player') },
-    { name: 'player-look', run: async (app) => { await standalone(app, 'player'); await app.inspectorTab(1); } },
+    { name: 'player-look', run: async (app) => { await standalone(app, 'player'); await openInspectorTab(app.page, t, 'inspector.tab.look'); } },
     { name: 'player-corners', run: async (app) => {
       await standalone(app, 'player');
-      await app.inspectorTab(1);
+      await openInspectorTab(app.page, t, 'inspector.tab.look');
       await app.page.locator('#inspector').getByRole('button', { name: t('insp.cornersEach'), exact: true }).click();
     } },
     // The player's parts and its bar's options (D-2026-10-16-studio-redesign-fidelity-26).
     { name: 'player-progress', run: async (app) => {
       await standalone(app, 'player');
-      await app.inspectorTab(1);
+      await openInspectorTab(app.page, t, 'inspector.tab.look');
       const section = inspector(app).locator('[data-section="progress"]');
       await inspector(app).getByRole('button', { name: t('insp.partArtist'), exact: true }).click();
       await section.getByRole('button', { name: t('insp.patternDots'), exact: true }).click();
-      await section.getByRole('switch', { name: t('insp.progressKnob'), exact: true }).click({ force: true });
+      await section.getByRole('button', { name: t('insp.progressKnob'), exact: true }).click({ force: true });
       await section.getByRole('button', { name: t('insp.timesSides'), exact: true }).click();
       await section.scrollIntoViewIfNeeded();
     } },
@@ -111,7 +124,7 @@ export default {
       await set(t('inspector.width'), 342); await set(t('inspector.height'), 432); await set(t('inspector.radius'), 24);
       await app.page.locator('#inspector .corner-radii').scrollIntoViewIfNeeded();
     } },
-    { name: 'bar-look', run: async (app) => { await standalone(app, 'bar'); await app.inspectorTab(1); } },
+    { name: 'bar-look', run: async (app) => { await standalone(app, 'bar'); await openInspectorTab(app.page, t, 'inspector.tab.look'); } },
     { name: 'player-custom', run: async (app) => {
       await standalone(app, 'player');
       await app.page.locator('#inspector').getByRole('button', { name: t('insp.otherApp'), exact: true }).click();
@@ -123,7 +136,7 @@ export default {
     // The shared pickers (D-2026-10-16-studio-redesign-fidelity-28, -29), open: the detail is the popover.
     { name: 'font-picker', capture: '.picker-popover', run: async (app) => {
       await standalone(app, 'text');
-      await app.inspectorTab(1);
+      await openInspectorTab(app.page, t, 'inspector.tab.look');
       await inspector(app).getByRole('button', { name: t('inspector.fontFamily'), exact: true }).click();
     } },
     { name: 'color-picker', capture: '.picker-popover', run: async (app) => {

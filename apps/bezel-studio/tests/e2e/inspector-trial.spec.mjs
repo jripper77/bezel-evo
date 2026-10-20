@@ -1,4 +1,4 @@
-import { test, expect, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
+import { openSection, openInspectorTab, test, expect, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
 
 const painted = canvas => canvas.evaluate(node => {
   const pixels = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;

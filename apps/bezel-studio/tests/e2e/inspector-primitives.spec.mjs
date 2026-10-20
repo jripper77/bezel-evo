@@ -38,8 +38,8 @@ async function mountSections(page, t) {
 test('accordion titles expose independent state, summaries, Alt+click and retained fields', async ({ page, t }) => {
   const errors = watchErrors(page);
   const fixture = await mountSections(page, t);
-  const data = fixture.locator('[data-section="data"]');
-  const shape = fixture.locator('[data-section="shape"]');
+  const data = fixture.locator('[data-inspector-section="data"]');
+  const shape = fixture.locator('[data-inspector-section="shape"]');
   const toggle = shape.getByRole('button', { name: t('common.shape'), exact: true });
   await expect(data.locator('.accordion-toggle')).toHaveAttribute('aria-expanded', 'true');
   await expect(shape.locator('.accordion-summary')).toHaveText('−135° · 270° · 24 px');

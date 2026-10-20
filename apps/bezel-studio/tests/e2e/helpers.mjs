@@ -66,13 +66,26 @@ export function suffixOf(t, key, params) {
 export const layers = (page) => page.locator('#layer-list .layer-row');
 
 /** Adds `widget` with its button in the Widgets panel. */
-export const clickAddWidget = (page, t, widget) => page.getByRole('button', { name: t('library.addWidget', { name: t(`widget.${widget}`) }), exact: true }).click();
+export const clickAddWidget = async (page, t, widget) => {
+  await page.getByRole('button', { name: t('library.addWidget', { name: t(`widget.${widget}`) }), exact: true }).click();
+  await openSection(page, 'layout');
+};
 
 /** The key of a Library tab's label: the Sensors one reads the shared `common.sensors`. */
 export const libraryTabKey = (name) => (name === 'sensors' ? 'common.sensors' : `library.${name}`);
 
 /** Opens the inspector's tab named by the translation `key`. */
-export const openInspectorTab = (page, t, key) => page.locator('#inspector').getByRole('tab', { name: t(key), exact: true }).click();
+export async function openSection(page, id) {
+  const button = page.locator(`#inspector [data-inspector-section="${id}"] > .accordion-heading > button`);
+  if (await button.count() && await button.getAttribute('aria-expanded') !== 'true') await button.click();
+}
+
+/** Legacy callers open the same controls through the new independent sections. */
+export async function openInspectorTab(page, t, key) {
+  const ids = key === 'inspector.tab.look' ? ['shape', 'text', 'color', 'behavior']
+    : key === 'inspector.tab.data' ? ['data', 'shape', 'behavior'] : [key.split('.').pop()];
+  for (const id of ids) await openSection(page, id);
+}
 
 /** Copies and pastes the selection with the keyboard, from a neutral control of the stage's bar. */
 export async function copyAndPaste(page) {
