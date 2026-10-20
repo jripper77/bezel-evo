@@ -5,6 +5,16 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.1.60] - 2026-10-20
+
+### Studio
+- Visualization presets now have selectable schematic previews instead of a
+  dropdown, with labels that stay readable in narrow inspectors.
+- **Fit matrix cells** adjusts a block matrix's height for near-square cells,
+  keeps its position and width, and supports Undo. Pending grid edits are
+  committed before fitting.
+- Clearer pixel-count and lower-series scale labels.
+
 ## [0.1.59] - 2026-10-20
 
 0.1.32 to 0.1.58 were local builds; this entry and the ones below cover them.
