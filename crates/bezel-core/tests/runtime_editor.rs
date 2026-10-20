@@ -29,6 +29,7 @@ const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 0,
     weekday: 2,
+    millisecond: 0,
 };
 
 fn key(text: &str) -> SensorKey {

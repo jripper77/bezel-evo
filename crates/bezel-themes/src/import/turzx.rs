@@ -665,6 +665,7 @@ impl Importer {
                 pattern,
                 language: None,
                 casing: Default::default(),
+                analog: None,
             });
         }
         let sensor = self.sensor(data, sub, fahrenheit)?;

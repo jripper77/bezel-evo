@@ -41,6 +41,7 @@ pub const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 42,
     weekday: 2,
+    millisecond: 0,
 };
 
 fn key(k: &str) -> Option<SensorKey> {
@@ -167,6 +168,7 @@ fn header() -> Vec<(BoxF, ElementKind)> {
                     pattern: "%H:%M".into(),
                     language: None,
                     casing: Default::default(),
+                    analog: None,
                 },
                 clock,
             ),
@@ -178,6 +180,7 @@ fn header() -> Vec<(BoxF, ElementKind)> {
                     pattern: "%A, %e %B".into(),
                     language: None,
                     casing: Default::default(),
+                    analog: None,
                 },
                 date,
             ),

@@ -22,6 +22,7 @@ pub const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 42,
     weekday: 2,
+    millisecond: 0,
 };
 
 /// The repository's `themes/` folder.

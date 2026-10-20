@@ -16,6 +16,7 @@ pub fn now() -> LocalTime {
         minute: narrow(t.minute()),
         second: narrow(t.second()),
         weekday: narrow(t.weekday().num_days_from_monday()),
+        millisecond: u16::try_from(t.nanosecond() / 1_000_000).map_or(999, |ms| ms.min(999)),
     }
 }
 

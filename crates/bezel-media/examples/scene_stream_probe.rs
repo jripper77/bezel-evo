@@ -236,6 +236,7 @@ fn run(
                     minute: 0,
                     second: (index / u64::from(fps) % 60) as u8,
                     weekday: 6,
+                    millisecond: 0,
                 },
                 animation: origin.elapsed(),
                 language: Language::English,

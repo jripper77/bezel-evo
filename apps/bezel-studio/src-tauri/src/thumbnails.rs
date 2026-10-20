@@ -246,6 +246,7 @@ pub(crate) mod tests {
         minute: 5,
         second: 42,
         weekday: 2,
+        millisecond: 0,
     };
 
     /// The repository's `themes/` folder (no `..` in it: the library only

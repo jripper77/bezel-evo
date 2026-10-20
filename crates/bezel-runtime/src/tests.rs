@@ -30,6 +30,7 @@ fn time() -> LocalTime {
         minute: 0,
         second: 0,
         weekday: 4,
+        millisecond: 0,
     }
 }
 #[derive(Clone, Debug)]

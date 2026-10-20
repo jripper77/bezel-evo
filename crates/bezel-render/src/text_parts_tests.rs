@@ -50,6 +50,7 @@ fn clock(pattern: &str) -> TextContent {
         pattern: pattern.into(),
         language: None,
         casing: Default::default(),
+        analog: None,
     }
 }
 

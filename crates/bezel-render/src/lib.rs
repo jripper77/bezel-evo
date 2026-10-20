@@ -14,6 +14,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod analog_clock;
 mod cards;
 mod catalog;
 mod composite;
@@ -74,6 +75,8 @@ mod weather;
 #[cfg(test)]
 mod rotation_tests;
 
+#[cfg(test)]
+mod analog_clock_tests;
 #[cfg(test)]
 mod modern_themes_tests;
 #[cfg(test)]

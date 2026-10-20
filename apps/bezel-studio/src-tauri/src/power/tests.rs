@@ -39,6 +39,7 @@ const TIME: LocalTime = LocalTime {
     minute: 59,
     second: 0,
     weekday: 5,
+    millisecond: 0,
 };
 
 /// The fake 8.8"'s display (its SoC's port): the key it goes live by.

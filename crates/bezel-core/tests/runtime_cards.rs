@@ -21,6 +21,7 @@ const TIME: LocalTime = LocalTime {
     minute: 0,
     second: 0,
     weekday: 3,
+    millisecond: 0,
 };
 fn seconds(n: u64) -> Duration {
     Duration::from_secs(n)

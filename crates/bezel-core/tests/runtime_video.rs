@@ -41,6 +41,7 @@ const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 0,
     weekday: 2,
+    millisecond: 0,
 };
 
 /// A renderer that records what each frame was drawn over (and the

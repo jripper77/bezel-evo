@@ -810,6 +810,7 @@ impl Importer {
                 pattern: self.cldr(&format, date),
                 language: None,
                 casing: Default::default(),
+                analog: None,
             };
         }
         TextContent::Sensor {

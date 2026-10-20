@@ -42,6 +42,7 @@ pub(crate) const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 0,
     weekday: 2,
+    millisecond: 0,
 };
 pub(crate) const KEY: &str = "/dev/ttyACM1";
 /// The 8.8" panel in its native orientation.

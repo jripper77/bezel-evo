@@ -535,7 +535,7 @@ impl ThemeRuntime {
             && matches!(backdrop, Backdrop::Poster);
         if eligible
             && let Some(recent) = &self.recent_frame
-            && recent.time == time
+            && recent.time.whole_second() == time.whole_second()
             && recent.shown == shown
             && now >= recent.at
             && now < recent.until
