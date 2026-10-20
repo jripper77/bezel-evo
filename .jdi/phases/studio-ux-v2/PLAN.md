@@ -84,7 +84,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
     ⋯ con le azioni del menu oggetto esistente) e riga Tipo per valore/barra/anello/lancetta/grafico (cambia `kind` come oggi «Mostra come»).
   - Componenti del contratto in `fields.js`, documentati nel catalogo dei primitivi; gli interruttori dell'inspector diventano pulsanti-icona.
   - Nessuna funzione persa: le spec e2e dell'inspector esistenti passano (adattando solo come si apre una sezione al posto di una scheda, in `helpers.mjs`: `openSection(page, id)`).
-- **Dipendenze:** nessuna · **Test:** G1–G11 secondo i file toccati · **Status:** in progress — memoria e accordion verificati (`1697e93`, `bbae69d`); ▶ Prova nativo/demo (`283c11b`, `7bdc279`) ed estrazione dei moduli (`6aac95e`) verificati. Restano collegamento delle sezioni, componenti e fedeltà. Task non ancora integrabile.
+- **Dipendenze:** nessuna · **Test:** G1–G11 secondo i file toccati · **Status:** completed — sezioni e componenti collegati, intestazione 72 px, Tipo e menu condiviso; ▶ Prova completo nativo/demo. 595 test Rust, clippy/fmt, 188 unitari UI e 96 e2e distinti dell'area verdi; riassunti e leggibilità italiana verificati, confronto it chiaro/scuro registrato. Vedi `SUMMARY-T-0.md` e `INSPECTOR-COMPONENTS.md`. Ultimi commit di codice/verifica: `812fbaf`, `29de8a3`, `374a14c`, `fc4cf6b`.
 
 #### T-1: Testo — cifre fisse, parti con stile, testo troppo lungo, transizioni del numero
 - **Decisioni:** 05, 06 · **Tavole:** ValueInspectorOpen, ClockInspectorOpen (parti digitali)
