@@ -3,9 +3,9 @@
 ## Ripresa operativa — 20 ottobre 2026 (sera)
 
 Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
-Versioni: pubblicata **0.1.59** (Latest su GitHub); **0.1.62** pacchettizzata in
-locale (setup, portable e SHA256SUMS in `dist/`, commit `1206f3e`, non pubblicata,
-installata sul PC dal setup). Push e release solo su richiesta.
+Versioni: pubblicata **0.1.63** (Latest su GitHub, tag `v0.1.63`, con i font Doto,
+Doto Rounded e IBM Plex Mono inclusi); installata sul PC **0.1.62** (la 0.1.63 è in
+`dist/`, da installare su richiesta). Push e release solo su richiesta.
 Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p (redesign Studio,
 logo Pixel, sfondo, profili, schermata di accensione, 4 temi predefiniti 1920×480);
 stato e decisioni nella sezione «Design» del passaggio.
