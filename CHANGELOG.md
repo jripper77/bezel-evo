@@ -5,6 +5,16 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.1.62] - 2026-10-20
+
+0.1.61 was a local build; this entry and the one below cover it.
+
+### Fixes
+- The installer no longer reports "Another Bezel installation owns
+  Bezel-Sensors" when updating over itself. Windows stores the sensor task's
+  account in its short form, which the ownership check did not recognise; it
+  now compares accounts by their security identifier.
+
 ## [0.1.61] - 2026-10-20
 
 ### Studio
