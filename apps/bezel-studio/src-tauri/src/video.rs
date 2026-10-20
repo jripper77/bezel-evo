@@ -191,6 +191,7 @@ mod tests {
         minute: 5,
         second: 0,
         weekday: 2,
+        millisecond: 0,
     };
 
     struct Fixture {

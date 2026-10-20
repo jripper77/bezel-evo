@@ -331,6 +331,7 @@ mod tests {
                             pattern: "%H:%M".into(),
                             language: None,
                             casing: Default::default(),
+                            analog: None,
                         },
                         style,
                     },
@@ -934,6 +935,7 @@ mod tests {
             pattern: "%A %e %B".into(),
             language: Some(Language::Italian),
             casing: ClockCase::Upper,
+            analog: None,
         };
         let bytes = manifest(&theme).unwrap();
         assert_eq!(parse_manifest(&bytes).unwrap(), theme);

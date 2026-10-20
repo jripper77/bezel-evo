@@ -60,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 minute: 0,
                 second: 0,
                 weekday: 2,
+                millisecond: 0,
             },
             animation: Duration::ZERO,
             language: Language::English,

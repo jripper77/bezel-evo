@@ -325,6 +325,13 @@ impl FrameRenderer for SkiaRenderer {
         }
         let old = element.frame;
         let (width, height, ax, ay) = match &element.kind {
+            ElementKind::Text {
+                content:
+                    TextContent::Clock {
+                        analog: Some(_), ..
+                    },
+                ..
+            } => return Ok(None),
             ElementKind::Text { content, style } => {
                 let measured = match rich_job(id, content, style, old, &context, false) {
                     Some((job, _)) => self.text.measure_rich(&job, assets, &mut self.diagnostics),
@@ -581,6 +588,7 @@ fn text_of(id: ElementId, content: &TextContent, context: &RenderContext<'_>) ->
             pattern,
             language,
             casing,
+            ..
         } => clock_case(
             &format_clock(pattern, &context.time, language.unwrap_or(context.language)),
             *casing,
@@ -648,6 +656,7 @@ fn rich_job<'a>(
             pattern,
             language,
             casing,
+            ..
         } => {
             let blinking = motion && style.parts.blink_separators;
             let off = blinking && context.animation.as_millis() % 1000 >= BLINK_HALF.as_millis();
@@ -1463,7 +1472,33 @@ impl SkiaRenderer {
                     area.width = (area.width - side - gap).max(0.0);
                 }
                 let motion = self.cards.motion;
-                if let Some((job, blink)) =
+                if let TextContent::Clock {
+                    analog: Some(dial),
+                    language,
+                    ..
+                } = content
+                {
+                    let words = crate::analog_clock::Words {
+                        engine: &mut self.text,
+                        assets,
+                        diagnostics: &mut self.diagnostics,
+                        style,
+                    };
+                    let language = language.unwrap_or(context.language);
+                    crate::analog_clock::draw(
+                        layer,
+                        area,
+                        dial,
+                        &context.time,
+                        language,
+                        motion,
+                        words,
+                    );
+                    let due = dial
+                        .next_change(&context.time, motion)
+                        .map(|wait| context.animation + wait);
+                    self.text_due = due.into_iter().chain(self.text_due).min();
+                } else if let Some((job, blink)) =
                     rich_job(element.id, content, style, area, context, motion)
                 {
                     let scroll = self
@@ -2170,6 +2205,7 @@ mod tests {
                 pattern: "%H:%M".into(),
                 language: None,
                 casing: bezel_core::domain::clock::ClockCase::Normal,
+                analog: None,
             },
             TextContent::Sensor {
                 key: testkit::key("cpu.usage"),

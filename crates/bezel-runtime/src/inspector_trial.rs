@@ -178,6 +178,7 @@ mod tests {
             minute: 45,
             second: 30,
             weekday: 1,
+            millisecond: 0,
         }
     }
     fn theme(kind: ElementKind) -> Theme {
@@ -282,6 +283,7 @@ mod tests {
             pattern: "%H:%M:%S".into(),
             language: None,
             casing: ClockCase::Normal,
+            analog: None,
         });
         let snapshot = Snapshot::default();
         let scene = trial(&clock, &snapshot, 1500);

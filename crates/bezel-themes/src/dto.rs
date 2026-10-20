@@ -1,6 +1,8 @@
 //! `theme.json`, schema 1: serde shapes and their mapping to the core model.
 
-use bezel_core::domain::clock::{ClockCase, Language};
+use bezel_core::domain::clock::{
+    AnalogClock, ClockCase, DialDate, DialNumbers, DialTicks, HandShape, Language,
+};
 use bezel_core::domain::frame::Rgba;
 use bezel_core::domain::framing::{FramingPosition, Permille, VideoFit, VideoFraming, Zoom};
 use bezel_core::domain::geometry::{Orientation, Size};
@@ -1240,7 +1242,159 @@ pub enum ContentDto {
         /// Normal (absent), upper or title.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         casing: Option<String>,
+        /// A dial with hands instead of text; absent is digital.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        analog: Option<Box<AnalogDto>>,
     },
+}
+
+/// An analog clock (D-2026-10-20-studio-ux-v2-07); every absent field is
+/// its default, so a default dial is `{}`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnalogDto {
+    /// `none`, `hours` (absent) or `minutes`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ticks: Option<String>,
+    /// `none` (absent), `quarters`, `all` or `roman`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub numbers: Option<String>,
+    /// The hour hand shows (absent: yes).
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub hour_hand: bool,
+    /// The minute hand shows (absent: yes).
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub minute_hand: bool,
+    /// The second hand shows (absent: yes).
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub second_hand: bool,
+    /// `thin`, `rounded` (absent) or `arrow`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hand_shape: Option<String>,
+    /// Outline width, px (absent: 2).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border: Option<f32>,
+    /// Dial colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face: Option<String>,
+    /// Marks, numbers, date and outline colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marks: Option<String>,
+    /// Hour hand colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hour_color: Option<String>,
+    /// Minute hand colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minute_color: Option<String>,
+    /// Second hand colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub second_color: Option<String>,
+    /// The second hand sweeps.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub sweep: bool,
+    /// `none` (absent), `day` or `dayMonth`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+}
+
+fn analog_dto(a: &AnalogClock) -> Box<AnalogDto> {
+    let d = AnalogClock::default();
+    let differs = |v: Rgba, default: Rgba| (v != default).then(|| to_hex(v));
+    let name = |changed: bool, n: &str| changed.then(|| n.to_string());
+    Box::new(AnalogDto {
+        ticks: name(
+            a.ticks != d.ticks,
+            match a.ticks {
+                DialTicks::None => "none",
+                DialTicks::Hours => "hours",
+                DialTicks::Minutes => "minutes",
+            },
+        ),
+        numbers: name(
+            a.numbers != d.numbers,
+            match a.numbers {
+                DialNumbers::None => "none",
+                DialNumbers::Quarters => "quarters",
+                DialNumbers::All => "all",
+                DialNumbers::Roman => "roman",
+            },
+        ),
+        hour_hand: a.hour_hand,
+        minute_hand: a.minute_hand,
+        second_hand: a.second_hand,
+        hand_shape: name(
+            a.hand_shape != d.hand_shape,
+            match a.hand_shape {
+                HandShape::Thin => "thin",
+                HandShape::Rounded => "rounded",
+                HandShape::Arrow => "arrow",
+            },
+        ),
+        border: (a.border != d.border).then_some(a.border),
+        face: differs(a.face, d.face),
+        marks: differs(a.marks, d.marks),
+        hour_color: differs(a.hour_color, d.hour_color),
+        minute_color: differs(a.minute_color, d.minute_color),
+        second_color: differs(a.second_color, d.second_color),
+        sweep: a.sweep,
+        date: name(
+            a.date != d.date,
+            match a.date {
+                DialDate::None => "none",
+                DialDate::Day => "day",
+                DialDate::DayMonth => "dayMonth",
+            },
+        ),
+    })
+}
+
+fn analog(dto: &AnalogDto) -> R<AnalogClock> {
+    let d = AnalogClock::default();
+    let paint = |v: &Option<String>, default: Rgba| v.as_deref().map_or(Ok(default), color);
+    Ok(AnalogClock {
+        ticks: match dto.ticks.as_deref() {
+            None => d.ticks,
+            Some("none") => DialTicks::None,
+            Some("hours") => DialTicks::Hours,
+            Some("minutes") => DialTicks::Minutes,
+            Some(other) => return err(format!("unknown dial ticks {other:?}")),
+        },
+        numbers: match dto.numbers.as_deref() {
+            None => d.numbers,
+            Some("none") => DialNumbers::None,
+            Some("quarters") => DialNumbers::Quarters,
+            Some("all") => DialNumbers::All,
+            Some("roman") => DialNumbers::Roman,
+            Some(other) => return err(format!("unknown dial numbers {other:?}")),
+        },
+        hour_hand: dto.hour_hand,
+        minute_hand: dto.minute_hand,
+        second_hand: dto.second_hand,
+        hand_shape: match dto.hand_shape.as_deref() {
+            None => d.hand_shape,
+            Some("thin") => HandShape::Thin,
+            Some("rounded") => HandShape::Rounded,
+            Some("arrow") => HandShape::Arrow,
+            Some(other) => return err(format!("unknown hand shape {other:?}")),
+        },
+        border: dto
+            .border
+            .filter(|b| b.is_finite())
+            .map_or(d.border, |b| b.clamp(0.0, 64.0)),
+        face: paint(&dto.face, d.face)?,
+        marks: paint(&dto.marks, d.marks)?,
+        hour_color: paint(&dto.hour_color, d.hour_color)?,
+        minute_color: paint(&dto.minute_color, d.minute_color)?,
+        second_color: paint(&dto.second_color, d.second_color)?,
+        sweep: dto.sweep,
+        date: match dto.date.as_deref() {
+            None => d.date,
+            Some("none") => DialDate::None,
+            Some("day") => DialDate::Day,
+            Some("dayMonth") => DialDate::DayMonth,
+            Some(other) => return err(format!("unknown dial date {other:?}")),
+        },
+    })
 }
 
 /// Font face.
@@ -2144,7 +2298,9 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                     pattern,
                     language,
                     casing,
+                    analog,
                 } => ContentDto::Clock {
+                    analog: analog.as_ref().map(analog_dto),
                     pattern: pattern.clone(),
                     language: language.map(|l| {
                         match l {
@@ -2391,7 +2547,9 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                     pattern,
                     language,
                     casing,
+                    analog: dial,
                 } => TextContent::Clock {
+                    analog: dial.as_deref().map(analog).transpose()?,
                     pattern: pattern.clone(),
                     language: match language.as_deref() {
                         None | Some("") => None,
@@ -3110,6 +3268,110 @@ mod shape_image_tests {
                 parsed.is_err() || shape_image(&parsed.unwrap()).is_err(),
                 "{bad}"
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod analog_clock_tests {
+    use super::*;
+
+    fn clock(analog: serde_json::Value) -> (TextContent, serde_json::Value) {
+        let mut json = serde_json::json!({"type": "clock", "pattern": "%H:%M"});
+        if !analog.is_null() {
+            json["analog"] = analog;
+        }
+        let dto: KindDto = serde_json::from_value(serde_json::json!({
+            "type": "text",
+            "content": json,
+            "style": {"font": {"family": "Inter", "weight": 400}, "size": 24,
+                "paint": "#ffffffff", "align": "left", "valign": "top"}
+        }))
+        .unwrap();
+        let kind = super::kind(&dto).unwrap();
+        let ElementKind::Text { content, .. } = &kind else {
+            unreachable!()
+        };
+        let written = serde_json::to_value(kind_dto(&kind)).unwrap();
+        (content.clone(), written["content"].clone())
+    }
+
+    #[test]
+    fn a_digital_clock_writes_no_dial_and_a_default_dial_is_empty() {
+        let (content, written) = clock(serde_json::Value::Null);
+        assert!(matches!(content, TextContent::Clock { analog: None, .. }));
+        assert!(written.get("analog").is_none());
+        let (content, written) = clock(serde_json::json!({}));
+        assert!(matches!(
+            content,
+            TextContent::Clock { analog: Some(a), .. } if a == AnalogClock::default()
+        ));
+        assert_eq!(written["analog"], serde_json::json!({}));
+    }
+
+    #[test]
+    fn every_dial_setting_round_trips() {
+        let full = serde_json::json!({
+            "ticks": "minutes", "numbers": "roman", "hourHand": false, "minuteHand": false,
+            "secondHand": false, "handShape": "arrow", "border": 3.5, "face": "#101010ff",
+            "marks": "#202020ff", "hourColor": "#303030ff", "minuteColor": "#404040ff",
+            "secondColor": "#505050ff", "sweep": true, "date": "dayMonth"
+        });
+        let (content, written) = clock(full.clone());
+        let TextContent::Clock {
+            analog: Some(a), ..
+        } = content
+        else {
+            panic!("a dial")
+        };
+        assert_eq!(a.ticks, DialTicks::Minutes);
+        assert_eq!(a.numbers, DialNumbers::Roman);
+        assert!(!a.hour_hand && !a.minute_hand && !a.second_hand && a.sweep);
+        assert_eq!(a.hand_shape, HandShape::Arrow);
+        assert_eq!(a.date, DialDate::DayMonth);
+        assert_eq!(written["analog"], full);
+        for (field, value) in [
+            ("ticks", "none"),
+            ("numbers", "quarters"),
+            ("numbers", "all"),
+            ("handShape", "thin"),
+            ("date", "day"),
+        ] {
+            let (_, written) = clock(serde_json::json!({ field: value }));
+            assert_eq!(written["analog"][field], value);
+        }
+        let (content, written) =
+            clock(serde_json::json!({"ticks": "hours", "handShape": "rounded",
+            "numbers": "none", "date": "none", "border": 2.0}));
+        assert!(
+            matches!(content, TextContent::Clock { analog: Some(a), .. } if a == AnalogClock::default())
+        );
+        assert_eq!(
+            written["analog"],
+            serde_json::json!({}),
+            "defaults are omitted"
+        );
+        let (content, _) = clock(serde_json::json!({"border": 1000.0}));
+        assert!(matches!(content, TextContent::Clock { analog: Some(a), .. } if a.border == 64.0));
+    }
+
+    #[test]
+    fn unknown_dial_settings_are_refused() {
+        for bad in [
+            serde_json::json!({"ticks": "seconds"}),
+            serde_json::json!({"numbers": "arabic"}),
+            serde_json::json!({"handShape": "sword"}),
+            serde_json::json!({"date": "year"}),
+            serde_json::json!({"face": "black"}),
+        ] {
+            let dto: KindDto = serde_json::from_value(serde_json::json!({
+                "type": "text",
+                "content": {"type": "clock", "pattern": "%H", "analog": bad},
+                "style": {"font": {"family": "Inter", "weight": 400}, "size": 24,
+                    "paint": "#ffffffff", "align": "left", "valign": "top"}
+            }))
+            .unwrap();
+            assert!(super::kind(&dto).is_err());
         }
     }
 }

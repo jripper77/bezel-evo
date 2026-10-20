@@ -32,6 +32,7 @@ const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 0,
     weekday: 4,
+    millisecond: 0,
 };
 
 const BAR: ElementId = ElementId(1);

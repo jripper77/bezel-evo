@@ -2432,6 +2432,7 @@ mod tests {
         minute: 0,
         second: 0,
         weekday: 2,
+        millisecond: 0,
     };
 
     /// Fills the canvas and counts renders.

@@ -428,6 +428,10 @@ pub enum TextContent {
         language: Option<Language>,
         /// Letter case of the resulting text.
         casing: ClockCase,
+        /// Drawn as a dial with hands instead of text
+        /// (D-2026-10-20-studio-ux-v2-07); the pattern is kept for when it
+        /// turns digital again.
+        analog: Option<super::clock::AnalogClock>,
     },
 }
 

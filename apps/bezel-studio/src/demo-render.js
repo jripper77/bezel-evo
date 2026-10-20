@@ -11,7 +11,7 @@ import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
 import { fadeLine } from './shape-fade.js';
 import { weatherText } from './weather-format.js';
-import { clockParts, formatClock } from './clock-format.js';
+import { analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { weatherIconPaths } from './weather-icon.js';
 import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
@@ -204,7 +204,63 @@ function drawPieces(ctx, s, f, pieces, t, motion, tabular) {
   ctx.restore();
 }
 
+/**
+ * An analog clock like the backend's (crates/bezel-render/src/analog_clock.rs):
+ * the design's 64-unit dial scaled to the box, marks, numbers, date, hands
+ * and hub.
+ */
+function drawDial(ctx, e, t, motion, trial) {
+  const k = e.kind, a = analogOf(k.content.analog), f = e.frame;
+  const unit = Math.max(0, Math.min(f.width, f.height)) / 64;
+  if (!(unit > 0)) return;
+  const date = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
+  const cx = f.x + f.width / 2, cy = f.y + f.height / 2;
+  const at = (radius, angle) => [cx + radius * unit * Math.sin(angle * Math.PI / 180), cy - radius * unit * Math.cos(angle * Math.PI / 180)];
+  const line = (from, to, width, colour, cap = 'butt') => {
+    ctx.beginPath(); ctx.moveTo(...from); ctx.lineTo(...to);
+    ctx.lineWidth = width; ctx.lineCap = cap; ctx.strokeStyle = colour; ctx.stroke();
+  };
+  ctx.beginPath(); ctx.arc(cx, cy, 28 * unit, 0, Math.PI * 2);
+  ctx.fillStyle = color(a.face); ctx.fill();
+  if (a.border > 0) { ctx.save(); ctx.globalAlpha *= 0.3; ctx.lineWidth = a.border; ctx.strokeStyle = color(a.marks); ctx.stroke(); ctx.restore(); }
+  const count = a.ticks === 'minutes' ? 60 : a.ticks === 'hours' ? 12 : 0;
+  for (let i = 0; i < count; i++) {
+    const hourly = count === 12 || i % 5 === 0, angle = i * 360 / count;
+    line(at(26, angle), at(hourly ? 21 : 24, angle), (hourly ? 2 : 1) * unit, color(a.marks));
+  }
+  const font = (size) => `${k.style?.font?.italic ? 'italic ' : ''}${k.style?.font?.weight ?? 400} ${size}px ${k.style?.font?.family ?? 'sans-serif'}, sans-serif`;
+  ctx.fillStyle = color(a.marks); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const roman = a.numbers === 'roman';
+  ctx.font = font((roman ? 5 : 6.5) * unit);
+  for (const [hour, text] of dialNumerals(a)) ctx.fillText(text, ...at((count ? 15.5 : 21) - (roman ? 1 : 0), hour * 30));
+  const day = dialDate(a, date, k.content.language);
+  if (day) { ctx.font = font(5 * unit); ctx.fillText(day, cx, cy + 9 * unit); }
+  const angles = handAngles(a, date, motion);
+  const hands = [[a.hourHand, 11.7, 3.5, 0, angles.hour, a.hourColor], [a.minuteHand, 20.9, 2.5, 0, angles.minute, a.minuteColor], [a.secondHand, 23, 1.2, 6, angles.second, a.secondColor]];
+  for (const [shown, length, width, tail, angle, colour] of hands) {
+    if (!shown) continue;
+    const tip = at(length, angle), w = width * unit * (a.handShape === 'thin' ? 0.6 : a.handShape === 'arrow' ? 0.8 : 1);
+    line(at(tail, angle + 180), tip, w, color(colour), a.handShape === 'rounded' ? 'round' : 'butt');
+    if (a.handShape === 'arrow') {
+      const r = angle * Math.PI / 180, head = Math.min(w * 3, length * unit * 0.5), side = w * 1.25;
+      const base = [tip[0] - head * Math.sin(r), tip[1] + head * Math.cos(r)];
+      ctx.beginPath(); ctx.moveTo(...tip);
+      ctx.lineTo(base[0] + Math.cos(r) * side, base[1] + Math.sin(r) * side);
+      ctx.lineTo(base[0] - Math.cos(r) * side, base[1] - Math.sin(r) * side);
+      ctx.closePath(); ctx.fillStyle = color(colour); ctx.fill();
+    }
+  }
+  const hub = [[a.secondHand, a.secondColor], [a.minuteHand, a.minuteColor], [a.hourHand, a.hourColor]].find(([shown]) => shown);
+  if (hub) { ctx.beginPath(); ctx.arc(cx, cy, 2.5 * unit, 0, Math.PI * 2); ctx.fillStyle = color(hub[1]); ctx.fill(); }
+  wantFrame(dialDue(a, date, motion));
+}
+
 function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, motion = true) {
+  if (e.kind.content?.type === 'clock' && e.kind.content.analog) {
+    if (measure) return null;
+    drawDial(ctx, e, t, motion, trial);
+    return;
+  }
   const k = e.kind;
   const s = k.style;
   let text = k.content.text ?? '';

@@ -353,6 +353,7 @@ fn bound_texts(r: &mut SkiaRenderer, full: BoxF) {
         pattern: "%H:%M %a".into(),
         language: None,
         casing: Default::default(),
+        analog: None,
     };
     assert_eq!(TIME.hour, 21);
     assert!(same(r, clock, "21:05 Wed", &centered));
@@ -361,7 +362,8 @@ fn bound_texts(r: &mut SkiaRenderer, full: BoxF) {
         TextContent::Clock {
             pattern: "%a %b".into(),
             language: Some(bezel_core::domain::clock::Language::Italian),
-            casing: bezel_core::domain::clock::ClockCase::Upper
+            casing: bezel_core::domain::clock::ClockCase::Upper,
+            analog: None,
         },
         "MER SET",
         &centered

@@ -38,6 +38,7 @@ pub(crate) const TIME: LocalTime = LocalTime {
     minute: 5,
     second: 0,
     weekday: 2,
+    millisecond: 0,
 };
 
 /// A renderer that only knows the bundled test font.

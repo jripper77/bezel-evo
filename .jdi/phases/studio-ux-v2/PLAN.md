@@ -107,7 +107,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   `crates/bezel-themes/src/dto.rs`, `apps/bezel-studio/src/demo-render.js`, test
 - **Acceptance:** stile `analog` con tutte le opzioni D-07; secondi a scatti (ridisegno al secondo) o fluidi (`next_ms` ≈ 33 ms solo
   se la lancetta dei secondi è visibile); data nel quadrante; test di geometria delle lancette a 3:00, 6:30, 9:45:30; demo uguale.
-- **Dipendenze:** nessuna · **Test:** G10, G11 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G10, G11 · **Status:** completed — quadrante con tacche, numeri, tre lancette in tre forme, bordo, colori, secondi a scatti/fluidi, data; `LocalTime.millisecond`; demo uguale. Test Rust (core 317, themes 83, render 112, runtime 58), clippy/fmt, 63 unitari UI, 20 e2e verdi. Vedi `SUMMARY-T-2.md`. Commit `27ad3f0`, `34f1aa5`.
 
 #### T-3: Lancetta estesa
 - **Decisioni:** 08 · **Tavole:** NeedleInspectorOpen, CanvasHandles (scheda Lancetta)

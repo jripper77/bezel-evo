@@ -109,6 +109,7 @@ const NO_TIME: LocalTime = LocalTime {
     minute: 0,
     second: 0,
     weekday: 5,
+    millisecond: 0,
 };
 
 /// Horizontal for a picture wider than tall, vertical otherwise.
