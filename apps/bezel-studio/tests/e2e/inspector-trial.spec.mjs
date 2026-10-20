@@ -75,6 +75,10 @@ test('every inspector trial renders, and weather visits distinct native shapes i
       }
       results.push({ widget: `weather-${style}`, valid: new Set(signatures).size === 8 });
     }
+    const group = { id: 1, name: 'group', isGroup: true, kind: { type: 'shape' }, frame: { x: 0, y: 0, width: 20, height: 20 } };
+    const gif = { id: 2, name: 'gif', groupParent: 1, kind: { type: 'image', asset: 'assets/spin.gif', fit: 'contain' }, frame: { x: 0, y: 0, width: 20, height: 20 } };
+    const replay = await createDemoBackend('turing88', { now: () => 123.15 }).renderElement({ ...base, elements: [group, gif] }, 1, { trialMs: 0 });
+    results.push({ widget: 'group-gif-replay', valid: [...replay.rgba.slice((10 * replay.width + 10) * 4, (10 * replay.width + 10) * 4 + 4)].join(',') === '228,87,46,255' });
     return results;
   });
   expect(results.filter(result => !result.valid)).toEqual([]);

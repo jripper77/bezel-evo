@@ -590,7 +590,7 @@ export function renderApprox(theme, t, video = null, transitions = new Map(), sc
     if (e.isGroup) continue;
     if (transitions.has(e.id)) { drawCardTransition(ctx, theme, e, transitions.get(e.id), t); continue; }
     if (transitions.has(e.cardMember?.parent) || !isShown(theme, e)) continue;
-    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, t, theme.refreshSeconds, motion, trial?.elementId === e.id ? trial : null);
+    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, trial && e.kind.type === 'image' ? trial.elapsedMs / 1000 : t, theme.refreshSeconds, motion, trial?.elementId === e.id ? trial : null);
   }
   return { width, height, rgba: ctx.getImageData(0, 0, width, height).data };
 }
