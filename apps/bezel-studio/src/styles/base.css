@@ -407,3 +407,23 @@ button.pill:hover { border-color: var(--accent); }
 .sensor-row .label, .file-main .file-name, .bg-option-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-card strong, .media-item .media-name > span, .job-title, .stored-file .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gif-key-row, .standby-head, .standby-field-head { position: relative; display: flex; align-items: center; gap: 6px; }
+
+/* Studio UX v2 shared catalogue: iconChoice/typeRow, previewChoice,
+   toggleField/bindButton, objectHeader, sizeField, imageField, fadeField,
+   cornersField (cornerRadii), partsRow; implementation in ui/fields.js. */
+.field-choice.is-wide { display: flex; width: 100%; }
+.field-choice button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); }
+.field-choice.is-wide button { flex: 1 1 0; }
+.inspector-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; font-size: var(--fs-field); }
+.inspector-toggle .icon-button { flex: none; }
+.inspector-toggle [aria-pressed="true"], .bind-button[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.object-header { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 72px; margin: 4px 0 12px; }
+.object-heading { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.object-tools { display: grid; grid-template-columns: 26px 26px; align-items: center; gap: 4px; }
+.object-tools .icon-button { width: 26px; height: 28px; }
+.size-field { display: flex; gap: 8px; align-items: center; }
+.size-field > .fld { flex: 1 1 0; min-width: 0; }
+.fade-field, .image-field, .parts-field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.bound-field { display: flex; align-items: center; gap: 6px; }
+.bound-field > :first-child { flex: 1 1 auto; min-width: 0; }

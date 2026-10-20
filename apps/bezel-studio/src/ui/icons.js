@@ -11,6 +11,19 @@ const rect = (x, y, w, h, r = 0) => (r
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
 
 export const ICONS = Object.freeze({
+  "bolt": ["M13 2 4 14h7l-1 8 9-12h-7z"],
+  "section-layout": ["M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"],
+  "data": ["M3 12h4l3-7 4 14 3-7h4"],
+  "drop": ["M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"],
+  "behav": ["M3 17c4 0 4-10 9-10s5 10 9 10"],
+  "type-valore": ["M4 8h3v8M4 16h6M13 9a2 2 0 1 1 4 0c0 2-4 3-4 7h4"],
+  "type-barra": ["M6 9h12a3 3 0 0 1 0 6H6a3 3 0 0 1 0-6zM6 12h7"],
+  "type-anello": ["M12 4a8 8 0 1 0 8 8"],
+  "type-lancetta": ["M4 17a8 8 0 0 1 16 0M12 17l4-5"],
+  "type-grafico": ["m3 17 5-6 4 3 4-7 5 5"],
+  "fade-none": ["M4 6h16v12H4z"],
+  "fade-linear": ["M4 6h16v12H4zM8 6v12M12 6v12M16 6v12"],
+  "fade-radial": ["M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8"],
   database: ['M4 6a8 3 0 1 0 16 0 8 3 0 1 0-16 0', 'M4 6v12a8 3 0 0 0 16 0V6', 'M4 12a8 3 0 0 0 16 0'],
   brush: ['m14 4 6 6', 'm5 15 12-12 4 4-12 12', 'M5 15a4 4 0 0 0-2 6c3 0 6 0 6-4'],
   radius: ['M4 20V10a6 6 0 0 1 6-6h10', 'M4 4h.01', 'M12 12h8v8h-8z'],
