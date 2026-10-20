@@ -1,6 +1,7 @@
+import { describeSections } from './sections.js';
 // Existing ring controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { rangeField, propertySection as section, selectField, switchRow } from '../fields.js';
+import { rangeField, propertySection as section, selectField, toggleField as switchRow } from '../fields.js';
 
 export function panels(ctx) {
   const { t, update, colorField, sourceSection, trackFields, segmentsFields, transitionSection, angleFields, arcPreview } = ctx;
@@ -50,4 +51,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return ringForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

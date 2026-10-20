@@ -1,6 +1,7 @@
+import { describeSections } from './sections.js';
 // Existing value controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { propertySection as section, selectField, switchRow, textField } from '../fields.js';
+import { propertySection as section, selectField, toggleField as switchRow, textField } from '../fields.js';
 
 export function panels(ctx) {
   const { t, update, sensors, sourceSection, fontFields, transitionSection } = ctx;
@@ -36,4 +37,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return textForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

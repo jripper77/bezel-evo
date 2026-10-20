@@ -1,6 +1,7 @@
+import { describeSections } from './sections.js';
 // Existing shape controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { numberField, rangeField, propertySection as section, segmented, selectField, switchRow } from '../fields.js';
+import { imageField, numberField, rangeField, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
 import { cornerValue } from '../../corner-radii.js';
 import { ART, IMAGE_REPEATS, REPEAT_KEYS, NATURAL_REPEATS } from './art.js';
 
@@ -13,7 +14,7 @@ export function panels(ctx) {
     const options = assets.filter((a) => a.kind === 'image').map((a) => [a.ref, a.ref.split('/').pop()]);
     if (image?.asset && !options.some(([r]) => r === image.asset)) options.push([image.asset, image.asset]);
     const pick = options.length
-      ? selectField(t('common.image'), image?.asset ?? '', [['', t('inspector.noImage')], ...options], (asset) => {
+      ? imageField(t('common.image'), image?.asset ?? '', [['', t('inspector.noImage')], ...options], (asset) => {
         if (!asset) set(null);
         else if (image) set({ asset });
         else set({ asset, repeat: 'cover', scale: 1, offsetX: 0, offsetY: 0, opacity: 1 });
@@ -51,4 +52,8 @@ export function panels(ctx) {
       ({ radius, corners }) => update(e.id, { kind: { radius, corners } }), { box: e.frame }) : null] };
   }
   return shapeForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

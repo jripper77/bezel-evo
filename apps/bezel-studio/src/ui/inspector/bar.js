@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing bar controls, isolated from inspector navigation.
 import { propertySection as section, selectField } from '../fields.js';
 import { cornerValue } from '../../corner-radii.js';
@@ -18,4 +19,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return barForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

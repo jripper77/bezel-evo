@@ -1,6 +1,7 @@
+import { describeSections } from './sections.js';
 // Existing weather controls, isolated from inspector navigation.
 import { el, icon } from '../dom.js';
-import { numberField, selectField, switchRow, textField } from '../fields.js';
+import { numberField, selectField, toggleField as switchRow, textField } from '../fields.js';
 import { panels as textPanels } from './value.js';
 
 export function panels(ctx) {
@@ -39,4 +40,8 @@ export function panels(ctx) {
     return { nodes, weatherAppearance };
   }
   return textPanels({ ...ctx, extra: fields(ctx.element) });
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

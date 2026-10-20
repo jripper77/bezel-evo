@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing theme controls and the shared background chooser.
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
@@ -41,3 +42,5 @@ export function panel({ theme, assets, t, store, background, minRefresh }) {
   }
   return themeForm(theme, assets);
 }
+
+export function sections(ctx) { return describeSections(ctx, { data: panel(ctx).slice(1) }); }

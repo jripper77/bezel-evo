@@ -1,6 +1,7 @@
+import { describeSections } from './sections.js';
 // Existing player controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { dashedHint, fieldGrid, numberField, prefixedField, rangeField, propertySection as section, segmented, selectField, switchRow, textField } from '../fields.js';
+import { dashedHint, fieldGrid, numberField, prefixedField, rangeField, propertySection as section, segmented, selectField, toggleField as switchRow, textField } from '../fields.js';
 import { PLAYER_PARTS, PROGRESS_DEFAULTS, PROGRESS_PATTERNS, PROGRESS_SEGMENTS, PROGRESS_THICKNESS, TIME_FORMATS, TIME_PLACEMENTS, partPatch, partsOf, progressOf } from '../../player-parts.js';
 import { ART, PART_TILES, TIME_FORMAT_KEYS, TIME_PLACEMENT_KEYS, PATTERN_KEYS } from './art.js';
 
@@ -69,4 +70,8 @@ export function panels(ctx) {
     ]);
   }
   return playerForm(ctx.element);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

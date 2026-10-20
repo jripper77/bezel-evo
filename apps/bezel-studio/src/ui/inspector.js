@@ -1,17 +1,22 @@
+import { resizedFrame } from '../inspector-model.js';
+import { createSectionMemory } from '../inspector-sections.js';
+import { describeSections } from './inspector/sections.js';
+import { objectMenuItems } from './object-menu.js';
+import { openMenuAt } from './menu.js';
 import { createCommonFields } from './inspector/common.js';
-import { panel as multiPanel } from './inspector/multi.js';
-import { panel as themePanel } from './inspector/theme.js';
-import { panels as clockPanels } from './inspector/clock.js';
-import { panels as weatherPanels } from './inspector/weather.js';
-import { panels as valuePanels } from './inspector/value.js';
-import { panels as ringPanels } from './inspector/ring.js';
-import { panels as barPanels } from './inspector/bar.js';
-import { panels as needlePanels } from './inspector/needle.js';
-import { panels as graphPanels } from './inspector/graph.js';
-import { panels as spectrumPanels } from './inspector/spectrum.js';
-import { panels as playerPanels } from './inspector/player.js';
-import { panels as shapePanels } from './inspector/shape.js';
-import { panels as imagePanels } from './inspector/image.js';
+import { sections as multiSections } from './inspector/multi.js';
+import { panel as themePanel, sections as themeSections } from './inspector/theme.js';
+import { sections as clockPanels } from './inspector/clock.js';
+import { sections as weatherPanels } from './inspector/weather.js';
+import { sections as valuePanels } from './inspector/value.js';
+import { sections as ringPanels } from './inspector/ring.js';
+import { sections as barPanels } from './inspector/bar.js';
+import { sections as needlePanels } from './inspector/needle.js';
+import { sections as graphPanels } from './inspector/graph.js';
+import { sections as spectrumPanels } from './inspector/spectrum.js';
+import { sections as playerPanels } from './inspector/player.js';
+import { sections as shapePanels } from './inspector/shape.js';
+import { sections as imagePanels } from './inspector/image.js';
 import { canRotate, appliedRotation } from '../editor/rotation.js';
 import { createInspectorTrial } from '../inspector-trial.js';
 import { visualization } from '../visualization.js';
@@ -19,17 +24,13 @@ import { visualization } from '../visualization.js';
 import { closeSensorPicker, refreshSensorPicker } from './sensor-picker.js';
 
 import { canFitContent } from '../editor/fit-content.js';
-// The right inspector: the theme when nothing is selected, one element's
-// properties, or align/distribute tools for several. Every edit is one
-// store command (one undo step). An element's head (kind, name, layer,
-// eye, lock, type and more actions), its preview rendered alone by the backend
-// (D-2026-10-09-studio-redesign-fidelity-8), membership, position and size, tabs,
-// then the sections of its tab (artboards Main, GraphData/Look,
-// PlayerData/Look), all built from the primitives of ui/fields.js (D-14).
+// The inspector shell owns selection, shared header, type and disclosure state.
+// Widget modules supply the existing controls through the sections(ctx) contract.
+// Every edit is still one store command and one Undo step.
 
 import { el, icon, svgEl as node } from './dom.js';
 import { ICONS } from './icons.js';
-import { colorPicker, fieldGrid, kindIcon, adoptControl, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField } from './fields.js';
+import { accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField } from './fields.js';
 import { splitColor } from '../color-math.js';
 
 import { boundKey, createWidget, widgetOf } from '../editor/widgets.js';
@@ -37,17 +38,17 @@ import { boundKey, createWidget, widgetOf } from '../editor/widgets.js';
 import { videoStatus } from '../editor/background.js';
 import { ROTATIONS, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, framingOf, framingPercents, reframed, resolvedRotation, withoutFraming } from '../editor/video-framing.js';
 import { formatBytes } from './storage.js';
-import { arcDrawing, createTabMemory, layerFacts, tabAfterKey, tabsOf } from '../inspector-tabs.js';
+import { arcDrawing, layerFacts } from '../inspector-tabs.js';
 import { createPeakWatch, createPreviewScheduler, fitPreview, previewOffset, previewSide } from '../element-preview.js';
 import { createPreviewAnimation } from '../preview-animation.js';
-import { CARD_TABS, renderCardPanel } from './inspector/card.js';
+import { sections as cardSections } from './inspector/card.js';
 import { createPickers } from './pickers.js';
 import { createBackgroundPanel } from './inspector-background.js';
 
-const FORMS = Object.freeze({ clock: clockPanels, weather: weatherPanels, value: valuePanels, ring: ringPanels, bar: barPanels, needle: needlePanels, graph: graphPanels, spectrum: spectrumPanels, player: playerPanels, shape: shapePanels, image: imagePanels, text: valuePanels });
+const FORMS = Object.freeze({ card: cardSections, clock: clockPanels, weather: weatherPanels, value: valuePanels, ring: ringPanels, bar: barPanels, needle: needlePanels, graph: graphPanels, spectrum: spectrumPanels, player: playerPanels, shape: shapePanels, image: imagePanels, text: valuePanels });
 const BOUND = ['value', 'bar', 'ring', 'needle', 'graph'];
 /** The tallest the preview is drawn, CSS pixels. */
-const PREVIEW_HEIGHT = 120;
+const PREVIEW_HEIGHT = 72;
 /** The edges an object aligns to on the screen, and their icons. */
 const ALIGN_EDGES = Object.freeze([['left', 'alignLeft'], ['centerX', 'alignCenterX'], ['right', 'alignRight'], ['top', 'alignTop'], ['centerY', 'alignCenterY'], ['bottom', 'alignBottom']]);
 // The same reading order for every object's Look tab: structure/type,
@@ -91,11 +92,6 @@ function choice(id, label, value, options, onChange) {
  * @param {string} label the group's accessible name
  * @param {{text: string, art: string[], pressed: boolean, onClick: () => void}[]} tiles
  */
-function optionTiles(label, tiles) {
-  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label }, tiles.map(({ text, art, pressed, onClick }) =>
-    el('button', { type: 'button', class: 'option-tile', 'aria-pressed': String(pressed), onclick: onClick }, [icon(art, 32), el('span', { text })])));
-}
-
 /** The ring's arc in small (artboard Main, "Arco"): the track, the arc and where it starts. */
 function arcPreview(kind) {
   const arc = arcDrawing(kind.startAngle, kind.sweep, kind.clockwise !== false);
@@ -132,6 +128,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   const update = (id, patch) => store.dispatch('update', { id, patch });
   // Spectrum bars' corner mode chosen in this session, by element id (true = each corner).
   const barCornerModes = new Map();
+  const sizeLinks = new Map();
   const sourceState = { custom: false };
   // The app's pickers (ui/pickers.js); an inspector on its own makes its own, without fonts until asked.
   const pickers = shared ?? createPickers({ store, t, bridge: bridge ?? { fontCatalog: async () => null, fontFace: async () => null } });
@@ -300,7 +297,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     if (e.isGroup || !BOUND.includes(current)) return null;
     const key = boundKey(e);
     const quantity = sensors.catalog().find((s) => s.key === key)?.quantity;
-    return selectField(t('inspector.showAs'), current, BOUND.map((w) => [w, t(`widget.${w}`)]), (w) => {
+    return typeRow(t('insp.type'), current, BOUND.map((w) => [w, t(`widget.${w}`), ({value:'type-valore',bar:'type-barra',ring:'type-anello',needle:'type-lancetta',graph:'type-grafico'})[w]]), (w) => {
       const made = createWidget(w, theme.canvas, { key, quantity });
       if (made.kind.binding && e.kind.binding) made.kind.binding = { ...made.kind.binding, min: e.kind.binding.min, max: e.kind.binding.max };
       store.dispatch('setKind', { id: e.id, kind: made.kind });
@@ -325,55 +322,17 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     ].filter(Boolean);
   }
 
-  /** The Faces, Motion and Triggers panels of ui/inspector/card.js. */
-  const cardPanels = (e) => Object.fromEntries(CARD_TABS.map((tab) => [tab, renderCardPanel(tab, { element: e, t, store, update, section, bridge, host })]));
-
-  // The tab open for each kind of object: UI-only, it survives edits,
-  // re-renders and Undo.
-  const tabMemory = createTabMemory();
-  // UI-only too: whether "More actions" is open, and whether the player's
-  // source is typed by hand ("Other…").
-  let actionsOpen = false;
-
+  const sectionMemory = createSectionMemory();
   let shownElement = null;
-
-  const tabName = (kind, tab) => t(kind === 'card' && tab !== 'look' ? `card.tab.${tab}` : `inspector.tab.${tab}`);
-
-  /**
-   * The panels of an object as tabs (ARIA tabs: ←/→, Home, End), only those
-   * with something in them; one alone is shown without a tab list.
-   */
-  function tabbed(kind, panels) {
-    const offered = tabsOf(kind).filter(tab => panels[tab]?.some(Boolean));
-    if (offered.length < 2) return offered.flatMap(tab => panels[tab]);
-    const open = tabMemory.current(kind, offered);
-    const list = el('div', { class: 'inspector-tabs subtabs', role: 'tablist', 'aria-label': t(kind === 'card' ? 'card.tabs' : 'inspector.tabs') });
-    const views = offered.map(tab => el('div', {
-      class: 'inspector-panel', role: 'tabpanel', id: `inspector-panel-${tab}`, 'aria-labelledby': `inspector-tab-${tab}`, hidden: tab !== open, dataset: { tab },
-    }, panels[tab].filter(Boolean)));
-    const show = (tab, focus) => {
-      tabMemory.choose(kind, tab);
-      for (const button of list.children) {
-        const on = button.dataset.tab === tab;
-        button.setAttribute('aria-selected', String(on));
-        button.tabIndex = on ? 0 : -1;
-        if (on && focus) button.focus();
-      }
-      for (const view of views) view.hidden = view.dataset.tab !== tab;
-    };
-    for (const tab of offered) {
-      list.append(el('button', {
-        type: 'button', role: 'tab', id: `inspector-tab-${tab}`, 'aria-controls': `inspector-panel-${tab}`, 'aria-selected': String(tab === open),
-        tabindex: tab === open ? '0' : '-1', dataset: { tab }, title: tabName(kind, tab), onclick: () => show(tab, false),
-      }, [icon(ICONS[tab === 'data' ? 'database' : tab === 'look' ? 'brush' : tab === 'faces' ? 'layers' : tab === 'motion' ? 'play' : 'sliders'], 16), tabName(kind, tab)]));
-    }
-    list.addEventListener('keydown', evt => {
-      const next = tabAfterKey(offered, evt.target.dataset?.tab, evt.key);
-      if (!next) return;
-      evt.preventDefault();
-      show(next, true);
-    });
-    return [list, ...views];
+  function sectioned(kind, descriptors, element) {
+    const controls = descriptors.map(descriptor => accordionSection({
+      ...descriptor, summary: descriptor.summary(element), expanded: sectionMemory.isOpen(kind, descriptor.id),
+      onToggle: options => {
+        sectionMemory.toggle(kind, descriptor.id, options);
+        controls.forEach((control, i) => control.setExpanded(sectionMemory.isOpen(kind, descriptors[i].id)));
+      },
+    }, { element }));
+    return controls.map(control => control.element);
   }
 
   // ------------------------------------------------------------ preview --
@@ -381,7 +340,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   // once per change or new frame, one render at a time, the last wins.
   const previewBox = (figure) => {
     const stage = figure.querySelector('.inspector-preview-stage');
-    return { width: stage.clientWidth > 16 ? stage.clientWidth : 240, height: PREVIEW_HEIGHT };
+    return { width: stage.clientWidth > 16 ? stage.clientWidth : PREVIEW_HEIGHT, height: PREVIEW_HEIGHT };
   };
   const trial = createInspectorTrial();
   window.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
@@ -392,7 +351,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     render: async (id) => {
       const figure = root.querySelector('.inspector-preview');
       const ratio = window.devicePixelRatio || 1;
-      const max = previewSide(figure ? previewBox(figure) : { width: 240, height: PREVIEW_HEIGHT }, ratio);
+      const max = previewSide(figure ? previewBox(figure) : { width: PREVIEW_HEIGHT, height: PREVIEW_HEIGHT }, ratio);
       const started = performance.now();
       const motion = video.context().motion !== false;
       const element = store.getState().theme.elements.find(e => e.id === id);
@@ -446,18 +405,11 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
 
   /** The preview: "Preview · live", the value its sensor reads now, the object alone, and a graph's time axis. */
   function preview(e) {
-    const key = e.isGroup || e.card ? null : boundKey(e);
-    const seconds = e.kind?.type === 'graph' ? timingOf(e).duration : null;
     return el('figure', { class: 'inspector-preview', dataset: { elementId: String(e.id) } }, [
-      el('figcaption', { class: 'inspector-preview-head' }, [
-        el('span', { class: 'inspector-preview-label', text: t('inspector.previewLive') }),
-        key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : null,
-      ]),
       el('div', { class: 'inspector-preview-stage' }, [
         el('canvas', { width: 1, height: 1, role: 'img', 'aria-label': t('inspector.previewOf', { name: e.name }) }),
         el('p', { class: 'hint inspector-preview-off', hidden: true, text: t('insp.previewNone') }),
       ]),
-      seconds === null ? null : el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]),
     ]);
   }
 
@@ -492,6 +444,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   /** The values read now: on the source card and preview, a graph's peak, a player's apps. */
   function refreshLive() {
     const sample = host.lastSample();
+    const live = root.querySelector('.inspector-live');
+    if (live) { live.textContent = t(sample ? 'insp.live' : 'insp.waiting'); live.dataset.live = String(Boolean(sample)); }
     if (!sample) return;
     if (sample !== seenSample) {
       seenSample = sample;
@@ -531,33 +485,35 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       if (v) update(e.id, { name: v });
       else name.value = e.name;
     });
-    const hidden = e.visible === false;
-    const type = showAs(e, theme);
-    type?.classList.add('inspector-type');
-    const tool = (label, paths, onclick, attrs = {}) => iconButton(label, paths, onclick, { class: 'quiet', ...attrs });
-    return el('div', { class: 'inspector-head' }, [
-      kindIcon(e.isGroup ? 'groupFrame' : widget),
-      el('div', { class: 'inspector-title' }, [name, el('div', { class: 'inspector-sub' }, [el('h2', { text: t(`widget.${widget}`) }), ` · ${where}`])]),
-      tool(t('insp.tryObject'), ICONS.play, () => { trial.start(e); requestPreview(); }, { class: 'quiet inspector-try', disabled: video.context().motion === false, 'aria-pressed': String(trial.at(e, video.context().motion !== false) !== null) }),
-      tool(t(hidden ? 'common.show' : 'common.hide'), hidden ? ICONS.eyeOff : ICONS.eye, () => update(e.id, { visible: hidden })),
-      tool(t(e.locked ? 'common.unlock' : 'common.lock'), e.locked ? ICONS.lock : ICONS.unlock, () => update(e.id, { locked: !e.locked }), { 'aria-pressed': String(Boolean(e.locked)) }),
-      tool(t('insp.more'), ICONS.more, (evt) => {
-        actionsOpen = !actionsOpen;
-        evt.currentTarget.setAttribute('aria-expanded', String(actionsOpen));
-        root.querySelector('#inspector-actions').hidden = !actionsOpen;
-      }, { 'aria-expanded': String(actionsOpen), 'aria-controls': 'inspector-actions' }),
-      type,
+    const key = e.isGroup || e.card ? null : boundKey(e);
+    const subtitle = el('span', { class: 'inspector-sub' }, [
+      key ? el('span', { text: sensors.catalog().find(sensor => sensor.key === key)?.label ?? key }) : t(`widget.${widget}`),
+      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` ? ${where}`,
     ]);
+    const head = objectHeader({ preview: preview(e), name, subtitle,
+      live: el('span', { class: 'inspector-live', text: t('insp.live') }),
+      tryButton: iconButton(t('insp.tryObject'), ICONS.play, () => { trial.start(e); requestPreview(); }, { class: 'quiet inspector-try', disabled: video.context().motion === false, 'aria-pressed': String(trial.at(e, video.context().motion !== false) !== null) }),
+      menuButton: iconButton(t('insp.more'), ICONS.more, event => openMenuAt(event.currentTarget, {
+        label: t('menu.title'), items: objectMenuItems({ store, t, fitContent: id => host.fitContent?.(id) }),
+        onClose: reason => { if (reason === 'item') root.querySelector('.object-menu-button')?.focus(); },
+      }), { class: 'quiet object-menu-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false' }),
+    });
+    head.title = `${t(`widget.${widget}`)} · ${where}`;
+    head.dataset.layer = String(facts.level);
+    head.dataset.total = String(facts.total);
+    return head;
   }
 
   /** An align button: the selection to an edge (a lone object: of the screen). */
   const alignTool = (ids, edge, paths) => el('button', { type: 'button', class: 'icon-button', title: t(`align.${edge}`), 'aria-label': t(`align.${edge}`), onclick: () => store.dispatch('align', { ids, edge }) }, [icon(paths, 16)]);
 
-  function panelsOf(e, theme, assets) {
-    const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, editIcon, searchCities, optionTiles, arcPreview, customSource: sourceState.custom };
-    const specific = e.isGroup ? {} : FORMS[e.card ? 'shape' : widgetOf(e)]?.(context) ?? {};
+  function panelsOf(e, theme, assets, specific, layout) {
     // Conditional colour belongs beside the paint it controls. Opacity has a
     // stable group of its own instead of ending up among corners or thresholds.
+    if (e.kind.type === 'graph') {
+      const seconds = timingOf(e).duration;
+      specific.data?.find(group => group?.dataset.section === 'window')?.append(el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]));
+    }
     const opacity = rangeField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: v / 100 }), { format: v => `${v}%` });
     const look = [visualizationFields(e), ...(specific.look ?? []).filter(group => {
       if (['matrix','pixel'].includes(e.visualization?.style) && group?.dataset.section === 'segments') return false;
@@ -577,6 +533,9 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
         el('p', { class:'hint', text:t('visual.mirroredHint') }),
       ]));
     }
+    const fontGroup = look.find(group => group.dataset.section === 'font');
+    const textPaint = fontGroup?.querySelector('.color-field');
+    if (textPaint) look.push(section('color', t('inspector.color'), [textPaint]));
     const conditional = valueColorSection(e, assets);
     if (conditional) {
       const paint = look.flatMap(group => [...group.querySelectorAll('.color-field')])[0];
@@ -590,9 +549,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     else look.push(section('visibility', t('insp.visibility'), [opacity]));
     const rank = group => { const index = LOOK_ORDER.indexOf(group.dataset.section); return index < 0 ? LOOK_ORDER.length : index; };
     look.sort((a, b) => rank(a) - rank(b));
-    if (e.card) return { ...cardPanels(e), look };
     return {
-      data: specific.data ?? [],
+      layout, data: specific.data ?? [],
       look,
     };
   }
@@ -607,9 +565,12 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       el('div', { class: 'fld-grid geometry-fields' }, [
         prefixedField(t('insp.xPrefix'), t('inspector.x'), f.x, v => setFrame({ x: v }), { unit: 'px' }),
         prefixedField(t('insp.yPrefix'), t('inspector.y'), f.y, v => setFrame({ y: v }), { unit: 'px' }),
-        prefixedField(t('insp.widthLabel'), t('inspector.width'), f.width, v => setFrame({ width: Math.max(4, v) }), { min: 4, unit: 'px' }),
-        prefixedField(t('insp.heightLabel'), t('inspector.height'), f.height, v => setFrame({ height: Math.max(4, v) }), { min: 4, unit: 'px' }),
       ]),
+      sizeField({ widthPrefix: t('insp.widthLabel'), heightPrefix: t('insp.heightLabel'), width: t('inspector.width'), height: t('inspector.height'), link: t('insp.linkSize') }, f,
+        patch => setFrame(resizedFrame(f, patch, sizeLinks.get(e.id) ?? ['ring', 'image'].includes(widget))), {
+          linked: sizeLinks.get(e.id) ?? ['ring', 'image'].includes(widget),
+          onLink: linked => { sizeLinks.set(e.id, linked); render(shown.assets); },
+        }),
       canRotate(theme, e) && el('div', { class: 'geometry-rotation' }, [prefixedField(t('insp.rotation'), t('insp.rotation'), appliedRotation(e), rotation => store.dispatch('rotate', { id: e.id, rotation }), { step: 'any', unit: '°' })]),
       el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
     ], { tool: iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }) });
@@ -620,18 +581,11 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('duplicate', { ids: [e.id] }) }, [icon(ICONS.copy, 16), t('common.duplicate')]),
       el('button', { type: 'button', class: 'text-button danger', onclick: () => store.dispatch('remove', { ids: [e.id] }) }, [icon(ICONS.trash, 16), t('common.delete')]),
     ])]);
-    actions.id = 'inspector-actions';
-    actions.hidden = !actionsOpen;
-    // Identify and preview the object, establish its context, then edit its
-    // geometry. These areas stay visible independently of the active tab.
-    return [
-      header(e, widget, theme),
-      actions,
-      preview(e),
-      section('membership', t('inspector.membership'), membershipForm(e, theme)),
-      position,
-      ...tabbed(kind, panelsOf(e, theme, assets)),
-    ];
+    const layout = [position, section('membership', t('inspector.membership'), membershipForm(e, theme)), actions];
+    const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, bridge, section, editIcon, searchCities, optionTiles, arcPreview, customSource: sourceState.custom,
+      completePanels: specific => panelsOf(e, theme, assets, specific, layout) };
+    const descriptors = e.isGroup ? describeSections(context, context.completePanels({})) : FORMS[e.card ? 'card' : widget]?.(context) ?? [];
+    return [header(e, widget, theme), showAs(e, theme), ...sectioned(kind, descriptors, e)];
   }
 
   /** Renders for the current store state. */
@@ -646,12 +600,13 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     if (chosen.length === 0) {
       trial.stop();
       shownElement = null;
-      nodes = themePanel({ theme, assets, t, store, background, minRefresh });
+      const context = { theme, assets, t, store, background, minRefresh, video };
+      nodes = background.isOpen() ? themePanel(context) : [el('h2', { text: t('inspector.theme') }), ...sectioned('theme', themeSections(context), null)];
     } else {
       if (chosen.length > 1) trial.stop();
       background.dismiss();
       if (chosen.length > 1) shownElement = null;
-      nodes = chosen.length === 1 ? elementForm(chosen[0], theme, assets) : multiPanel({ ids: chosen.map(e => e.id), t, store, alignTool, ALIGN_EDGES });
+      nodes = chosen.length === 1 ? elementForm(chosen[0], theme, assets) : [el('h2', { text: t('inspector.multi', { count: chosen.length }) }), ...sectioned('multi', multiSections({ ids: chosen.map(e => e.id), t, store, alignTool, ALIGN_EDGES }), null)];
     }
     // Keep focus where the user was: on the same tab, on the field of the
     // same label, or of the same stable id (the framing's). A number field

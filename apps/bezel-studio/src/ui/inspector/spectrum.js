@@ -1,7 +1,8 @@
+import { describeSections } from './sections.js';
 // Existing spectrum controls, isolated from inspector navigation.
 import { SPECTRUM_STYLES, followedPlayer, spectrumOf, spectrumPatch } from '../../spectrum.js';
 import { el } from '../dom.js';
-import { numberField, propertySection as section, segmented, selectField, switchRow } from '../fields.js';
+import { numberField, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
 
 export function panels(ctx) {
   const { t, store, update, colorField, barCorners } = ctx;
@@ -60,4 +61,8 @@ export function panels(ctx) {
     };
   }
   return spectrumForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

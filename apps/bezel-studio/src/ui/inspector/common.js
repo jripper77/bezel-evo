@@ -1,3 +1,4 @@
+import { fadeField } from '../fields.js';
 // Common existing inspector controls. Each builder has one owner.
 import { visualization, visualStyles, visualArt, matrixFrame } from '../../visualization.js';
 import { defaultSensorMotion, supportsSensorMotion } from '../../sensor-motion.js';
@@ -10,7 +11,7 @@ import { formatClock } from '../../clock-format.js';
 import { readIcon } from '../../icon-catalog.js';
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { chipButton, fieldGrid, fontPicker, numberField, cornerRadii, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField, switchRow, textField } from '../fields.js';
+import { chipButton, fieldGrid, fontPicker, numberField, cornersField, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField, toggleField, textField } from '../fields.js';
 import { CORNERS, cornerValue, coverBox } from '../../corner-radii.js';
 import { boundKey } from '../../editor/widgets.js';
 import { appChips, durationParts, graphTiming } from '../../inspector-tabs.js';
@@ -33,7 +34,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
 
   /** The same track toggle and paint for bars and rings. */
   const trackFields = (e) => [
-    switchRow(t('inspector.showTrack'), Boolean(e.kind.track), (on) => update(e.id, { kind: { track: on ? '#ffffff26' : null } })),
+    toggleField(t('inspector.showTrack'), Boolean(e.kind.track), (on) => update(e.id, { kind: { track: on ? '#ffffff26' : null } })),
     e.kind.track && colorField(t('inspector.track'), typeof e.kind.track === 'string' ? e.kind.track : '#ffffff26', (v) => update(e.id, { kind: { track: v } })),
   ];
 
@@ -140,7 +141,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   }
 
   /**
-   * The corners of an object (cornerRadii, D-2026-10-15-studio-redesign-fidelity-22):
+   * The corners of an object (cornersField, D-2026-10-15-studio-redesign-fidelity-22):
    * `value` and `onChange` in src/corner-radii.js's shape, `label` names
    * the shared radius, `box` gives the drawing the object's proportions.
    */
@@ -149,7 +150,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       label, prefix: t('insp.radius'), mode: t('insp.cornersMode'), same: t('insp.cornersSame'), each: t('insp.cornersEach'),
       corners: Object.fromEntries(CORNERS.map((name) => [name, t(`inspector.${name}`)])),
     };
-    const { tool, control } = cornerRadii(texts, value, onChange, { individual, box });
+    const { tool, control } = cornersField(texts, value, onChange, { individual, box });
     return section('corners', title, [control], { tool });
   }
 
@@ -179,7 +180,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   function segmentsFields(e) {
     const seg = e.kind.segments;
     return [
-      switchRow(t('inspector.segments'), Boolean(seg), (on) => update(e.id, { kind: { segments: on ? { count: 10, gap: e.kind.type === 'ring' ? 4 : 2 } : null } })),
+      toggleField(t('inspector.segments'), Boolean(seg), (on) => update(e.id, { kind: { segments: on ? { count: 10, gap: e.kind.type === 'ring' ? 4 : 2 } : null } })),
       seg && el('div', { class: 'field-row' }, [
         numberField(t('inspector.count'), seg.count, (v) => update(e.id, { kind: { segments: { count: Math.max(1, v) } } }), { min: 1, max: 200, iconName: 'count' }),
         numberField(t('inspector.gap'), seg.gap, (v) => update(e.id, { kind: { segments: { gap: Math.max(0, v) } } }), { min: 0, step: 'any', unit: e.kind.type === 'ring' ? '°' : 'px', iconName: 'spacing' }),
@@ -199,27 +200,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   }
 
   function fadeFields(e) {
-    const f = e.kind.fade;
-    const set = patch => update(e.id, { kind: { fade: patch } });
-    return [
-      selectField(t('fade.mode'), !f ? 'none' : f.radial ? 'radial' : 'linear',
-        ['none','linear','radial'].map(mode => [mode, t(`fade.${mode}`)]), mode => set(mode === 'none' ? null : {
-          angle: f?.angle ?? 0, start: f?.start ?? 1, end: f?.end ?? 0,
-          radial: mode === 'radial' ? f?.radial ?? [0.5,0.5,0.5] : null,
-        })),
-      ...(f ? [
-        ...(f.radial ? [
-          numberField(t('fade.centerX'), Math.round(f.radial[0]*100), x => set({ radial: [Math.max(0,Math.min(100,x))/100,f.radial[1],f.radial[2]] }), {min:0,max:100}),
-          numberField(t('fade.centerY'), Math.round(f.radial[1]*100), y => set({ radial: [f.radial[0],Math.max(0,Math.min(100,y))/100,f.radial[2]] }), {min:0,max:100}),
-          numberField(t('fade.extent'), Math.round(f.radial[2]*100), r => set({ radial: [f.radial[0],f.radial[1],Math.max(1,Math.min(200,r))/100] }), {min:1,max:200}),
-        ] : [
-          numberField(t('shape.fadeAngle'), f.angle, angle => set({angle:Math.max(-360,Math.min(360,angle))}), {min:-360,max:360}),
-          rangeField(t('fade.midpoint'), Math.round((f.midpoint ?? .5)*100), v => set({midpoint:Math.max(5,Math.min(95,v))/100}), {min:5,max:95,format:v=>`${v}%`}),
-        ]),
-        rangeField(t('shape.fadeStart'), Math.round(f.start*100), v => set({start:v/100}), {format:v=>`${v}%`}),
-        rangeField(t('shape.fadeEnd'), Math.round(f.end*100), v => set({end:v/100}), {format:v=>`${v}%`}),
-      ] : []),
-    ];
+    return [fadeField({ mode: t('fade.mode'), none: t('fade.none'), linear: t('fade.linear'), radial: t('fade.radial'), centerX: t('fade.centerX'), centerY: t('fade.centerY'), extent: t('fade.extent'), angle: t('shape.fadeAngle'), midpoint: t('fade.midpoint'), start: t('shape.fadeStart'), end: t('shape.fadeEnd') }, e.kind.fade, fade => update(e.id, { kind: { fade } }))];
   }
 
   /** How a duration of `seconds` is written ("30 s", "5 min", "1 h"). */
@@ -245,8 +226,8 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     });
     const reorder = (i, to, action) => { set({ ...rule, thresholds: moveRule(rows, i, to) }); focusRow(to, action); };
     return el('div', { class: 'value-color', dataset: { section: 'value-color' }, role: 'group', 'aria-label': t('insp.colorByValue') }, [
-      switchRow(t('insp.colorByValue'), Boolean(rule), enabled => set(enabled ? defaultValueColor(e,
-        sensors.catalog()[0]?.key ?? '', readIcon(assets.find(a => a.ref === e.kind.asset)?.iconSvg)?.color) : null)),
+      toggleField(t('insp.colorByValue'), Boolean(rule), enabled => set(enabled ? defaultValueColor(e,
+        sensors.catalog()[0]?.key ?? '', readIcon(assets.find(a => a.ref === e.kind.asset)?.iconSvg)?.color) : null), { iconName: 'bolt' }),
       ...(rule ? [
         e.kind.content?.type === 'spectrum' ? el('p', { class: 'hint', text: t('spectrum.levelScale') }) : boundKey(e) ? sourceCard(e.id, boundKey(e), key => ({ kind: e.kind.type === 'text' ? { content: { key } } : { binding: { key } } }), { numeric: true, scope: 'color' })
           : sourceCard(e.id, rule.sensor ?? '', sensor => ({ colorByValue: { sensor } }), { numeric: true, scope: 'color' }),
@@ -271,7 +252,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     const motion = e.sensorMotion;
     const set = sensorMotion => update(e.id, { sensorMotion });
     return section('sensor-motion', t('insp.sensorMotion'), [
-      switchRow(t('insp.sensorMotionEnabled'), Boolean(motion), enabled => set(enabled ? defaultSensorMotion(sensors.catalog(), e) : null)),
+      toggleField(t('insp.sensorMotionEnabled'), Boolean(motion), enabled => set(enabled ? defaultSensorMotion(sensors.catalog(), e) : null)),
       ...(motion ? [
         sourceCard(e.id, motion.sensor, sensor => ({ sensorMotion: { ...motion, sensor } }), { numeric: true, label: t('insp.motionSource'), scope: 'motion' }),
         numberField(t('insp.motionReference'), motion.reference, value => set({ ...motion, reference: Math.max(.001, Math.min(1e12, value)) }), { min: .001, max: 1e12, step: 'any', unit: sensorNativeUnit(sensors.catalog().find(s => s.key === motion.sensor)?.quantity) }),
@@ -281,7 +262,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
           ...([0, 600, 1500].includes(motion.inertiaMs) ? [] : [[String(motion.inertiaMs), t('insp.motionCustom')]]),
         ], value => set({ ...motion, inertiaMs: Number(value) })),
         el('p', { class: 'hint', text: t('insp.motionMapping', { value: motion.reference, unit: sensorNativeUnit(sensors.catalog().find(s => s.key === motion.sensor)?.quantity), seconds: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 2 }).format(1 / motion.turnsPerSecond) }) }),
-        switchRow(t('insp.motionReverse'), motion.reverse, reverse => set({ ...motion, reverse })),
+        toggleField(t('insp.motionReverse'), motion.reverse, reverse => set({ ...motion, reverse })),
         el('p', { class: 'hint', text: t('insp.motionHint') }),
       ] : []),
     ]);
@@ -315,7 +296,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       ['matrix','rounded','mirrored'].includes(v?.style) && numberField(t('visual.gap'),v.gap,gap=>set({gap:Math.max(0,Math.min(32,gap))}),{min:0,max:32,unit:'px'}),
       ['matrix','pixel'].includes(v?.style) && numberField(t('visual.radius'),v.radius,radius=>set({radius:Math.max(0,Math.min(32,radius))}),{min:0,max:32,unit:'px'}),
       ['pixel','dial'].includes(v?.style) && n('ticks',v.ticks,2,120,v.style === 'pixel' ? 'visual.cells' : 'visual.ticks'),
-      v?.style === 'dial' && switchRow(t('visual.marker'),v.marker,marker=>set({marker})),
+      v?.style === 'dial' && toggleField(t('visual.marker'),v.marker,marker=>set({marker})),
     ]);
   }
   return { sourceCard, rangeFields, sourceSection, sampleText, fontFields, appChipGroup, choiceCard, cornersSection, coverCorners, barCorners, segmentsFields, transitionSection, fadeFields, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, trackFields, angleFields, timingOf, graphWindowMs, button };

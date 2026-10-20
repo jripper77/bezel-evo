@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing multi-selection tools, without inspector navigation.
 import { canGroup } from '../../editor/cards.js';
 import { el, icon } from '../dom.js';
@@ -30,3 +31,5 @@ export function panel({ ids, t, store, alignTool, ALIGN_EDGES }) {
   }
   return multiForm(ids);
 }
+
+export function sections(ctx) { return describeSections(ctx, { layout: panel(ctx).slice(1) }); }

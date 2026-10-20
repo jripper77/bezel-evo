@@ -8,7 +8,7 @@
 // come from ui/fields.js (D-14).
 import { el, icon, svgEl } from './dom.js';
 import { ICONS } from './icons.js';
-import { count, iconButton, listCard, panelHead, pill, propertySection as section, segmented, switchRow } from './fields.js';
+import { count, iconButton, listCard, panelHead, pill, propertySection as section, segmented, toggleField as switchRow } from './fields.js';
 import { errorText } from '../messages.js';
 import {
   DEFAULT_BACKGROUND_COLOR, backgroundKind, backgroundOf, backgroundName, backgroundOptions, backgroundSource, backgroundStatus, chooserSources, chosenBackground,

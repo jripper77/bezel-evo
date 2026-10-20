@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing needle controls, isolated from inspector navigation.
 import { fieldGrid, prefixedField, rangeField, propertySection as section } from '../fields.js';
 
@@ -19,4 +20,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return needleForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

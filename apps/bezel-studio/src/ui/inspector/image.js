@@ -1,7 +1,8 @@
+import { describeSections } from './sections.js';
 // Existing image controls, isolated from inspector navigation.
 import { readIcon } from '../../icon-catalog.js';
 import { el } from '../dom.js';
-import { numberField, propertySection as section, selectField } from '../fields.js';
+import { imageField, numberField, propertySection as section, selectField } from '../fields.js';
 
 export function panels(ctx) {
   const { t, update, colorField, editIcon, fadeFields } = ctx;
@@ -13,7 +14,7 @@ export function panels(ctx) {
     if (k.asset && !options.some(([r]) => r === k.asset)) options.push([k.asset, k.asset]);
     const data = [section('content', t('inspector.content'), [
       options.length
-        ? selectField(t('common.image'), k.asset, [['', t('inspector.noImage')], ...options], (v) => update(e.id, { kind: { asset: v } }))
+        ? imageField(t('common.image'), k.asset, [['', t('inspector.noImage')], ...options], (v) => update(e.id, { kind: { asset: v } }))
         : el('p', { class: 'hint', text: t('inspector.addMediaFirst') }),
     ])];
     const look = [section('appearance', t('inspector.appearance'), [
@@ -28,4 +29,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return imageForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

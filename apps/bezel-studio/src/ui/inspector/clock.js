@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing clock controls, isolated from inspector navigation.
 import { applyTextCase, TEXT_CASES } from '../../text-case.js';
 import { CLOCK_PATTERNS, formatClock } from '../../clock-format.js';
@@ -25,4 +26,8 @@ export function panels(ctx) {
     return { nodes, weatherAppearance };
   }
   return textPanels({ ...ctx, extra: fields(ctx.element) });
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

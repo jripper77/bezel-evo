@@ -1,7 +1,9 @@
-// Card content only: the inspector owns header, tabs, geometry and preview.
+import { panels as shapePanels } from './shape.js';
+import { describeSections } from './sections.js';
+// Card content only: the inspector owns header, sections, geometry and preview.
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, rangeField, segmented, selectField, sentence as sentenceOfParts, switchRow, textField } from '../fields.js';
+import { dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, rangeField, segmented, selectField, sentence as sentenceOfParts, toggleField as switchRow, textField } from '../fields.js';
 import { SEPARATOR, openMenuAt } from '../menu.js';
 import { widgetOf } from '../../editor/widgets.js';
 import { selectionRoots } from '../../editor/cards.js';
@@ -244,4 +246,8 @@ export function renderCardPanel(tab, ctx) {
   if (tab === 'motion') return motionForm(ctx);
   if (tab === 'triggers') return triggerForm(ctx);
   return [];
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, { ...ctx.completePanels(shapePanels(ctx)), ...Object.fromEntries(CARD_TABS.map(tab => [tab, renderCardPanel(tab, ctx)])) });
 }

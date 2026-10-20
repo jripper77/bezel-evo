@@ -1,3 +1,4 @@
+import { describeSections } from './sections.js';
 // Existing graph controls, isolated from inspector navigation.
 import { visualization } from '../../visualization.js';
 import { el, svgEl as node } from '../dom.js';
@@ -99,4 +100,8 @@ export function panels(ctx) {
     return { data, look };
   }
   return graphForm(ctx.element, ctx.assets);
+}
+
+export function sections(ctx) {
+  return describeSections(ctx, ctx.completePanels(panels(ctx)));
 }

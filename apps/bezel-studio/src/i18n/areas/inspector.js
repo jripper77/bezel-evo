@@ -7,6 +7,14 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.type': 'Type',
+    'insp.waiting': 'Waiting',
+    'insp.live': 'Live',
+    'insp.linkSize': 'Link width and height',
+    'insp.section.layout': 'Layout',
+    'insp.section.behavior': 'Behavior',
+    'insp.section.triggers': 'Triggers',
+
     'insp.tryObject': 'Try animation',
     'insp.transitionInertia': 'Inertia',
     'insp.transitionSettling': 'Settling time',
@@ -177,6 +185,14 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.type': 'Tipo',
+    'insp.waiting': 'Aguardando',
+    'insp.live': 'Ao vivo',
+    'insp.linkSize': 'Vincular largura e altura',
+    'insp.section.layout': 'Layout',
+    'insp.section.behavior': 'Comportamento',
+    'insp.section.triggers': 'Gatilhos',
+
     'insp.tryObject': 'Testar animação',
     'insp.transitionInertia': 'Inércia',
     'insp.transitionSettling': 'Tempo de estabilização',
@@ -347,6 +363,14 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.type': 'Tipo',
+    'insp.waiting': 'In attesa',
+    'insp.live': 'Live',
+    'insp.linkSize': 'Collega larghezza e altezza',
+    'insp.section.layout': 'Disposizione',
+    'insp.section.behavior': 'Comportamento',
+    'insp.section.triggers': 'Attivazioni',
+
     'insp.tryObject': 'Prova animazione',
     'insp.transitionInertia': 'Inerzia',
     'insp.transitionSettling': 'Tempo di assestamento',
