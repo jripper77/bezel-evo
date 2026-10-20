@@ -5,6 +5,13 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.1.61] - 2026-10-20
+
+### Studio
+- Remove unused imported files directly from **Media → This theme** with the
+  trash button. Files still referenced by the theme are protected, and editor
+  Undo retains the media it needs. Original source files are preserved.
+
 ## [0.1.60] - 2026-10-20
 
 ### Studio
