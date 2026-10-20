@@ -80,7 +80,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
     ⋯ con le azioni del menu oggetto esistente) e riga Tipo per valore/barra/anello/lancetta/grafico (cambia `kind` come oggi «Mostra come»).
   - Componenti del contratto in `fields.js`, documentati nel catalogo dei primitivi; gli interruttori dell'inspector diventano pulsanti-icona.
   - Nessuna funzione persa: le spec e2e dell'inspector esistenti passano (adattando solo come si apre una sezione al posto di una scheda, in `helpers.mjs`: `openSection(page, id)`).
-- **Dipendenze:** nessuna · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G1–G9 · **Status:** in progress — memoria delle sezioni e primitivo accordion verificati (`1697e93`, `bbae69d`); chiarimento richiesto sul supporto mancante a ▶ Prova nel bridge (vedi SUMMARY-T-0.md). Task non ancora integrabile.
 
 #### T-1: Testo — cifre fisse, parti con stile, testo troppo lungo, transizioni del numero
 - **Decisioni:** 05, 06 · **Tavole:** ValueInspectorOpen, ClockInspectorOpen (parti digitali)
