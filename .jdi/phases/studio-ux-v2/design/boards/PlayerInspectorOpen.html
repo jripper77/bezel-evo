@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Media player — tutto aperto</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D0F}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.panel{display:flex;flex-direction:column;border-radius:14px;border:1px solid #23282E;background:#121518;overflow:hidden;font-size:13px;color:#E8EAED}
+.ib{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#8B939C;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.acc{display:flex;align-items:center;gap:10px;width:100%;height:48px;padding:0 14px;border:0;border-top:1px solid #1D2227;background:transparent;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.acc .nm{font-weight:600}
+.acc .ico{color:#FFB27A}
+.acc .chev{margin-left:auto;color:#6B747C;width:12px;height:12px}
+.body{display:flex;flex-direction:column;gap:16px;padding:2px 16px 20px}
+.lbl{font-size:12px;color:#8B939C;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lbl .r{margin-left:auto;font-size:11px;color:#6B747C}
+.fld{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #262B31;background:#0F1214;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EAED;box-sizing:border-box;min-width:0}
+.fld .ic{color:#6B747C;width:15px;height:15px}
+.fld .k{color:#6B747C;font-size:12px}
+.fld .u{color:#6B747C;font-size:11.5px;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#AEB5BD;font:inherit;font-size:11.5px;cursor:pointer}
+.st[aria-pressed="true"]{border-color:#FF9248;background:#1C1611;color:#FFB27A}
+.igrp{display:flex;padding:2px;border-radius:8px;background:#0F1214;border:1px solid #1D2227}
+.igrp button{min-width:34px;height:30px;border:0;border-radius:6px;background:transparent;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 8px;font:inherit;font-size:12px}
+.igrp button[aria-pressed="true"]{background:#262B31;color:#E8EAED}
+.igrp.wide{width:100%;box-sizing:border-box}
+.igrp.wide button{flex:1}
+.itg{width:36px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.itg[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.bolt{width:34px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#4A525A;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.hint{margin:0;font-size:11.5px;line-height:1.45;color:#6B747C}
+.sep{height:1px;background:#1D2227;margin:2px 0}
+.chipb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #262B31;background:transparent;color:#AEB5BD;font:inherit;font-size:12.5px;cursor:pointer}
+.chipb[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.el{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#6B747C;font:inherit;font-size:11px;cursor:pointer}
+.el[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+</style>
+
+<div style="width: 440px; box-sizing: border-box; padding: 40px; background: #0B0D0F; color: #E8EAED; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <div class="panel">
+
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px 10px 14px 14px; background: #0E1013">
+      <div style="width: 72px; height: 72px; flex: none; border-radius: 10px; background: #15191C; border: 1px solid #23282E; display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 8px; box-sizing: border-box">
+        <div style="display: flex; gap: 5px; align-items: center">
+          <span style="width: 22px; height: 22px; border-radius: 4px; background: linear-gradient(135deg, #DB2777, #F59E0B); flex: none"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="height: 4px; border-radius: 2px; background: #E8EAED"></span><span style="height: 3px; width: 70%; border-radius: 2px; background: #6B747C"></span></span>
+        </div>
+        <span style="height: 3px; border-radius: 2px; background: #2A3036"><span style="display: block; width: 35%; height: 100%; border-radius: 2px; background: #E8EAED"></span></span>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; align-items: center; gap: 2px">
+          <strong style="font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Brano in riproduzione</strong>
+          <button type="button" class="ib" aria-label="Prova: simula un brano in riproduzione" title="Prova: simula un brano in riproduzione" style="width: 34px; height: 34px"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg></button>
+          <button type="button" class="ib" aria-label="Altre azioni" title="Duplica, elimina"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+        </div>
+        <span style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 13px; color: #AEB5BD; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Spotify · 1:12 / 3:45</span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #6EE7B7; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34D399"></span>dal vivo</span></span>
+      </div>
+    </div>
+
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"></path></svg><span class="nm">Disposizione</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <label class="fld"><span class="k">X</span>90</label>
+        <label class="fld"><span class="k">Y</span>300</label>
+        <label class="fld" title="Rotazione"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg>0°<button type="button" aria-label="Ruota con un sensore" title="Ruota con un sensore" style="margin-left: auto; width: 20px; height: 20px; border: 0; padding: 0; background: transparent; color: #4A525A; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" style="width: 13px; height: 13px; color: currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button></label>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px">
+        <label class="fld" style="flex: 1"><span class="k">L</span>300<span class="u">px</span></label>
+        <button type="button" class="ib" aria-pressed="true" aria-label="Mantieni le proporzioni" title="Mantieni le proporzioni" style="color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H7a4 4 0 0 0 0 8h2M15 7h2a4 4 0 0 1 0 8h-2M8 11h8"></path></svg></button>
+        <label class="fld" style="flex: 1"><span class="k">A</span>300<span class="u">px</span></label>
+      </div>
+      <div class="sep"></div>
+      <div>
+        <p class="lbl">Allinea allo schermo</p>
+        <div class="igrp wide" role="group" aria-label="Allinea">
+          <button type="button" aria-label="A sinistra" title="A sinistra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18M8 7h10M8 15h6"></path></svg></button>
+          <button type="button" aria-label="Al centro orizzontale" title="Al centro orizzontale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M6 7h12M8 15h8"></path></svg></button>
+          <button type="button" aria-label="A destra" title="A destra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 3v18M6 7h10M10 15h6"></path></svg></button>
+          <button type="button" aria-label="In alto" title="In alto"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18M7 8v10M15 8v6"></path></svg></button>
+          <button type="button" aria-label="Al centro verticale" title="Al centro verticale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 6v12M15 8v8"></path></svg></button>
+          <button type="button" aria-label="In basso" title="In basso"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M7 6v10M15 10v6"></path></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Fa parte di</p>
+        <button type="button" class="fld" style="width: 100%; font-family: inherit; cursor: pointer; color: #E8EAED"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"></path><path d="m3 13 9 5 9-5"></path></svg>Livello principale<svg class="ic" viewBox="0 0 24 24" style="margin-left: auto; width: 12px; height: 12px" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+      </div>
+      <div>
+        <p class="lbl">Ordine<span class="r">livello 2 di 3</span></p>
+        <div class="igrp wide" role="group" aria-label="Ordine dei livelli">
+          <button type="button" title="In primo piano"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V7M6 11l6-6 6 6M5 3h14"></path></svg>Davanti</button>
+          <button type="button" title="Su di uno"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg></button>
+          <button type="button" title="Giù di uno"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg></button>
+          <button type="button" title="In fondo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v12M6 13l6 6 6-6M5 21h14"></path></svg>Dietro</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DATI -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"></path></svg><span class="nm">Dati</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Da quale app<span class="r">● sta suonando ora</span></p>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <button type="button" class="chipb" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg>Automatica</button>
+          <button type="button" class="chipb" aria-pressed="true"><span style="width: 7px; height: 7px; border-radius: 50%; background: #34D399"></span>Spotify</button>
+          <button type="button" class="chipb" aria-pressed="false"><span style="width: 7px; height: 7px; border-radius: 50%; background: #4A525A"></span>Chrome</button>
+          <button type="button" class="chipb" aria-pressed="false" style="border-style: dashed">Altra…</button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Quando non suona niente</p>
+        <div class="igrp wide" role="group" aria-label="Quando non suona niente">
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.8M6.6 6.6C3.6 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"></path></svg>Nascondi</button>
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M9 20h6"></path></svg>Mostra un testo</button>
+        </div>
+        <label class="fld" style="margin-top: 8px; font-family: inherit"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Testo quando è fermo</span>Niente in riproduzione</label>
+      </div>
+      <div>
+        <p class="lbl">Tempi</p>
+        <button type="button" class="fld" style="width: 100%; cursor: pointer"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path></svg><span style="font-family: 'IBM Plex Sans', sans-serif; color: #E8EAED">Trascorso / totale</span><span class="k" style="margin-left: auto">1:12 / 3:45</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+      </div>
+    </div>
+
+    <!-- FORMA -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="7" height="7" rx="1.5"></rect><path d="M13 7h8M13 10h5M3 17h18"></path></svg><span class="nm">Forma</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Cosa mostrare</p>
+        <div class="els" role="group" aria-label="Elementi visibili">
+          <button type="button" class="el" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m20 16-5-5-8 8"></path></svg>Copertina</button>
+          <button type="button" class="el" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M9 20h6"></path></svg>Titolo</button>
+          <button type="button" class="el" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Artista</button>
+          <button type="button" class="el" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path></svg>Tempo</button>
+          <button type="button" class="el" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" stroke-width="3"></path><path d="M3 12h8" stroke-width="3" stroke="#FFB27A"></path></svg>Avanzamento</button>
+          <button type="button" class="el" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="3"></rect><path d="M8 12h8"></path></svg>Nome app</button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: flex-end">
+        <div style="flex: 1">
+          <p class="lbl">Allineamento</p>
+          <div class="igrp" role="group" aria-label="Allineamento orizzontale">
+            <button type="button" aria-pressed="true" aria-label="A sinistra" title="A sinistra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"></path></svg></button>
+            <button type="button" aria-pressed="false" aria-label="Al centro" title="Al centro"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M5.5 18h13"></path></svg></button>
+            <button type="button" aria-pressed="false" aria-label="A destra" title="A destra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M10 12h10M7 18h13"></path></svg></button>
+          </div>
+        </div>
+        <div>
+          <p class="lbl">Verticale</p>
+          <div class="igrp" role="group" aria-label="Allineamento verticale">
+            <button type="button" aria-pressed="false" aria-label="In alto" title="In alto"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16M8 8h8M8 12h8"></path></svg></button>
+            <button type="button" aria-pressed="true" aria-label="Al centro" title="Al centro"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9h8M8 15h8M4 12h2M18 12h2"></path></svg></button>
+            <button type="button" aria-pressed="false" aria-label="In basso" title="In basso"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M8 12h8M8 16h8"></path></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div>
+        <p class="lbl">Copertina</p>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <label class="fld" style="flex: 1" title="Raggio degli angoli"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10a6 6 0 0 1 6-6h10"></path></svg>12<span class="u">px</span></label>
+          <button type="button" class="itg" aria-pressed="false" aria-label="Angoli singoli" title="Angoli singoli"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"></path></svg></button>
+          <label class="fld" style="flex: 1" title="Distanza dal testo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16M20 4v16M8 12h8M8 12l3-3M8 12l3 3M16 12l-3-3M16 12l-3 3"></path></svg>14<span class="u">px</span></label>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Trasparenza della copertina<span class="r">nuovo</span></p>
+        <div class="igrp wide" role="group" aria-label="Trasparenza della copertina">
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>Nessuna</button>
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 4v16M12 4v16M16 4v16" stroke-dasharray="1 2"></path></svg>Lineare</button>
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4" stroke-dasharray="1 2"></circle></svg>Radiale</button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px">
+          <div style="position: relative; width: 64px; height: 64px; flex: none; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(#1A1E22 0 25%, #121518 0 50%) 0 0 / 10px 10px">
+            <div style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(219,39,119,1), rgba(245,158,11,0))"></div>
+            <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="position: absolute; inset: 0"><path d="M14 32h36" stroke="#E8EAED" stroke-width="1.5"></path><circle cx="14" cy="32" r="4" fill="#E8EAED"></circle><path d="m44 27 6 5-6 5" fill="none" stroke="#E8EAED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <div class="g2">
+              <label class="fld" title="Direzione"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 12h6M15 9l3 3-3 3"></path></svg>0<span class="u">°</span></label>
+              <label class="fld" title="Punto di metà"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M12 7v10"></path></svg>50<span class="u">%</span></label>
+            </div>
+            <div class="g2">
+              <label class="fld" title="Opacità all'inizio"><span class="k">da</span>100<span class="u">%</span></label>
+              <label class="fld" title="Opacità alla fine"><span class="k">a</span>0<span class="u">%</span></label>
+            </div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top: 6px">Trascina la freccia sull'anteprima per cambiare direzione; con Radiale si sposta il centro.</p>
+      </div>
+      <div>
+        <p class="lbl">Dove vanno i tempi</p>
+        <div class="igrp wide" role="group" aria-label="Posizione dei tempi">
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h12M3 12h9M15 12h6M3 17h18" ></path></svg>Nel testo</button>
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3M18 12h3M8 12h8" stroke-width="2.4"></path></svg>Ai lati</button>
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h4M16 8h4M4 15h16" ></path></svg>Sopra</button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Barra di avanzamento</p>
+        <div class="igrp wide" role="group" aria-label="Stile della barra">
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" stroke-width="3"></path></svg>Continua</button>
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke-linecap: butt"><path d="M3 12h18" stroke-width="4" stroke-dasharray="3 2"></path></svg>Segmenti</button>
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h.01M9 12h.01M14 12h.01M19 12h.01" stroke-width="3.5"></path></svg>Punti</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 8px">
+          <label class="fld" style="flex: 1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16"></path><path d="M4 18h16" stroke-width="3.5"></path></svg>4<span class="u">px</span></label>
+          <div class="igrp" role="group" aria-label="Estremi">
+            <button type="button" aria-pressed="true" aria-label="Arrotondati" title="Estremi arrotondati"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" stroke-width="6"></path></svg></button>
+            <button type="button" aria-pressed="false" aria-label="Piatti" title="Estremi piatti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke-linecap: butt"><path d="M5 12h14" stroke-width="6"></path></svg></button>
+          </div>
+          <button type="button" class="itg" aria-pressed="true" aria-label="Pallino sulla posizione" title="Pallino sulla posizione"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path><circle cx="11" cy="12" r="3.5" fill="currentColor"></circle></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TESTO -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 10 4l6 16M6.5 14h7M17 20v-6a2.5 2.5 0 0 1 5 0v6M17 17h5"></path></svg><span class="nm">Testo</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Carattere</p>
+        <button type="button" class="fld" style="width: 100%; cursor: pointer; height: 40px"><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 18px; font-weight: 600; color: #E8EAED; width: 28px">Aa</span><span style="font-family: 'IBM Plex Sans', sans-serif; color: #E8EAED">IBM Plex Sans</span><span class="k" style="margin-left: auto">inclusa</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: flex-end">
+        <div style="flex: 1">
+          <p class="lbl">Peso</p>
+          <div class="igrp wide" role="group" aria-label="Peso">
+            <button type="button" aria-pressed="false" title="Regular" style="font-weight: 400; font-size: 13px">Aa</button>
+            <button type="button" aria-pressed="false" title="Medium" style="font-weight: 500; font-size: 13px">Aa</button>
+            <button type="button" aria-pressed="true" title="Semibold" style="font-weight: 600; font-size: 13px">Aa</button>
+            <button type="button" aria-pressed="false" title="Bold" style="font-weight: 700; font-size: 13px">Aa</button>
+          </div>
+        </div>
+        <div style="width: 96px">
+          <p class="lbl">Dimensione</p>
+          <label class="fld"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h10v2M9 5v14M7 19h4M14 12V11h6v1M17 11v8M16 19h2"></path></svg>28<span class="u">px</span></label>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Maiuscole e minuscole</p>
+        <div class="igrp wide" role="group" aria-label="Maiuscole e minuscole">
+          <button type="button" aria-pressed="true" title="Originale" style="font-size: 12px">Abc</button>
+          <button type="button" aria-pressed="false" title="TUTTO MAIUSCOLO" style="font-size: 12px">ABC</button>
+          <button type="button" aria-pressed="false" title="tutto minuscolo" style="font-size: 12px">abc</button>
+          <button type="button" aria-pressed="false" title="Solo iniziale maiuscola" style="font-size: 12px">Ab cd</button>
+          <button type="button" aria-pressed="false" title="Iniziali Di Ogni Parola" style="font-size: 12px">Ab Cd</button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Spaziatura tra lettere</p>
+        <label class="fld" style="width: 50%"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4v16M21 4v16M8 16l4-9 4 9M9.5 13h5"></path></svg>0<span class="u">px</span></label>
+      </div>
+    </div>
+
+    <!-- COLORE -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg><span class="nm">Colore</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Testo</p>
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1"><span class="sw" style="width: 16px; height: 16px; background: #FFFFFF"></span>#FFFFFF<span class="u">100%</span></label>
+          <button type="button" class="bolt" aria-label="Collega a un sensore" title="Colore da un sensore"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Barra · riempimento</p>
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1"><span class="sw" style="width: 16px; height: 16px; background: #FFFFFF"></span>#FFFFFF<span class="u">100%</span></label>
+          <button type="button" class="bolt" aria-label="Collega a un sensore" title="Colore da un sensore"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Barra · traccia</p>
+        <label class="fld"><span class="sw" style="width: 16px; height: 16px; background: rgba(100,100,100,.39)"></span>#646464<span class="u">39%</span></label>
+      </div>
+      <div>
+        <p class="lbl">Opacità dell'oggetto</p>
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"></path></svg>100<span class="u">%</span></label>
+          <button type="button" class="bolt" aria-label="Collega a un sensore" title="Opacità da un sensore"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+      </div>
+      <p class="hint">Il player non ha Comportamento: la sezione non compare, le altre restano al loro posto.</p>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Grafico — tutto aperto</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D0F}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.panel{display:flex;flex-direction:column;border-radius:14px;border:1px solid #23282E;background:#121518;overflow:hidden;font-size:13px;color:#E8EAED}
+.ib{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#8B939C;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.acc{display:flex;align-items:center;gap:10px;width:100%;height:48px;padding:0 14px;border:0;border-top:1px solid #1D2227;background:transparent;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.acc .nm{font-weight:600}
+.acc .ico{color:#FFB27A}
+.acc .chev{margin-left:auto;color:#6B747C;width:12px;height:12px}
+.body{display:flex;flex-direction:column;gap:16px;padding:2px 16px 20px}
+.lbl{font-size:12px;color:#8B939C;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lbl .r{margin-left:auto;font-size:11px;color:#6B747C}
+.fld{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #262B31;background:#0F1214;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EAED;box-sizing:border-box;min-width:0}
+.fld .ic{color:#6B747C;width:15px;height:15px}
+.fld .k{color:#6B747C;font-size:12px}
+.fld .u{color:#6B747C;font-size:11.5px;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#AEB5BD;font:inherit;font-size:11.5px;cursor:pointer}
+.st[aria-pressed="true"]{border-color:#FF9248;background:#1C1611;color:#FFB27A}
+.igrp{display:flex;padding:2px;border-radius:8px;background:#0F1214;border:1px solid #1D2227}
+.igrp button{min-width:34px;height:30px;border:0;border-radius:6px;background:transparent;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 8px;font:inherit;font-size:12px}
+.igrp button[aria-pressed="true"]{background:#262B31;color:#E8EAED}
+.igrp.wide{width:100%;box-sizing:border-box}
+.igrp.wide button{flex:1}
+.itg{width:36px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.itg[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.bolt{width:34px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#4A525A;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.hint{margin:0;font-size:11.5px;line-height:1.45;color:#6B747C}
+.sep{height:1px;background:#1D2227;margin:2px 0}
+.chipb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #262B31;background:transparent;color:#AEB5BD;font:inherit;font-size:12.5px;cursor:pointer}
+.chipb[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.el{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#6B747C;font:inherit;font-size:11px;cursor:pointer}
+.el[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sens{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#E8EAED;font:inherit;text-align:left;cursor:pointer}
+.sdot{width:10px;height:10px;border-radius:3px;flex:none}
+</style>
+
+<div style="width: 440px; box-sizing: border-box; padding: 40px; background: #0B0D0F; color: #E8EAED; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <div class="panel">
+
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px 10px 14px 14px; background: #0E1013">
+      <div style="width: 72px; height: 72px; flex: none; border-radius: 10px; background: #15191C; border: 1px solid #23282E; overflow: hidden">
+        <svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true"><path d="M0 46 L10 42 L20 44 L30 32 L40 36 L50 24 L60 28 L72 18 L72 40 L0 40 Z" fill="none"></path><path d="M0 40 L10 36 L20 38 L30 26 L40 30 L50 18 L60 22 L72 12 V40 H0 Z" fill="#38BDF8" fill-opacity=".22"></path><path d="M0 40 L10 36 L20 38 L30 26 L40 30 L50 18 L60 22 L72 12" fill="none" stroke="#38BDF8" stroke-width="2"></path><path d="M0 40 H72" stroke="rgba(255,255,255,.12)"></path><path d="M0 40 L10 44 L20 43 L30 50 L40 47 L50 54 L60 51 L72 56 V40 H0 Z" fill="#E879A4" fill-opacity=".25"></path></svg>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; align-items: center; gap: 2px">
+          <strong style="font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Rete</strong>
+          <button type="button" class="ib" aria-label="Prova: riempi il grafico con valori di esempio" title="Prova: riempi il grafico con valori di esempio" style="width: 34px; height: 34px"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg></button>
+          <button type="button" class="ib" aria-label="Altre azioni" title="Duplica, elimina"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+        </div>
+        <span style="display: flex; align-items: baseline; gap: 8px"><span class="mono" style="font-size: 20px; font-weight: 600; line-height: 1">12,4<span style="font-size: 12px; color: #8B939C; font-weight: 400"> MB/s</span></span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #6EE7B7; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34D399"></span>dal vivo</span></span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px; border-top: 1px solid #1D2227">
+      <span style="font-size: 12px; color: #8B939C; flex: 1">Tipo</span>
+      <div role="radiogroup" aria-label="Tipo di oggetto" class="igrp">
+        <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Valore" title="Valore" style="width: 40px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="M4 8h3v8M4 16h6M13 9a2 2 0 1 1 4 0c0 2-4 3-4 7h4"></path></svg></button>
+        <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Barra" title="Barra" style="width: 40px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="9" width="18" height="6" rx="3"></rect><path d="M6 12h7"></path></svg></button>
+        <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Anello" title="Anello" style="width: 40px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="M12 4a8 8 0 1 0 8 8"></path></svg></button>
+        <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Lancetta" title="Lancetta" style="width: 40px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="M4 17a8 8 0 0 1 16 0M12 17l4-5"></path></svg></button>
+        <button type="button" role="radio" aria-checked="true" aria-pressed="true" aria-label="Grafico" title="Grafico" style="width: 40px; height: 36px; padding: 0; color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="m3 17 5-6 4 3 4-7 5 5"></path></svg></button>
+      </div>
+    </div>
+
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"></path></svg><span class="nm">Disposizione</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <label class="fld"><span class="k">X</span>90</label>
+        <label class="fld"><span class="k">Y</span>300</label>
+        <label class="fld" title="Rotazione"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg>0°<button type="button" aria-label="Ruota con un sensore" title="Ruota con un sensore" style="margin-left: auto; width: 20px; height: 20px; border: 0; padding: 0; background: transparent; color: #4A525A; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" style="width: 13px; height: 13px; color: currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button></label>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px">
+        <label class="fld" style="flex: 1"><span class="k">L</span>300<span class="u">px</span></label>
+        <button type="button" class="ib" aria-pressed="true" aria-label="Mantieni le proporzioni" title="Mantieni le proporzioni" style="color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H7a4 4 0 0 0 0 8h2M15 7h2a4 4 0 0 1 0 8h-2M8 11h8"></path></svg></button>
+        <label class="fld" style="flex: 1"><span class="k">A</span>300<span class="u">px</span></label>
+      </div>
+      <div class="sep"></div>
+      <div>
+        <p class="lbl">Allinea allo schermo</p>
+        <div class="igrp wide" role="group" aria-label="Allinea">
+          <button type="button" aria-label="A sinistra" title="A sinistra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18M8 7h10M8 15h6"></path></svg></button>
+          <button type="button" aria-label="Al centro orizzontale" title="Al centro orizzontale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M6 7h12M8 15h8"></path></svg></button>
+          <button type="button" aria-label="A destra" title="A destra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 3v18M6 7h10M10 15h6"></path></svg></button>
+          <button type="button" aria-label="In alto" title="In alto"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18M7 8v10M15 8v6"></path></svg></button>
+          <button type="button" aria-label="Al centro verticale" title="Al centro verticale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 6v12M15 8v8"></path></svg></button>
+          <button type="button" aria-label="In basso" title="In basso"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M7 6v10M15 10v6"></path></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Fa parte di</p>
+        <button type="button" class="fld" style="width: 100%; font-family: inherit; cursor: pointer; color: #E8EAED"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"></path><path d="m3 13 9 5 9-5"></path></svg>Livello principale<svg class="ic" viewBox="0 0 24 24" style="margin-left: auto; width: 12px; height: 12px" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+      </div>
+      <div>
+        <p class="lbl">Ordine<span class="r">livello 2 di 3</span></p>
+        <div class="igrp wide" role="group" aria-label="Ordine dei livelli">
+          <button type="button" title="In primo piano"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V7M6 11l6-6 6 6M5 3h14"></path></svg>Davanti</button>
+          <button type="button" title="Su di uno"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg></button>
+          <button type="button" title="Giù di uno"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg></button>
+          <button type="button" title="In fondo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v12M6 13l6 6 6-6M5 21h14"></path></svg>Dietro</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DATI -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"></path></svg><span class="nm">Dati</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Serie</p>
+        <div class="igrp wide" role="group" aria-label="Numero di serie">
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 5-5 4 3 4-6 5 4"></path></svg>Una</button>
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 5-4 4 2 4-4 5 3M3 14l5 4 4-2 4 4 5-3"></path></svg>Due, a specchio</button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Sensore</p>
+        <button type="button" class="sens"><span class="sdot" style="background: #38BDF8"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Rete · download</span><span class="mono" style="font-size: 11px; color: #6B747C">net.down</span></span><span class="mono" style="font-weight: 600">12,4 MB/s</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #6B747C" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+      </div>
+      <div>
+        <p class="lbl">Sensore della serie sotto</p>
+        <button type="button" class="sens"><span class="sdot" style="background: #E879A4"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Rete · upload</span><span class="mono" style="font-size: 11px; color: #6B747C">net.up</span></span><span class="mono" style="font-weight: 600">1,1 MB/s</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #6B747C" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <p class="hint" style="margin-top: 6px">Con scala automatica le due serie condividono zero e picco: usa la stessa unità.</p>
+      </div>
+      <div>
+        <p class="lbl">Scala verticale</p>
+        <div class="igrp wide" role="group" aria-label="Scala">
+          <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"></path></svg>Automatica</button>
+          <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14M5 20h14M12 7v10"></path></svg>Fissa</button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Durata visibile</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <button type="button" class="chipb" aria-pressed="false">30 s</button>
+          <button type="button" class="chipb" aria-pressed="true">1 min</button>
+          <button type="button" class="chipb" aria-pressed="false">5 min</button>
+          <button type="button" class="chipb" aria-pressed="false">15 min</button>
+          <button type="button" class="chipb" aria-pressed="false">1 h</button>
+        </div>
+        <button type="button" aria-expanded="false" style="margin-top: 10px; display: flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: #8B939C; font: inherit; font-size: 12px; cursor: pointer"><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>Precisione · un punto ogni 1 s (60 punti)</button>
+      </div>
+    </div>
+
+    <!-- FORMA -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 5-6 4 3 4-7 5 5"></path></svg><span class="nm">Forma</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Stile</p>
+        <div class="els" role="radiogroup" aria-label="Stile" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+          <button type="button" class="el" aria-pressed="false"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M1 16 L8 11 L14 13 L21 5 L31 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>Linea</button>
+          <button type="button" class="el" aria-pressed="true"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M1 16 L8 11 L14 13 L21 5 L31 8 V20 H1 Z" fill="currentColor" fill-opacity=".3"></path><path d="M1 16 L8 11 L14 13 L21 5 L31 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>Area</button>
+          <button type="button" class="el" aria-pressed="false"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M2 20V12h5v8M10 20V7h5v13M18 20V10h5v10M26 20V4h5v16" fill="currentColor"></path></svg>Barre</button>
+          <button type="button" class="el" aria-pressed="false"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="12" width="5" height="8" rx="2.5"></rect><rect x="10" y="7" width="5" height="13" rx="2.5"></rect><rect x="18" y="10" width="5" height="10" rx="2.5"></rect><rect x="26" y="4" width="5" height="16" rx="2.5"></rect></svg>Arrotond.</button>
+        </div>
+      </div>
+      <div class="g2">
+        <div>
+          <p class="lbl">Spessore linea</p>
+          <label class="fld"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16"></path><path d="M4 18h16" stroke-width="3.5"></path></svg>2<span class="u">px</span></label>
+        </div>
+        <div>
+          <p class="lbl">Distanza tra le serie</p>
+          <label class="fld"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 18h16M12 9v6M9 11l3-2 3 2M9 13l3 2 3-2"></path></svg>2<span class="u">px</span></label>
+        </div>
+      </div>
+      <p class="hint">Con le Barre lo spessore diventa la larghezza delle barre; la distanza compare solo con due serie.</p>
+    </div>
+
+    <!-- COLORE -->
+    <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg><span class="nm">Colore</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+    <div class="body">
+      <div>
+        <p class="lbl">Serie</p>
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1"><span class="sw" style="width: 16px; height: 16px; background: #38BDF8"></span>#38BDF8<span class="u">100%</span></label>
+          <button type="button" class="bolt" aria-label="Collega a un sensore"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="lbl">Serie sotto</p>
+        <label class="fld"><span class="sw" style="width: 16px; height: 16px; background: #E879A4"></span>#E879A4<span class="u">100%</span></label>
+      </div>
+      <div>
+        <p class="lbl">Riempimento dell'area<span class="r">stesso colore della serie</span></p>
+        <label class="fld" style="width: 50%"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 9 11l4 3 8-8v14H3z" fill="currentColor" fill-opacity=".3"></path></svg>25<span class="u">%</span></label>
+      </div>
+      <div>
+        <p class="lbl">Opacità dell'oggetto</p>
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"></path></svg>100<span class="u">%</span></label>
+          <button type="button" class="bolt" aria-label="Collega a un sensore"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+      </div>
+      <p class="hint">Il grafico non ha Comportamento: scorre già da solo con i dati.</p>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

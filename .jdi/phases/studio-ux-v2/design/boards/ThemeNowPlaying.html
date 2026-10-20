@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Tema Now Playing</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0C070E}
+.mono{font-family:'JetBrains Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:15px;font-weight:500;color:#E9DCE4}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+
+<div style="position: relative; width: 1920px; height: 480px; box-sizing: border-box; display: flex; align-items: center; gap: 40px; padding: 0 40px; background: #0C070E; color: #FBF4F7; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <span aria-hidden="true" style="position: absolute; left: -200px; top: -320px; width: 1000px; height: 1000px; border-radius: 50%; background: radial-gradient(circle, rgba(219,39,119,.30), transparent 60%)"></span>
+
+  <div style="position: relative; flex: 0 0 410px; height: 320px">
+    <div aria-hidden="true" style="position: absolute; left: 112px; top: 12px; width: 296px; height: 296px; border-radius: 50%; background: repeating-radial-gradient(circle, #141014 0 2px, #1D171D 2px 4px); box-shadow: 0 20px 50px rgba(0,0,0,.6)">
+      <span style="position: absolute; left: 98px; top: 98px; width: 100px; height: 100px; border-radius: 50%; background: #DB2777"></span>
+      <span style="position: absolute; left: 141px; top: 141px; width: 14px; height: 14px; border-radius: 50%; background: #0C070E"></span>
+      <span style="position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(135deg, rgba(255,255,255,.10), transparent 40%)"></span>
+    </div>
+    <div style="position: absolute; left: 0; top: 0; width: 320px; height: 320px; border-radius: 20px; overflow: hidden; background: #2B0F3A; box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.08)">
+      <span aria-hidden="true" style="position: absolute; left: -70px; top: 120px; width: 280px; height: 280px; border-radius: 50%; background: #DB2777"></span>
+      <span aria-hidden="true" style="position: absolute; left: 150px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: #F59E0B; opacity: .9"></span>
+      <span aria-hidden="true" style="position: absolute; left: 118px; top: 140px; width: 100px; height: 100px; border-radius: 50%; border: 12px solid #FBF4F7; box-sizing: border-box; opacity: .85"></span>
+    </div>
+  </div>
+
+  <div style="position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; gap: 8px">
+      <span class="chip"><span style="width: 8px; height: 8px; border-radius: 50%; background: #34D399; box-shadow: 0 0 0 3px rgba(52,211,153,.2)"></span>In riproduzione</span>
+      <span class="chip">Spotify</span>
+      <span class="chip mono" style="font-size: 13px">2:33 rimanenti</span>
+    </div>
+    <span style="margin-top: 6px; font-size: 62px; font-weight: 800; line-height: 1; letter-spacing: -.035em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">[Titolo del brano]</span>
+    <span style="font-size: 26px; font-weight: 500; color: #E2D2DC">[Artista] <span style="color: #8E7D89">· [Album]</span></span>
+
+    <div style="display: flex; align-items: center; gap: 3px; height: 74px; margin-top: 16px" aria-label="Avanzamento del brano">
+      
+        <span style="flex: 1; height: 30px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 50px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 64px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 68px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 61px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 46px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 25px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 14px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 27px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 31px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 25px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 12px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 23px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 35px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 39px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 33px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 18px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 23px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 44px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 60px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 67px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 63px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 49px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 30px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 11px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 27px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 11px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 26px; border-radius: 2px; background: #F472B6"></span>
+      
+        <span style="flex: 1; height: 39px; border-radius: 2px; background: #F472B6; box-shadow: 0 0 12px #F472B6"></span>
+      
+        <span style="flex: 1; height: 44px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 39px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 25px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 16px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 38px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 56px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 64px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 62px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 51px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 33px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 15px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 19px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 24px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 19px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 13px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 29px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 43px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 49px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 46px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 33px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 12px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 30px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 50px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 60px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 61px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 51px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 34px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 17px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 17px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 18px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 14px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 31px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 46px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 54px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 52px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 40px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 20px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 43px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 55px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 57px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 50px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 35px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 18px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 16px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 18px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 15px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 31px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 47px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 57px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 58px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 47px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 29px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 14px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 35px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 49px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 53px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 47px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 33px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 17px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 16px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 22px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+        <span style="flex: 1; height: 19px; border-radius: 2px; background: rgba(255,255,255,.16)"></span>
+      
+    </div>
+    <div class="mono" style="display: flex; justify-content: space-between; font-size: 15px; color: #A8959F">
+      <span>1:12</span>
+      <span style="display: flex; gap: 22px; color: #E9DCE4">
+        <svg viewBox="0 0 24 24" width="22" height="22" class="ic" aria-hidden="true"><path d="M6 5v14M19 5 9 12l10 7z"></path></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22" class="ic" aria-hidden="true"><path d="M8 5v14M16 5v14"></path></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22" class="ic" aria-hidden="true"><path d="M18 5v14M5 5l10 7-10 7z"></path></svg>
+      </span>
+      <span>3:45</span>
+    </div>
+  </div>
+
+  <div style="position: relative; flex: 0 0 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 22px 24px; border-radius: 24px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08)">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 76px; font-weight: 700; line-height: .9; letter-spacing: -.045em">21:47</span>
+      <span style="font-size: 17px; color: #B8A7B2">giovedì 9 ottobre · 18° nuvoloso</span>
+    </div>
+    <div style="height: 1px; background: rgba(255,255,255,.08)"></div>
+    
+      <div style="display: flex; flex-direction: column; gap: 7px">
+        <div style="display: flex; justify-content: space-between; font-size: 15px; color: #B8A7B2"><span>CPU</span><span class="mono" style="color: #FBF4F7">38%</span></div>
+        <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,.08)"><div style="width: 38%; height: 100%; border-radius: 2px; background: #F472B6"></div></div>
+      </div>
+    
+      <div style="display: flex; flex-direction: column; gap: 7px">
+        <div style="display: flex; justify-content: space-between; font-size: 15px; color: #B8A7B2"><span>GPU</span><span class="mono" style="color: #FBF4F7">42°C</span></div>
+        <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,.08)"><div style="width: 42%; height: 100%; border-radius: 2px; background: #F472B6"></div></div>
+      </div>
+    
+      <div style="display: flex; flex-direction: column; gap: 7px">
+        <div style="display: flex; justify-content: space-between; font-size: 15px; color: #B8A7B2"><span>RAM</span><span class="mono" style="color: #FBF4F7">19.5 GB</span></div>
+        <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,.08)"><div style="width: 61%; height: 100%; border-radius: 2px; background: #F472B6"></div></div>
+      </div>
+    
+  </div>
+</div>
+
+
+</body>
+</html>

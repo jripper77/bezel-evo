@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Componenti dell'inspector</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D0F}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.panel{display:flex;flex-direction:column;border-radius:14px;border:1px solid #23282E;background:#121518;overflow:hidden;font-size:13px;color:#E8EAED}
+.ib{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#8B939C;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.acc{display:flex;align-items:center;gap:10px;width:100%;height:48px;padding:0 14px;border:0;border-top:1px solid #1D2227;background:transparent;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.acc .nm{font-weight:600}
+.acc .ico{color:#FFB27A}
+.acc .chev{margin-left:auto;color:#6B747C;width:12px;height:12px}
+.body{display:flex;flex-direction:column;gap:16px;padding:2px 16px 20px}
+.lbl{font-size:12px;color:#8B939C;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lbl .r{margin-left:auto;font-size:11px;color:#6B747C}
+.fld{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #262B31;background:#0F1214;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EAED;box-sizing:border-box;min-width:0}
+.fld .ic{color:#6B747C;width:15px;height:15px}
+.fld .k{color:#6B747C;font-size:12px}
+.fld .u{color:#6B747C;font-size:11.5px;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#AEB5BD;font:inherit;font-size:11.5px;cursor:pointer}
+.st[aria-pressed="true"]{border-color:#FF9248;background:#1C1611;color:#FFB27A}
+.igrp{display:flex;padding:2px;border-radius:8px;background:#0F1214;border:1px solid #1D2227}
+.igrp button{min-width:34px;height:30px;border:0;border-radius:6px;background:transparent;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 8px;font:inherit;font-size:12px}
+.igrp button[aria-pressed="true"]{background:#262B31;color:#E8EAED}
+.igrp.wide{width:100%;box-sizing:border-box}
+.igrp.wide button{flex:1}
+.itg{width:36px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.itg[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.bolt{width:34px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#4A525A;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.hint{margin:0;font-size:11.5px;line-height:1.45;color:#6B747C}
+.sep{height:1px;background:#1D2227;margin:2px 0}
+.chipb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #262B31;background:transparent;color:#AEB5BD;font:inherit;font-size:12.5px;cursor:pointer}
+.chipb[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.el{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#6B747C;font:inherit;font-size:11px;cursor:pointer}
+.el[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sens{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.sdot{width:10px;height:10px;border-radius:3px;flex:none}
+.tokens{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:980px}
+.tok{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:7px;background:#121518;border:1px solid #1D2227;font-size:12px;color:#AEB5BD}
+.cc{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:16px;background:#121518;border:1px solid #1D2227}
+.ch{display:flex;align-items:baseline;gap:10px}
+.ch h2{margin:0;font-size:16px;font-weight:700}
+.cn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#FFB27A}
+.use{margin-left:auto;font-size:11px;color:#6B747C}
+.stage{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;border-radius:12px;background-color:#0B0D0F;background-image:radial-gradient(#1A1E22 1px,transparent 1px);background-size:16px 16px;min-height:180px;justify-content:center}
+.mini{width:100%;border-radius:10px;border:1px solid #23282E;background:#121518;overflow:hidden}
+.acc2{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-bottom:1px solid #1D2227}
+.acc2 b{font-weight:600}
+.sm2{margin-left:auto;font-size:12px;color:#8B939C}
+.states{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6B747C;text-align:center}
+.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.5;color:#AEB5BD}
+.rules b{color:#E8EAED;font-weight:600}
+.pop{flex:1;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:#1A1E22;border:1px solid #2C3238;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+</style>
+
+<div style="width: 1720px; box-sizing: border-box; padding: 48px; background: #0B0D0F; color: #E8EAED; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 13px; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span class="mono" style="font-size: 12px; color: #FFB27A; letter-spacing: .06em">INSPECTOR · LIBRERIA DI COMPONENTI</span>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.02em">Un controllo, un aspetto, un comportamento</h1>
+    </div>
+    <div class="tokens">
+      <span class="tok"><span class="sw" style="background: #121518"></span>pannello #121518</span>
+      <span class="tok"><span class="sw" style="background: #0F1214"></span>campo #0F1214</span>
+      <span class="tok"><span class="sw" style="background: #262B31"></span>bordo #262B31</span>
+      <span class="tok"><span class="sw" style="background: #FF9248"></span>accento #FF9248</span>
+      <span class="tok"><span class="sw" style="background: #34D399"></span>dal vivo / ⚡ #34D399</span>
+      <span class="tok"><span class="sw" style="background: #F87171"></span>errore #F87171</span>
+      <span class="tok mono">campo 34 px · riga 48 px · raggio 8 · spazio 8/16</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+
+    <!-- 1 ACCORDION -->
+    <section class="cc">
+      <header class="ch"><span class="cn">01</span><h2>Intestazione di sezione</h2></header>
+      <div class="stage">
+        <div class="mini">
+          <div class="acc2"><svg class="ic" viewBox="0 0 24 24" style="color: #7F8890" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect></svg><b>Forma</b><span class="sm2">Rettangolo · 16 px</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #6B747C" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></div>
+          <div class="acc2" style="background: #171B1F"><svg class="ic" viewBox="0 0 24 24" style="color: #AEB5BD" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg><b>Colore</b><span class="sm2">■ #1E293B</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #AEB5BD" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></div>
+          <div class="acc2" style="border-bottom: 0"><svg class="ic" viewBox="0 0 24 24" style="color: #FFB27A" aria-hidden="true"><path d="M3 17c4 0 4-10 9-10s5 10 9 10"></path></svg><b>Comportamento</b><span class="sm2"></span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #6B747C" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></div>
+        </div>
+        <div class="states"><span>chiusa</span><span>passaggio</span><span>aperta</span></div>
+      </div>
+      <ul class="rules">
+        <li>Altezza 48 px; icona 16 px; nome 13 px semibold; riepilogo 12 px grigio, allineato a destra.</li>
+        <li><b>Chiusa</b> mostra il riepilogo; <b>aperta</b> nasconde il riepilogo e colora l'icona d'accento.</li>
+        <li>Sezioni <b>indipendenti</b>; <b>Alt+clic</b> apre solo questa. Studio ricorda lo stato per tipo di widget.</li>
+        <li>Tastiera: Invio/Spazio apre e chiude; freccia ↓ al titolo successivo.</li>
+      </ul>
+    </section>
+
+    <!-- 2 CAMPO NUMERICO -->
+    <section class="cc">
+      <header class="ch"><span class="cn">02</span><h2>Campo numerico</h2></header>
+      <div class="stage" style="gap: 10px">
+        <div class="row4">
+          <label class="fld"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16"></path><path d="M4 18h16" stroke-width="3.5"></path></svg>24<span class="u">px</span></label>
+          <label class="fld" style="cursor: ew-resize; background: #15191C"><svg class="ic" viewBox="0 0 24 24" style="color: #FFB27A" aria-hidden="true"><path d="M4 7h16M4 12h16"></path><path d="M4 18h16" stroke-width="3.5"></path></svg>27<span class="u">px</span></label>
+          <label class="fld" style="border-color: #FF9248; box-shadow: 0 0 0 3px rgba(255,146,72,.18)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16"></path><path d="M4 18h16" stroke-width="3.5"></path></svg>24|<span class="u">px</span></label>
+          <label class="fld" style="border-color: #F87171"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18a8 8 0 1 1 12 0"></path></svg>400<span class="u">°</span></label>
+        </div>
+        <div class="states" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><span>normale</span><span>trascini ↔</span><span>scrivi</span><span>fuori limite</span></div>
+        <span style="align-self: flex-end; margin-top: -4px; padding: 3px 8px; border-radius: 5px; background: #2A1414; border: 1px solid #5A2A2A; color: #FCA5A5; font-size: 11px">massimo 360°: torna a 360</span>
+      </div>
+      <ul class="rules">
+        <li>Icona o lettera a sinistra (X, L, ━, ◔): <b>trascinala</b> per cambiare il valore. Maiusc ×10, Alt ×0,1.</li>
+        <li>↑ ↓ ±1 (Maiusc ±10); Invio o Tab conferma, Esc annulla.</li>
+        <li>Unità grigia a destra; mai nell'etichetta. Fuori limite: bordo rosso, suggerimento, ritorna al limite all'uscita.</li>
+        <li>Stesso campo per angoli, spessori, durate, percentuali.</li>
+      </ul>
+    </section>
+
+    <!-- 3 GRUPPO DI ICONE -->
+    <section class="cc">
+      <header class="ch"><span class="cn">03</span><h2>Scelta a icone</h2></header>
+      <div class="stage" style="gap: 12px">
+        <div style="display: flex; gap: 16px; align-items: center; justify-content: center">
+          <div class="igrp" role="group" aria-label="Esempio">
+            <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg></button>
+            <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"></path><path d="M4 4v5h5"></path></svg></button>
+          </div>
+          <div style="position: relative">
+            <div class="igrp" role="group" aria-label="Esempio con etichette">
+              <button type="button" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h8V7h10"></path></svg>Salta</button>
+              <button type="button" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c6 0 6-10 18-10"></path></svg>Fluida</button>
+            </div>
+          </div>
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px">
+            <span style="padding: 3px 8px; border-radius: 5px; background: #E8EAED; color: #0B0D0F; font-size: 11px; font-weight: 600">Antiorario</span>
+            <span style="width: 34px; height: 30px; border-radius: 6px; background: #1D2227; color: #E8EAED; display: inline-flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"></path><path d="M4 4v5h5"></path></svg></span>
+          </div>
+        </div>
+        <div class="states" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><span>solo icone</span><span>icone + nome</span><span>tooltip al passaggio</span></div>
+      </div>
+      <ul class="rules">
+        <li>Scelta <b>singola</b> tra 2–5 opzioni. Sopra le 5 si usa una tendina.</li>
+        <li>Solo icone quando l'icona è inequivocabile; icona + nome quando le opzioni sono 2–3 o simili tra loro.</li>
+        <li>Selezionato: fondo #262B31, icona chiara. Il nome compare sempre come tooltip e per i lettori di schermo.</li>
+        <li>Tastiera: ← → spostano la scelta.</li>
+      </ul>
+    </section>
+
+    <!-- 4 ANGOLI -->
+    <section class="cc">
+      <header class="ch"><span class="cn">04</span><h2>Angoli</h2><span class="use">forma · card · copertina · barra</span></header>
+      <div class="stage" style="gap: 14px">
+        <div style="display: flex; gap: 8px; width: 100%">
+          <label class="fld" style="flex: 1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10a6 6 0 0 1 6-6h10"></path></svg>16<span class="u">px</span></label>
+          <button type="button" class="itg" aria-pressed="false" aria-label="Angoli singoli"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"></path></svg></button>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #6B747C; font-size: 11px"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>clic su ⧉: si apre</div>
+        <div style="display: grid; grid-template-columns: 76px 1fr 76px; grid-template-rows: 34px 64px 34px; gap: 8px; align-items: center; justify-items: center; width: 100%">
+          <label class="fld" style="width: 76px"><span class="k">⌜</span>16</label>
+          <span></span>
+          <label class="fld" style="width: 76px"><span class="k">⌝</span>4</label>
+          <span></span>
+          <div style="position: relative; width: 110px; height: 64px; border: 2px solid #FF9248; border-radius: 16px 4px 16px 4px; background: #1C1611">
+            <button type="button" class="itg" aria-pressed="true" aria-label="Torna ad angoli uguali" title="Torna ad angoli uguali" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 30px; height: 28px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H7a4 4 0 0 0 0 8h2M15 7h2a4 4 0 0 1 0 8h-2M8 11h8"></path></svg></button>
+            <span style="position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: #FF9248"></span>
+          </div>
+          <span></span>
+          <label class="fld" style="width: 76px"><span class="k">⌞</span>4</label>
+          <span></span>
+          <label class="fld" style="width: 76px"><span class="k">⌟</span>16</label>
+        </div>
+      </div>
+      <ul class="rules">
+        <li><b>Uguali</b>: un campo + interruttore ⧉. <b>Singoli</b>: quattro campi disposti agli angoli di una mini forma che mostra il risultato.</li>
+        <li>Il pallino sull'angolo della mini forma si trascina; il campo corrispondente si illumina.</li>
+        <li>🔗 al centro torna ad angoli uguali con il valore dell'angolo in alto a sinistra.</li>
+        <li>Il raggio non supera metà del lato più corto; oltre, il campo va in "fuori limite".</li>
+      </ul>
+    </section>
+
+    <!-- 5 COLORE -->
+    <section class="cc">
+      <header class="ch"><span class="cn">05</span><h2>Colore</h2></header>
+      <div class="stage" style="flex-direction: row; align-items: flex-start; gap: 14px">
+        <div style="flex: 0 0 150px; display: flex; flex-direction: column; gap: 8px">
+          <label class="fld" style="border-color: #FF9248"><span class="sw" style="width: 16px; height: 16px; background: #38BDF8"></span>#38BDF8<span class="u">100%</span></label>
+          <span style="font-size: 11px; color: #6B747C">clic sul campione → si apre</span>
+        </div>
+        <div class="pop">
+          <div class="igrp wide" role="group" aria-label="Tipo"><button type="button" aria-pressed="true">Pieno</button><button type="button" aria-pressed="false">Sfumatura</button></div>
+          <div style="height: 92px; border-radius: 8px; background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, #38BDF8); position: relative"><span style="position: absolute; left: 78%; top: 24%; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.4)"></span></div>
+          <div style="height: 10px; border-radius: 5px; background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); position: relative"><span style="position: absolute; left: 54%; top: -3px; width: 6px; height: 16px; border-radius: 3px; background: #fff"></span></div>
+          <div style="height: 10px; border-radius: 5px; background: linear-gradient(90deg, transparent, #38BDF8), repeating-conic-gradient(#2A3036 0 25%, #1A1E22 0 50%) 0 0 / 8px 8px"></div>
+          <div style="display: flex; gap: 6px; align-items: center"><label class="fld" style="flex: 1; height: 30px">#38BDF8</label><label class="fld" style="width: 60px; height: 30px">100%</label><button type="button" class="itg" aria-label="Contagocce" style="width: 30px; height: 30px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 4 6 6-9 9H5v-6z"></path><path d="m12 6 6 6"></path></svg></button></div>
+          <div style="display: flex; gap: 5px"><span class="sw" style="background: #38BDF8"></span><span class="sw" style="background: #A78BFA"></span><span class="sw" style="background: #F472B6"></span><span class="sw" style="background: #FB923C"></span><span class="sw" style="background: #34D399"></span><span class="sw" style="background: #E8EAED"></span><span style="font-size: 11px; color: #6B747C; margin-left: 4px; align-self: center">del tema</span></div>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>Nel pannello resta un solo campo: campione + codice + opacità. Il selettore si apre in un popover vicino.</li>
+        <li><b>Pieno / Sfumatura</b> in cima al popover; "Sfumatura" aggiunge due capi e il punto di metà.</li>
+        <li>Contagocce e colori già usati nel tema per restare coerenti. Esc chiude senza perdere la scelta fatta.</li>
+      </ul>
+    </section>
+
+    <!-- 6 SENSORE ⚡ -->
+    <section class="cc">
+      <header class="ch"><span class="cn">06</span><h2>⚡ Collega a un sensore</h2></header>
+      <div class="stage" style="gap: 10px">
+        <div style="display: flex; gap: 14px; justify-content: center">
+          <button type="button" class="bolt" aria-label="Collega"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+          <button type="button" class="bolt" aria-label="Collega" style="border-color: #1F4D3B; color: #6EE7B7"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+          <button type="button" class="bolt" aria-label="Collegato" style="background: #10261C; border-color: #1F4D3B; color: #6EE7B7"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></button>
+        </div>
+        <div class="states" style="grid-template-columns: repeat(3, 1fr); width: 156px; align-self: center"><span>libero</span><span>passaggio</span><span>collegato</span></div>
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: #0F1A15; border: 1px solid #1F4D3B; box-sizing: border-box">
+          <div style="display: flex; align-items: center; gap: 8px"><svg class="ic" viewBox="0 0 24 24" style="color: #6EE7B7" aria-hidden="true"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg><b>Temperatura CPU</b><span class="mono" style="margin-left: auto; color: #8B939C">62 °C</span></div>
+          <div style="display: flex; align-items: center; gap: 8px"><label class="fld" style="width: 74px; height: 30px"><span class="k">da</span>40°</label><span style="flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #38BDF8, #EF4444); position: relative"><span style="position: absolute; left: 44%; top: -4px; width: 2px; height: 14px; background: #E8EAED"></span></span><label class="fld" style="width: 74px; height: 30px"><span class="k">a</span>90°</label></div>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>Sta accanto ai soli campi che possono seguire un dato: colore, opacità, rotazione.</li>
+        <li>Clic su ⚡ libero: scegli il sensore. Acceso: sotto il campo compare la regola (intervallo e valori agli estremi); il campo mostra "segue il sensore".</li>
+        <li>Clic su ⚡ acceso: menu Modifica · Scollega. Sostituisce "colore in base al valore" e "ruota con il sensore".</li>
+      </ul>
+    </section>
+
+    <!-- 7 TRASPARENZA -->
+    <section class="cc">
+      <header class="ch"><span class="cn">07</span><h2>Trasparenza</h2><span class="use">forma · card · immagine · copertina</span></header>
+      <div class="stage" style="gap: 12px">
+        <div class="igrp wide" role="group" aria-label="Trasparenza"><button type="button" aria-pressed="false">Nessuna</button><button type="button" aria-pressed="true">Lineare</button><button type="button" aria-pressed="false">Radiale</button></div>
+        <div style="display: flex; gap: 16px; width: 100%">
+          <div style="flex: 1; display: flex; gap: 10px; align-items: center">
+            <div style="position: relative; width: 72px; height: 72px; flex: none; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(#1A1E22 0 25%, #121518 0 50%) 0 0 / 10px 10px"><div style="position: absolute; inset: 0; background: linear-gradient(135deg, #DB2777, rgba(219,39,119,0))"></div><svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true" style="position: absolute; inset: 0"><path d="M16 16 56 56" stroke="#E8EAED" stroke-width="1.5"></path><circle cx="16" cy="16" r="4" fill="#E8EAED"></circle><path d="M48 56h8v-8" fill="none" stroke="#E8EAED" stroke-width="1.5" stroke-linecap="round"></path></svg></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: #8B939C"><span>direzione 45°</span><span>metà 50%</span><span>da 100% a 0%</span></div>
+          </div>
+          <div style="flex: 1; display: flex; gap: 10px; align-items: center">
+            <div style="position: relative; width: 72px; height: 72px; flex: none; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(#1A1E22 0 25%, #121518 0 50%) 0 0 / 10px 10px"><div style="position: absolute; inset: 0; background: radial-gradient(circle at 40% 45%, #DB2777 0, rgba(219,39,119,0) 60%)"></div><svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true" style="position: absolute; inset: 0"><circle cx="29" cy="32" r="22" fill="none" stroke="#E8EAED" stroke-width="1" stroke-dasharray="3 3"></circle><circle cx="29" cy="32" r="4" fill="#E8EAED"></circle></svg></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: #8B939C"><span>centro 40%, 45%</span><span>raggio 60%</span><span>da 100% a 0%</span></div>
+          </div>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>Tre scelte; con Lineare o Radiale compare l'anteprima su scacchiera con le maniglie.</li>
+        <li><b>Lineare</b>: trascina la freccia (direzione e lunghezza); campi direzione, metà, da/a. <b>Radiale</b>: trascina il centro e il cerchio (raggio).</li>
+        <li>Stesso componente ovunque si possa sfumare, anche solo su una parte dell'oggetto, come la copertina.</li>
+      </ul>
+    </section>
+
+    <!-- 8 IMMAGINE -->
+    <section class="cc">
+      <header class="ch"><span class="cn">08</span><h2>Immagine</h2><span class="use">forma · card · sfondo</span></header>
+      <div class="stage" style="gap: 10px">
+        <button type="button" style="width: 100%; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 9px; border: 1px dashed #3A4149; background: transparent; color: #AEB5BD; font: inherit; font-size: 12.5px; cursor: pointer"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m21 16-5-5-8 8"></path></svg>Scegli un'immagine<span style="margin-left: auto; font-size: 11px; color: #6B747C">PNG · JPG · GIF · SVG</span></button>
+        <div style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; border: 1px solid #262B31; background: #15191C; box-sizing: border-box">
+          <span style="width: 40px; height: 40px; border-radius: 6px; flex: none; background-color: #0B0D0F; background-image: radial-gradient(#3A4149 1.2px, transparent 1.4px); background-size: 8px 8px"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><b style="font-weight: 600">dots-20-dark.svg</b><span class="mono" style="font-size: 11px; color: #6B747C">SVG · 20×20</span></span>
+          <button type="button" class="ib" aria-label="Rimuovi immagine"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+        </div>
+        <div class="igrp wide" role="group" aria-label="Ripetizione">
+          <button type="button" aria-pressed="false" title="Riempi"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 5l18 14M21 5 3 19"></path></svg></button>
+          <button type="button" aria-pressed="false" title="Adatta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><rect x="8" y="7" width="8" height="10"></rect></svg></button>
+          <button type="button" aria-pressed="false" title="Allunga"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 12h10M9 10l-2 2 2 2M15 10l2 2-2 2"></path></svg></button>
+          <button type="button" aria-pressed="false" title="Centra"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><rect x="10" y="10" width="4" height="4"></rect></svg></button>
+          <button type="button" aria-pressed="true" title="Affianca"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg></button>
+          <button type="button" aria-pressed="false" title="Affianca in orizzontale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9h6v6H2zM9 9h6v6H9zM16 9h6v6h-6z"></path></svg></button>
+          <button type="button" aria-pressed="false" title="Affianca in verticale"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v6H9zM9 9h6v6H9zM9 16h6v6H9z"></path></svg></button>
+        </div>
+        <div style="display: flex; gap: 8px; width: 100%"><label class="fld" style="flex: 1"><span class="k">scala</span>100<span class="u">%</span></label><label class="fld" style="flex: 1"><span class="k">X</span>0</label><label class="fld" style="flex: 1"><span class="k">Y</span>0</label></div>
+      </div>
+      <ul class="rules">
+        <li>Vuota: riquadro tratteggiato con i formati. Piena: miniatura, nome, tipo e misure, ✕ per togliere.</li>
+        <li>Ripetizione a 7 icone con nome nel tooltip. Scala e spostamento compaiono solo con Centra e Affianca.</li>
+        <li>Si può trascinare un file dal pannello Media o da Esplora risorse direttamente sul componente.</li>
+      </ul>
+    </section>
+
+    <!-- 9 SENSORE PICKER -->
+    <section class="cc">
+      <header class="ch"><span class="cn">09</span><h2>Scelta del sensore</h2></header>
+      <div class="stage" style="gap: 10px">
+        <button type="button" class="sens"><span class="sdot" style="background: #38BDF8"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Utilizzo CPU</span><span class="mono" style="font-size: 11px; color: #6B747C">cpu.usage</span></span><span class="mono" style="font-weight: 600">44%</span><svg class="ic" viewBox="0 0 24 24" style="width: 12px; height: 12px; color: #6B747C" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <div class="pop" style="width: 100%; box-sizing: border-box">
+          <label class="fld" style="height: 32px; font-family: inherit"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span style="color: #6B747C">Cerca: temp, ventola…</span></label>
+          <div style="display: flex; gap: 5px"><span class="chipb" aria-pressed="true" style="height: 24px; font-size: 11.5px">Tutti</span><span class="chipb" style="height: 24px; font-size: 11.5px">CPU</span><span class="chipb" style="height: 24px; font-size: 11.5px">GPU</span><span class="chipb" style="height: 24px; font-size: 11.5px">Rete</span></div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; background: #1F1813"><span style="flex: 1">Utilizzo CPU</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M0 9 L8 6 L16 8 L24 3 L32 5 L40 2" fill="none" stroke="#38BDF8" stroke-width="1.5"></path></svg><span class="mono">44%</span></div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px"><span style="flex: 1">Temperatura CPU</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M0 7 L10 7 L20 6 L30 6 L40 5" fill="none" stroke="#38BDF8" stroke-width="1.5"></path></svg><span class="mono">62°</span></div>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>Nel pannello: nome, chiave, valore dal vivo. Il clic apre la lista con ricerca, filtri e mini grafici.</li>
+        <li>Lo stesso selettore serve ovunque si sceglie un sensore: Dati, serie sotto, ⚡.</li>
+        <li>Sensori non disponibili: in lista con valore "—" e motivo nel tooltip.</li>
+      </ul>
+    </section>
+
+    <!-- 10 STILE CON ANTEPRIMA -->
+    <section class="cc">
+      <header class="ch"><span class="cn">10</span><h2>Scelta con anteprima</h2></header>
+      <div class="stage">
+        <div class="els" style="grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%">
+          <button type="button" class="el" aria-pressed="false"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M1 16 L8 11 L14 13 L21 5 L31 8" fill="none" stroke="currentColor" stroke-width="2"></path></svg>Linea</button>
+          <button type="button" class="el" aria-pressed="true"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M1 16 L8 11 L14 13 L21 5 L31 8 V20 H1 Z" fill="currentColor" fill-opacity=".3"></path><path d="M1 16 L8 11 L14 13 L21 5 L31 8" fill="none" stroke="currentColor" stroke-width="2"></path></svg>Area</button>
+          <button type="button" class="el" aria-pressed="false"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true"><path d="M2 20V12h5v8M10 20V7h5v13M18 20V10h5v10M26 20V4h5v16" fill="currentColor"></path></svg>Barre</button>
+          <button type="button" class="el" aria-pressed="false" disabled style="opacity: .4; cursor: not-allowed"><svg viewBox="0 0 32 20" width="32" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="12" width="5" height="8" rx="2.5"></rect><rect x="10" y="7" width="5" height="13" rx="2.5"></rect><rect x="18" y="10" width="5" height="10" rx="2.5"></rect><rect x="26" y="4" width="5" height="16" rx="2.5"></rect></svg>Arrotond.</button>
+        </div>
+        <div class="states" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><span>normale</span><span>scelto</span><span>normale</span><span>non disponibile</span></div>
+      </div>
+      <ul class="rules">
+        <li>Per scelte che cambiano molto l'aspetto (stile, effetto, elementi visibili): disegno in miniatura + nome sotto.</li>
+        <li>3–4 per riga; scelto con bordo e colore d'accento. Non disponibile: attenuato, motivo nel tooltip.</li>
+        <li>Variante a selezione multipla per "Cosa mostrare" del player (più riquadri accesi insieme).</li>
+      </ul>
+    </section>
+
+    <!-- 11 DIMENSIONE -->
+    <section class="cc">
+      <header class="ch"><span class="cn">11</span><h2>Dimensione</h2></header>
+      <div class="stage" style="gap: 12px">
+        <div style="display: flex; align-items: center; gap: 6px; width: 100%">
+          <label class="fld" style="flex: 1"><span class="k">L</span>300<span class="u">px</span></label>
+          <button type="button" class="ib" aria-pressed="true" aria-label="Mantieni le proporzioni" style="color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H7a4 4 0 0 0 0 8h2M15 7h2a4 4 0 0 1 0 8h-2M8 11h8"></path></svg></button>
+          <label class="fld" style="flex: 1"><span class="k">A</span>300<span class="u">px</span></label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; width: 100%">
+          <label class="fld" style="flex: 1"><span class="k">L</span>300<span class="u">px</span></label>
+          <button type="button" class="ib" aria-pressed="false" aria-label="Proporzioni libere"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H7a4 4 0 0 0 0 8h2M15 7h2a4 4 0 0 1 0 8h-2"></path></svg></button>
+          <label class="fld" style="flex: 1"><span class="k">A</span>180<span class="u">px</span></label>
+        </div>
+        <div class="states" style="grid-template-columns: 1fr 1fr"><span>proporzioni bloccate</span><span>libere</span></div>
+      </div>
+      <ul class="rules">
+        <li>🔗 acceso: cambiare L aggiorna A in proporzione (e viceversa). Spento: indipendenti.</li>
+        <li>Anello e immagini partono bloccati; testi e forme liberi. Maiusc mentre trascini la maniglia sul canvas fa lo stesso.</li>
+      </ul>
+    </section>
+
+    <!-- 12 INTESTAZIONE OGGETTO -->
+    <section class="cc">
+      <header class="ch"><span class="cn">12</span><h2>Intestazione dell'oggetto</h2></header>
+      <div class="stage">
+        <div style="width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 8px 12px 12px; border-radius: 10px; background: #0E1013; border: 1px solid #1D2227; box-sizing: border-box">
+          <svg viewBox="0 0 100 100" width="60" height="60" aria-hidden="true" style="flex: none"><circle cx="50" cy="50" r="38" fill="none" stroke="#1B1F23" stroke-width="10" stroke-dasharray="179 239" transform="rotate(135 50 50)"></circle><circle cx="50" cy="50" r="38" fill="none" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" stroke-dasharray="70 239" transform="rotate(135 50 50)"></circle></svg>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 2px"><b style="flex: 1; font-size: 14px">CPU</b><button type="button" class="ib" aria-label="Prova" style="width: 34px; height: 34px"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg></button><button type="button" class="ib" aria-label="Altre azioni"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button></div>
+            <span style="display: flex; align-items: baseline"><span class="mono" style="font-size: 20px; font-weight: 600">44%</span><span style="margin-left: auto; padding-right: 9px; font-size: 11.5px; color: #6EE7B7">● dal vivo</span></span>
+          </div>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>Anteprima 72 px (o miniatura del player/card/grafico), nome modificabile con doppio clic, valore attuale.</li>
+        <li><b>▶</b> prova: anello/barra/lancetta al 100% e ritorno; grafico con valori d'esempio; card alla faccia successiva; player con un brano simulato.</li>
+        <li>"● dal vivo" allineato al bordo dei ⋯; diventa grigio "in pausa" se i sensori sono fermi.</li>
+      </ul>
+    </section>
+
+  </div>
+</div>
+
+
+</body>
+</html>

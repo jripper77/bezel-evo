@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Schermo — impostazioni e archivio</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D0F}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.panel{display:flex;flex-direction:column;border-radius:14px;border:1px solid #23282E;background:#121518;overflow:hidden;font-size:13px;color:#E8EAED}
+.ib{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#8B939C;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.acc{display:flex;align-items:center;gap:10px;width:100%;height:48px;padding:0 14px;border:0;border-top:1px solid #1D2227;background:transparent;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.acc .nm{font-weight:600}
+.acc .ico{color:#FFB27A}
+.acc .chev{margin-left:auto;color:#6B747C;width:12px;height:12px}
+.body{display:flex;flex-direction:column;gap:16px;padding:2px 16px 20px}
+.lbl{font-size:12px;color:#8B939C;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lbl .r{margin-left:auto;font-size:11px;color:#6B747C}
+.fld{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #262B31;background:#0F1214;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EAED;box-sizing:border-box;min-width:0}
+.fld .ic{color:#6B747C;width:15px;height:15px}
+.fld .k{color:#6B747C;font-size:12px}
+.fld .u{color:#6B747C;font-size:11.5px;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#AEB5BD;font:inherit;font-size:11.5px;cursor:pointer}
+.st[aria-pressed="true"]{border-color:#FF9248;background:#1C1611;color:#FFB27A}
+.igrp{display:flex;padding:2px;border-radius:8px;background:#0F1214;border:1px solid #1D2227}
+.igrp button{min-width:34px;height:30px;border:0;border-radius:6px;background:transparent;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 8px;font:inherit;font-size:12px}
+.igrp button[aria-pressed="true"]{background:#262B31;color:#E8EAED}
+.igrp.wide{width:100%;box-sizing:border-box}
+.igrp.wide button{flex:1}
+.itg{width:36px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.itg[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.bolt{width:34px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#4A525A;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.hint{margin:0;font-size:11.5px;line-height:1.45;color:#6B747C}
+.sep{height:1px;background:#1D2227;margin:2px 0}
+.chipb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #262B31;background:transparent;color:#AEB5BD;font:inherit;font-size:12.5px;cursor:pointer}
+.chipb[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.el{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#6B747C;font:inherit;font-size:11px;cursor:pointer}
+.el[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.frow{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 6px 6px 8px;border-radius:10px;border:1px solid #23282E;background:#15191C;box-sizing:border-box}
+.mrow{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border-radius:9px;border:1px solid #23282E;background:#15191C;color:#E8EAED;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.mrow .ic{color:#8B939C}
+.vsw{padding:12px 14px;border-top:1px solid #1D2227}
+</style>
+
+<div style="width: 880px; box-sizing: border-box; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start; background: #0B0D0F; color: #E8EAED; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+
+  <!-- IMPOSTAZIONI -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span class="mono" style="font-size: 12px; color: #FFB27A; letter-spacing: .06em">SCHERMO · IMPOSTAZIONI</span>
+    <div class="panel">
+      <div style="display: flex; align-items: center; gap: 14px; padding: 14px 10px 14px 14px; background: #0E1013">
+        <div style="width: 72px; height: 72px; flex: none; border-radius: 10px; background: #15191C; border: 1px solid #23282E; display: flex; align-items: center; justify-content: center"><span style="width: 22px; height: 52px; border-radius: 4px; border: 2px solid #E8EAED; padding: 3px; box-sizing: border-box; display: flex"><span style="flex: 1; border-radius: 1px; background: #FF9248"></span></span></div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 2px">
+            <strong style="font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Turing Smart Screen 8.8″</strong>
+            <button type="button" class="ib" aria-label="Azioni sullo schermo" title="Restituisci il controllo, riavvia lo schermo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+          <span style="display: flex; align-items: baseline; gap: 8px"><span class="mono" style="font-size: 12px; color: #8B939C; white-space: nowrap">COM6 · 480×1920 · rev C</span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #6EE7B7; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34D399"></span>in diretta</span></span>
+        </div>
+      </div>
+
+      <div class="vsw"><div class="igrp wide" role="tablist" aria-label="Vista"><button type="button" role="tab" aria-selected="true" aria-pressed="true">Impostazioni</button><button type="button" role="tab" aria-selected="false" aria-pressed="false">Archivio</button></div></div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg><span class="nm">Schermo</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body">
+        <div>
+          <p class="lbl">Luminosità</p>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <div style="flex: 1; position: relative; height: 18px; display: flex; align-items: center"><div style="width: 100%; height: 4px; border-radius: 2px; background: #23282E"><div style="width: 70%; height: 100%; border-radius: 2px; background: #FF9248"></div></div><span style="position: absolute; left: calc(70% - 7px); width: 14px; height: 14px; border-radius: 50%; background: #E8EAED"></span></div>
+            <label class="fld" style="width: 78px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v1M12 20v1M3 12h1M20 12h1"></path></svg>70<span class="u">%</span></label>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <button type="button" class="itg" aria-pressed="true" aria-label="Avvia con il computer" title="Avvia con il computer"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"></path></svg></button>
+          <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.35"><span style="font-weight: 500">Avvia con il computer</span><span style="font-size: 11.5px; color: #8B939C">nella tray, con l'ultimo tema già in diretta</span></span>
+        </div>
+      </div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path><path d="M9 10h6" ></path></svg><span class="nm">Allo spegnimento del PC</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body">
+        <div class="els" role="radiogroup" aria-label="Allo spegnimento" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+          <button type="button" class="el" aria-pressed="false" title="Lo schermo continua a mostrare l'ultima immagine"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M8 11h8"></path></svg>Lascia com'è</button>
+          <button type="button" class="el" aria-pressed="true" title="Bezel lo spegne"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2" fill="currentColor" fill-opacity=".2"></rect><path d="M12 8v4"></path></svg>Spegni</button>
+          <button type="button" class="el" aria-pressed="false" disabled title="Nessuna scheda SD nello schermo" style="opacity: .4; cursor: not-allowed"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m21 16-5-5-8 8"></path></svg>Album foto</button>
+          <button type="button" class="el" aria-pressed="false" title="Un video salvato sullo schermo, in loop"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m10 9 5 3-5 3z" fill="currentColor"></path></svg>Video</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: #15191C; border: 1px solid #23282E">
+          <span style="font-size: 12.5px; color: #D5D9DE"><b style="font-weight: 600">Spegni lo schermo</b> quando il computer si spegne.</span>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="flex: 1; font-size: 12px; color: #8B939C">Se Bezel non risponde, si spegne da solo dopo</span>
+            <label class="fld" style="width: 86px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path></svg>5<span class="u">min</span></label>
+          </div>
+          <span style="font-size: 11.5px; color: #6B747C">Album foto: nessuna scheda SD nello schermo.</span>
+        </div>
+        <button type="button" style="height: 38px; border-radius: 9px; border: 0; background: #FF9248; color: #1A0E05; font: inherit; font-weight: 700; cursor: pointer">Scrivi sullo schermo</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 14px; border-top: 1px solid #1D2227; font-size: 11.5px; line-height: 1.45; color: #6B747C">
+        <svg class="ic" viewBox="0 0 24 24" style="flex: none; margin-top: 1px" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>
+        <span>"Restituisci il controllo" e "Riavvia lo schermo…" sono nel menu ⋯ dell'intestazione, con conferma.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHIVIO -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span class="mono" style="font-size: 12px; color: #FFB27A; letter-spacing: .06em">SCHERMO · ARCHIVIO</span>
+    <div class="panel">
+      <div style="display: flex; align-items: center; gap: 14px; padding: 14px 10px 14px 14px; background: #0E1013">
+        <div style="width: 72px; height: 72px; flex: none; border-radius: 10px; background: #15191C; border: 1px solid #23282E; display: flex; align-items: center; justify-content: center"><span style="width: 22px; height: 52px; border-radius: 4px; border: 2px solid #E8EAED; padding: 3px; box-sizing: border-box; display: flex"><span style="flex: 1; border-radius: 1px; background: #FF9248"></span></span></div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 2px">
+            <strong style="font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Turing Smart Screen 8.8″</strong>
+            <button type="button" class="ib" aria-label="Azioni sullo schermo" title="Restituisci il controllo, riavvia lo schermo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+          <span style="display: flex; align-items: baseline; gap: 8px"><span class="mono" style="font-size: 12px; color: #8B939C; white-space: nowrap">COM6 · 480×1920 · rev C</span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #6EE7B7; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34D399"></span>in diretta</span></span>
+        </div>
+      </div>
+
+      <div class="vsw"><div class="igrp wide" role="tablist" aria-label="Vista"><button type="button" role="tab" aria-selected="false" aria-pressed="false">Impostazioni</button><button type="button" role="tab" aria-selected="true" aria-pressed="true">Archivio</button></div></div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"></ellipse><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg><span class="nm">Spazio</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body" style="gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px"><span>Memoria interna</span><span class="mono" style="color: #8B939C">19,1 MB / 7,5 GB</span></div>
+          <div style="height: 6px; border-radius: 3px; background: #23282E; display: flex; overflow: hidden"><span style="width: 2%; background: #38BDF8"></span><span style="width: 1%; background: #FB923C"></span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; opacity: .5">
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px"><span>Scheda SD</span><span style="font-size: 11.5px; color: #8B939C">non inserita</span></div>
+          <div style="height: 6px; border-radius: 3px; background: #23282E"></div>
+        </div>
+        <div style="display: flex; gap: 12px; font-size: 11px; color: #8B939C"><span style="display: inline-flex; align-items: center; gap: 5px"><i style="width: 8px; height: 8px; border-radius: 2px; background: #38BDF8"></i>video</span><span style="display: inline-flex; align-items: center; gap: 5px"><i style="width: 8px; height: 8px; border-radius: 2px; background: #FB923C"></i>immagini</span><span style="margin-left: auto; color: #6EE7B7">ffmpeg pronto</span></div>
+      </div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"></path></svg><span class="nm">All'accensione</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; border: 1.5px dashed #3A4149; background: #101316">
+          <span style="width: 36px; height: 36px; border-radius: 8px; background: #1D2227; color: #AEB5BD; display: flex; align-items: center; justify-content: center; flex: none"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></span>
+          <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.35"><span style="font-weight: 500">L'orologio dello schermo</span><span style="font-size: 11.5px; color: #8B939C">trascina qui un file per cambiarlo</span></span>
+        </div>
+      </div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h10l6 6v10H4z"></path><path d="M14 4v6h6"></path></svg><span class="nm">File</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body" style="gap: 10px">
+        <div style="display: flex; gap: 8px">
+          <label class="fld" style="flex: 1; font-family: inherit"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span style="color: #6B747C">Cerca un file</span></label>
+          <button type="button" class="itg" aria-label="Filtri e ordinamento" title="Tipo, origine, ordine"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg></button>
+          <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 0; background: #FF9248; color: #1A0E05; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"></path></svg>Invia</button>
+        </div>
+        <div class="igrp wide" role="group" aria-label="Dove"><button type="button" aria-pressed="true">Tutti · 2</button><button type="button" aria-pressed="false">Interna</button><button type="button" aria-pressed="false" disabled style="opacity: .4">Scheda SD</button></div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div class="frow">
+            <span style="width: 40px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #16A34A, #065F46); flex: none"></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 500">amd_90.mp4</span><span style="font-size: 11px; color: #6B747C"><span class="mono" style="padding: 0 4px; border-radius: 3px; background: #1D2227; color: #AEB5BD">INT</span> 18,9 MB · video</span></span>
+            <button type="button" class="ib" aria-label="Azioni sul file"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+          <div class="frow">
+            <span style="width: 40px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #1E3A8A, #0EA5E9); flex: none"></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 500">logo.png</span><span style="font-size: 11px; color: #6B747C"><span class="mono" style="padding: 0 4px; border-radius: 3px; background: #1D2227; color: #AEB5BD">INT</span> 184 KB · immagine</span></span>
+            <button type="button" class="ib" aria-label="Azioni sul file"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+        </div>
+        <p class="hint">Il menu ⋯ del file: riproduci, mostra all'accensione, sposta o copia, rinomina, elimina. Trascina un file sul riquadro "All'accensione" per usarlo all'avvio.</p>
+      </div>
+
+      <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"></path></svg><span class="nm">Manutenzione</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+      <div class="body" style="gap: 8px">
+        <button type="button" class="mrow"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg><span style="flex: 1">Assistente pulizia</span><span style="font-size: 11.5px; color: #6B747C">nessun suggerimento</span></button>
+        <button type="button" class="mrow"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="12" height="12" rx="2"></rect><path d="M8 20h10a2 2 0 0 0 2-2V8"></path></svg><span style="flex: 1">Copie locali</span><span class="mono" style="font-size: 11.5px; color: #6B747C">19,1 MB</span></button>
+        <button type="button" class="mrow"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7"></path></svg><span style="flex: 1">Apri l'archivio a tutto schermo</span><span style="font-size: 11.5px; color: #6B747C">per spostare molti file</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

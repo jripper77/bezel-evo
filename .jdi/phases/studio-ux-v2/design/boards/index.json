@@ -1,0 +1,152 @@
+{
+  "BarInspectorOpen": {
+    "title": "Barra — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2300
+  },
+  "CanvasHandles": {
+    "title": "Maniglie sul canvas — per ogni oggetto",
+    "width": 1500,
+    "height": 1420
+  },
+  "CardInspectorOpen": {
+    "title": "Card — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2700
+  },
+  "ClockInspectorOpen": {
+    "title": "Orologio — digitale e analogico (nuovo)",
+    "width": 880,
+    "height": 2700
+  },
+  "Connect": {
+    "title": "Primo avvio — nessuno schermo",
+    "width": 1440,
+    "height": 900
+  },
+  "DeviceBoot": {
+    "title": "Display — schermata di caricamento 1920×480",
+    "width": 1920,
+    "height": 480
+  },
+  "GraphInspectorOpen": {
+    "title": "Grafico — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2100
+  },
+  "ImageInspectorOpen": {
+    "title": "Immagine, GIF e video — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2100
+  },
+  "InspectorComponents": {
+    "title": "Componenti dell'inspector — specifiche",
+    "width": 1720,
+    "height": 2400
+  },
+  "LibraryPanelsNew": {
+    "title": "Sensori, Livelli e Media — nuovo schema",
+    "width": 1360,
+    "height": 1700
+  },
+  "Logo": {
+    "title": "Logo e icona app",
+    "width": 1280,
+    "height": 720
+  },
+  "MainNew": {
+    "title": "Editor — nuovo stile (anello selezionato)",
+    "width": 1440,
+    "height": 900
+  },
+  "MultiInspectorOpen": {
+    "title": "Più oggetti selezionati",
+    "width": 440,
+    "height": 1500
+  },
+  "NeedleInspectorOpen": {
+    "title": "Lancetta — tutte le sezioni aperte",
+    "width": 440,
+    "height": 3000
+  },
+  "PlayerInspectorOpen": {
+    "title": "Media player — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2780
+  },
+  "ProfilesNew": {
+    "title": "Profili e automazioni — nuovo schema",
+    "width": 1080,
+    "height": 1500
+  },
+  "RingInspectorOpen": {
+    "title": "Anello — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2000
+  },
+  "ScreenPanelsOpen": {
+    "title": "Schermo — Impostazioni e Archivio (nuovo schema)",
+    "width": 880,
+    "height": 1560
+  },
+  "ShapeInspectorOpen": {
+    "title": "Forma — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2300
+  },
+  "SpectrumInspectorOpen": {
+    "title": "Spettro audio — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2500
+  },
+  "StatusBarNew": {
+    "title": "Barra di stato di Studio — nuovo schema",
+    "width": 1440,
+    "height": 1240
+  },
+  "ThemeInspectorOpen": {
+    "title": "Tema (nessuna selezione) — aperto e chiuso",
+    "width": 880,
+    "height": 1000
+  },
+  "ThemeNebula": {
+    "title": "Tema · Nebula",
+    "width": 1920,
+    "height": 480
+  },
+  "ThemeNowPlaying": {
+    "title": "Tema · Now Playing",
+    "width": 1920,
+    "height": 480
+  },
+  "ThemePaper": {
+    "title": "Tema · Carta",
+    "width": 1920,
+    "height": 480
+  },
+  "ThemePixel": {
+    "title": "Tema · Pixel",
+    "width": 1920,
+    "height": 480
+  },
+  "ThemesNew": {
+    "title": "Galleria temi — nuovo schema",
+    "width": 1260,
+    "height": 900
+  },
+  "ValueInspectorOpen": {
+    "title": "Valore e testo fisso — tutte le sezioni aperte",
+    "width": 880,
+    "height": 2900
+  },
+  "WeatherAnimations": {
+    "title": "Meteo — icone animate (nuovo)",
+    "width": 1360,
+    "height": 860
+  },
+  "WeatherInspectorOpen": {
+    "title": "Meteo — tutte le sezioni aperte",
+    "width": 440,
+    "height": 2600
+  }
+}

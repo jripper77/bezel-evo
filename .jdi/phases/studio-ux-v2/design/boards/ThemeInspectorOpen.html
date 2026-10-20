@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Tema — inspector</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D0F}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.panel{display:flex;flex-direction:column;border-radius:14px;border:1px solid #23282E;background:#121518;overflow:hidden;font-size:13px;color:#E8EAED}
+.ib{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#8B939C;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.acc{display:flex;align-items:center;gap:10px;width:100%;height:48px;padding:0 14px;border:0;border-top:1px solid #1D2227;background:transparent;color:#E8EAED;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.acc .nm{font-weight:600}
+.acc .ico{color:#FFB27A}
+.acc .chev{margin-left:auto;color:#6B747C;width:12px;height:12px}
+.body{display:flex;flex-direction:column;gap:16px;padding:2px 16px 20px}
+.lbl{font-size:12px;color:#8B939C;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lbl .r{margin-left:auto;font-size:11px;color:#6B747C}
+.fld{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #262B31;background:#0F1214;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EAED;box-sizing:border-box;min-width:0}
+.fld .ic{color:#6B747C;width:15px;height:15px}
+.fld .k{color:#6B747C;font-size:12px}
+.fld .u{color:#6B747C;font-size:11.5px;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:10px;border:1px solid #262B31;background:#15191C;color:#AEB5BD;font:inherit;font-size:11.5px;cursor:pointer}
+.st[aria-pressed="true"]{border-color:#FF9248;background:#1C1611;color:#FFB27A}
+.igrp{display:flex;padding:2px;border-radius:8px;background:#0F1214;border:1px solid #1D2227}
+.igrp button{min-width:34px;height:30px;border:0;border-radius:6px;background:transparent;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 8px;font:inherit;font-size:12px}
+.igrp button[aria-pressed="true"]{background:#262B31;color:#E8EAED}
+.igrp.wide{width:100%;box-sizing:border-box}
+.igrp.wide button{flex:1}
+.itg{width:36px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#7F8890;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.itg[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.bolt{width:34px;height:34px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#4A525A;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.hint{margin:0;font-size:11.5px;line-height:1.45;color:#6B747C}
+.sep{height:1px;background:#1D2227;margin:2px 0}
+.chipb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #262B31;background:transparent;color:#AEB5BD;font:inherit;font-size:12.5px;cursor:pointer}
+.chipb[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.el{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:8px;border:1px solid #262B31;background:#0F1214;color:#6B747C;font:inherit;font-size:11px;cursor:pointer}
+.el[aria-pressed="true"]{border-color:#4A3424;background:#1F1813;color:#FFB27A}
+</style>
+
+<div style="width: 880px; box-sizing: border-box; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; background: #0B0D0F; color: #E8EAED; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span class="mono" style="font-size: 12px; color: #FFB27A; letter-spacing: .06em">TEMA · TUTTO APERTO</span>
+    <div class="panel">
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 14px 10px 14px 14px; background: #0E1013">
+        <div style="margin-right: 4px; height: 82px; border-radius: 8px; background: #000; border: 1px solid #23282E; position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px; box-sizing: border-box">
+          <span class="mono" style="font-size: 26px; font-weight: 600; letter-spacing: -.02em">21:47</span>
+          <span style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: flex; align-items: flex-end; padding: 4px; gap: 2px; box-sizing: border-box"><i style="flex: 1; height: 5px; background: #FF9248"></i><i style="flex: 1; height: 5px; background: #FF9248"></i><i style="flex: 1; height: 5px; background: #2A2A2A"></i></span>
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: flex; align-items: center; justify-content: center"><span style="width: 18px; height: 18px; border-radius: 50%; border: 3px solid #FF9248; border-bottom-color: #2A2A2A; box-sizing: border-box"></span></span>
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 5px; box-sizing: border-box"><i style="background: #FF9248"></i><i style="background: #FF9248"></i><i style="background: #FF9248"></i><i style="background: #4A4640"></i><i style="background: #161616"></i><i style="background: #161616"></i></span>
+          </span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 2px">
+            <label style="flex: 1; min-width: 0"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Nome del tema</span><input type="text" value="Pixel V2" style="width: 100%; box-sizing: border-box; height: 30px; padding: 0 6px; margin-left: -6px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #E8EAED; font: inherit; font-size: 15px; font-weight: 700"></label>
+            <button type="button" class="ib" aria-label="Azioni sul tema" title="Salva come, duplica, esporta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+          <span style="display: flex; align-items: baseline; gap: 8px"><span class="mono" style="font-size: 12px; color: #8B939C">Turing 8.8″ · 1920 × 480</span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #FFB27A; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #FF9248"></span>non salvato</span></span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px; border-top: 1px solid #1D2227">
+        <span style="font-size: 12px; color: #8B939C; flex: 1">Orientamento</span>
+        <div role="radiogroup" aria-label="Orientamento" class="igrp">
+          <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Verticale" title="Verticale · 480 × 1920" style="width: 44px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="7.5" y="3" width="9" height="18" rx="2"></rect></svg></button>
+          <button type="button" role="radio" aria-checked="true" aria-pressed="true" aria-label="Orizzontale" title="Orizzontale · 1920 × 480" style="width: 44px; height: 36px; padding: 0; color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="7.5" width="18" height="9" rx="2"></rect></svg></button>
+          <button type="button" aria-pressed="false" aria-label="Ruota di 180°" title="Ruota di 180°" style="width: 44px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg></button>
+        </div>
+      </div>
+
+      
+        <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m21 16-5-5-8 8"></path></svg><span class="nm">Sfondo</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+        <div class="body">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 7px; background: #1D2227; font-size: 12px; font-weight: 600"><span class="sw" style="width: 12px; height: 12px; background: #000"></span>Tinta unita</span>
+            <button type="button" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 7px; border: 1px solid #2C3238; background: #15191C; color: #E8EAED; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-hidden="true"><path d="M4 4v6h6M20 20v-6h-6M20 9a8 8 0 0 0-14-3L4 10M4 15a8 8 0 0 0 14 3l2-4"></path></svg>Cambia sfondo…</button>
+          </div>
+          <div>
+            <p class="lbl">Colore</p>
+            <label class="fld"><span class="sw" style="width: 16px; height: 16px; background: #000"></span>#000000<span class="u">100%</span></label>
+          </div>
+          <p class="hint">Con un'immagine o un video qui compaiono il componente Immagine e le sue opzioni; il "Cambia sfondo…" apre la scelta con conferma.</p>
+        </div>
+        <button type="button" class="acc" aria-expanded="true"><svg class="ic ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg><span class="nm">Aggiornamento</span><svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+        <div class="body">
+          <div>
+            <p class="lbl">Leggi i sensori e ridisegna ogni</p>
+            <div class="igrp wide" role="radiogroup" aria-label="Aggiornamento">
+              <button type="button" aria-pressed="false">0,5 s</button>
+              <button type="button" aria-pressed="true">1 s</button>
+              <button type="button" aria-pressed="false">2 s</button>
+              <button type="button" aria-pressed="false">5 s</button>
+            </div>
+          </div>
+          <p class="hint">Grafici e animazioni restano fluidi: questo valore decide solo ogni quanto arrivano letture nuove.</p>
+        </div>
+      
+      
+    </div>
+  </div>
+  
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span class="mono" style="font-size: 12px; color: #FFB27A; letter-spacing: .06em">TEMA · TUTTO CHIUSO</span>
+    <div class="panel">
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 14px 10px 14px 14px; background: #0E1013">
+        <div style="margin-right: 4px; height: 82px; border-radius: 8px; background: #000; border: 1px solid #23282E; position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px; box-sizing: border-box">
+          <span class="mono" style="font-size: 26px; font-weight: 600; letter-spacing: -.02em">21:47</span>
+          <span style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: flex; align-items: flex-end; padding: 4px; gap: 2px; box-sizing: border-box"><i style="flex: 1; height: 5px; background: #FF9248"></i><i style="flex: 1; height: 5px; background: #FF9248"></i><i style="flex: 1; height: 5px; background: #2A2A2A"></i></span>
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: flex; align-items: center; justify-content: center"><span style="width: 18px; height: 18px; border-radius: 50%; border: 3px solid #FF9248; border-bottom-color: #2A2A2A; box-sizing: border-box"></span></span>
+            <span style="height: 40px; border-radius: 5px; border: 1px solid #1B1B1B; background: #060606; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 5px; box-sizing: border-box"><i style="background: #FF9248"></i><i style="background: #FF9248"></i><i style="background: #FF9248"></i><i style="background: #4A4640"></i><i style="background: #161616"></i><i style="background: #161616"></i></span>
+          </span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 2px">
+            <label style="flex: 1; min-width: 0"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Nome del tema</span><input type="text" value="Pixel V2" style="width: 100%; box-sizing: border-box; height: 30px; padding: 0 6px; margin-left: -6px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #E8EAED; font: inherit; font-size: 15px; font-weight: 700"></label>
+            <button type="button" class="ib" aria-label="Azioni sul tema" title="Salva come, duplica, esporta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+          </div>
+          <span style="display: flex; align-items: baseline; gap: 8px"><span class="mono" style="font-size: 12px; color: #8B939C">Turing 8.8″ · 1920 × 480</span><span style="margin-left: auto; padding-right: 9px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #FFB27A; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: #FF9248"></span>non salvato</span></span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px; border-top: 1px solid #1D2227">
+        <span style="font-size: 12px; color: #8B939C; flex: 1">Orientamento</span>
+        <div role="radiogroup" aria-label="Orientamento" class="igrp">
+          <button type="button" role="radio" aria-checked="false" aria-pressed="false" aria-label="Verticale" title="Verticale · 480 × 1920" style="width: 44px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="7.5" y="3" width="9" height="18" rx="2"></rect></svg></button>
+          <button type="button" role="radio" aria-checked="true" aria-pressed="true" aria-label="Orizzontale" title="Orizzontale · 1920 × 480" style="width: 44px; height: 36px; padding: 0; color: #FFB27A"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><rect x="3" y="7.5" width="18" height="9" rx="2"></rect></svg></button>
+          <button type="button" aria-pressed="false" aria-label="Ruota di 180°" title="Ruota di 180°" style="width: 44px; height: 36px; padding: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg></button>
+        </div>
+      </div>
+
+      
+      
+        <button type="button" class="acc" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24" style="color: #7F8890" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m21 16-5-5-8 8"></path></svg><span class="nm">Sfondo</span><span style="margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8B939C"><span class="sw" style="width: 12px; height: 12px; background: #000"></span>Tinta unita · #000000</span></button>
+        <button type="button" class="acc" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24" style="color: #7F8890" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg><span class="nm">Aggiornamento</span><span style="margin-left: auto; font-size: 12px; color: #8B939C">ogni 1 s</span></button>
+        <div style="padding: 16px 14px 18px; border-top: 1px solid #1D2227; display: flex; gap: 10px; color: #6B747C; font-size: 12px; line-height: 1.45">
+          <svg class="ic" viewBox="0 0 24 24" style="flex: none; margin-top: 1px" aria-hidden="true"><path d="M4 4l7 17 2-7 7-2z"></path></svg>
+          <span>Seleziona un oggetto nel canvas o in Livelli per vederne le proprietà qui.</span>
+        </div>
+      
+    </div>
+  </div>
+  
+</div>
+
+
+</body>
+</html>
