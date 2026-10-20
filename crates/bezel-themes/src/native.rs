@@ -405,6 +405,7 @@ mod tests {
                         sweep: 240.0,
                         color: Rgba::WHITE,
                         width: 3.0,
+                        look: None,
                     },
                 ),
                 el(

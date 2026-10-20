@@ -21,6 +21,7 @@ pub mod handoff;
 pub mod history;
 pub mod job;
 pub mod media;
+pub mod needle;
 pub mod pattern;
 pub mod poster;
 pub mod reconnect;

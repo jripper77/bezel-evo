@@ -848,6 +848,7 @@ fn needle(asset: Option<&str>, pivot: (f32, f32)) -> ElementKind {
         sweep: 180.0,
         color: WHITE,
         width: 3.0,
+        look: None,
     }
 }
 

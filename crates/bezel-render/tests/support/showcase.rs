@@ -346,6 +346,7 @@ fn gauge(top: f32) -> Option<Vec<(BoxF, ElementKind)>> {
         sweep: 240.0,
         color: Rgba::WHITE,
         width: 5.0,
+        look: None,
     };
     let hub = ElementKind::Shape {
         image: None,
