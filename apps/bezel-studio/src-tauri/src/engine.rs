@@ -223,6 +223,12 @@ impl EngineBridge {
         )?;
         Ok(reply["screens"].as_u64().map_or(0, |n| n as usize))
     }
+    /// What the profiles do now, as the engine sees them.
+    pub fn profile_status(&self) -> Result<Option<bezel_runtime::profiles::Status>> {
+        let mut state = self.lock()?;
+        let (reply, _) = self.call(&mut state, "__profiles__", RuntimeOp::ProfileStatus, &[])?;
+        Ok(serde_json::from_value(reply).ok())
+    }
     pub fn request(&self, key: &str, op: RuntimeOp) -> Result<(Value, Vec<u8>)> {
         {
             let mut state = self.lock()?;
