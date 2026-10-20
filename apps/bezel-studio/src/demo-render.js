@@ -1,3 +1,4 @@
+import { drawTextShadow } from './text-shadow.js';
 import { appliedRotation, centerOf } from './editor/rotation.js';
 import { drawVisualization } from './demo-visualization.js';
 import { applyTextCase } from './text-case.js';
@@ -478,16 +479,23 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     if(k.content.showCover !== false){const {side,gap}=textFurniture(k).layout(f);ctx.save();ctx.beginPath();ctx.roundRect(f.x,f.y,side,side,k.content.coverCorners ?? k.content.coverRadius ?? 0);ctx.clip();ctx.fillStyle='#334155';ctx.fillRect(f.x,f.y,side,side);ctx.fillStyle=paint(s.paint);ctx.fillText('\u266b',f.x+side*.3,f.y+side*.3);ctx.restore();f={...f,x:f.x+side+gap,width:f.width-side-gap};}
     f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
-  if (pieces) { drawPieces(ctx, s, f, textPieces(e, text, t, value, refresh, motion, trial), t, motion, tabular); return; }
-  ctx.fillStyle=paint(s.paint);
-  const x = s.align === 'center' ? f.x + f.width / 2 : s.align === 'right' ? f.x + f.width : f.x;
-  const y = s.valign === 'top' ? f.y : s.valign === 'bottom' ? f.y + f.height : f.y + f.height / 2;
-  if (['weather','player'].includes(k.content.type)) {
-    const lines = text.split('\n'); const lineHeight = Math.ceil(s.size * 1.2);
-    const top = s.valign === 'top' ? f.y : s.valign === 'bottom' ? f.y + f.height - lines.length * lineHeight : f.y + (f.height - lines.length * lineHeight) / 2;
-    ctx.textBaseline = 'top';
-    lines.forEach((line, i) => ctx.fillText(line, x, top + i * lineHeight, f.width));
-  } else ctx.fillText(text, x, y, f.width);
+  const drawGlyphs = (target, style) => {
+    target.font = `${style.font?.italic ? 'italic ' : ''}${style.font?.weight ?? 400} ${style.size}px ${style.font?.family ?? 'sans-serif'}, sans-serif`;
+    target.textAlign = style.align === 'center' ? 'center' : style.align === 'right' ? 'right' : 'left';
+    target.textBaseline = style.valign === 'top' ? 'top' : style.valign === 'bottom' ? 'bottom' : 'middle';
+    if (pieces) { drawPieces(target, style, f, textPieces({ ...e, kind: { ...k, style } }, text, t, value, refresh, motion, trial), t, motion, tabular); return; }
+    target.fillStyle = paint(style.paint);
+    const x = style.align === 'center' ? f.x + f.width / 2 : style.align === 'right' ? f.x + f.width : f.x;
+    const y = style.valign === 'top' ? f.y : style.valign === 'bottom' ? f.y + f.height : f.y + f.height / 2;
+    if (['weather', 'player'].includes(k.content.type)) {
+      const lines = text.split('\n'), lineHeight = Math.ceil(style.size * 1.2);
+      const top = style.valign === 'top' ? f.y : style.valign === 'bottom' ? f.y + f.height - lines.length * lineHeight : f.y + (f.height - lines.length * lineHeight) / 2;
+      target.textBaseline = 'top';
+      lines.forEach((line, i) => target.fillText(line, x, top + i * lineHeight, f.width));
+    } else target.fillText(text, x, y, f.width);
+  };
+  drawTextShadow(ctx, s, f, drawGlyphs);
+  drawGlyphs(ctx, s);
 }
 
 function drawSpectrum(ctx, e, seconds) {

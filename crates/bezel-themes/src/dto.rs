@@ -16,7 +16,7 @@ use bezel_core::domain::theme::{
     Anchor, AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId,
     ElementKind, Fit, FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, PartStyle,
     Playback, SWATCH_NAME_MAX, Segments, ShapeImage, ShapeKind, Swatch, TextContent, TextOverflow,
-    TextPart, TextParts, TextStyle, Theme, VAlign,
+    TextPart, TextParts, TextShadow, TextStyle, Theme, VAlign,
 };
 use bezel_core::domain::transition::{
     MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
@@ -1445,6 +1445,9 @@ pub struct FontDto {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextStyleDto {
+    /// Centred shadow; absent leaves existing themes unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shadow: Option<TextShadowDto>,
     /// Non-destructive case; absent preserves the source.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub casing: Option<String>,
@@ -1470,6 +1473,16 @@ pub struct TextStyleDto {
     /// Parts with a style of their own (D-2026-10-20-studio-ux-v2-06).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parts: Option<Box<PartsDto>>,
+}
+
+/// Shadow controls of the static-text inspector.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TextShadowDto {
+    /// RGBA colour, including opacity.
+    pub color: String,
+    /// Box blur radius, in pixels (0..=64).
+    pub blur: u8,
 }
 
 /// The parts of a value or a digital clock with a style of their own;
@@ -2026,6 +2039,10 @@ fn format(f: FormatDto) -> DisplayFormat {
 
 fn style_dto(s: &TextStyle) -> TextStyleDto {
     TextStyleDto {
+        shadow: s.shadow.map(|s| TextShadowDto {
+            color: to_hex(s.color),
+            blur: s.blur,
+        }),
         casing: match s.casing {
             bezel_core::domain::text_case::TextCase::Normal => None,
             bezel_core::domain::text_case::TextCase::Upper => Some("upper".into()),
@@ -2069,6 +2086,19 @@ fn style_dto(s: &TextStyle) -> TextStyleDto {
 
 fn style(s: &TextStyleDto) -> R<TextStyle> {
     Ok(TextStyle {
+        shadow: s
+            .shadow
+            .as_ref()
+            .map(|s| {
+                if s.blur > 64 {
+                    return err("text shadow blur must be 0..=64");
+                }
+                Ok(TextShadow {
+                    color: color(&s.color)?,
+                    blur: s.blur,
+                })
+            })
+            .transpose()?,
         casing: match s.casing.as_deref() {
             None | Some("normal") => bezel_core::domain::text_case::TextCase::Normal,
             Some("upper") => bezel_core::domain::text_case::TextCase::Upper,
@@ -2163,6 +2193,37 @@ mod text_case_tests {
         assert!(restored.parts.is_empty());
         for field in ["tabularDigits", "overflow", "parts"] {
             assert!(written.get(field).is_none(), "{field} is not written");
+        }
+    }
+
+    #[test]
+    fn shadow_is_optional_round_trips_and_rejects_invalid_values() {
+        let (old, written) = round_trip(base());
+        assert_eq!(old.shadow, None);
+        assert!(written.get("shadow").is_none());
+        for blur in [0, 8, 64] {
+            let mut json = base();
+            json["shadow"] = serde_json::json!({"color":"#11223399", "blur":blur});
+            let (restored, written) = round_trip(json.clone());
+            assert_eq!(restored.shadow.unwrap().blur, blur);
+            assert_eq!(written["shadow"], json["shadow"]);
+            let mut dto = style_dto(&restored);
+            dto.shadow = None;
+            assert!(
+                serde_json::to_value(style_dto(&style(&dto).unwrap()))
+                    .unwrap()
+                    .get("shadow")
+                    .is_none()
+            );
+        }
+        for shadow in [
+            serde_json::json!({"color":"#000000ff", "blur":65}),
+            serde_json::json!({"color":"bad", "blur":8}),
+        ] {
+            let mut json = base();
+            json["shadow"] = shadow;
+            let dto = serde_json::from_value(json).unwrap();
+            assert!(style(&dto).is_err());
         }
     }
 

@@ -16,6 +16,51 @@ use crate::testkit::{self, Scene};
 const RED: Rgba = Rgba::opaque(255, 0, 0);
 const KEY: &str = "cpu.usage";
 
+#[test]
+fn shadows_spread_beyond_glyphs_for_static_and_rich_text_and_keep_the_clip() {
+    use bezel_core::domain::theme::TextShadow;
+    let mut renderer = testkit::renderer();
+    let scene = Scene::empty().with(KEY, 36.0);
+    let area = BoxF::new(10.0, 10.0, 180.0, 80.0);
+    for content in [TextContent::Static("Test".into()), sensor()] {
+        let plain = testkit::render(
+            &mut renderer,
+            &text(area, content.clone(), style(48.0)),
+            &scene,
+        );
+        let mut shaded = style(48.0);
+        shaded.shadow = Some(TextShadow {
+            color: RED,
+            blur: 8,
+        });
+        let shadowed = testkit::render(
+            &mut renderer,
+            &text(area, content.clone(), shaded.clone()),
+            &scene,
+        );
+        let mut spread = 0;
+        for y in 0..shadowed.size().height {
+            for x in 0..shadowed.size().width {
+                let pixel = testkit::px(&shadowed, x, y);
+                if pixel.r > 0 && testkit::px(&plain, x, y) == Rgba::BLACK {
+                    spread += 1;
+                    assert!(
+                        (10..190).contains(&x) && (10..90).contains(&y),
+                        "clipped to the text layer"
+                    );
+                }
+            }
+        }
+        assert!(spread > 50, "shadow extends outside the glyph coverage");
+        shaded.shadow = None;
+        let disabled = testkit::render(&mut renderer, &text(area, content, shaded), &scene);
+        assert_eq!(
+            disabled, plain,
+            "disabling a shadow restores the exact original pixels"
+        );
+    }
+}
+
 fn style(size: f32) -> TextStyle {
     TextStyle {
         size,

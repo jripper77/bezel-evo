@@ -23,6 +23,7 @@ use crate::layer::Layer;
 use crate::paint::paint_for;
 
 mod rich;
+mod shadow;
 pub(crate) use rich::{Piece, RichJob};
 
 /// Whether the renderer may use the fonts installed on the machine.
@@ -387,6 +388,14 @@ impl TextEngine {
         let Some((mask, ink, color_glyphs)) = self.rasterize(layer, &buffer, job) else {
             return;
         };
+        if let Some(shadow) = job.style.shadow {
+            shadow::draw(
+                layer,
+                std::iter::once(mask.data().to_vec()),
+                &color_glyphs,
+                shadow,
+            );
+        }
         if let (Some(paint), Some(ink)) = (paint_for(&job.style.paint, job.area), ink) {
             layer.fill_rect_masked(ink, &paint, &mask);
         }
