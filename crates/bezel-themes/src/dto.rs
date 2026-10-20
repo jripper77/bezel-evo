@@ -7,12 +7,13 @@ use bezel_core::domain::geometry::{Orientation, Size};
 use bezel_core::domain::history::GRAPH_INTERVAL_MAX_SECONDS;
 use bezel_core::domain::sensor::{ByteUnits, DisplayFormat, SensorKey, TemperatureUnit};
 use bezel_core::domain::theme::{
-    AssetRef, Background, Binding, BoxF, Cap, Direction, Element, ElementId, ElementKind, Fit,
-    FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, SWATCH_NAME_MAX, Segments,
-    ShapeImage, ShapeKind, Swatch, TextContent, TextStyle, Theme, VAlign,
+    AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId, ElementKind,
+    Fit, FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, PartStyle, SWATCH_NAME_MAX,
+    Segments, ShapeImage, ShapeKind, Swatch, TextContent, TextOverflow, TextPart, TextParts,
+    TextStyle, Theme, VAlign,
 };
 use bezel_core::domain::transition::{
-    MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
+    MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
 };
 use bezel_core::domain::value_color::{ColorByValue, ColorThreshold};
 use serde::{Deserialize, Serialize};
@@ -590,6 +591,17 @@ pub struct ValueTransitionDto {
     /// [`MIN_TRANSITION_MS`]..=[`MAX_TRANSITION_MS`]; 0 jumps).
     #[serde(default)]
     pub duration_ms: u32,
+    /// Readings averaged (1..=30); 1, each reading as it is, is omitted.
+    #[serde(default = "one_u8", skip_serializing_if = "is_one_u8")]
+    pub average: u8,
+}
+
+fn one_u8() -> u8 {
+    1
+}
+
+fn is_one_u8(v: &u8) -> bool {
+    *v == 1
 }
 
 /// `none` or `smooth`.
@@ -602,6 +614,10 @@ pub enum TransitionModeDto {
     Smooth,
     /// Retains momentum while pursuing new readings.
     Inertia,
+    /// Counts evenly through the values in between.
+    Count,
+    /// Turns each digit like a wheel.
+    Roll,
 }
 
 fn value_transition_dto(t: Option<ValueTransition>) -> Option<ValueTransitionDto> {
@@ -610,9 +626,12 @@ fn value_transition_dto(t: Option<ValueTransition>) -> Option<ValueTransitionDto
             TransitionMode::None => TransitionModeDto::None,
             TransitionMode::Smooth => TransitionModeDto::Smooth,
             TransitionMode::Inertia => TransitionModeDto::Smooth,
+            TransitionMode::Count => TransitionModeDto::Count,
+            TransitionMode::Roll => TransitionModeDto::Roll,
         },
         duration_ms: t.duration_ms,
         inertia: t.mode == TransitionMode::Inertia,
+        average: t.average,
     })
 }
 
@@ -623,11 +642,14 @@ fn value_transition(t: Option<ValueTransitionDto>) -> Option<ValueTransition> {
             TransitionModeDto::Smooth if t.inertia => TransitionMode::Inertia,
             TransitionModeDto::Smooth => TransitionMode::Smooth,
             TransitionModeDto::Inertia => TransitionMode::Inertia,
+            TransitionModeDto::Count => TransitionMode::Count,
+            TransitionModeDto::Roll => TransitionMode::Roll,
         },
         duration_ms: match t.duration_ms {
             0 => 0,
             ms => ms.clamp(MIN_TRANSITION_MS, MAX_TRANSITION_MS),
         },
+        average: t.average.clamp(1, MAX_AVERAGE),
     })
 }
 
@@ -1256,6 +1278,157 @@ pub struct TextStyleDto {
     /// Extra letter spacing, px.
     #[serde(default)]
     pub letter_spacing: f32,
+    /// Digits of equal width (D-2026-10-20-studio-ux-v2-05); absent is on.
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub tabular_digits: bool,
+    /// `shrink`, `ellipsis` or `scroll`; absent draws past the box.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overflow: Option<String>,
+    /// Parts with a style of their own (D-2026-10-20-studio-ux-v2-06).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parts: Option<Box<PartsDto>>,
+}
+
+/// The parts of a value or a digital clock with a style of their own;
+/// absent parts follow the text.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartsDto {
+    /// Value: text before the number.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prefix: Option<PartDto>,
+    /// Value: the number.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub number: Option<PartDto>,
+    /// Value: the unit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unit: Option<PartDto>,
+    /// Value: text after the unit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub suffix: Option<PartDto>,
+    /// Clock: hours.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hours: Option<PartDto>,
+    /// Clock: minutes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minutes: Option<PartDto>,
+    /// Clock: seconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seconds: Option<PartDto>,
+    /// Clock: separators (with `blink`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub separators: Option<PartDto>,
+}
+
+impl PartsDto {
+    fn slots(&self) -> [(TextPart, &Option<PartDto>); 8] {
+        [
+            (TextPart::Prefix, &self.prefix),
+            (TextPart::Number, &self.number),
+            (TextPart::Unit, &self.unit),
+            (TextPart::Suffix, &self.suffix),
+            (TextPart::Hours, &self.hours),
+            (TextPart::Minutes, &self.minutes),
+            (TextPart::Seconds, &self.seconds),
+            (TextPart::Separators, &self.separators),
+        ]
+    }
+
+    fn slot(&mut self, part: TextPart) -> &mut Option<PartDto> {
+        match part {
+            TextPart::Prefix => &mut self.prefix,
+            TextPart::Number => &mut self.number,
+            TextPart::Unit => &mut self.unit,
+            TextPart::Suffix => &mut self.suffix,
+            TextPart::Hours => &mut self.hours,
+            TextPart::Minutes => &mut self.minutes,
+            TextPart::Seconds => &mut self.seconds,
+            TextPart::Separators => &mut self.separators,
+        }
+    }
+}
+
+/// One part's style; every absent field follows the text.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartDto {
+    /// Font family.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font: Option<String>,
+    /// Bundled font file of that family.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_asset: Option<String>,
+    /// Size in percent of the text's size.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_percent: Option<f32>,
+    /// Weight, 100..=900.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weight: Option<u16>,
+    /// `#rrggbbaa`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// `base` (absent) or `super`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub baseline: Option<String>,
+    /// Separators only: blink every second.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub blink: bool,
+}
+
+fn parts_dto(parts: &TextParts) -> Option<Box<PartsDto>> {
+    let mut dto = PartsDto::default();
+    for (part, style) in &parts.styles {
+        if style.is_plain() {
+            continue;
+        }
+        *dto.slot(*part) = Some(PartDto {
+            font: style.family.clone(),
+            font_asset: style.asset.as_ref().map(|a| a.0.clone()),
+            size_percent: style.size_percent,
+            weight: style.weight,
+            color: style.color.map(to_hex),
+            baseline: (style.baseline == Baseline::Super).then(|| "super".to_string()),
+            blink: false,
+        });
+    }
+    if parts.blink_separators {
+        dto.separators.get_or_insert_with(PartDto::default).blink = true;
+    }
+    (dto != PartsDto::default()).then(|| Box::new(dto))
+}
+
+fn parts(dto: Option<&PartsDto>) -> R<TextParts> {
+    let mut out = TextParts::default();
+    let Some(dto) = dto else {
+        return Ok(out);
+    };
+    for (part, slot) in dto.slots() {
+        let Some(p) = slot else { continue };
+        let style = PartStyle {
+            family: p.font.clone().filter(|f| !f.is_empty()),
+            asset: p.font_asset.clone().filter(|a| !a.is_empty()).map(AssetRef),
+            size_percent: p.size_percent.filter(|v| v.is_finite()).map(|v| {
+                v.clamp(
+                    *PartStyle::SIZE_PERCENT.start(),
+                    *PartStyle::SIZE_PERCENT.end(),
+                )
+            }),
+            weight: p.weight.map(|w| w.clamp(100, 900)),
+            color: p.color.as_deref().map(color).transpose()?,
+            baseline: match p.baseline.as_deref() {
+                None | Some("base") => Baseline::Base,
+                Some("super") => Baseline::Super,
+                Some(other) => return err(format!("unknown part baseline {other:?}")),
+            },
+        };
+        if !style.is_plain() {
+            out.styles.insert(part, style);
+        }
+        if part == TextPart::Separators && p.blink {
+            out.blink_separators = true;
+        }
+    }
+    Ok(out)
 }
 
 /// Element kinds.
@@ -1684,6 +1857,16 @@ fn style_dto(s: &TextStyle) -> TextStyleDto {
         }
         .to_string(),
         letter_spacing: s.letter_spacing,
+        tabular_digits: s.tabular_digits,
+        overflow: s.overflow.map(|o| {
+            match o {
+                TextOverflow::Shrink => "shrink",
+                TextOverflow::Ellipsis => "ellipsis",
+                TextOverflow::Scroll => "scroll",
+            }
+            .to_string()
+        }),
+        parts: parts_dto(&s.parts),
     }
 }
 
@@ -1718,6 +1901,15 @@ fn style(s: &TextStyleDto) -> R<TextStyle> {
             other => return err(format!("unknown valign {other:?}")),
         },
         letter_spacing: s.letter_spacing,
+        tabular_digits: s.tabular_digits,
+        overflow: match s.overflow.as_deref() {
+            None => None,
+            Some("shrink") => Some(TextOverflow::Shrink),
+            Some("ellipsis") => Some(TextOverflow::Ellipsis),
+            Some("scroll") => Some(TextOverflow::Scroll),
+            Some(other) => return err(format!("unknown text overflow {other:?}")),
+        },
+        parts: parts(s.parts.as_deref())?,
     })
 }
 
@@ -1752,6 +1944,106 @@ mod text_case_tests {
         let mut invalid = base;
         invalid["casing"] = "unknown".into();
         assert!(style(&serde_json::from_value(invalid).unwrap()).is_err());
+    }
+
+    fn base() -> serde_json::Value {
+        serde_json::json!({"font":{"family":"Inter","weight":400},"size":24,
+            "paint":"#ffffffff","align":"left","valign":"top"})
+    }
+
+    fn round_trip(json: serde_json::Value) -> (TextStyle, serde_json::Value) {
+        let dto: TextStyleDto = serde_json::from_value(json).unwrap();
+        let restored = style(&dto).unwrap();
+        let written = serde_json::to_value(style_dto(&restored)).unwrap();
+        (restored, written)
+    }
+
+    #[test]
+    fn an_old_style_keeps_its_fields_and_gets_tabular_digits() {
+        let (restored, written) = round_trip(base());
+        assert!(restored.tabular_digits);
+        assert_eq!(restored.overflow, None);
+        assert!(restored.parts.is_empty());
+        for field in ["tabularDigits", "overflow", "parts"] {
+            assert!(written.get(field).is_none(), "{field} is not written");
+        }
+    }
+
+    #[test]
+    fn tabular_digits_and_overflow_round_trip() {
+        let mut json = base();
+        json["tabularDigits"] = false.into();
+        let (restored, written) = round_trip(json);
+        assert!(!restored.tabular_digits);
+        assert_eq!(written["tabularDigits"], false);
+        for (name, overflow) in [
+            ("shrink", TextOverflow::Shrink),
+            ("ellipsis", TextOverflow::Ellipsis),
+            ("scroll", TextOverflow::Scroll),
+        ] {
+            let mut json = base();
+            json["overflow"] = name.into();
+            let (restored, written) = round_trip(json);
+            assert_eq!(restored.overflow, Some(overflow));
+            assert_eq!(written["overflow"], name);
+        }
+        let mut bad = base();
+        bad["overflow"] = "wrap".into();
+        assert!(style(&serde_json::from_value(bad).unwrap()).is_err());
+    }
+
+    #[test]
+    fn parts_round_trip_and_empty_ones_are_omitted() {
+        let mut json = base();
+        json["parts"] = serde_json::json!({
+            "prefix": {"font": "IBM Plex Mono", "fontAsset": "assets/plex.ttf"},
+            "number": {"weight": 700},
+            "unit": {"sizePercent": 55.0, "color": "#ff9248ff", "baseline": "super"},
+            "suffix": {"baseline": "base"},
+            "hours": {"weight": 300},
+            "minutes": {"color": "#ff9248ff"},
+            "seconds": {"sizePercent": 60.0},
+            "separators": {"color": "#6b747cff", "blink": true}
+        });
+        let (restored, written) = round_trip(json.clone());
+        let unit = restored.parts.style(TextPart::Unit).expect("unit");
+        assert_eq!(unit.baseline, Baseline::Super);
+        assert_eq!(unit.size_percent, Some(55.0));
+        assert_eq!(
+            restored
+                .parts
+                .style(TextPart::Prefix)
+                .and_then(|p| p.asset.clone()),
+            Some(AssetRef("assets/plex.ttf".into()))
+        );
+        assert!(restored.parts.blink_separators);
+        assert_eq!(restored.parts.style(TextPart::Suffix), None, "plain");
+        let mut expected = json["parts"].clone();
+        expected.as_object_mut().unwrap().remove("suffix");
+        assert_eq!(written["parts"], expected);
+
+        let mut blink_only = base();
+        blink_only["parts"] = serde_json::json!({"separators": {"blink": true}});
+        let (restored, written) = round_trip(blink_only);
+        assert!(restored.parts.blink_separators && restored.parts.styles.is_empty());
+        assert_eq!(
+            written["parts"],
+            serde_json::json!({"separators": {"blink": true}})
+        );
+
+        let mut odd = base();
+        odd["parts"] = serde_json::json!({"unit": {"sizePercent": 9000.0, "weight": 5}});
+        let (restored, _) = round_trip(odd);
+        let unit = restored.parts.style(TextPart::Unit).expect("unit");
+        assert_eq!((unit.size_percent, unit.weight), (Some(400.0), Some(100)));
+        for bad in [
+            serde_json::json!({"unit": {"baseline": "sub"}}),
+            serde_json::json!({"unit": {"color": "orange"}}),
+        ] {
+            let mut json = base();
+            json["parts"] = bad;
+            assert!(style(&serde_json::from_value(json).unwrap()).is_err());
+        }
     }
 }
 

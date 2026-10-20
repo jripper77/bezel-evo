@@ -879,6 +879,45 @@ mod tests {
     }
 
     #[test]
+    fn a_reading_splits_into_number_and_unit() {
+        let f = DisplayFormat::default();
+        let parts = |r: Reading, q| format_reading_parts(&r, q, f);
+        let pair = |a: &str, b: &str| (a.to_string(), b.to_string());
+        assert_eq!(
+            parts(Reading::Value(36.2), Quantity::Percent),
+            pair("36", "%")
+        );
+        assert_eq!(
+            parts(Reading::Value(4725.0), Quantity::Megahertz),
+            pair("4.72", " GHz")
+        );
+        assert_eq!(
+            parts(Reading::Value(150.0 * 1048576.0), Quantity::BytesPerSecond),
+            pair("150", " MiB/s")
+        );
+        assert_eq!(
+            parts(Reading::Value(3_700.0), Quantity::Seconds),
+            pair("01:01", "")
+        );
+        assert_eq!(
+            parts(Reading::Text("RTX".into()), Quantity::Text),
+            pair("RTX", "")
+        );
+        assert_eq!(
+            parts(Reading::Value(f64::NAN), Quantity::Percent),
+            pair("—", "")
+        );
+        let hidden = DisplayFormat {
+            show_unit: false,
+            ..f
+        };
+        assert_eq!(
+            format_reading_parts(&Reading::Value(512.0), Quantity::Bytes, hidden),
+            pair("512", "")
+        );
+    }
+
+    #[test]
     fn decimals_and_hidden_units() {
         let f = DisplayFormat {
             decimals: Some(1),
