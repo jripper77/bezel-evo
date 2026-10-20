@@ -981,6 +981,7 @@ impl Importer {
                 outer,
                 visible,
                 ElementKind::Shape {
+                    image: None,
                     video_window: false,
                     fade: None,
                     shape: ShapeKind::Rect { radius },
@@ -1174,6 +1175,7 @@ impl Importer {
                 frame,
                 visible,
                 ElementKind::Shape {
+                    image: None,
                     video_window: false,
                     fade: None,
                     shape: ShapeKind::Rect { radius: 0.0 },

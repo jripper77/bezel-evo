@@ -148,6 +148,7 @@ fn video_backdrops(r: &mut SkiaRenderer) {
     let square = element(
         BoxF::new(2.0, 2.0, 4.0, 4.0),
         ElementKind::Shape {
+            image: None,
             video_window: false,
             fade: None,
             shape: ShapeKind::Rect { radius: 0.0 },
@@ -530,6 +531,7 @@ fn shape_frame(
     stroke: Option<(Rgba, f32)>,
 ) -> Frame {
     let kind = ElementKind::Shape {
+        image: None,
         video_window: false,
         fade: None,
         shape,
@@ -990,6 +992,7 @@ pub(crate) fn composition(r: &mut SkiaRenderer) {
         element(
             frame,
             ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Rect { radius: 0.0 },
@@ -1224,6 +1227,7 @@ fn device_video_windows_clear_alpha_with_border_layer_order_and_fade() {
         element(
             BoxF::new(8.0, 8.0, 48.0, 48.0),
             ElementKind::Shape {
+                image: None,
                 shape,
                 video_window: true,
                 fade,
@@ -1255,6 +1259,7 @@ fn device_video_windows_clear_alpha_with_border_layer_order_and_fade() {
     let rect = element(
         BoxF::new(24.0, 24.0, 16.0, 16.0),
         ElementKind::Shape {
+            image: None,
             shape: ShapeKind::Rect { radius: 0.0 },
             fill: Some(solid(RED)),
             stroke: None,
@@ -1300,6 +1305,7 @@ fn ordinary_shape_linear_transparency_blends_and_rotates() {
         vec![element(
             BoxF::new(0.0, 0.0, 64.0, 32.0),
             ElementKind::Shape {
+                image: None,
                 shape: ShapeKind::Rect { radius: 0.0 },
                 fill: Some(solid(RED)),
                 stroke: None,
@@ -1497,6 +1503,7 @@ fn independent_shape_corners_clip_only_the_selected_corners() {
         vec![element(
             BoxF::new(0., 0., 80., 80.),
             ElementKind::Shape {
+                image: None,
                 shape: ShapeKind::Corners([30., 0., 30., 0.]),
                 fill: Some(Paint::solid(RED)),
                 stroke: None,

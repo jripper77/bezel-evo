@@ -67,6 +67,7 @@ fn theme() -> Theme {
             transition: None,
         }),
         kind: ElementKind::Shape {
+            image: None,
             shape: ShapeKind::Rect { radius: 0.0 },
             fill: None,
             stroke: None,

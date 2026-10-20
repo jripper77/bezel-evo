@@ -346,6 +346,7 @@ mod tests {
                 el(
                     5,
                     ElementKind::Shape {
+                        image: None,
                         video_window: false,
                         fade: None,
                         shape: ShapeKind::Rect { radius: 12.0 },
@@ -356,6 +357,7 @@ mod tests {
                 el(
                     6,
                     ElementKind::Shape {
+                        image: None,
                         video_window: false,
                         fade: None,
                         shape: ShapeKind::Ellipse,
@@ -1322,6 +1324,7 @@ mod tests {
         group.id = ElementId(900);
         group.is_group = true;
         group.kind = ElementKind::Shape {
+            image: None,
             video_window: false,
             fade: None,
             shape: ShapeKind::Rect { radius: 0.0 },

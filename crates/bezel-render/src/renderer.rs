@@ -833,6 +833,7 @@ impl SkiaRenderer {
                             } = shown.kind
                         {
                             shown.kind = ElementKind::Shape {
+                                image: None,
                                 video_window: false,
                                 shape,
                                 fade,
@@ -921,6 +922,7 @@ impl SkiaRenderer {
                         {
                             let mut mask = shown.clone();
                             mask.kind = ElementKind::Shape {
+                                image: None,
                                 video_window: false,
                                 shape,
                                 fade,
@@ -1730,6 +1732,7 @@ mod tests {
         let mut e = element(
             frame,
             ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Rect { radius: 0.0 },
@@ -1754,6 +1757,7 @@ mod tests {
         };
         let kinds = vec![
             ElementKind::Shape {
+                image: None,
                 shape: ShapeKind::Rect { radius: 0. },
                 fill: Some(Paint::solid(Rgba::WHITE)),
                 stroke: None,
@@ -2079,6 +2083,7 @@ mod tests {
         let disc = element(
             BoxF::new(20.0, 0.0, 12.0, 12.0),
             ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Ellipse,

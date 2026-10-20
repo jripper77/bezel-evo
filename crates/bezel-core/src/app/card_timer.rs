@@ -196,6 +196,7 @@ mod tests {
             group_parent: None,
             card_member: None,
             kind: ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Rect { radius: 0. },

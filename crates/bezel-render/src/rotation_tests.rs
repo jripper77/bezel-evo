@@ -10,6 +10,7 @@ fn box_element() -> Element {
     testkit::element(
         BoxF::new(50., 45., 60., 30.),
         ElementKind::Shape {
+            image: None,
             video_window: false,
             fade: None,
             shape: ShapeKind::Rect { radius: 0. },

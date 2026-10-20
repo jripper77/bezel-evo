@@ -8,8 +8,8 @@ use bezel_core::domain::history::GRAPH_INTERVAL_MAX_SECONDS;
 use bezel_core::domain::sensor::{ByteUnits, DisplayFormat, SensorKey, TemperatureUnit};
 use bezel_core::domain::theme::{
     AssetRef, Background, Binding, BoxF, Cap, Direction, Element, ElementId, ElementKind, Fit,
-    FontSpec, GraphStyle, HAlign, PALETTE_MAX, Paint, SWATCH_NAME_MAX, Segments, ShapeKind, Swatch,
-    TextContent, TextStyle, Theme, VAlign,
+    FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, SWATCH_NAME_MAX, Segments,
+    ShapeImage, ShapeKind, Swatch, TextContent, TextStyle, Theme, VAlign,
 };
 use bezel_core::domain::transition::{
     MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
@@ -245,6 +245,50 @@ pub enum FitDto {
     Cover,
     /// Original size.
     None,
+}
+
+/// How a shape's image covers it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ImageRepeatDto {
+    /// Cover, cropping.
+    #[default]
+    Cover,
+    /// Inside.
+    Contain,
+    /// Stretch to the box.
+    Stretch,
+    /// One copy, centered.
+    Center,
+    /// Side by side both ways.
+    Tile,
+    /// Along one row.
+    TileX,
+    /// Along one column.
+    TileY,
+}
+
+/// A picture inside a shape. Only `asset` is required.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShapeImageDto {
+    /// Asset path inside the theme (empty: none chosen yet).
+    pub asset: String,
+    /// How it covers the shape.
+    #[serde(default)]
+    pub repeat: ImageRepeatDto,
+    /// Size of one copy relative to the picture (0.05 to 10).
+    #[serde(default = "one")]
+    pub scale: f32,
+    /// Horizontal shift in pixels.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub offset_x: f32,
+    /// Vertical shift in pixels.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub offset_y: f32,
+    /// Opacity of the picture, 0 to 1.
+    #[serde(default = "one")]
+    pub opacity: f32,
 }
 
 /// A paint: a color string or a gradient object.
@@ -1255,6 +1299,9 @@ pub enum KindDto {
         /// Fill.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         fill: Option<PaintDto>,
+        /// Picture inside the shape, over the fill.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        image: Option<ShapeImageDto>,
         /// Outline color.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         stroke: Option<String>,
@@ -1380,6 +1427,58 @@ fn fit_dto(f: Fit) -> FitDto {
         Fit::Cover => FitDto::Cover,
         Fit::None => FitDto::None,
     }
+}
+
+fn shape_image_dto(i: &ShapeImage) -> ShapeImageDto {
+    ShapeImageDto {
+        asset: i.asset.0.clone(),
+        repeat: match i.repeat {
+            ImageRepeat::Cover => ImageRepeatDto::Cover,
+            ImageRepeat::Contain => ImageRepeatDto::Contain,
+            ImageRepeat::Stretch => ImageRepeatDto::Stretch,
+            ImageRepeat::Center => ImageRepeatDto::Center,
+            ImageRepeat::Tile => ImageRepeatDto::Tile,
+            ImageRepeat::TileX => ImageRepeatDto::TileX,
+            ImageRepeat::TileY => ImageRepeatDto::TileY,
+        },
+        scale: i.scale,
+        offset_x: i.offset.0,
+        offset_y: i.offset.1,
+        opacity: i.opacity,
+    }
+}
+
+fn shape_image(d: &ShapeImageDto) -> R<ShapeImage> {
+    if !ShapeImage::SCALE.contains(&d.scale) {
+        return err(format!(
+            "shape image scale {} is outside 0.05 to 10",
+            d.scale
+        ));
+    }
+    if !(0.0..=1.0).contains(&d.opacity) {
+        return err(format!(
+            "shape image opacity {} is outside 0 to 1",
+            d.opacity
+        ));
+    }
+    if !(d.offset_x.is_finite() && d.offset_y.is_finite()) {
+        return err("shape image offset must be finite");
+    }
+    Ok(ShapeImage {
+        asset: AssetRef(d.asset.clone()),
+        repeat: match d.repeat {
+            ImageRepeatDto::Cover => ImageRepeat::Cover,
+            ImageRepeatDto::Contain => ImageRepeat::Contain,
+            ImageRepeatDto::Stretch => ImageRepeat::Stretch,
+            ImageRepeatDto::Center => ImageRepeat::Center,
+            ImageRepeatDto::Tile => ImageRepeat::Tile,
+            ImageRepeatDto::TileX => ImageRepeat::TileX,
+            ImageRepeatDto::TileY => ImageRepeat::TileY,
+        },
+        scale: d.scale,
+        offset: (d.offset_x, d.offset_y),
+        opacity: d.opacity,
+    })
 }
 
 fn fit(f: FitDto) -> Fit {
@@ -1782,6 +1881,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
             fade,
             shape,
             fill,
+            image,
             stroke,
         } => {
             let (name, radius, corners) = match shape {
@@ -1802,6 +1902,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                 shape: name.to_string(),
                 radius,
                 fill: fill.as_ref().map(paint_dto),
+                image: image.as_ref().map(shape_image_dto),
                 stroke: stroke.map(|(c, _)| to_hex(c)),
                 stroke_width: stroke.map_or(0.0, |(_, w)| w),
             }
@@ -2033,6 +2134,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
             corners,
             radius,
             fill,
+            image,
             stroke,
             stroke_width,
         } => ElementKind::Shape {
@@ -2053,6 +2155,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                 other => return err(format!("unknown shape {other:?}")),
             },
             fill: opt_paint(fill)?,
+            image: image.as_ref().map(shape_image).transpose()?,
             stroke: stroke
                 .as_deref()
                 .map(color)
@@ -2650,5 +2753,71 @@ mod fade_tests {
             })
             .is_err()
         );
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod shape_image_tests {
+    use super::*;
+
+    fn shape(json: &str) -> R<ElementKind> {
+        kind(&serde_json::from_str::<KindDto>(json).unwrap())
+    }
+
+    #[test]
+    fn a_shape_without_image_keeps_the_old_shape() {
+        let k =
+            shape(r##"{"type":"shape","shape":"rect","radius":4,"fill":"#ff0000ff"}"##).unwrap();
+        let ElementKind::Shape { image, .. } = &k else {
+            panic!("{k:?}")
+        };
+        assert!(image.is_none());
+        assert!(
+            serde_json::to_value(kind_dto(&k))
+                .unwrap()
+                .get("image")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn a_shape_image_fills_its_defaults_and_round_trips() {
+        let k = shape(r#"{"type":"shape","shape":"ellipse","image":{"asset":"assets/dots.svg"}}"#)
+            .unwrap();
+        let ElementKind::Shape { image: Some(i), .. } = &k else {
+            panic!("{k:?}")
+        };
+        assert_eq!(i, &ShapeImage::new(AssetRef("assets/dots.svg".into())));
+        let tiled = ShapeImage {
+            repeat: ImageRepeat::TileX,
+            scale: 0.5,
+            offset: (-3.0, 12.0),
+            opacity: 0.4,
+            ..i.clone()
+        };
+        let json = serde_json::to_value(shape_image_dto(&tiled)).unwrap();
+        assert_eq!(json["repeat"], "tileX");
+        assert_eq!(json["offsetY"], 12.0);
+        let back: ShapeImageDto = serde_json::from_value(json).unwrap();
+        assert_eq!(shape_image(&back).unwrap(), tiled);
+        let centred = serde_json::to_value(shape_image_dto(i)).unwrap();
+        assert!(centred.get("offsetX").is_none() && centred.get("offsetY").is_none());
+    }
+
+    #[test]
+    fn out_of_range_shape_images_are_refused() {
+        for bad in [
+            r#"{"asset":"a.png","scale":0}"#,
+            r#"{"asset":"a.png","scale":11}"#,
+            r#"{"asset":"a.png","opacity":1.5}"#,
+            r#"{"asset":"a.png","repeat":"mirror"}"#,
+        ] {
+            let parsed = serde_json::from_str::<ShapeImageDto>(bad);
+            assert!(
+                parsed.is_err() || shape_image(&parsed.unwrap()).is_err(),
+                "{bad}"
+            );
+        }
     }
 }

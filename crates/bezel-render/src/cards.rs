@@ -238,6 +238,7 @@ mod tests {
         let mut e = testkit::element(
             BoxF::new(0., 0., 32., 32.),
             ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Rect { radius: 0. },

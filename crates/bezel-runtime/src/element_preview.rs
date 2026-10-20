@@ -218,6 +218,7 @@ pub(crate) mod tests {
             visible: true,
             locked: false,
             kind: ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: ShapeKind::Rect { radius: 0.0 },

@@ -99,6 +99,67 @@ pub enum Fit {
     None,
 }
 
+/// How a shape's image covers the shape.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ImageRepeat {
+    /// Scale to cover the shape, keeping proportions, cropping the overflow.
+    #[default]
+    Cover,
+    /// Scale to fit inside the shape, keeping proportions; the fill shows around it.
+    Contain,
+    /// Stretch to the shape's box.
+    Stretch,
+    /// One copy at its own size times the scale, centered, then offset.
+    Center,
+    /// Copies side by side in both directions.
+    Tile,
+    /// Copies side by side along one row.
+    TileX,
+    /// Copies stacked along one column.
+    TileY,
+}
+
+impl ImageRepeat {
+    /// Whether the image keeps its own size (times the scale) instead of
+    /// following the shape: scale and offset apply.
+    pub const fn natural_size(self) -> bool {
+        matches!(self, Self::Center | Self::Tile | Self::TileX | Self::TileY)
+    }
+}
+
+/// An image painted inside a shape, over its fill and under its outline.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShapeImage {
+    /// The picture (PNG, JPEG, GIF or SVG); empty while none is chosen.
+    pub asset: AssetRef,
+    /// How it covers the shape.
+    pub repeat: ImageRepeat,
+    /// Size of one copy relative to the picture's own size
+    /// ([`ShapeImage::SCALE`]); only when [`ImageRepeat::natural_size`].
+    pub scale: f32,
+    /// Shift of the copies in pixels, from the shape's center for
+    /// [`ImageRepeat::Center`] and from its top-left corner for the tiles.
+    pub offset: (f32, f32),
+    /// Opacity of the picture, `0..=1`; the fill under it is unaffected.
+    pub opacity: f32,
+}
+
+impl ShapeImage {
+    /// Allowed range of [`ShapeImage::scale`].
+    pub const SCALE: std::ops::RangeInclusive<f32> = 0.05..=10.0;
+
+    /// A picture covering the shape at full opacity.
+    pub fn new(asset: AssetRef) -> Self {
+        Self {
+            asset,
+            repeat: ImageRepeat::default(),
+            scale: 1.0,
+            offset: (0.0, 0.0),
+            opacity: 1.0,
+        }
+    }
+}
+
 /// What the canvas shows under the elements.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Background {
@@ -348,6 +409,8 @@ pub enum ElementKind {
         shape: ShapeKind,
         /// Fill (none = outline only).
         fill: Option<Paint>,
+        /// Picture inside the shape, over the fill and under the outline.
+        image: Option<ShapeImage>,
         /// Outline color and width.
         stroke: Option<(Rgba, f32)>,
     },
@@ -429,6 +492,20 @@ pub enum ElementKind {
         /// Scale to the visible samples instead of the binding range.
         autoscale: bool,
     },
+}
+
+impl ElementKind {
+    /// The picture this element draws as a whole or inside it: an image
+    /// element's file, or a shape's image. Empty placeholders count too.
+    pub fn picture(&self) -> Option<&AssetRef> {
+        match self {
+            ElementKind::Image { asset, .. } => Some(asset),
+            ElementKind::Shape {
+                image: Some(image), ..
+            } => Some(&image.asset),
+            _ => None,
+        }
+    }
 }
 
 /// One thing drawn on the canvas.
@@ -740,6 +817,9 @@ impl Theme {
         for e in &self.elements {
             match &e.kind {
                 ElementKind::Image { asset, .. } => out.push(asset.clone()),
+                ElementKind::Shape {
+                    image: Some(image), ..
+                } => out.push(image.asset.clone()),
                 ElementKind::Needle { asset: Some(a), .. } => out.push(a.clone()),
                 ElementKind::Text { style, .. } => out.extend(style.font.asset.clone()),
                 _ => {}
@@ -820,16 +900,14 @@ impl Theme {
         keys
     }
 
-    /// The images of the image elements a frame shows: visible, not fully
-    /// transparent, with a box that reaches into the canvas. An animated
-    /// one among them sets the pace of the frames
+    /// The pictures of the image elements and shape images a frame shows:
+    /// visible, not fully transparent, with a box that reaches into the
+    /// canvas. An animated one among them sets the pace of the frames
     /// ([`super::animation`]); hidden ones do not animate.
     pub fn shown_images(&self) -> impl Iterator<Item = &AssetRef> {
         let (width, height) = (self.canvas.width as f32, self.canvas.height as f32);
         self.elements.iter().filter_map(move |e| {
-            let ElementKind::Image { asset, .. } = &e.kind else {
-                return None;
-            };
+            let asset = e.kind.picture()?;
             let b = e.frame;
             let on_canvas = b.width > 0.0
                 && b.height > 0.0
@@ -1020,6 +1098,35 @@ mod tests {
             "the hidden bar's sensor is not wanted"
         );
         assert!(t.element(ElementId(3)).is_some());
+    }
+
+    #[test]
+    fn a_shape_image_is_a_theme_asset_and_a_shown_picture() {
+        let mut t = Theme::blank("x", Size::new(480, 1920), Orientation::Portrait);
+        let shape = |id, asset: &str| {
+            let mut e = element(
+                id,
+                ElementKind::Shape {
+                    video_window: false,
+                    fade: None,
+                    shape: ShapeKind::Rect { radius: 8.0 },
+                    fill: Some(Paint::solid(Rgba::WHITE)),
+                    image: Some(ShapeImage::new(AssetRef(asset.into()))),
+                    stroke: None,
+                },
+            );
+            e.frame = BoxF::new(0.0, 0.0, 100.0, 100.0);
+            e
+        };
+        t.elements = vec![shape(1, "assets/tile.svg"), shape(2, "")];
+        assert_eq!(t.assets(), vec![AssetRef("assets/tile.svg".into())]);
+        let shown: Vec<_> = t.shown_images().map(|a| a.0.as_str()).collect();
+        assert_eq!(shown, ["assets/tile.svg", ""]);
+        assert_eq!(
+            t.elements[0].kind.picture(),
+            Some(&AssetRef("assets/tile.svg".into()))
+        );
+        assert!(ImageRepeat::Tile.natural_size() && !ImageRepeat::Cover.natural_size());
     }
 
     #[test]

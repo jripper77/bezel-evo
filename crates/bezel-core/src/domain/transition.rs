@@ -621,6 +621,7 @@ mod tests {
         let shape = element(
             3,
             ElementKind::Shape {
+                image: None,
                 video_window: false,
                 fade: None,
                 shape: crate::domain::theme::ShapeKind::Ellipse,
