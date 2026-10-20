@@ -450,6 +450,8 @@ pub(crate) fn images(r: &mut SkiaRenderer) {
         fade: None,
         asset: AssetRef("q.png".into()),
         fit,
+        anchor: Default::default(),
+        playback: Default::default(),
     };
     let bg = Background::Color(BLACK);
     let t = theme(
@@ -487,6 +489,8 @@ pub(crate) fn images(r: &mut SkiaRenderer) {
                 fade: None,
                 asset: AssetRef("a.gif".into()),
                 fit: Fit::Fill,
+                anchor: Default::default(),
+                playback: Default::default(),
             },
         )],
     );
@@ -1355,6 +1359,8 @@ fn radial_image_mask_keeps_assets_and_multiplies_pixels() {
             ElementKind::Image {
                 asset: asset.clone(),
                 fit: Fit::Fill,
+                anchor: Default::default(),
+                playback: Default::default(),
                 fade: Some(fade),
             },
         )],

@@ -609,6 +609,8 @@ impl Importer {
                 fade: None,
                 asset,
                 fit: Fit::Fill,
+                anchor: Default::default(),
+                playback: Default::default(),
             },
         );
     }

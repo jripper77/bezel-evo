@@ -13,10 +13,10 @@ use bezel_core::domain::needle::{
 };
 use bezel_core::domain::sensor::{ByteUnits, DisplayFormat, SensorKey, TemperatureUnit};
 use bezel_core::domain::theme::{
-    AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId, ElementKind,
-    Fit, FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, PartStyle, SWATCH_NAME_MAX,
-    Segments, ShapeImage, ShapeKind, Swatch, TextContent, TextOverflow, TextPart, TextParts,
-    TextStyle, Theme, VAlign,
+    Anchor, AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId,
+    ElementKind, Fit, FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, PartStyle,
+    Playback, SWATCH_NAME_MAX, Segments, ShapeImage, ShapeKind, Swatch, TextContent, TextOverflow,
+    TextPart, TextParts, TextStyle, Theme, VAlign,
 };
 use bezel_core::domain::transition::{
     MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
@@ -601,6 +601,20 @@ pub struct ValueTransitionDto {
     /// Readings averaged (1..=30); 1, each reading as it is, is omitted.
     #[serde(default = "one_u8", skip_serializing_if = "is_one_u8")]
     pub average: u8,
+}
+
+fn anchor_name(anchor: Anchor) -> &'static str {
+    match anchor {
+        Anchor::TopLeft => "topLeft",
+        Anchor::Top => "top",
+        Anchor::TopRight => "topRight",
+        Anchor::Left => "left",
+        Anchor::Center => "center",
+        Anchor::Right => "right",
+        Anchor::BottomLeft => "bottomLeft",
+        Anchor::Bottom => "bottom",
+        Anchor::BottomRight => "bottomRight",
+    }
 }
 
 fn one_u8() -> u8 {
@@ -1621,6 +1635,16 @@ pub enum KindDto {
         /// Fit.
         #[serde(default)]
         fit: FitDto,
+        /// What stays in view when it covers its box: `topLeft` … `bottomRight`;
+        /// absent is `center`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        anchor: Option<String>,
+        /// A GIF plays once and stops on its last frame.
+        #[serde(default, skip_serializing_if = "is_false")]
+        once: bool,
+        /// GIF speed, 0.25..=4 (absent: 1).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        speed: Option<f32>,
     },
     /// Shape.
     #[serde(rename_all = "camelCase")]
@@ -2344,10 +2368,19 @@ fn kind_dto(k: &ElementKind) -> KindDto {
             },
             style: style_dto(style),
         },
-        ElementKind::Image { asset, fit, fade } => KindDto::Image {
+        ElementKind::Image {
+            asset,
+            fit,
+            fade,
+            anchor,
+            playback,
+        } => KindDto::Image {
             fade: fade.map(fade_dto),
             asset: asset.0.clone(),
             fit: fit_dto(*fit),
+            anchor: (*anchor != Anchor::Center).then(|| anchor_name(*anchor).to_string()),
+            once: playback.once,
+            speed: (playback.speed != 1.0).then_some(playback.speed),
         },
         ElementKind::Shape {
             video_window,
@@ -2610,10 +2643,26 @@ fn kind(k: &KindDto) -> R<ElementKind> {
             asset,
             fit: f,
             fade,
+            anchor,
+            once,
+            speed,
         } => ElementKind::Image {
             fade: fade.as_ref().map(parse_fade).transpose()?,
             asset: AssetRef(asset.clone()),
             fit: fit(*f),
+            anchor: match anchor.as_deref() {
+                None => Anchor::Center,
+                Some(name) => Anchor::ALL
+                    .into_iter()
+                    .find(|a| anchor_name(*a) == name)
+                    .ok_or_else(|| DtoError(format!("unknown image anchor {name:?}")))?,
+            },
+            playback: Playback {
+                once: *once,
+                speed: speed.filter(|v| v.is_finite()).map_or(1.0, |v| {
+                    v.clamp(*Playback::SPEED.start(), *Playback::SPEED.end())
+                }),
+            },
         },
         KindDto::Shape {
             video_window,
@@ -3853,5 +3902,65 @@ mod weather_motion_tests {
             0.5
         );
         assert!(weather(serde_json::json!({"iconMotion": "wild"})).is_err());
+    }
+}
+
+#[cfg(test)]
+mod image_playback_tests {
+    use super::*;
+
+    fn image(extra: serde_json::Value) -> R<(Anchor, Playback, serde_json::Value)> {
+        let mut json =
+            serde_json::json!({"type": "image", "asset": "assets/a.gif", "fit": "cover"});
+        for (k, v) in extra.as_object().unwrap() {
+            json[k] = v.clone();
+        }
+        let k = kind(&serde_json::from_value(json).unwrap())?;
+        let ElementKind::Image {
+            anchor, playback, ..
+        } = &k
+        else {
+            unreachable!()
+        };
+        Ok((
+            *anchor,
+            *playback,
+            serde_json::to_value(kind_dto(&k)).unwrap(),
+        ))
+    }
+
+    #[test]
+    fn anchor_and_playback_round_trip_and_old_images_stay_the_same() {
+        let (anchor, playback, written) = image(serde_json::json!({})).unwrap();
+        assert_eq!((anchor, playback), (Anchor::Center, Playback::default()));
+        for field in ["anchor", "once", "speed"] {
+            assert!(written.get(field).is_none(), "{field}");
+        }
+        for anchor in Anchor::ALL {
+            let name = anchor_name(anchor);
+            let (read, _, written) = image(serde_json::json!({ "anchor": name })).unwrap();
+            assert_eq!(read, anchor);
+            if anchor != Anchor::Center {
+                assert_eq!(written["anchor"], name);
+            }
+        }
+        let (_, playback, written) =
+            image(serde_json::json!({"once": true, "speed": 0.5})).unwrap();
+        assert_eq!(
+            playback,
+            Playback {
+                once: true,
+                speed: 0.5
+            }
+        );
+        assert_eq!(
+            (written["once"].clone(), written["speed"].clone()),
+            (true.into(), 0.5.into())
+        );
+        assert_eq!(
+            image(serde_json::json!({"speed": 40.0})).unwrap().1.speed,
+            4.0
+        );
+        assert!(image(serde_json::json!({"anchor": "middle"})).is_err());
     }
 }

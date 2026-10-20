@@ -794,6 +794,8 @@ fn centered_image(name: &str, orientation: Orientation, asset: &str) -> (Theme, 
             fade: None,
             asset: AssetRef(asset.to_string()),
             fit: Fit::Fill,
+            anchor: Default::default(),
+            playback: Default::default(),
         },
     });
     (theme, (left, top))

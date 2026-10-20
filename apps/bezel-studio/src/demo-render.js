@@ -39,6 +39,24 @@ function paint(p) {
 export const DEMO_GIF_FRAME_MS = 100;
 /** The colors the demo's GIFs cycle through, one per frame. */
 const GIF_COLORS = ['#e4572e', '#f3a712', '#29bf12', '#4361ee'];
+/** How long one play of a demo GIF lasts, ms. */
+const GIF_TOTAL_MS = DEMO_GIF_FRAME_MS * GIF_COLORS.length;
+const gifSpeed = (kind) => Math.min(4, Math.max(0.25, Number.isFinite(kind?.speed) ? kind.speed : 1));
+
+/** The frame of an image object's demo GIF `ms` into the theme, with its speed and `once`, like the backend. */
+export function demoGifFrame(kind, ms) {
+  const local = ms * gifSpeed(kind);
+  if (kind?.once && local >= GIF_TOTAL_MS) return GIF_COLORS.length - 1;
+  return Math.floor(local / DEMO_GIF_FRAME_MS) % GIF_COLORS.length;
+}
+
+/** When that GIF next changes, ms from `ms`; null once a single play is over. */
+export function demoGifDue(kind, ms) {
+  const local = ms * gifSpeed(kind);
+  const next = (Math.floor(local / DEMO_GIF_FRAME_MS) + 1) * DEMO_GIF_FRAME_MS;
+  if (kind?.once && next >= GIF_TOTAL_MS) return null;
+  return (next - local) / gifSpeed(kind);
+}
 
 function fraction(t, i) {
   return 0.5 + 0.4 * Math.sin(t / 3 + i);
@@ -681,7 +699,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
     }
     case 'image':
       if (String(k.asset).toLowerCase().endsWith('.gif')) {
-        ctx.fillStyle = GIF_COLORS[Math.floor((trial?.elapsedMs ?? t * 1000) / DEMO_GIF_FRAME_MS) % GIF_COLORS.length];
+        ctx.fillStyle = GIF_COLORS[demoGifFrame(k, trial?.elapsedMs ?? t * 1000)];
         ctx.fillRect(f.x, f.y, f.width, f.height);
       }
       ctx.strokeStyle = k.color ? color(k.color) : 'rgba(255,255,255,0.4)';

@@ -574,6 +574,8 @@ impl Importer {
                     fade: None,
                     asset,
                     fit: Fit::Fill,
+                    anchor: Default::default(),
+                    playback: Default::default(),
                 };
                 self.b.push(format!("Image: {name}"), frame, true, kind);
             }

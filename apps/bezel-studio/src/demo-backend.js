@@ -16,7 +16,7 @@ import { DEMO_FONT_CATALOG } from './demo-fonts.js';
 import { DEMO_THEME } from './demo-theme.js';
 import { createDemoGifs } from './demo-gifs.js';
 import { createDemoStandby } from './demo-standby.js';
-import { DEMO_GIF_FRAME_MS, DEMO_VIDEO_LOOP_MS, measureApprox, renderApprox } from './demo-render.js';
+import { DEMO_VIDEO_LOOP_MS, demoGifDue, measureApprox, renderApprox } from './demo-render.js';
 import { isHorizontal } from './editor/geometry.js';
 import { IMAGE_EXTENSIONS as PICTURES, droppable, extensionOf, fileNameOf } from './editor/background.js';
 import { framingOf, isPlainFraming, pictureBox, resolvedRotation } from './editor/video-framing.js';
@@ -103,9 +103,10 @@ export function demoHung() {
  * shows none), like the backend's preview: every visible `*.gif` image.
  */
 export function demoNextChange(theme, ms) {
-  const gif = (theme?.elements ?? []).some((e) => isShown(theme, e) && e.kind?.type === 'image' && String(e.kind.asset).toLowerCase().endsWith('.gif'));
+  const gifs = (theme?.elements ?? []).filter((e) => isShown(theme, e) && e.kind?.type === 'image' && String(e.kind.asset).toLowerCase().endsWith('.gif'));
   if ((theme?.elements ?? []).some(e => isShown(theme,e) && e.kind.content?.type === 'spectrum' && e.kind.content.demo)) return 50;
-  return gif ? DEMO_GIF_FRAME_MS - (Math.floor(ms) % DEMO_GIF_FRAME_MS) : null;
+  const due = gifs.map((e) => demoGifDue(e.kind, Math.floor(ms))).filter((d) => d !== null);
+  return due.length ? Math.min(...due) : null;
 }
 
 /** The longest side of an element's preview when none is asked for, like the backend's. */

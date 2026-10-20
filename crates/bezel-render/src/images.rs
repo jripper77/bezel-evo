@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bezel_core::domain::animation::Timeline;
-use bezel_core::domain::theme::{AssetRef, BoxF, Fit};
+use bezel_core::domain::theme::{Anchor, AssetRef, BoxF, Fit, Playback};
 use image::codecs::gif::GifDecoder;
 use image::imageops::{self, FilterType};
 use image::{AnimationDecoder, ImageFormat, RgbaImage};
@@ -69,7 +69,16 @@ impl Scaled {
     /// The frame shown `animation` after the theme started (animations
     /// loop; the core's [`Timeline`] picks it).
     pub fn frame_at(&self, animation: Duration) -> Option<&Pixmap> {
-        let index = self.timeline.as_ref().map_or(0, |t| t.frame_at(animation));
+        self.frame_playing(animation, Playback::default())
+    }
+
+    /// The frame shown `animation` after the theme started when the
+    /// animation plays as `playback` says (speed, once).
+    pub fn frame_playing(&self, animation: Duration, playback: Playback) -> Option<&Pixmap> {
+        let index = self
+            .timeline
+            .as_ref()
+            .map_or(0, |t| t.frame_at(playback.moment(animation, t.total())));
         self.frames.get(index).or(self.frames.first())
     }
 }
@@ -90,8 +99,15 @@ fn px(v: f32) -> u32 {
 }
 
 /// How an `image`-sized picture fills `area` with `fit`. Only the visible
-/// part is kept (cover crops the source, none crops to the box).
+/// part is kept (cover crops the source round its centre, none crops to
+/// the box).
 pub(crate) fn plan(fit: Fit, image: (u32, u32), area: BoxF) -> Option<Plan> {
+    plan_at(fit, image, area, Anchor::Center)
+}
+
+/// [`plan`] keeping the `anchor` of the picture in view when it covers the
+/// box.
+pub(crate) fn plan_at(fit: Fit, image: (u32, u32), area: BoxF, anchor: Anchor) -> Option<Plan> {
     let (iw, ih) = (image.0 as f32, image.1 as f32);
     let valid = |v: f32| v.is_finite() && v >= 0.5;
     if !(valid(iw)
@@ -128,7 +144,9 @@ pub(crate) fn plan(fit: Fit, image: (u32, u32), area: BoxF) -> Option<Plan> {
             let s = (area.width / iw).max(area.height / ih);
             let cw = px(area.width / s).min(image.0);
             let ch = px(area.height / s).min(image.1);
-            let crop = ((image.0 - cw) / 2, (image.1 - ch) / 2, cw, ch);
+            let (ax, ay) = anchor.shares();
+            let shift = |spare: u32, share: f32| (spare as f32 * share).floor() as u32;
+            let crop = (shift(image.0 - cw, ax), shift(image.1 - ch, ay), cw, ch);
             Plan {
                 crop,
                 size: (px(area.width), px(area.height)),
@@ -315,8 +333,21 @@ impl ImageCache {
         assets: &BTreeMap<AssetRef, Vec<u8>>,
         diagnostics: &mut Diagnostics,
     ) -> Option<(Arc<Scaled>, Plan)> {
+        self.placed_at(asset, fit, Anchor::Center, area, assets, diagnostics)
+    }
+
+    /// [`Self::placed`] keeping `anchor` in view when the picture covers.
+    pub fn placed_at(
+        &mut self,
+        asset: &AssetRef,
+        fit: Fit,
+        anchor: Anchor,
+        area: BoxF,
+        assets: &BTreeMap<AssetRef, Vec<u8>>,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<(Arc<Scaled>, Plan)> {
         let source = self.source(asset, assets, diagnostics)?;
-        let plan = plan(fit, (source.width, source.height), area)?;
+        let plan = plan_at(fit, (source.width, source.height), area, anchor)?;
         if u64::from(plan.size.0) * u64::from(plan.size.1) > MAX_PIXELS {
             diagnostics.warn(format!(
                 "image asset {} is too large to draw at {:?}",

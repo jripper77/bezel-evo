@@ -213,6 +213,8 @@ fn cpu(top: f32) -> Option<Vec<(BoxF, ElementKind)>> {
         fade: None,
         asset: AssetRef(ICON.into()),
         fit: Fit::Contain,
+        anchor: Default::default(),
+        playback: Default::default(),
     };
     let big = style(76.0, 800, Paint::solid(Rgba::WHITE), HAlign::Center);
     let small = style(24.0, 500, Paint::solid(MUTED), HAlign::Center);

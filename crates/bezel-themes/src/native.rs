@@ -342,6 +342,8 @@ mod tests {
                         fade: None,
                         asset: AssetRef("assets/logo.png".into()),
                         fit: Fit::Cover,
+                        anchor: Default::default(),
+                        playback: Default::default(),
                     },
                 ),
                 el(
@@ -1005,6 +1007,8 @@ mod tests {
                 fade: None,
                 asset: AssetRef(String::new()),
                 fit: Fit::Contain,
+                anchor: Default::default(),
+                playback: Default::default(),
             },
         ));
         let root = scratch("unassigned-image");
