@@ -1363,6 +1363,52 @@ mod tests {
         s
     }
 
+    #[test]
+    fn native_and_demo_share_profile_selection_fixtures() {
+        let cases: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../apps/bezel-studio/tests/fixtures/profile-selection.json"
+        ))
+        .unwrap();
+        for case in cases.as_array().unwrap() {
+            let config: Config = serde_json::from_value(case["config"].clone()).unwrap();
+            config.validate().unwrap();
+            let mut selection = Selection::default();
+            for step in case["steps"].as_array().unwrap() {
+                let mut snapshot = Snapshot::default();
+                snapshot.idle_seconds = step["idleSeconds"].as_u64().map(|n| n as u32);
+                snapshot.locked = step["locked"].as_bool();
+                if let Some(readings) = step["readings"].as_object() {
+                    for (key, value) in readings {
+                        snapshot.insert(
+                            SensorKey::new(key.as_str()).unwrap(),
+                            bezel_core::domain::sensor::Reading::Value(value.as_f64().unwrap()),
+                        );
+                    }
+                }
+                let time = step["time"].as_object().map(|time| {
+                    at(
+                        time["weekday"].as_u64().unwrap() as u8,
+                        time["hour"].as_u64().unwrap() as u8,
+                        time["minute"].as_u64().unwrap() as u8,
+                    )
+                });
+                selection.choose_at(
+                    &config,
+                    &snapshot,
+                    Duration::from_secs(step["now"].as_u64().unwrap()),
+                    time.as_ref(),
+                );
+                assert_eq!(
+                    serde_json::to_value(&selection.status).unwrap(),
+                    step["expected"],
+                    "{} at {}",
+                    case["name"],
+                    step["now"]
+                );
+            }
+        }
+    }
+
     fn at(weekday: u8, hour: u8, minute: u8) -> LocalTime {
         LocalTime {
             year: 2026,
