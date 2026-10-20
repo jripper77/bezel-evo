@@ -5,11 +5,11 @@
 Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
 Versioni: pubblicata **0.1.59** (Latest su GitHub); **0.1.62** pacchettizzata in
 locale (setup, portable e SHA256SUMS in `dist/`, commit `1206f3e`, non pubblicata,
-non installata); installata sul PC **0.1.61**. Push e release solo su richiesta.
+installata sul PC dal setup). Push e release solo su richiesta.
 Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p (redesign Studio,
 logo Pixel, sfondo, profili, schermata di accensione, 4 temi predefiniti 1920×480);
 stato e decisioni nella sezione «Design» del passaggio.
-Aperti: installazione 0.1.62 su richiesta, prova visiva su 8,8/3,5, stato «attivo ora»
+Aperti: prova visiva su 8,8/3,5, stato «attivo ora»
 non esposto dal runtime, nomi tagliati nelle righe Sensori e facce Card, avvio dell'8,8
 dalla flash interna, temi predefiniti da realizzare. ChatGPT può lavorare in parallelo
 nello stesso repository: controllare `git log` prima di formattare o fare commit ampi.
