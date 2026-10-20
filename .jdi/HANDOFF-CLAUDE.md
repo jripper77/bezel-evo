@@ -1,5 +1,31 @@
 # Passaggio a Claude — 19 ottobre 2026
 
+## Design — aggiornamento 20 ottobre 2026 (sera)
+
+Canvas «Bezel Studio Redesign»: https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p
+(privato; si legge con lo strumento Artifact, action `read`, path
+`project/<Tavola>.dc.html`, indice `project/canvas.json`).
+
+- **Già nell'app (0.1.55+)**: shell, logo Pixel e `icon.svg`, pannelli Sensori/Livelli/
+  Temi/Media/Schermo/Archivio, galleria temi, inspector con anteprima e schede, Card,
+  Grafico, Media player, pallino stato sensori, sfondo «in uso + Cambia sfondo…»,
+  dialogo Profili (fatto da Claude nella phase `profiles-dialog-ux`).
+- **Difetti misurati** (larghezze fisse: libreria 271 px, inspector 320 px):
+  nome sensore 51 px su 151 necessari (mini grafico 60 + valore 80 fissi); nome faccia
+  Card 41 px contro 83 dell'etichetta «in vista». Proposta: righe su due livelli o
+  icone compatte, più colonne ridimensionabili con larghezza ricordata.
+- **Decisioni utente**: «Card» non si traduce; Profili con due modalità
+  Automatico/Manuale (Manuale include i temi di base); la priorità è della regola e
+  non va mostrata sul profilo (idea aperta: ordine dei profili trascinabile al posto
+  del numero, cambia il formato salvato); scrollbar sempre quella condivisa di
+  `styles/base.css`; schermata di accensione centrata, logo e titolo piccoli.
+- **Temi predefiniti** (tavole ThemePixel/ThemeNebula/ThemePaper/ThemeNowPlaying,
+  1920×480): seconda versione più fine; l'utente vuole dettagli e niente elementi
+  enormi. Font OFL da includere (Doto, Space Grotesk, Fraunces, Instrument Sans,
+  Bricolage Grotesque, JetBrains Mono). Richiedono lavoro: sensori per core, avanzamento
+  a forma d'onda, testi calcolati («mancano … a domani», variazioni ▲▼). Non ancora
+  realizzati come temi Bezel; da chiedere se servono anche le versioni 3,5″.
+
 ## Aggiornamento 20 ottobre 2026
 
 - **Transizioni profili**: chiuse le richieste. Coperture opache al posto di

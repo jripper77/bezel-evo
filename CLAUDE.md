@@ -1,17 +1,19 @@
 # JDI — Instrucoes Claude Code
 
-## Ripresa operativa — 20 ottobre 2026
+## Ripresa operativa — 20 ottobre 2026 (sera)
 
-Leggere AGENTS.md, .jdi/STATE.md e [il riepilogo profili](.jdi/phases/profiles-dialog-ux/SUMMARY.md).
-Ultimo lavoro: transizioni profili a copertura (Sipario/Tendina/Persiane/Mosaico,
-`crates/bezel-core/src/domain/cover.rs`), dialogo «Profili e automazioni» rifatto,
-▶ che prova la transizione verso la voce selezionata. Release 0.1.59 in
-preparazione (prima pubblicazione dalla 0.1.31); push solo su richiesta.
-Aperti: prova visiva su 8,8/3,5, stato «attivo ora» non esposto dal runtime,
-schermata di avvio dell'8,8 dalla flash interna ([passaggio](.jdi/HANDOFF-CLAUDE.md):
-la foto TURZX non è un video interno; prova senza Bezel rimandata). ChatGPT può
-lavorare in parallelo nello stesso repository: controllare `git log` prima di
-formattare o fare commit ampi. Ripresa in `F:\Dev\bezel`.
+Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
+Versioni: pubblicata **0.1.59** (Latest su GitHub); **0.1.61** pacchettizzata in
+locale (setup, portable e SHA256SUMS in `dist/`, commit `7904237`, non pubblicata,
+non installata); installata sul PC ancora **0.1.45**. Push e release solo su richiesta.
+Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p (redesign Studio,
+logo Pixel, sfondo, profili, schermata di accensione, 4 temi predefiniti 1920×480);
+stato e decisioni nella sezione «Design» del passaggio.
+Aperti: installazione 0.1.61 su richiesta, prova visiva su 8,8/3,5, stato «attivo ora»
+non esposto dal runtime, nomi tagliati nelle righe Sensori e facce Card, avvio dell'8,8
+dalla flash interna, temi predefiniti da realizzare. ChatGPT può lavorare in parallelo
+nello stesso repository: controllare `git log` prima di formattare o fare commit ampi.
+Ripresa in `F:\Dev\bezel`.
 
 Este projeto usa o JDI (Just Do It) como workflow de desenvolvimento. JDI eh um workflow enxuto: 6 comandos no loop principal, 5 agents core + 2 per-project specialists.
 
