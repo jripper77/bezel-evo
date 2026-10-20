@@ -117,7 +117,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   tacche, numeri della scala (formattati con la lingua), forma/lunghezza/coda, cappuccio, estremità, valore al centro (riusa
   la resa del Valore di T-1 se già unita, altrimenti testo semplice e annotazione), segno del massimo con ritorno dopo N s
   (stato nel motore come `sensor_motion`). Test pixel per zone e cappuccio, test di stato per il massimo.
-- **Dipendenze:** nessuna (valore al centro completo dopo T-1) · **Test:** G10, G11 · **Status:** pending
+- **Dipendenze:** nessuna (valore al centro completo dopo T-1) · **Test:** G10, G11 · **Status:** completed — `look` facoltativo (senza: resa di prima): arco, zone/sfumatura, colore dalla zona, tacche, numeri localizzati, quattro forme, lunghezza/coda, cappuccio, valore al centro col disegno del Valore, segno del massimo con stato nel renderer; demo uguale. Test Rust (core 323, themes 86, render 117), clippy/fmt, 66 unitari UI, e2e dell'area verdi tranne `library` «Group tile» già rossa sulla base (T-10). Vedi `SUMMARY-T-3.md`. Commit `6110e51`, `3f7234a`.
 
 #### T-4: Icone meteo animate
 - **Decisioni:** 09 · **Tavole:** WeatherAnimations, WeatherInspectorOpen (Comportamento)
