@@ -1,13 +1,16 @@
 # Native visualization presets
 
-Select a bar, ring or graph and open **Look → Visualization**. The preview uses
+Select a bar, ring or graph and open **Look → Visualization**. Choose a preset
+from its schematic preview tile. The preview uses
 the same native renderer as connected displays. **Classic** keeps the previous
 appearance and is the default for existing themes.
 
 - **Block matrix** (bar): columns, rows, spacing and corner radius. The existing
   fill direction controls cell order. Cells light completely, one by one; an
   unavailable source shows only the empty track. Keep the grid sparse enough
-  for the physical display's resolution.
+  for the physical display's resolution. **Fit matrix cells** adjusts the height
+  for near-square cells, bounded by the remaining screen height, without moving
+  the object. It is an explicit action and can be undone once.
 - **Pixel arc** (ring): square cells along the selected arc, using the existing
   fill, track and arc gradient. Scale marks controls the number of pixels;
   ring thickness sets their size. Cells light completely rather than partially.
