@@ -50,7 +50,7 @@ const ALIGN_EDGES = Object.freeze([['left', 'alignLeft'], ['centerX', 'alignCent
 // typography, paint, edges, then effects. A kind omits what it does not use.
 const LOOK_ORDER = Object.freeze([
   'show', 'shape', 'visualization', 'style', 'spectrum-bars', 'arc', 'spacing', 'appearance', 'font',
-  'color', 'spectrum-paint', 'fill', 'progress', 'track', 'segments',
+  'color', 'picture', 'spectrum-paint', 'fill', 'progress', 'track', 'segments',
   'outline', 'corners', 'shadow', 'transparency', 'preview', 'visibility',
 ]);
 // Illustrations of the option tiles (24-unit paths drawn like every icon):
@@ -65,7 +65,21 @@ const ART = Object.freeze({
   continuous: ['M3 12h18'],
   segments: ['M3 12h4', 'M10 12h4', 'M17 12h4'],
   dots: ['M4 12h.01', 'M9 12h.01', 'M14 12h.01', 'M19 12h.01'],
+  // How a shape's picture covers it (artboard-style tiles over the frame).
+  repeatCover: ['M3 4h18v16H3z', 'M3 17l6-7 4 4 3-3 5 5'],
+  repeatContain: ['M3 4h18v16H3z', 'M7 8h10v8H7z'],
+  repeatStretch: ['M3 4h18v16H3z', 'M7 8l10 8', 'M7 8h3', 'M7 8v3', 'M17 16h-3', 'M17 16v-3'],
+  repeatCenter: ['M3 4h18v16H3z', 'M10 10h4v4h-4z'],
+  repeatTile: ['M3 4h18v16H3z', 'M6 7h4v4H6z', 'M14 7h4v4h-4z', 'M6 13h4v4H6z', 'M14 13h4v4h-4z'],
+  repeatTileX: ['M3 4h18v16H3z', 'M5 10h4v4H5z', 'M10 10h4v4h-4z', 'M15 10h4v4h-4z'],
+  repeatTileY: ['M3 4h18v16H3z', 'M10 5h4v4h-4z', 'M10 10h4v4h-4z', 'M10 15h4v4h-4z'],
 });
+/** How a shape's picture covers it, in the order the tiles show. */
+const IMAGE_REPEATS = Object.freeze(['cover', 'contain', 'stretch', 'center', 'tile', 'tileX', 'tileY']);
+/** The name of each repeat; stretch and center reuse the image fit's words. */
+const REPEAT_KEYS = Object.freeze({ cover: 'shape.repeat.cover', contain: 'shape.repeat.contain', stretch: 'fit.fill', center: 'framing.center', tile: 'shape.repeat.tile', tileX: 'shape.repeat.tileX', tileY: 'shape.repeat.tileY' });
+/** Repeats that keep the picture's own size: scale and offset apply. */
+const NATURAL_REPEATS = Object.freeze(['center', 'tile', 'tileX', 'tileY']);
 /** The player's parts: their name and drawing ("What to show"). */
 const PART_TILES = Object.freeze({
   cover: ['insp.cover', ART.cover],
@@ -943,14 +957,46 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     ];
   }
 
-  function shapeForm(e) {
+  // Picture inside the shape: chosen from the theme's images, how it covers
+  // the shape, and for the natural-size repeats its scale and offset.
+  function shapePicture(e, assets) {
+    const k = e.kind;
+    const image = k.image ?? null;
+    const set = (patch) => update(e.id, { kind: { image: patch } });
+    const options = assets.filter((a) => a.kind === 'image').map((a) => [a.ref, a.ref.split('/').pop()]);
+    if (image?.asset && !options.some(([r]) => r === image.asset)) options.push([image.asset, image.asset]);
+    const pick = options.length
+      ? selectField(t('common.image'), image?.asset ?? '', [['', t('inspector.noImage')], ...options], (asset) => {
+        if (!asset) set(null);
+        else if (image) set({ asset });
+        else set({ asset, repeat: 'cover', scale: 1, offsetX: 0, offsetY: 0, opacity: 1 });
+      })
+      : el('p', { class: 'hint', text: t('inspector.addMediaFirst') });
+    if (!image) return section('picture', t('common.image'), [pick]);
+    const repeat = IMAGE_REPEATS.includes(image.repeat) ? image.repeat : 'cover';
+    const art = (value) => ART[`repeat${value[0].toUpperCase()}${value.slice(1)}`];
+    const tiles = IMAGE_REPEATS.map((value) => ({ text: t(REPEAT_KEYS[value]), art: art(value), pressed: repeat === value, onClick: () => repeat !== value && set({ repeat: value }) }));
+    const natural = NATURAL_REPEATS.includes(repeat);
+    return section('picture', t('common.image'), [
+      pick,
+      optionTiles(t('shape.repeat'), tiles),
+      natural && numberField(t('shape.imageScale'), Math.round((image.scale ?? 1) * 100), (v) => set({ scale: Math.max(5, Math.min(1000, v)) / 100 }), { min: 5, max: 1000, unit: '%' }),
+      natural && numberField(t('shape.imageOffsetX'), image.offsetX ?? 0, (v) => set({ offsetX: v }), { unit: 'px' }),
+      natural && numberField(t('shape.imageOffsetY'), image.offsetY ?? 0, (v) => set({ offsetY: v }), { unit: 'px' }),
+      rangeField(t('shape.imageOpacity'), Math.round((image.opacity ?? 1) * 100), (v) => set({ opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, format: (v) => `${v}%` }),
+      el('p', { class: 'hint', text: t('shape.imageHint') }),
+    ]);
+  }
+
+  function shapeForm(e, assets = []) {
     const k = e.kind;
     return { look: [section('shape', t('common.shape'), [
       segmented(t('common.shape'), k.shape, [['rect', t('shape.rect')], ['ellipse', t('shape.ellipse')]], (v) => update(e.id, { kind: { shape: v } })),
       switchRow(t('shape.videoWindow'), Boolean(k.videoWindow), (videoWindow) => update(e.id, { kind: { videoWindow } })),
     ]), section('color', t('inspector.color'), [
       k.videoWindow ? el('div', {}, [el('p', { class: 'hint', text: t('shape.videoWindowHint') }), button(t('deviceVideo.choose'), () => video.openStorage())]) : colorField(t('inspector.fill'), typeof k.fill === 'string' ? k.fill : '#1e293bff', (v) => update(e.id, { kind: { fill: v } })),
-    ]), section('transparency', t('fade.mode'), fadeFields(e)),
+    ]), k.videoWindow ? null : shapePicture(e, assets),
+    section('transparency', t('fade.mode'), fadeFields(e)),
     section('outline', t('insp.outline'), [
       numberField(t('inspector.strokeWidth'), k.strokeWidth ?? 0, (v) => update(e.id, { kind: { strokeWidth: Math.max(0, v), stroke: v > 0 ? (k.stroke ?? '#ffffffff') : null } }), { min: 0, unit: 'px', iconName: 'strokeWidth' }),
       (k.strokeWidth ?? 0) > 0 && colorField(t('inspector.stroke'), k.stroke ?? '#ffffffff', (v) => update(e.id, { kind: { stroke: v } })),
@@ -1265,7 +1311,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
 
   function panelsOf(e, theme, assets) {
     const kindForms = { text: textForm, bar: barForm, ring: ringForm, needle: needleForm, graph: graphForm, shape: shapeForm };
-    const specific = e.isGroup ? {} : e.kind.type === 'image' ? imageForm(e, assets) : kindForms[e.kind.type]?.(e) ?? {};
+    const specific = e.isGroup ? {} : e.kind.type === 'image' ? imageForm(e, assets) : e.kind.type === 'shape' ? shapeForm(e, assets) : kindForms[e.kind.type]?.(e) ?? {};
     // Conditional colour belongs beside the paint it controls. Opacity has a
     // stable group of its own instead of ending up among corners or thresholds.
     const opacity = rangeField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: v / 100 }), { format: v => `${v}%` });

@@ -316,6 +316,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
       if (k.shape === 'ellipse') ctx.ellipse(f.x + f.width / 2, f.y + f.height / 2, f.width / 2, f.height / 2, 0, 0, Math.PI * 2);
       else ctx.roundRect(f.x, f.y, f.width, f.height, k.corners ?? k.radius ?? 0);
       ctx.fill();
+      if (k.image?.asset && !k.videoWindow) { ctx.save(); ctx.clip(); drawPicturePlaceholder(ctx, f, k.image); ctx.restore(); }
       if (k.stroke && k.strokeWidth > 0) { ctx.strokeStyle = color(k.stroke); ctx.lineWidth = k.strokeWidth; ctx.stroke(); }
       break;
     case 'bar': {
@@ -408,6 +409,34 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
       break;
   }
   ctx.restore();
+}
+
+/** Side of a demo picture at 100 %, CSS pixels (the demo decodes no images). */
+const DEMO_PICTURE = 32;
+
+/**
+ * Where a shape's picture lands, as the screen renderer places it: a
+ * checkered copy for each tile, the fitted area for the box modes. The
+ * demo has no image decoder, so the copies stand in for the picture.
+ */
+function drawPicturePlaceholder(ctx, f, image) {
+  const repeat = image.repeat ?? 'cover';
+  ctx.globalAlpha *= Math.max(0, Math.min(1, image.opacity ?? 1));
+  const copy = (x, y, w, h) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x, y, w / 2, h / 2); ctx.fillRect(x + w / 2, y + h / 2, w / 2, h / 2);
+  };
+  if (repeat === 'cover' || repeat === 'stretch') { copy(f.x, f.y, f.width, f.height); return; }
+  if (repeat === 'contain') { const s = Math.min(f.width, f.height); copy(f.x + (f.width - s) / 2, f.y + (f.height - s) / 2, s, s); return; }
+  const side = Math.max(1, DEMO_PICTURE * (image.scale ?? 1));
+  const [ox, oy] = [image.offsetX ?? 0, image.offsetY ?? 0];
+  if (repeat === 'center') { copy(f.x + (f.width - side) / 2 + ox, f.y + (f.height - side) / 2 + oy, side, side); return; }
+  const start = (from, offset) => from + offset - Math.ceil(offset / side) * side;
+  const xs = repeat === 'tileY' ? [f.x + ox] : [];
+  const ys = repeat === 'tileX' ? [f.y + oy] : [];
+  if (!xs.length) for (let x = start(f.x, ox); x < f.x + f.width; x += side) xs.push(x);
+  if (!ys.length) for (let y = start(f.y, oy); y < f.y + f.height; y += side) ys.push(y);
+  for (const y of ys) for (const x of xs) copy(x, y, side, side);
 }
 
 /** A small fixed pseudo-random sequence, so the stars stay where they are. */

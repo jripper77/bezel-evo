@@ -3022,6 +3022,27 @@ mod tests {
     }
 
     #[test]
+    fn a_shape_picture_keeps_its_media_from_removal() {
+        let mut s = card_animation_studio();
+        let asset = s.add_asset("dots.svg", b"<svg/>".to_vec());
+        let mut used = s.theme().clone();
+        if let ElementKind::Shape { image, .. } = &mut used.elements[0].kind {
+            *image = Some(bezel_core::domain::theme::ShapeImage::new(asset.clone()));
+        }
+        s.set_theme(used.clone());
+        assert!(
+            !s.remove_asset(&asset, &used),
+            "a shape's picture is in use"
+        );
+        let mut cleared = used;
+        if let ElementKind::Shape { image, .. } = &mut cleared.elements[0].kind {
+            *image = None;
+        }
+        s.set_theme(cleared.clone());
+        assert!(s.remove_asset(&asset, &cleared));
+    }
+
+    #[test]
     fn removed_media_preserves_undo_bytes_and_reimport_restores_it() {
         let mut s = studio();
         let asset = s.add_asset("logo.png", vec![1, 2, 3]);
