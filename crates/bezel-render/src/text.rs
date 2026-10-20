@@ -686,7 +686,7 @@ mod tests {
         let mut engine = TextEngine::new(copies, SystemFonts::Load);
         let mut diagnostics = Diagnostics::default();
         let catalog = engine.catalog();
-        for family in ["Inter", "JetBrains Mono"] {
+        for (family, _) in crate::SHIPPED_FAMILIES {
             let spec = FontSpec {
                 family: family.into(),
                 ..FontSpec::default()

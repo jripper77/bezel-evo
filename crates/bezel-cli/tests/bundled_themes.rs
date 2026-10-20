@@ -129,7 +129,9 @@ fn every_bundled_theme_renders_cleanly() {
         }
         let fonts = families(&theme);
         assert!(
-            fonts.iter().all(|f| f == "Inter" || f == "JetBrains Mono"),
+            fonts.iter().all(|f| bezel_render::SHIPPED_FAMILIES
+                .iter()
+                .any(|(shipped, _)| f == shipped)),
             "{name}: {fonts:?}"
         );
         for (language, suffix) in languages {

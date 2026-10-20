@@ -16,8 +16,10 @@ accounts for letters becoming wider after conversion.
 
 ## Included with Bezel
 
-**Inter** and **JetBrains Mono** are built into Bezel Evo: every theme can use
-them on any PC, with nothing to install. The built-in themes use them.
+**Inter**, **JetBrains Mono**, **Doto**, **Doto Rounded** and **IBM Plex Mono**
+are built into Bezel Evo: every theme can use them on any PC, with nothing to
+install. Doto is a dot-matrix face that suits clocks and big readings; IBM Plex
+Mono is the typeface of Studio's own interface. The built-in themes use them.
 
 ## My fonts
 

@@ -9,9 +9,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 /// The font files Bezel ships (`themes/fonts/`, SIL OFL 1.1, licences in
-/// that folder): Inter (400, 500, 600, 700) and JetBrains Mono (400, 500,
-/// 700). A renderer that loads the installed fonts loads these first.
-pub const SHIPPED_FONTS: [&[u8]; 7] = [
+/// that folder): Inter (400, 500, 600, 700), JetBrains Mono (400, 500, 700),
+/// Doto and Doto Rounded (100 to 900) and IBM Plex Mono (100 to 700, upright
+/// and italic). A renderer that loads the installed fonts loads these first.
+/// Order matters to callers that slice it: see [`SHIPPED_FAMILIES`].
+pub const SHIPPED_FONTS: [&[u8]; 39] = [
     include_bytes!("../../../themes/fonts/Inter-Regular.ttf"),
     include_bytes!("../../../themes/fonts/Inter-Medium.ttf"),
     include_bytes!("../../../themes/fonts/Inter-SemiBold.ttf"),
@@ -19,6 +21,47 @@ pub const SHIPPED_FONTS: [&[u8]; 7] = [
     include_bytes!("../../../themes/fonts/JetBrainsMono-Regular.otf"),
     include_bytes!("../../../themes/fonts/JetBrainsMono-Medium.otf"),
     include_bytes!("../../../themes/fonts/JetBrainsMono-Bold.otf"),
+    include_bytes!("../../../themes/fonts/Doto-Thin.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-ExtraLight.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-Light.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-Bold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-ExtraBold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto-Black.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Thin.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-ExtraLight.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Light.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Bold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-ExtraBold.ttf"),
+    include_bytes!("../../../themes/fonts/Doto_Rounded-Black.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Thin.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-ThinItalic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-ExtraLight.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-ExtraLightItalic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Light.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-LightItalic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Italic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-MediumItalic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-SemiBoldItalic.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-Bold.ttf"),
+    include_bytes!("../../../themes/fonts/IBMPlexMono-BoldItalic.ttf"),
+];
+
+/// Each shipped family and the range of [`SHIPPED_FONTS`] holding its faces.
+pub const SHIPPED_FAMILIES: [(&str, std::ops::Range<usize>); 5] = [
+    ("Inter", 0..4),
+    ("JetBrains Mono", 4..7),
+    ("Doto", 7..16),
+    ("Doto Rounded", 16..25),
+    ("IBM Plex Mono", 25..39),
 ];
 
 /// Whether `bytes` is one of [`SHIPPED_FONTS`] (a copy read from a folder).

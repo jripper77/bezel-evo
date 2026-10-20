@@ -633,10 +633,8 @@ mod tests {
     #[test]
     fn the_shipped_fonts_draw_a_theme_from_any_folder() {
         let mut app = SkiaRenderer::with_fonts(Vec::new(), SystemFonts::Load);
-        for (family, files) in [
-            ("Inter", &bezel_render::SHIPPED_FONTS[..4]),
-            ("JetBrains Mono", &bezel_render::SHIPPED_FONTS[4..]),
-        ] {
+        for (family, range) in bezel_render::SHIPPED_FAMILIES {
+            let files = &bezel_render::SHIPPED_FONTS[range];
             let (log, pixels) = render_in(family, &mut app);
             let log = String::from_utf8(log).unwrap();
             assert!(!log.contains("font family"), "{family}: {log}");

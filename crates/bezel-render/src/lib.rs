@@ -42,7 +42,9 @@ mod player_tests;
 mod testkit;
 
 pub use catalog::{FontCatalog, FontCategory, FontFace, FontFamily, FontOrigin, category};
-pub use fonts::{MAX_FONT_FILE, SHIPPED_FONTS, font_files, user_fonts_directory, valid_font};
+pub use fonts::{
+    MAX_FONT_FILE, SHIPPED_FAMILIES, SHIPPED_FONTS, font_files, user_fonts_directory, valid_font,
+};
 pub use renderer::SkiaRenderer;
 pub use svg::{svg_size, svg_thumbnail};
 pub use text::SystemFonts;
