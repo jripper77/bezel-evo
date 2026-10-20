@@ -10,7 +10,8 @@ use bezel_core::domain::history::SeriesId;
 use bezel_core::domain::playback::PROGRESS_SPACING;
 use bezel_core::domain::sensor::{Reading, format_reading, fraction};
 use bezel_core::domain::theme::{
-    AssetRef, Background, Binding, BoxF, Element, ElementId, ElementKind, Fit, TextContent, Theme,
+    AssetRef, Background, Binding, BoxF, Element, ElementId, ElementKind, Fit, ImageRepeat,
+    ShapeImage, TextContent, Theme,
 };
 use bezel_core::ports::{Backdrop, FrameRenderer, RenderContext};
 use bezel_core::{BezelError, Result};
@@ -164,7 +165,12 @@ fn is_static(element: &Element) -> bool {
         return false;
     }
     match &element.kind {
-        ElementKind::Shape { video_window, .. } => !video_window,
+        // A picture may animate or be replaced under the same name.
+        ElementKind::Shape {
+            video_window,
+            image,
+            ..
+        } => !video_window && image.is_none(),
         ElementKind::Text {
             content: TextContent::Static(_),
             style,
@@ -879,11 +885,11 @@ impl SkiaRenderer {
                                         context.animation,
                                     ) > 0.
                             }
-                            ElementKind::Image { asset, .. } => self
-                                .images
-                                .timeline(asset, assets, &mut self.diagnostics)
-                                .is_some(),
-                            _ => false,
+                            kind => kind.picture().is_some_and(|asset| {
+                                self.images
+                                    .timeline(asset, assets, &mut self.diagnostics)
+                                    .is_some()
+                            }),
                         }
                 });
                 let key = (self.card_scene, parent.id, pose.face, include, has_windows);
@@ -1366,6 +1372,7 @@ impl SkiaRenderer {
                 video_window,
                 shape,
                 fill,
+                image,
                 stroke,
                 ..
             } => {
@@ -1379,7 +1386,13 @@ impl SkiaRenderer {
                 } else {
                     fill.as_ref()
                 };
-                shape::draw(layer, area, *shape, fill, *stroke);
+                // A video window shows the screen's video, never a picture.
+                let picture = image.as_ref().filter(|_| !*video_window);
+                shape::draw_with(layer, area, *shape, fill, *stroke, |layer, path| {
+                    if let Some(picture) = picture {
+                        self.draw_shape_image(layer, area, path, picture, assets, context);
+                    }
+                });
             }
             ElementKind::Bar {
                 binding,
@@ -1445,6 +1458,102 @@ impl SkiaRenderer {
                 plan.at.1.round() as i32,
             );
         }
+    }
+
+    /// Paints a shape's picture inside `path` (the shape's fill outline):
+    /// fitted to the shape's box, or at its own size times the scale, once
+    /// or repeated, then offset. Pictures are resampled once per size by the
+    /// image cache (SVG rasterised at that size) and blitted pixel-aligned.
+    fn draw_shape_image(
+        &mut self,
+        layer: &mut Layer<'_>,
+        area: BoxF,
+        path: &tiny_skia::Path,
+        image: &ShapeImage,
+        assets: &BTreeMap<AssetRef, Vec<u8>>,
+        context: &RenderContext<'_>,
+    ) {
+        if image.asset.0.is_empty() || !image.opacity.is_finite() || image.opacity <= 0.0 {
+            return;
+        }
+        let Some(mask) = layer.mask_of(path) else {
+            return;
+        };
+        let opacity = image.opacity.min(1.0);
+        let natural = image.repeat.natural_size();
+        let (fit, target) = match image.repeat {
+            ImageRepeat::Cover => (Fit::Cover, area),
+            ImageRepeat::Contain => (Fit::Contain, area),
+            ImageRepeat::Stretch => (Fit::Fill, area),
+            _ => {
+                let Some((w, h)) =
+                    self.images
+                        .natural_size(&image.asset, assets, &mut self.diagnostics)
+                else {
+                    return;
+                };
+                let scale = image
+                    .scale
+                    .clamp(*ShapeImage::SCALE.start(), *ShapeImage::SCALE.end());
+                (
+                    Fit::Fill,
+                    BoxF::new(0.0, 0.0, (w * scale).max(1.0), (h * scale).max(1.0)),
+                )
+            }
+        };
+        let Some((scaled, plan)) =
+            self.images
+                .placed(&image.asset, fit, target, assets, &mut self.diagnostics)
+        else {
+            return;
+        };
+        let Some(frame) = scaled.frame_at(context.animation) else {
+            return;
+        };
+        let (tw, th) = (frame.width() as f32, frame.height() as f32);
+        let (ox, oy) = image.offset;
+        let origin = match image.repeat {
+            _ if !natural => plan.at,
+            ImageRepeat::Center => (
+                area.x + (area.width - tw) / 2.0 + ox,
+                area.y + (area.height - th) / 2.0 + oy,
+            ),
+            _ => (area.x + ox, area.y + oy),
+        };
+        let origin = (origin.0.round(), origin.1.round());
+        let (spread, rect) = match image.repeat {
+            ImageRepeat::Tile => (
+                tiny_skia::SpreadMode::Repeat,
+                tiny_skia::Rect::from_xywh(area.x, area.y, area.width, area.height),
+            ),
+            ImageRepeat::TileX => (
+                tiny_skia::SpreadMode::Repeat,
+                tiny_skia::Rect::from_xywh(area.x, origin.1, area.width, th),
+            ),
+            ImageRepeat::TileY => (
+                tiny_skia::SpreadMode::Repeat,
+                tiny_skia::Rect::from_xywh(origin.0, area.y, tw, area.height),
+            ),
+            _ => (
+                tiny_skia::SpreadMode::Pad,
+                tiny_skia::Rect::from_xywh(origin.0, origin.1, tw, th),
+            ),
+        };
+        let Some(rect) = rect else {
+            return;
+        };
+        let paint = tiny_skia::Paint {
+            shader: tiny_skia::Pattern::new(
+                frame.as_ref(),
+                spread,
+                tiny_skia::FilterQuality::Nearest,
+                opacity,
+                Transform::from_translate(origin.0, origin.1),
+            ),
+            anti_alias: false,
+            ..tiny_skia::Paint::default()
+        };
+        layer.fill_rect_masked(rect, &paint, &mask);
     }
 
     fn draw_needle(

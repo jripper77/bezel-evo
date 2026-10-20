@@ -17,6 +17,19 @@ pub(crate) fn draw(
     fill: Option<&Paint>,
     outline: Option<(Rgba, f32)>,
 ) {
+    draw_with(layer, area, shape, fill, outline, |_, _| {});
+}
+
+/// Draws a shape filling `area`, calling `inside` between the fill and the
+/// outline with the path both use, so content can be painted within it.
+pub(crate) fn draw_with(
+    layer: &mut Layer<'_>,
+    area: BoxF,
+    shape: ShapeKind,
+    fill: Option<&Paint>,
+    outline: Option<(Rgba, f32)>,
+    inside: impl FnOnce(&mut Layer<'_>, &Path),
+) {
     let width = outline
         .map(|(_, w)| w)
         .filter(|w| w.is_finite() && *w > 0.0)
@@ -28,6 +41,7 @@ pub(crate) fn draw(
     if let Some(paint) = fill.and_then(|p| paint_for(p, area)) {
         layer.fill(&path, &paint);
     }
+    inside(layer, &path);
     if let Some((color, _)) = outline.filter(|_| width > 0.0) {
         let stroke = Stroke {
             width,
