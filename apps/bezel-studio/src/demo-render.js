@@ -10,10 +10,11 @@ import { colorAt } from './value-color.js';
 import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
 import { fadeLine } from './shape-fade.js';
-import { weatherText } from './weather-format.js';
+import { weatherFamily, weatherText } from './weather-format.js';
 import { analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
-import { weatherIconPaths } from './weather-icon.js';
+import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
+import { REST, amplitudeOf, iconPose, iconStep } from './weather-motion.js';
 import { demoPeak, faint, fitGauge, gradientAt, lookOf, needleColor, numberShares, scaleNumber, share, tickShares } from './needle-look.js';
 import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
 import { barGeometry, blockMetrics, blockRows, coverShare, fitPlayer, placeBlock, playerText, progressOf, PROGRESS_SPACING } from './player-parts.js';
@@ -128,6 +129,64 @@ function drawProgress(ctx, c, s, area, shown) {
   }
   ctx.textAlign = s.align === 'center' ? 'center' : s.align === 'right' ? 'right' : 'left';
   return { ...area, height: Math.max(0, area.height - m.height - (alone ? 0 : PROGRESS_SPACING)) };
+}
+
+/** One part of a weather icon (or, at rest, a whole component) in 24-unit space. */
+function drawIconComponent(ctx, component, style, colour) {
+  const colored = ['colored', 'dimensional'].includes(style);
+  const path = new Path2D(component.path);
+  ctx.fillStyle = ctx.strokeStyle = colored ? component.light : colour;
+  if (colored && style === 'dimensional') {
+    if (component.fill) { ctx.save(); ctx.translate(.5, .9); ctx.fillStyle = 'rgba(0,0,0,0.255)'; ctx.fill(path); ctx.restore(); }
+    const g = ctx.createLinearGradient(...fadeLine({ x: 0, y: 0, width: 24, height: 24 }, 65));
+    g.addColorStop(0, component.light); g.addColorStop(1, component.dark);
+    ctx.fillStyle = ctx.strokeStyle = g;
+  }
+  if (colored ? component.fill : style === 'filled') ctx.fill(path);
+  ctx.stroke(path);
+}
+
+/**
+ * A weather icon like the backend's (crates/bezel-render/src/weather.rs): at
+ * rest as one icon, moving with each part turned, shifted and faded by
+ * `pose`, and the 3D shadow, halo and flash.
+ */
+function drawWeatherIcon(ctx, style, colour, x, y, side, code, pose) {
+  const colored = ['colored', 'dimensional'].includes(style);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(side / 24, side / 24);
+  ctx.lineWidth = Math.max(colored ? 1.5 : 1.6, 24 / side);
+  ctx.lineCap = colored ? 'round' : 'butt';
+  if (pose === REST) {
+    for (const component of weatherIconPaths(code, colored)) drawIconComponent(ctx, component, style, colour);
+    ctx.restore();
+    return;
+  }
+  const k = 24 / 64, [cx, cy] = sunCenter(colored), family = weatherFamily(code);
+  ctx.globalAlpha *= pose.whole;
+  if (style === 'dimensional') {
+    const follow = family >= 1 && family <= 6 ? pose.cloud : 0;
+    ctx.beginPath(); ctx.ellipse((33 + follow) * k, 58 * k, 16 * k, 2.6 * k, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.196)'; ctx.fill();
+    if (pose.halo > 0 && family <= 1) {
+      ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,213,79,${pose.halo})`; ctx.fill();
+    }
+  }
+  for (const part of weatherIconParts(code, colored)) {
+    ctx.save();
+    if (part.role === 'disc') { ctx.translate(cx, cy); ctx.scale(1 + pose.disc, 1 + pose.disc); ctx.translate(-cx, -cy); }
+    if (part.role === 'rays') { ctx.translate(cx, cy); ctx.rotate(pose.rays * Math.PI / 180); ctx.translate(-cx, -cy); }
+    if (part.role === 'cloud') ctx.translate(pose.cloud * k, 0);
+    if (part.role === 'strip') { const [dx, o] = pose.strips[part.index]; ctx.translate(dx * k, 0); ctx.globalAlpha *= o; }
+    if (part.role === 'drop') { const [dx, dy, o] = pose.drops[part.index]; ctx.translate(dx * k, dy * k); ctx.globalAlpha *= o; }
+    if (part.role === 'bolt') ctx.globalAlpha *= pose.bolt;
+    drawIconComponent(ctx, part, style, colour);
+    ctx.restore();
+  }
+  if (style === 'dimensional' && pose.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${pose.flash})`; ctx.fillRect(0, 0, 24, 24); }
+  ctx.restore();
 }
 
 /** When the texts drawn by this render next want a frame (scrolling lines, blinking separators), ms. */
@@ -389,26 +448,11 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   let f = e.frame;
   if (k.content.type === 'weather' && k.content.showIcon !== false) {
     const { side, gap } = textFurniture(k).layout(f);
-    ctx.save();
-    ctx.translate(f.x, f.y + (f.height - side) / 2);
-    ctx.scale(side / 24, side / 24);
-    ctx.strokeStyle = paint(s.paint); ctx.lineWidth = 1.6;
-    const colored = ['colored','dimensional'].includes(k.content.iconStyle);
-    ctx.lineWidth = Math.max(colored ? 1.5 : 1.6, 24 / side);
-    ctx.lineCap = colored ? 'round' : 'butt';
-    for (const component of weatherIconPaths(trial?.weatherCode ?? 3, colored)) {
-      const path = new Path2D(component.path);
-      ctx.fillStyle = ctx.strokeStyle = colored ? component.light : paint(s.paint);
-      if (colored && k.content.iconStyle === 'dimensional') {
-        if (component.fill) { ctx.save(); ctx.translate(.5, .9); ctx.fillStyle = 'rgba(0,0,0,0.255)'; ctx.fill(path); ctx.restore(); }
-        const g = ctx.createLinearGradient(...fadeLine({ x: 0, y: 0, width: 24, height: 24 }, 65));
-        g.addColorStop(0, component.light); g.addColorStop(1, component.dark);
-        ctx.fillStyle = ctx.strokeStyle = g;
-      }
-      if (colored ? component.fill : k.content.iconStyle === 'filled') ctx.fill(path);
-      ctx.stroke(path);
-    }
-    ctx.restore();
+    const code = trial?.weatherCode ?? 3;
+    const moving = motion && !trial ? iconStep(k.content.iconMotion) : null;
+    const pose = moving ? iconPose(weatherFamily(code), t, amplitudeOf(k.content.iconMotion), k.content.iconSpeed ?? 1) : REST;
+    if (moving) wantFrame(moving);
+    drawWeatherIcon(ctx, k.content.iconStyle, paint(s.paint), f.x, f.y + (f.height - side) / 2, side, code, pose);
     f = { ...f, x: f.x + side + gap, width: Math.max(0, f.width - side - gap) };
   }
   if (k.content.type==='player') {
