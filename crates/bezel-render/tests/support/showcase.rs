@@ -75,6 +75,7 @@ fn style(size: f32, weight: u16, paint: Paint, align: HAlign) -> TextStyle {
         valign: VAlign::Middle,
         casing: Default::default(),
         letter_spacing: 0.0,
+        ..TextStyle::default()
     }
 }
 

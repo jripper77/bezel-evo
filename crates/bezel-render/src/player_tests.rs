@@ -36,6 +36,7 @@ fn style(align: HAlign, valign: VAlign) -> TextStyle {
         valign,
         casing: Default::default(),
         letter_spacing: 0.,
+        ..TextStyle::default()
     }
 }
 

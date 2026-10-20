@@ -3,15 +3,15 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bezel_core::domain::animation::Timeline;
-use bezel_core::domain::clock::{clock_case, format_clock};
+use bezel_core::domain::clock::{clock_case, clock_parts, format_clock};
 use bezel_core::domain::frame::{Frame, Rgba};
 use bezel_core::domain::geometry::Size;
 use bezel_core::domain::history::SeriesId;
 use bezel_core::domain::playback::PROGRESS_SPACING;
-use bezel_core::domain::sensor::{Reading, format_reading, fraction};
+use bezel_core::domain::sensor::{Reading, format_reading, format_reading_parts, fraction};
 use bezel_core::domain::theme::{
     AssetRef, Background, Binding, BoxF, Element, ElementId, ElementKind, Fit, ImageRepeat,
-    ShapeImage, TextContent, Theme,
+    ShapeImage, TextContent, TextOverflow, TextPart, TextStyle, Theme,
 };
 use bezel_core::ports::{Backdrop, FrameRenderer, RenderContext};
 use bezel_core::{BezelError, Result};
@@ -28,7 +28,11 @@ use crate::images::{self, ImageCache};
 use crate::layer::Layer;
 use crate::paint;
 use crate::shape;
-use crate::text::{SystemFonts, TextEngine, TextJob};
+use crate::text::{Piece, RichJob, SystemFonts, TextEngine, TextJob};
+
+/// Half a blink of clock separators: shown for the first half of every
+/// second, hidden for the second.
+const BLINK_HALF: std::time::Duration = std::time::Duration::from_millis(500);
 
 /// Decorations around a text run, shared by drawing and natural sizing.
 #[derive(Default)]
@@ -128,6 +132,8 @@ pub struct SkiaRenderer {
     card_scenes: HashMap<u64, crate::cards::Cards>,
     rotors: HashMap<(u64, ElementId), crate::sensor_motion::Rotor>,
     rotor_due: Option<std::time::Duration>,
+    /// When a scrolling line or blinking separators want the next frame.
+    text_due: Option<std::time::Duration>,
 }
 
 /// Where an element sits in its theme: z-index and id.
@@ -174,7 +180,7 @@ fn is_static(element: &Element) -> bool {
         ElementKind::Text {
             content: TextContent::Static(_),
             style,
-        } => style.font.asset.is_none(),
+        } => style.font.asset.is_none() && style.overflow != Some(TextOverflow::Scroll),
         _ => false,
     }
 }
@@ -221,6 +227,7 @@ impl SkiaRenderer {
             card_scenes: HashMap::new(),
             rotors: HashMap::new(),
             rotor_due: None,
+            text_due: None,
         }
     }
 }
@@ -319,13 +326,18 @@ impl FrameRenderer for SkiaRenderer {
         let old = element.frame;
         let (width, height, ax, ay) = match &element.kind {
             ElementKind::Text { content, style } => {
-                let text = text_of(id, content, &context);
-                let job = TextJob {
-                    text: &text,
-                    style,
-                    area: old,
+                let measured = match rich_job(id, content, style, old, &context, false) {
+                    Some((job, _)) => self.text.measure_rich(&job, assets, &mut self.diagnostics),
+                    None => {
+                        let text = text_of(id, content, &context);
+                        let job = TextJob {
+                            text: &text,
+                            style,
+                            area: old,
+                        };
+                        self.text.measure(&job, assets, &mut self.diagnostics)
+                    }
                 };
-                let measured = self.text.measure(&job, assets, &mut self.diagnostics);
                 let furniture = TextFurniture::new(content, style, &context);
                 let fitted = match content {
                     TextContent::Player(p) => {
@@ -397,10 +409,15 @@ impl FrameRenderer for SkiaRenderer {
         self.render_stats
     }
     fn next_change(&self) -> Option<std::time::Duration> {
-        [self.cards.next, self.font_poll_due, self.rotor_due]
-            .into_iter()
-            .flatten()
-            .min()
+        [
+            self.cards.next,
+            self.font_poll_due,
+            self.rotor_due,
+            self.text_due,
+        ]
+        .into_iter()
+        .flatten()
+        .min()
     }
     fn set_motion(&mut self, allowed: bool) {
         self.cards.motion = allowed;
@@ -413,6 +430,7 @@ impl FrameRenderer for SkiaRenderer {
         context: RenderContext<'_>,
     ) -> Result<Frame> {
         self.rotor_due = None;
+        self.text_due = None;
         if self.rotors.len() > 4096 {
             self.rotors
                 .retain(|(scene, _), _| *scene == self.card_scene);
@@ -568,6 +586,96 @@ fn text_of(id: ElementId, content: &TextContent, context: &RenderContext<'_>) ->
             *casing,
         ),
     }
+}
+
+/// What a text element draws in pieces (its parts, equal digits, its
+/// overflow): a sensor value, a clock, the weather, or a fixed text that
+/// shrinks, cuts or scrolls; `None` for the others, drawn as one run. With
+/// the job comes when blinking separators next change (`motion` allowed).
+fn rich_job<'a>(
+    id: ElementId,
+    content: &TextContent,
+    style: &'a TextStyle,
+    area: BoxF,
+    context: &RenderContext<'_>,
+    motion: bool,
+) -> Option<(RichJob<'a>, Option<std::time::Duration>)> {
+    let part = |part| style.parts.style(part);
+    let mut blink = None;
+    let pieces = match content {
+        TextContent::Static(text) if style.overflow.is_some() => vec![Piece::plain(text.clone())],
+        TextContent::Weather(w) => vec![Piece::plain(w.text(context.snapshot, context.language))],
+        TextContent::Sensor {
+            key,
+            format,
+            prefix,
+            suffix,
+        } => {
+            let quantity = context.quantities.quantity(key);
+            let roll = context.shown.roll(id);
+            let reading = match (roll, context.shown.get(id)) {
+                (Some(roll), _) => Reading::Value(roll.to),
+                (None, Some(value)) => Reading::Value(value),
+                (None, None) => context.snapshot.get(key),
+            };
+            let (number, unit) = format_reading_parts(&reading, quantity, *format);
+            let wheels = roll.map(|roll| {
+                let decimals = number.split_once('.').map_or(0, |(_, d)| d.len() as u32);
+                let digits = number.bytes().filter(u8::is_ascii_digit).count();
+                roll.wheels(decimals, digits)
+            });
+            vec![
+                Piece {
+                    part: part(TextPart::Prefix),
+                    ..Piece::plain(prefix.clone())
+                },
+                Piece {
+                    part: part(TextPart::Number),
+                    wheels,
+                    ..Piece::plain(number)
+                },
+                Piece {
+                    part: part(TextPart::Unit),
+                    ..Piece::plain(unit)
+                },
+                Piece {
+                    part: part(TextPart::Suffix),
+                    ..Piece::plain(suffix.clone())
+                },
+            ]
+        }
+        TextContent::Clock {
+            pattern,
+            language,
+            casing,
+        } => {
+            let blinking = motion && style.parts.blink_separators;
+            let off = blinking && context.animation.as_millis() % 1000 >= BLINK_HALF.as_millis();
+            if blinking {
+                let into = context.animation.as_millis() % BLINK_HALF.as_millis();
+                let wait = BLINK_HALF.as_millis() - into;
+                blink = Some(context.animation + std::time::Duration::from_millis(wait as u64));
+            }
+            let language = language.unwrap_or(context.language);
+            clock_parts(pattern, &context.time, language)
+                .into_iter()
+                .map(|(name, text)| Piece {
+                    part: name.and_then(part),
+                    hidden: off && name == Some(TextPart::Separators),
+                    ..Piece::plain(clock_case(&text, *casing))
+                })
+                .collect()
+        }
+        _ => return None,
+    };
+    let job = RichJob {
+        pieces,
+        style,
+        area,
+        tabular: style.tabular_digits && !matches!(content, TextContent::Static(_)),
+        clock: motion.then_some(context.animation),
+    };
+    Some((job, blink))
 }
 
 /// Element opacity as 0..=255 (non-finite reads as opaque).
@@ -1354,13 +1462,28 @@ impl SkiaRenderer {
                     area.x += side + gap;
                     area.width = (area.width - side - gap).max(0.0);
                 }
-                let text = text_of(element.id, content, context);
-                let job = TextJob {
-                    text: &text,
-                    style,
-                    area,
-                };
-                self.text.draw(layer, &job, assets, &mut self.diagnostics);
+                let motion = self.cards.motion;
+                if let Some((job, blink)) =
+                    rich_job(element.id, content, style, area, context, motion)
+                {
+                    let scroll = self
+                        .text
+                        .draw_rich(layer, &job, assets, &mut self.diagnostics);
+                    let due = [blink, scroll.map(|step| context.animation + step)]
+                        .into_iter()
+                        .flatten()
+                        .chain(self.text_due)
+                        .min();
+                    self.text_due = due;
+                } else {
+                    let text = text_of(element.id, content, context);
+                    let job = TextJob {
+                        text: &text,
+                        style,
+                        area,
+                    };
+                    self.text.draw(layer, &job, assets, &mut self.diagnostics);
+                }
             }
             ElementKind::Image { asset, fit, .. } => {
                 self.draw_image(layer, asset, *fit, area, assets, context);

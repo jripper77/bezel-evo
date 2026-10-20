@@ -22,6 +22,9 @@ use crate::fonts::{SHIPPED_FONTS, is_shipped};
 use crate::layer::Layer;
 use crate::paint::paint_for;
 
+mod rich;
+pub(crate) use rich::{Piece, RichJob};
+
 /// Whether the renderer may use the fonts installed on the machine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SystemFonts {
@@ -81,6 +84,8 @@ pub(crate) struct TextEngine {
     base_db: Option<fontdb::Database>,
     user_stamp: Vec<(std::path::PathBuf, u64, Option<std::time::SystemTime>)>,
     checked: std::time::Instant,
+    /// Digit glyphs and advances per face and size ([`rich`]).
+    digits: HashMap<rich::DigitKey, rich::Digits>,
 }
 
 fn has_family(db: &fontdb::Database, name: &str) -> Option<String> {
@@ -131,6 +136,7 @@ impl TextEngine {
             installed: HashMap::new(),
             asset_fonts: HashMap::new(),
             bundled,
+            digits: HashMap::new(),
         };
         engine.refresh_user_fonts();
         engine
@@ -190,6 +196,7 @@ impl TextEngine {
         self.glyphs = SwashCache::new();
         self.installed.clear();
         self.asset_fonts.clear();
+        self.digits.clear();
         true
     }
 
@@ -212,6 +219,7 @@ impl TextEngine {
         }
         self.installed.clear();
         self.glyphs = SwashCache::new();
+        self.digits.clear();
         true
     }
 
@@ -503,10 +511,19 @@ struct Coverage {
 impl Coverage {
     /// Adds a glyph mask whose top-left is at layer `(x, y)`.
     fn add(&mut self, image: &SwashImage, x: i32, y: i32) {
+        self.add_rows(image, x, y, (i32::MIN, i32::MAX));
+    }
+
+    /// Adds a glyph mask whose top-left is at layer `(x, y)`, only on the
+    /// layer rows `top..bottom` (a rolling digit inside its line).
+    fn add_rows(&mut self, image: &SwashImage, x: i32, y: i32, (top, bottom): (i32, i32)) {
         let gw = image.placement.width as i32;
         let gh = image.placement.height as i32;
         let (c0, c1) = ((-x).max(0), gw.min(self.width - x));
-        let (r0, r1) = ((-y).max(0), gh.min(self.height - y));
+        let (r0, r1) = (
+            (-y).max(0).max(top.saturating_sub(y)),
+            gh.min(self.height - y).min(bottom.saturating_sub(y)),
+        );
         if c0 >= c1 || r0 >= r1 {
             return;
         }

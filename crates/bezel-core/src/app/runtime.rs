@@ -581,7 +581,10 @@ impl ThemeRuntime {
 
     /// Whether an element still eases to its reading at `at` on the screen.
     pub fn transitioning(&self, at: Duration) -> bool {
-        !self.shown(at, View::Screen).is_empty()
+        let theme = self.card_timers.theme(&self.scene.theme);
+        self.transitions
+            .next_change(&theme, at, View::Screen)
+            .is_some()
     }
 
     /// The screen showed a frame that took `cost` from drawing to shown:
