@@ -779,6 +779,8 @@ mod tests {
             icon_style: bezel_core::domain::weather::IconStyle::Filled,
             icon_gap: Some(18.0),
             icon_size: Some(64.0),
+            icon_motion: Default::default(),
+            icon_speed: 1.0,
         };
         let element = theme
             .elements

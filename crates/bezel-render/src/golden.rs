@@ -1081,6 +1081,8 @@ fn weather_text_and_vector_icons_render_without_external_assets() {
         icon_style: Default::default(),
         icon_gap: None,
         icon_size: None,
+        icon_motion: Default::default(),
+        icon_speed: 1.0,
     };
     let [temperature, code] = w.keys();
     let scene = Scene::empty()
@@ -1469,6 +1471,8 @@ fn colored_weather_families_and_depth_have_distinct_vector_pixels() {
             icon_style: IconStyle::Colored,
             icon_gap: Some(0.),
             icon_size: Some(80.),
+            icon_motion: Default::default(),
+            icon_speed: 1.0,
         };
         let keys = w.keys();
         let scene = Scene::empty()
