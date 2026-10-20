@@ -14,6 +14,7 @@ import { weatherText } from './weather-format.js';
 import { analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { weatherIconPaths } from './weather-icon.js';
+import { demoPeak, faint, fitGauge, gradientAt, lookOf, needleColor, numberShares, scaleNumber, share, tickShares } from './needle-look.js';
 import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
 import { barGeometry, blockMetrics, blockRows, coverShare, fitPlayer, placeBlock, playerText, progressOf, PROGRESS_SPACING } from './player-parts.js';
 // An approximate renderer for demo mode (browser only). The real preview is
@@ -253,6 +254,93 @@ function drawDial(ctx, e, t, motion, trial) {
   const hub = [[a.secondHand, a.secondColor], [a.minuteHand, a.minuteColor], [a.hourHand, a.hourColor]].find(([shown]) => shown);
   if (hub) { ctx.beginPath(); ctx.arc(cx, cy, 2.5 * unit, 0, Math.PI * 2); ctx.fillStyle = color(hub[1]); ctx.fill(); }
   wantFrame(dialDue(a, date, motion));
+}
+
+/**
+ * The extended needle like the backend's (crates/bezel-render/src/needle_gauge.rs):
+ * arc, zones or gradient, ticks, numbers, peak mark, hand, cap and the
+ * value under the pivot.
+ */
+function drawNeedleLook(ctx, e, frac, t, refresh, motion) {
+  const k = e.kind, look = lookOf(k.look), b = k.binding ?? { min: 0, max: 100 }, f = e.frame;
+  const g = fitGauge(f, k.pivot ?? [0.5, 0.5], k.startAngle ?? 0, k.sweep ?? 0, look.arcWidth / 2 + 1);
+  if (!(g.radius > 0)) return;
+  const [px, py] = g.pivot;
+  const angle = (s) => g.start + g.sweep * s;
+  const at = (r, a) => [px + r * Math.sin(a * Math.PI / 180), py - r * Math.cos(a * Math.PI / 180)];
+  const rad = (a) => (a - 90) * Math.PI / 180;
+  const arc = (from, to, colour, cap) => {
+    ctx.beginPath();
+    const a = angle(from), z = angle(to);
+    ctx.arc(px, py, g.radius, rad(Math.min(a, z)), rad(Math.max(a, z)));
+    ctx.lineWidth = look.arcWidth; ctx.lineCap = cap === 'round' ? 'round' : 'butt'; ctx.strokeStyle = color(colour); ctx.stroke();
+  };
+  if (look.arcWidth > 0) {
+    if (look.track === 'gradient') {
+      const steps = Math.max(1, Math.ceil(Math.abs(g.sweep) / 2));
+      for (let i = 0; i < steps; i++) {
+        const a = i / steps, z = Math.min(1, (i + 1) / steps + 0.002);
+        arc(a, z, gradientAt(look, b, (a + z) / 2), i === 0 || i + 1 === steps ? look.arcCap : 'butt');
+      }
+    } else {
+      arc(0, 1, faint(look), look.arcCap);
+      if (look.track === 'zones') for (const zone of look.zones.slice(0, 8)) {
+        const a = share(b, zone.from), z = share(b, zone.to);
+        if (Math.abs(a - z) > 1e-9) arc(Math.min(a, z), Math.max(a, z), zone.color, 'butt');
+      }
+    }
+  }
+  const inner = g.radius - look.arcWidth / 2 - 2, long = Math.max(4, g.radius * 0.1);
+  const { major, minor } = tickShares(look);
+  ctx.strokeStyle = color(look.marks); ctx.lineCap = 'butt';
+  for (const [shares, length, width] of [[major, long, Math.max(1.5, g.radius / 60)], [minor, long / 2, Math.max(1, g.radius / 120)]]) {
+    for (const s of shares) { ctx.beginPath(); ctx.moveTo(...at(inner, angle(s))); ctx.lineTo(...at(inner - length, angle(s))); ctx.lineWidth = width; ctx.stroke(); }
+  }
+  const size = Math.min(64, Math.max(8, g.radius * 0.12));
+  const style = look.center?.style ?? {};
+  ctx.font = `${style.font?.weight ?? 400} ${size}px ${style.font?.family ?? 'Inter'}, sans-serif`;
+  ctx.fillStyle = color(look.marks); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const language = globalThis.document?.documentElement?.lang ?? 'en';
+  for (const s of numberShares(look)) ctx.fillText(scaleNumber(b.min + (b.max - b.min) * s, language), ...at(inner - (major.length ? long : 0) - look.numberGap - size * 0.6, angle(s)));
+  const value = Number.isFinite(frac) ? b.min + frac * (b.max - b.min) : null;
+  const reach = g.radius * look.length / 100;
+  const key = boundKey(e);
+  const peak = value === null ? null : demoPeak(look, (s) => (key ? demoSensorValue(key, s) : b.min + fraction(s, e.id) * (b.max - b.min)), t, refresh);
+  if (peak !== null && peak > value) {
+    ctx.save(); ctx.globalAlpha *= 0.35; ctx.setLineDash([Math.max(2, k.width * 0.8), Math.max(2, k.width * 0.8)]);
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(...at(reach, angle(share(b, peak)))); ctx.lineWidth = Math.max(1, k.width * 0.5); ctx.strokeStyle = color(look.marks); ctx.stroke();
+    ctx.restore();
+  }
+  const colour = color(needleColor(look, value, k.color));
+  const a = angle(value === null ? 0 : share(b, value)), r = a * Math.PI / 180;
+  const tip = at(reach, a), tail = at(g.radius * look.tail / 100, a + 180), [nx, ny] = [Math.cos(r), Math.sin(r)], w = k.width;
+  ctx.fillStyle = ctx.strokeStyle = colour;
+  const line = (width) => { ctx.beginPath(); ctx.moveTo(...tail); ctx.lineTo(...tip); ctx.lineWidth = width; ctx.lineCap = 'butt'; ctx.stroke(); };
+  if (!k.asset) {
+    if (look.shape === 'tapered') {
+      const h = Math.max(1, w);
+      ctx.beginPath(); ctx.moveTo(...tip); ctx.lineTo(px + nx * h, py + ny * h); ctx.lineTo(tail[0] + nx * h / 2, tail[1] + ny * h / 2);
+      ctx.lineTo(tail[0] - nx * h / 2, tail[1] - ny * h / 2); ctx.lineTo(px - nx * h, py - ny * h); ctx.closePath(); ctx.fill();
+    } else if (look.shape === 'arrow') {
+      line(w);
+      const dx = Math.sin(r), dy = -Math.cos(r), head = w * 3.5, base = [tip[0] - dx * head, tip[1] - dy * head];
+      ctx.beginPath(); ctx.moveTo(tip[0] + dx * w, tip[1] + dy * w); ctx.lineTo(base[0] + nx * w * 1.5, base[1] + ny * w * 1.5);
+      ctx.lineTo(base[0] - nx * w * 1.5, base[1] - ny * w * 1.5); ctx.closePath(); ctx.fill();
+    } else if (look.shape === 'dot') {
+      line(Math.max(1, w * 0.6)); ctx.beginPath(); ctx.arc(...tip, Math.max(2, w * 1.5), 0, Math.PI * 2); ctx.fill();
+    } else line(w);
+  }
+  const capR = look.capDiameter / 2;
+  if (look.cap !== 'none' && capR > 0) {
+    ctx.beginPath(); ctx.arc(px, py, capR, 0, Math.PI * 2); ctx.fillStyle = color(look.capColor); ctx.fill();
+    if (look.cap === 'ring') { ctx.lineWidth = Math.min(4, Math.max(1, capR * 0.45)); ctx.strokeStyle = colour; ctx.stroke(); }
+  }
+  if (look.center) {
+    const s = look.center.style ?? {}, sz = Math.max(1, s.size ?? 24), half = Math.max(g.radius, sz * 2);
+    const box = { x: px - half, y: py + capR + sz * 0.2, width: half * 2, height: sz * 1.3 };
+    const text = { ...e, frame: box, kind: { type: 'text', content: { type: 'sensor', key: key ?? b.key, format: look.center.format, prefix: look.center.prefix ?? '', suffix: look.center.suffix ?? '' }, style: s } };
+    drawText(ctx, text, t, frac, false, null, refresh, motion);
+  }
 }
 
 function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, motion = true) {
@@ -518,6 +606,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
       break;
     }
     case 'needle': {
+      if (k.look) { drawNeedleLook(ctx, e, frac, t, refresh, motion); break; }
       const px = f.x + f.width * (k.pivot?.[0] ?? 0.5);
       const py = f.y + f.height * (k.pivot?.[1] ?? 0.5);
       const angle = (((k.startAngle + k.sweep * frac) - 90) * Math.PI) / 180;

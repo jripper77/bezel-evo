@@ -242,7 +242,7 @@ fn draw_hand(
 }
 
 /// Writes `text` centred on `(x, y)` in the element's face, `size` px.
-fn write(
+pub(crate) fn write(
     words: &mut Words<'_>,
     layer: &mut Layer<'_>,
     text: &str,

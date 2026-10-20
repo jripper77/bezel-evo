@@ -24,6 +24,7 @@ mod gauges;
 mod graph;
 mod images;
 mod layer;
+mod needle_gauge;
 mod paint;
 mod path;
 mod player;
@@ -79,6 +80,8 @@ mod rotation_tests;
 mod analog_clock_tests;
 #[cfg(test)]
 mod modern_themes_tests;
+#[cfg(test)]
+mod needle_look_tests;
 #[cfg(test)]
 mod shape_image_tests;
 #[cfg(test)]

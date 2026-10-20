@@ -1116,6 +1116,7 @@ impl Importer {
                 sweep: px(sweep),
                 color: Rgba::WHITE,
                 width: 3.0,
+                look: None,
             },
         );
     }

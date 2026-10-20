@@ -582,6 +582,9 @@ pub enum ElementKind {
         color: Rgba,
         /// Drawn-line width.
         width: f32,
+        /// Arc, zones, scale, shape, cap, centre value and peak
+        /// (D-2026-10-20-studio-ux-v2-08); `None` keeps the original line.
+        look: Option<Box<super::needle::NeedleLook>>,
     },
     /// A history graph.
     Graph {
@@ -934,7 +937,14 @@ impl Theme {
                 ElementKind::Shape {
                     image: Some(image), ..
                 } => out.push(image.asset.clone()),
-                ElementKind::Needle { asset: Some(a), .. } => out.push(a.clone()),
+                ElementKind::Needle { asset, look, .. } => {
+                    out.extend(asset.clone());
+                    out.extend(
+                        look.as_ref()
+                            .and_then(|l| l.center.as_ref())
+                            .and_then(|c| c.style.font.asset.clone()),
+                    );
+                }
                 ElementKind::Text { style, .. } => {
                     out.extend(style.font.asset.clone());
                     out.extend(style.parts.styles.values().filter_map(|p| p.asset.clone()));
@@ -1176,6 +1186,7 @@ mod tests {
                     sweep: 240.0,
                     color: Rgba::WHITE,
                     width: 3.0,
+                    look: None,
                 },
             ),
         ];

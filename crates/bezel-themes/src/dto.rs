@@ -7,6 +7,10 @@ use bezel_core::domain::frame::Rgba;
 use bezel_core::domain::framing::{FramingPosition, Permille, VideoFit, VideoFraming, Zoom};
 use bezel_core::domain::geometry::{Orientation, Size};
 use bezel_core::domain::history::GRAPH_INTERVAL_MAX_SECONDS;
+use bezel_core::domain::needle::{
+    CenterValue, MAX_ZONES, NeedleLook, NeedleShape, PivotCap, ScaleNumbers, ScaleTicks, Track,
+    Zone,
+};
 use bezel_core::domain::sensor::{ByteUnits, DisplayFormat, SensorKey, TemperatureUnit};
 use bezel_core::domain::theme::{
     AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId, ElementKind,
@@ -1701,6 +1705,10 @@ pub enum KindDto {
         color: String,
         /// Drawn line width.
         width: f32,
+        /// The extended gauge (D-2026-10-20-studio-ux-v2-08); absent keeps
+        /// the original line.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        look: Option<Box<NeedleLookDto>>,
     },
     /// Graph.
     #[serde(rename_all = "camelCase")]
@@ -2401,7 +2409,9 @@ fn kind_dto(k: &ElementKind) -> KindDto {
             sweep,
             color,
             width,
+            look,
         } => KindDto::Needle {
+            look: look.as_deref().map(needle_look_dto),
             binding: binding_dto(binding),
             asset: asset.as_ref().map(|a| a.0.clone()),
             pivot: *pivot,
@@ -2658,7 +2668,9 @@ fn kind(k: &KindDto) -> R<ElementKind> {
             sweep,
             color: c,
             width,
+            look,
         } => ElementKind::Needle {
+            look: look.as_deref().map(needle_look).transpose()?,
             binding: binding(b)?,
             asset: asset.clone().map(AssetRef),
             pivot: *pivot,
@@ -3372,6 +3384,388 @@ mod analog_clock_tests {
             }))
             .unwrap();
             assert!(super::kind(&dto).is_err());
+        }
+    }
+}
+
+/// The extended needle (D-2026-10-20-studio-ux-v2-08); every absent field
+/// is its default, so a default look is `{}`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NeedleLookDto {
+    /// Arc thickness, px (absent: 5).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arc_width: Option<f32>,
+    /// `butt` or `round` (absent).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arc_cap: Option<String>,
+    /// `single` (absent), `zones` or `gradient`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub track: Option<String>,
+    /// Colour zones, at most eight.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub zones: Vec<ZoneDto>,
+    /// The needle takes its zone's colour.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub color_from_zone: bool,
+    /// `none`, `major` or `majorMinor` (absent).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ticks: Option<String>,
+    /// `none`, `ends`, `halves` (absent) or `major`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub numbers: Option<String>,
+    /// Space between ticks and numbers, px (absent: 8).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub number_gap: Option<f32>,
+    /// Ticks and numbers colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marks: Option<String>,
+    /// `thin`, `tapered` (absent), `arrow` or `dot`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shape: Option<String>,
+    /// Hand length, % of the radius (absent: 92).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub length: Option<f32>,
+    /// Tail, % of the radius (absent: 12).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail: Option<f32>,
+    /// `none`, `filled` or `ring` (absent).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cap: Option<String>,
+    /// Cap diameter, px (absent: 9).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cap_diameter: Option<f32>,
+    /// Cap colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cap_color: Option<String>,
+    /// The value under the pivot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub center: Option<CenterValueDto>,
+    /// Seconds the peak mark holds; absent: no mark.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub peak_seconds: Option<u32>,
+}
+
+/// A colour zone of a needle's arc, in the sensor's units.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ZoneDto {
+    /// Start.
+    pub from: f64,
+    /// End.
+    pub to: f64,
+    /// `#rrggbbaa`.
+    pub color: String,
+}
+
+/// The value under a needle's pivot.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CenterValueDto {
+    /// Its text style (parts, equal digits, overflow).
+    pub style: TextStyleDto,
+    /// Number formatting.
+    pub format: FormatDto,
+    /// Before the value.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub prefix: String,
+    /// After the value.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub suffix: String,
+}
+
+fn needle_look_dto(l: &NeedleLook) -> Box<NeedleLookDto> {
+    let d = NeedleLook::default();
+    let name = |changed: bool, n: &str| changed.then(|| n.to_string());
+    let number = |v: f32, default: f32| (v != default).then_some(v);
+    let paint = |v: Rgba, default: Rgba| (v != default).then(|| to_hex(v));
+    Box::new(NeedleLookDto {
+        arc_width: number(l.arc_width, d.arc_width),
+        arc_cap: name(
+            l.arc_cap != d.arc_cap,
+            if l.arc_cap == Cap::Round {
+                "round"
+            } else {
+                "butt"
+            },
+        ),
+        track: name(
+            l.track != d.track,
+            match l.track {
+                Track::Single => "single",
+                Track::Zones => "zones",
+                Track::Gradient => "gradient",
+            },
+        ),
+        zones: l
+            .zones
+            .iter()
+            .map(|z| ZoneDto {
+                from: z.from,
+                to: z.to,
+                color: to_hex(z.color),
+            })
+            .collect(),
+        color_from_zone: l.color_from_zone,
+        ticks: name(
+            l.ticks != d.ticks,
+            match l.ticks {
+                ScaleTicks::None => "none",
+                ScaleTicks::Major => "major",
+                ScaleTicks::MajorMinor => "majorMinor",
+            },
+        ),
+        numbers: name(
+            l.numbers != d.numbers,
+            match l.numbers {
+                ScaleNumbers::None => "none",
+                ScaleNumbers::Ends => "ends",
+                ScaleNumbers::Halves => "halves",
+                ScaleNumbers::Major => "major",
+            },
+        ),
+        number_gap: number(l.number_gap, d.number_gap),
+        marks: paint(l.marks, d.marks),
+        shape: name(
+            l.shape != d.shape,
+            match l.shape {
+                NeedleShape::Thin => "thin",
+                NeedleShape::Tapered => "tapered",
+                NeedleShape::Arrow => "arrow",
+                NeedleShape::Dot => "dot",
+            },
+        ),
+        length: number(l.length, d.length),
+        tail: number(l.tail, d.tail),
+        cap: name(
+            l.cap != d.cap,
+            match l.cap {
+                PivotCap::None => "none",
+                PivotCap::Filled => "filled",
+                PivotCap::Ring => "ring",
+            },
+        ),
+        cap_diameter: number(l.cap_diameter, d.cap_diameter),
+        cap_color: paint(l.cap_color, d.cap_color),
+        center: l.center.as_ref().map(|c| CenterValueDto {
+            style: style_dto(&c.style),
+            format: format_dto(c.format),
+            prefix: c.prefix.clone(),
+            suffix: c.suffix.clone(),
+        }),
+        peak_seconds: l.peak_seconds,
+    })
+}
+
+fn needle_look(dto: &NeedleLookDto) -> R<Box<NeedleLook>> {
+    let d = NeedleLook::default();
+    let within = |v: Option<f32>, default: f32, low: f32, high: f32| {
+        v.filter(|v| v.is_finite())
+            .map_or(default, |v| v.clamp(low, high))
+    };
+    let paint = |v: &Option<String>, default: Rgba| v.as_deref().map_or(Ok(default), color);
+    let zones = dto
+        .zones
+        .iter()
+        .take(MAX_ZONES)
+        .map(|z| {
+            if !(z.from.is_finite() && z.to.is_finite()) {
+                return err("a needle zone needs finite ends");
+            }
+            Ok(Zone {
+                from: z.from,
+                to: z.to,
+                color: color(&z.color)?,
+            })
+        })
+        .collect::<R<Vec<_>>>()?;
+    Ok(Box::new(NeedleLook {
+        arc_width: within(dto.arc_width, d.arc_width, 0.0, 200.0),
+        arc_cap: match dto.arc_cap.as_deref() {
+            None => d.arc_cap,
+            Some("round") => Cap::Round,
+            Some("butt") => Cap::Butt,
+            Some(other) => return err(format!("unknown arc ends {other:?}")),
+        },
+        track: match dto.track.as_deref() {
+            None => d.track,
+            Some("single") => Track::Single,
+            Some("zones") => Track::Zones,
+            Some("gradient") => Track::Gradient,
+            Some(other) => return err(format!("unknown needle track {other:?}")),
+        },
+        zones,
+        color_from_zone: dto.color_from_zone,
+        ticks: match dto.ticks.as_deref() {
+            None => d.ticks,
+            Some("none") => ScaleTicks::None,
+            Some("major") => ScaleTicks::Major,
+            Some("majorMinor") => ScaleTicks::MajorMinor,
+            Some(other) => return err(format!("unknown needle ticks {other:?}")),
+        },
+        numbers: match dto.numbers.as_deref() {
+            None => d.numbers,
+            Some("none") => ScaleNumbers::None,
+            Some("ends") => ScaleNumbers::Ends,
+            Some("halves") => ScaleNumbers::Halves,
+            Some("major") => ScaleNumbers::Major,
+            Some(other) => return err(format!("unknown needle numbers {other:?}")),
+        },
+        number_gap: within(dto.number_gap, d.number_gap, 0.0, 200.0),
+        marks: paint(&dto.marks, d.marks)?,
+        shape: match dto.shape.as_deref() {
+            None => d.shape,
+            Some("thin") => NeedleShape::Thin,
+            Some("tapered") => NeedleShape::Tapered,
+            Some("arrow") => NeedleShape::Arrow,
+            Some("dot") => NeedleShape::Dot,
+            Some(other) => return err(format!("unknown needle shape {other:?}")),
+        },
+        length: within(dto.length, d.length, 10.0, 150.0),
+        tail: within(dto.tail, d.tail, 0.0, 100.0),
+        cap: match dto.cap.as_deref() {
+            None => d.cap,
+            Some("none") => PivotCap::None,
+            Some("filled") => PivotCap::Filled,
+            Some("ring") => PivotCap::Ring,
+            Some(other) => return err(format!("unknown pivot cap {other:?}")),
+        },
+        cap_diameter: within(dto.cap_diameter, d.cap_diameter, 0.0, 200.0),
+        cap_color: paint(&dto.cap_color, d.cap_color)?,
+        center: dto
+            .center
+            .as_ref()
+            .map(|c| -> R<CenterValue> {
+                Ok(CenterValue {
+                    style: style(&c.style)?,
+                    format: format(c.format),
+                    prefix: c.prefix.clone(),
+                    suffix: c.suffix.clone(),
+                })
+            })
+            .transpose()?,
+        peak_seconds: dto.peak_seconds.map(|s| s.clamp(1, 3600)),
+    }))
+}
+
+#[cfg(test)]
+mod needle_look_tests {
+    use super::*;
+
+    fn needle(look: serde_json::Value) -> R<(ElementKind, serde_json::Value)> {
+        let mut json = serde_json::json!({
+            "type": "needle", "binding": {"key": "cpu.usage", "min": 0, "max": 100},
+            "pivot": [0.5, 0.9], "startAngle": -120.0, "sweep": 240.0,
+            "color": "#f97316ff", "width": 3.0
+        });
+        if !look.is_null() {
+            json["look"] = look;
+        }
+        let dto: KindDto = serde_json::from_value(json).unwrap();
+        let k = kind(&dto)?;
+        let written = serde_json::to_value(kind_dto(&k)).unwrap();
+        Ok((k, written))
+    }
+
+    fn look_of(k: &ElementKind) -> Option<NeedleLook> {
+        match k {
+            ElementKind::Needle { look, .. } => look.as_deref().cloned(),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn an_old_needle_writes_no_look_and_a_default_look_is_empty() {
+        let (k, written) = needle(serde_json::Value::Null).unwrap();
+        assert_eq!(look_of(&k), None);
+        assert!(written.get("look").is_none());
+        let (k, written) = needle(serde_json::json!({})).unwrap();
+        assert_eq!(look_of(&k), Some(NeedleLook::default()));
+        assert_eq!(written["look"], serde_json::json!({}));
+    }
+
+    #[test]
+    fn every_look_field_round_trips() {
+        let full = serde_json::json!({
+            "arcWidth": 8.0, "arcCap": "butt", "track": "zones",
+            "zones": [{"from": 0.0, "to": 60.0, "color": "#34d399ff"},
+                      {"from": 60.0, "to": 85.0, "color": "#fbbf24ff"}],
+            "colorFromZone": true, "ticks": "major", "numbers": "major", "numberGap": 4.0,
+            "marks": "#101010ff", "shape": "arrow", "length": 80.0, "tail": 20.0, "cap": "filled",
+            "capDiameter": 12.0, "capColor": "#202020ff",
+            "center": {"style": {"font": {"family": "IBM Plex Mono", "weight": 600, "italic": false},
+                "size": 18.0, "paint": "#e8eaedff", "align": "center", "valign": "middle",
+                "letterSpacing": 0.0}, "format": {"decimals": 0, "showUnit": true}, "suffix": " %"},
+            "peakSeconds": 10
+        });
+        let (k, written) = needle(full.clone()).unwrap();
+        let look = look_of(&k).unwrap();
+        assert_eq!(look.zones.len(), 2);
+        assert_eq!(look.shape, NeedleShape::Arrow);
+        assert_eq!(look.peak_seconds, Some(10));
+        assert_eq!(look.center.as_ref().map(|c| c.suffix.as_str()), Some(" %"));
+        assert_eq!(written["look"]["zones"], full["zones"]);
+        for field in [
+            "arcWidth",
+            "arcCap",
+            "track",
+            "colorFromZone",
+            "ticks",
+            "numbers",
+            "numberGap",
+            "marks",
+            "shape",
+            "length",
+            "tail",
+            "cap",
+            "capDiameter",
+            "capColor",
+            "peakSeconds",
+        ] {
+            assert_eq!(written["look"][field], full[field], "{field}");
+        }
+        assert_eq!(written["look"]["center"]["suffix"], " %");
+        for (field, value) in [
+            ("track", "gradient"),
+            ("track", "single"),
+            ("ticks", "none"),
+            ("numbers", "none"),
+            ("numbers", "ends"),
+            ("shape", "thin"),
+            ("shape", "dot"),
+            ("cap", "none"),
+            ("cap", "ring"),
+            ("arcCap", "round"),
+        ] {
+            let (k, written) = needle(serde_json::json!({ field: value })).unwrap();
+            assert!(look_of(&k).is_some());
+            let default = needle(serde_json::json!({})).unwrap().1;
+            if written["look"] != default["look"] {
+                assert_eq!(written["look"][field], value);
+            }
+        }
+    }
+
+    #[test]
+    fn out_of_range_values_are_held_and_unknown_ones_refused() {
+        let (k, _) = needle(serde_json::json!({"length": 900.0, "tail": -5.0, "peakSeconds": 0,
+            "zones": (0..12).map(|i| serde_json::json!({"from": i, "to": i + 1, "color": "#ffffffff"}))
+                .collect::<Vec<_>>()})).unwrap();
+        let look = look_of(&k).unwrap();
+        assert_eq!(
+            (look.length, look.tail, look.peak_seconds),
+            (150.0, 0.0, Some(1))
+        );
+        assert_eq!(look.zones.len(), MAX_ZONES);
+        for bad in [
+            serde_json::json!({"track": "rainbow"}),
+            serde_json::json!({"shape": "sword"}),
+            serde_json::json!({"cap": "hat"}),
+            serde_json::json!({"ticks": "all"}),
+            serde_json::json!({"numbers": "roman"}),
+            serde_json::json!({"arcCap": "square"}),
+            serde_json::json!({"marks": "grey"}),
+            serde_json::json!({"zones": [{"from": 0, "to": 1, "color": "red"}]}),
+        ] {
+            assert!(needle(bad).is_err());
         }
     }
 }

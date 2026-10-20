@@ -132,8 +132,11 @@ pub struct SkiaRenderer {
     card_scenes: HashMap<u64, crate::cards::Cards>,
     rotors: HashMap<(u64, ElementId), crate::sensor_motion::Rotor>,
     rotor_due: Option<std::time::Duration>,
-    /// When a scrolling line or blinking separators want the next frame.
+    /// When a scrolling line, blinking separators, a clock or a falling
+    /// peak mark want the next frame.
     text_due: Option<std::time::Duration>,
+    /// Peak marks of needles, by scene and element.
+    peaks: HashMap<(u64, ElementId), bezel_core::domain::needle::Peak>,
 }
 
 /// Where an element sits in its theme: z-index and id.
@@ -228,6 +231,7 @@ impl SkiaRenderer {
             rotors: HashMap::new(),
             rotor_due: None,
             text_due: None,
+            peaks: HashMap::new(),
         }
     }
 }
@@ -438,6 +442,9 @@ impl FrameRenderer for SkiaRenderer {
     ) -> Result<Frame> {
         self.rotor_due = None;
         self.text_due = None;
+        if self.peaks.len() > 4096 {
+            self.peaks.retain(|(scene, _), _| *scene == self.card_scene);
+        }
         if self.rotors.len() > 4096 {
             self.rotors
                 .retain(|(scene, _), _| *scene == self.card_scene);
@@ -767,6 +774,7 @@ fn element_bounds(
             start_angle,
             sweep,
             width,
+            look: None,
             ..
         } => {
             let pose = NeedlePose::new(
@@ -1729,11 +1737,18 @@ impl SkiaRenderer {
             sweep,
             color,
             width,
+            look,
         } = &element.kind
         else {
             return;
         };
         let area = element.frame;
+        if let Some(look) = look {
+            self.draw_needle_look(layer, element, look, assets, context);
+            if asset.is_none() {
+                return;
+            }
+        }
         let pose = NeedlePose::new(
             area,
             *pivot,
@@ -1746,7 +1761,9 @@ impl SkiaRenderer {
                 .placed(asset, Fit::Fill, area, assets, &mut self.diagnostics)
         });
         let Some((image, plan)) = image else {
-            gauges::draw_line_needle(layer, area, pose, *color, *width);
+            if look.is_none() {
+                gauges::draw_line_needle(layer, area, pose, *color, *width);
+            }
             return;
         };
         if let Some(frame) = image.frame_at(context.animation) {
@@ -1760,6 +1777,100 @@ impl SkiaRenderer {
         }
     }
 }
+
+impl SkiaRenderer {
+    /// The extended needle: arc, scale, peak mark, hand (unless an image
+    /// replaces it), cap and the value under the pivot.
+    fn draw_needle_look(
+        &mut self,
+        layer: &mut Layer<'_>,
+        element: &Element,
+        look: &bezel_core::domain::needle::NeedleLook,
+        assets: &BTreeMap<AssetRef, Vec<u8>>,
+        context: &RenderContext<'_>,
+    ) {
+        let ElementKind::Needle {
+            binding,
+            asset,
+            pivot,
+            start_angle,
+            sweep,
+            color,
+            width,
+            ..
+        } = &element.kind
+        else {
+            return;
+        };
+        let value = match context.shown.get(element.id) {
+            Some(value) => Some(value),
+            None => context.snapshot.get(&binding.key).value(),
+        };
+        let mut peak = None;
+        if let (Some(seconds), Some(v)) = (look.peak_seconds, value) {
+            let hold = std::time::Duration::from_secs(u64::from(seconds));
+            let mark = self
+                .peaks
+                .entry((self.card_scene, element.id))
+                .or_insert_with(|| bezel_core::domain::needle::Peak::new(v, context.animation));
+            let high = mark.update(v, context.animation, hold);
+            if high > v {
+                peak = Some(high);
+            }
+            self.text_due = mark
+                .falls_at(v, hold)
+                .into_iter()
+                .chain(self.text_due)
+                .min();
+        }
+        let margin = look.arc_width / 2.0 + 1.0;
+        let gauge =
+            crate::needle_gauge::Gauge::fit(element.frame, *pivot, *start_angle, *sweep, margin);
+        let fallback = bezel_core::domain::theme::TextStyle::default();
+        let style = look.center.as_ref().map_or(&fallback, |c| &c.style);
+        let mut words = crate::analog_clock::Words {
+            engine: &mut self.text,
+            assets,
+            diagnostics: &mut self.diagnostics,
+            style,
+        };
+        let reading = crate::needle_gauge::Reading {
+            binding,
+            value,
+            peak,
+            color: *color,
+            width: *width,
+            language: context.language,
+        };
+        crate::needle_gauge::draw(layer, gauge, look, &reading, asset.is_none(), &mut words);
+        if let Some(center) = &look.center {
+            let content = TextContent::Sensor {
+                key: binding.key.clone(),
+                format: center.format,
+                prefix: center.prefix.clone(),
+                suffix: center.suffix.clone(),
+            };
+            let size = center.style.size.max(1.0);
+            let (px, py) = gauge.pivot;
+            let top = py + look.cap_diameter / 2.0 + size * 0.2;
+            let half = gauge.radius.max(size * 2.0);
+            let area = BoxF::new(px - half, top, half * 2.0, size * LINE_BOX);
+            let motion = self.cards.motion;
+            if let Some((job, _)) =
+                rich_job(element.id, &content, &center.style, area, context, motion)
+            {
+                let scroll = self
+                    .text
+                    .draw_rich(layer, &job, assets, &mut self.diagnostics);
+                let due = scroll.map(|step| context.animation + step);
+                self.text_due = due.into_iter().chain(self.text_due).min();
+            }
+        }
+    }
+}
+
+/// Height of the box of the value under a needle's pivot, in text sizes.
+const LINE_BOX: f32 = 1.3;
 
 /// Recolour existing image coverage without changing cached source pixels.
 fn tint(layer: &mut Layer<'_>, color: Rgba) {
@@ -2078,6 +2189,7 @@ mod tests {
                 sweep: 180.,
                 color: Rgba::WHITE,
                 width: 4.,
+                look: None,
             },
             ElementKind::Needle {
                 binding: binding.clone(),
@@ -2087,6 +2199,7 @@ mod tests {
                 sweep: 180.,
                 color: Rgba::WHITE,
                 width: 4.,
+                look: None,
             },
             ElementKind::Graph {
                 binding: binding.clone(),
