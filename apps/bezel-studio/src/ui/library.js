@@ -828,6 +828,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
           const id = store.getState().selection[0];
           store.dispatch('update', { id, patch: { kind: { asset: a.ref } } });
         }),
+        action(t('mediaPanel.remove', { name: fileNameOf(a.ref) }), ICONS.trash, () => actions.removeAsset(a)),
       ]),
     ]);
   }

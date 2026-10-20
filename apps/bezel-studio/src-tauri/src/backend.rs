@@ -1490,9 +1490,15 @@ impl Backend {
         }
     }
 
-    /// The theme's assets with previews (images only: videos are not
-    /// decoded nor copied for the list), the poster of each video and what
-    /// the session learnt of it.
+    /// Removes unused media, preserving bytes required by editor Undo.
+    pub fn remove_asset(&self, asset: &str, theme: &ThemeDto) -> UiResult<bool> {
+        let theme = theme_of(theme)?;
+        let mut studio = self.studio();
+        studio.set_theme(theme.clone());
+        Ok(studio.remove_asset(&bezel_core::domain::theme::AssetRef(asset.into()), &theme))
+    }
+
+    /// The theme's assets with previews; videos are not decoded for the list.
     pub fn assets(&self) -> Vec<AssetDto> {
         let listed: Vec<(AssetDto, Option<Vec<u8>>)> = {
             let studio = self.studio();
@@ -1503,6 +1509,7 @@ impl Backend {
             studio
                 .assets()
                 .iter()
+                .filter(|(asset, _)| studio.asset_visible(asset))
                 .map(|(asset, bytes)| {
                     let kind = kind_of(asset);
                     let known = studio.added_video(asset);

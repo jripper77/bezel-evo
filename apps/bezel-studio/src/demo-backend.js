@@ -1189,6 +1189,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   // Which themes the Themes tab lists, as remembered.
   let themeFilter = { scope: null, axis: 'all' };
   const images = [];
+  const removedAssets = new Set();
   const fontAssets = new Map();
   const userFonts = [{ name: 'Bezel Local Demo', faces: [{ weight: 400, italic: false }, { weight: 700, italic: false }], category: 'sans', origin: 'user' }];
   // Videos and animated GIFs added for a background (with their posters,
@@ -1586,11 +1587,17 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       posters.set(ref, `data:image/svg+xml,${encodeURIComponent(svg)}`);
       return Promise.resolve({ ref });
     },
+    removeAsset: (asset, current) => {
+      theme = structuredClone(current);
+      if (JSON.stringify(current).includes(JSON.stringify(asset))) return Promise.resolve(false);
+      removedAssets.add(asset);
+      return Promise.resolve(true);
+    },
     assets: () => Promise.resolve([
       ...images.map((ref) => ({ ref, kind: 'image' })),
       ...[...posters].map(([ref, dataUrl]) => ({ ref, kind: 'image', dataUrl, bytes: 184_320, iconSvg: dataUrl.startsWith('data:image/svg+xml,') ? decodeURIComponent(dataUrl.split(',', 2)[1]) : null })),
       ...[...videos.values()].map((v) => ({ ...v })),
-    ]),
+    ].filter((a) => !removedAssets.has(a.ref) || JSON.stringify(theme).includes(JSON.stringify(a.ref)))),
     /** A video, GIF or picture: dropped (`source`), else picked in the dialog. */
     addMedia: (source = null) => addMedia(source ?? DEMO_PICKED_VIDEO),
     /** A dropped file as a source the demo can add or send, its size kept. */

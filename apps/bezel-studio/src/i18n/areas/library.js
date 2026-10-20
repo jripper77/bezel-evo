@@ -7,6 +7,8 @@ export const PREFIXES = Object.freeze(['widgets.', 'sensorsPanel.', 'layersPanel
 
 export default {
   en: {
+    'mediaPanel.remove': 'Remove {name} from this theme',
+    'mediaPanel.inUse': 'This file is still used by the theme. Replace or remove its images, background or other uses first.',
     "sensorsPanel.probe": "Probe",
     "sensorsPanel.allProbes": "All probes",
     "sensorsPanel.probeUnknown": "Unassigned probe",
@@ -65,6 +67,8 @@ export default {
     'themesPanel.openEditor': 'Open in the editor',
   },
   'pt-BR': {
+    'mediaPanel.remove': 'Remover {name} deste tema',
+    'mediaPanel.inUse': 'Este arquivo ainda está em uso no tema. Substitua ou remova suas imagens, fundo ou outros usos primeiro.',
     "sensorsPanel.probe": "Sonda",
     "sensorsPanel.allProbes": "Todas as sondas",
     "sensorsPanel.probeUnknown": "Sonda não atribuída",
@@ -123,6 +127,8 @@ export default {
     'themesPanel.openEditor': 'Abrir no editor',
   },
   it: {
+    'mediaPanel.remove': 'Rimuovi {name} da questo tema',
+    'mediaPanel.inUse': 'Il file è ancora utilizzato dal tema. Prima sostituisci o rimuovi le immagini, lo sfondo o gli altri elementi che lo usano.',
     "sensorsPanel.probe": "Sonda",
     "sensorsPanel.allProbes": "Tutte le sonde",
     "sensorsPanel.probeUnknown": "Sonda non assegnata",

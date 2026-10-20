@@ -37,6 +37,7 @@
     "allow-add-icon",
     "allow-add-media",
     "allow-list-assets",
+    "allow-remove-asset",
     "allow-video-preview",
     "allow-font-catalog",
     "allow-pick-screen-color",

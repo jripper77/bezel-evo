@@ -35,6 +35,7 @@ const COMMANDS: &[&str] = &[
     "add_icon",
     "add_media",
     "list_assets",
+    "remove_asset",
     "video_preview",
     "font_catalog",
     "pick_screen_color",

@@ -200,6 +200,13 @@ const library = createLibrary({
     addImage: () => addImage(),
     addIcon: (item, svg, at, size) => addIcon(item, svg, at, size),
     addVideo: () => addMedia(),
+    removeAsset: async (asset) => {
+      try {
+        const removed = await bridge.removeAsset(asset.ref, store.getState().theme);
+        if (!removed) toast(t('mediaPanel.inUse'));
+        await refreshAssets();
+      } catch (e) { fail(e); }
+    },
     previewVideo: (asset) => openVideoPreview({ t, name: fileNameOf(asset.ref), gif: asset.animated, load: () => bridge.videoPreview({ asset: asset.ref }) }),
     searchGifs: () => void gifSearch.open(),
     mediaSubtab: (name) => {

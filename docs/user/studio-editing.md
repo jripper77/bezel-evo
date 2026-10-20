@@ -60,6 +60,16 @@ its complete contents. Filtering leaves the document and selection unchanged.
 
 ![Layers filtered to rings, retaining their parent group](../images/studio-layers-filter.png)
 
+## Removing imported media
+
+In **Media → This theme**, use the trash button on a file to remove it from
+the theme's media list. Files still used by images, needles, fonts or the
+background are protected: replace or remove those references first, including
+objects on hidden card faces. The original file on your computer is preserved.
+Saving includes only assets the theme uses. Session bytes remain available so
+Undo can restore a previously removed image object; importing the file again
+also restores it to the list.
+
 ## The inspector
 
 With nothing selected, the inspector shows the **theme**: its name, **Vertical**

@@ -493,6 +493,7 @@ function tauriBridge(invoke, tauri = {}) {
     // A dropped file's path, or `null` to ask with the native dialog.
     addMedia: (path = null) => invoke('add_media', { path }),
     assets: () => invoke('list_assets'),
+    removeAsset: (asset, theme) => invoke('remove_asset', { asset, theme }),
     /**
      * The renderer's font families (D-2026-10-16-studio-redesign-fidelity-28):
      * `font_catalog` → `{families: [{name, aliases?, faces: [{weight,

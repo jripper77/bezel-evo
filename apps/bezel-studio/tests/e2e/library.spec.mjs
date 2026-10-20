@@ -347,3 +347,22 @@ test('Media lists bridge imports, counts files without posters and applies their
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
+
+test('Media removes unused files and protects an image used as background', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await page.goto('/index.html?demo=turing88');
+  await tab(page, t, 'media');
+  const panel = page.locator('#panel-media');
+  await panel.locator('#media-add').click();
+  const item = panel.locator('.media-item');
+  const remove = item.getByRole('button', { name: t('mediaPanel.remove', { name: 'image-1.png' }), exact: true });
+  await item.getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
+  await remove.click();
+  await expect(page.locator('#toast')).toHaveText(t('mediaPanel.inUse'));
+  await expect(item).toHaveCount(1);
+  await page.locator('#undo').click();
+  await remove.click();
+  await expect(item).toHaveCount(0);
+  await expect(panel).toContainText(t('media.empty'));
+  expect(errors).toEqual([]);
+});

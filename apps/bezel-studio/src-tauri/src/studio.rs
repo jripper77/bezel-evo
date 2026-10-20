@@ -600,6 +600,8 @@ pub struct Studio {
     host: Option<HostDecoding>,
     /// What the session learnt about the videos added to it.
     videos: BTreeMap<AssetRef, AddedVideo>,
+    /// Removed from the media list; bytes remain available to editor Undo.
+    removed_assets: BTreeSet<AssetRef>,
     /// The theme's video background on this computer (`None`: the theme
     /// has none).
     video: Option<ThemeVideo>,
@@ -744,6 +746,7 @@ impl Studio {
         std::mem::swap(&mut self.live_error, &mut next.live_error);
         std::mem::swap(&mut self.host, &mut next.host);
         std::mem::swap(&mut self.videos, &mut next.videos);
+        std::mem::swap(&mut self.removed_assets, &mut next.removed_assets);
         std::mem::swap(&mut self.video, &mut next.video);
         std::mem::swap(&mut self.posters, &mut next.posters);
         std::mem::swap(&mut self.serials, &mut next.serials);
@@ -898,6 +901,7 @@ impl Studio {
             live_error: None,
             host: None,
             videos: BTreeMap::new(),
+            removed_assets: BTreeSet::new(),
             video: None,
             posters,
             serials: 0,
@@ -1067,6 +1071,21 @@ impl Studio {
         self.runtime.assets()
     }
 
+    /// Removed media referenced again by Undo becomes visible again.
+    pub fn asset_visible(&self, asset: &AssetRef) -> bool {
+        !self.removed_assets.contains(asset) || self.theme().assets().contains(asset)
+    }
+
+    /// Discards unused media from this document's list, retaining Undo bytes.
+    /// Saving already excludes all unreferenced assets.
+    pub fn remove_asset(&mut self, asset: &AssetRef, theme: &Theme) -> bool {
+        if !self.assets().contains_key(asset) || theme.assets().contains(asset) {
+            return false;
+        }
+        self.removed_assets.insert(asset.clone());
+        true
+    }
+
     /// Replaces the edited theme in place, keeping the history of sensors
     /// still graphed.
     pub fn set_theme(&mut self, theme: Theme) {
@@ -1095,6 +1114,7 @@ impl Studio {
         self.follow_video();
         self.location = location;
         self.videos.clear();
+        self.removed_assets.clear();
     }
 
     /// Follows the theme's video background: another video (or none) drops
@@ -1156,7 +1176,9 @@ impl Studio {
     pub fn add_asset(&mut self, file_name: &str, bytes: Vec<u8>) -> AssetRef {
         let assets = self.runtime.assets();
         if let Some((existing, _)) = assets.iter().find(|(_, b)| **b == bytes) {
-            return existing.clone();
+            let existing = existing.clone();
+            self.removed_assets.remove(&existing);
+            return existing;
         }
         let (stem, extension) = split_name(file_name);
         let mut n = 1;
@@ -2996,6 +3018,54 @@ mod tests {
                 .insert(location.clone(), (theme.clone(), assets.clone()));
             Ok(())
         }
+    }
+
+    #[test]
+    fn removed_media_preserves_undo_bytes_and_reimport_restores_it() {
+        let mut s = studio();
+        let asset = s.add_asset("logo.png", vec![1, 2, 3]);
+        let empty = s.theme().clone();
+        let mut used = empty.clone();
+        used.background = Background::Image {
+            asset: asset.clone(),
+            fit: Fit::Cover,
+        };
+        s.set_theme(used.clone());
+        assert!(!s.remove_asset(&asset, &used));
+        assert!(s.asset_visible(&asset));
+        s.set_theme(empty.clone());
+        assert!(s.remove_asset(&asset, &empty));
+        assert!(!s.asset_visible(&asset));
+        assert_eq!(s.assets()[&asset], vec![1, 2, 3]);
+        s.set_theme(used);
+        assert!(s.asset_visible(&asset), "Undo can restore the image");
+        s.set_theme(empty);
+        assert!(!s.asset_visible(&asset));
+        assert_eq!(s.add_asset("logo.png", vec![1, 2, 3]), asset);
+        assert!(s.asset_visible(&asset));
+    }
+
+    #[test]
+    fn removed_media_is_scoped_to_each_display_document() {
+        let mut s = studio();
+        s.select_screen("one", theme_88());
+        let first = s.add_asset("logo.png", vec![1, 2, 3]);
+        assert!(s.remove_asset(&first, &s.theme().clone()));
+        s.select_screen("two", theme_88());
+        let second = s.add_asset("logo.png", vec![1, 2, 3]);
+        assert_eq!(first, second);
+        assert!(s.asset_visible(&second));
+        s.select_screen("one", theme_88());
+        assert!(!s.asset_visible(&first));
+        s.start(
+            theme_88(),
+            BTreeMap::from([(first.clone(), vec![1, 2, 3])]),
+            None,
+        );
+        assert!(
+            s.asset_visible(&first),
+            "opening a document resets removals"
+        );
     }
 
     #[test]

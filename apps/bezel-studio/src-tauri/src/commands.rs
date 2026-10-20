@@ -519,6 +519,16 @@ pub async fn list_assets(state: State<'_, Shared>) -> UiResult<Vec<AssetDto>> {
     blocking(&state, |b| Ok(b.assets())).await
 }
 
+/// Removes unused media from this document, keeping bytes needed by Undo.
+#[tauri::command]
+pub async fn remove_asset(
+    state: State<'_, Shared>,
+    asset: String,
+    theme: ThemeDto,
+) -> UiResult<bool> {
+    blocking(&state, move |b| b.remove_asset(&asset, &theme)).await
+}
+
 /// Preview a theme video or a catalogued copy; no device I/O or arbitrary paths.
 #[tauri::command]
 pub async fn video_preview(
