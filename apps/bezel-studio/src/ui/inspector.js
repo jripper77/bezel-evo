@@ -1,4 +1,5 @@
 import { canRotate, appliedRotation } from '../editor/rotation.js';
+import { createInspectorTrial } from '../inspector-trial.js';
 import { visualization, visualStyles, visualArt, matrixFrame } from '../visualization.js';
 import { defaultSensorMotion, supportsSensorMotion } from '../sensor-motion.js';
 import { sensorNativeUnit } from '../sensor-picker-model.js';
@@ -1093,27 +1094,37 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     const stage = figure.querySelector('.inspector-preview-stage');
     return { width: stage.clientWidth > 16 ? stage.clientWidth : 240, height: PREVIEW_HEIGHT };
   };
+  const trial = createInspectorTrial();
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
+    trial.stop();
+    render(shown.assets);
+  });
   const previews = createPreviewScheduler({
     render: async (id) => {
       const figure = root.querySelector('.inspector-preview');
       const ratio = window.devicePixelRatio || 1;
       const max = previewSide(figure ? previewBox(figure) : { width: 240, height: PREVIEW_HEIGHT }, ratio);
       const started = performance.now();
-      const frame = await host.renderElement(id, { max, motion: video.context().motion !== false });
+      const motion = video.context().motion !== false;
+      const element = store.getState().theme.elements.find(e => e.id === id);
+      const trialMs = trial.at(element, motion);
+      const frame = await host.renderElement(id, { max, motion, ...(trialMs === null ? {} : { trialMs }) });
       return { frame, elapsed: performance.now() - started };
     },
     show: ({ frame, elapsed }, id) => {
       drawPreview(frame, id);
+      root.querySelector('.inspector-try')?.setAttribute('aria-pressed', String(trial.at(store.getState().theme.elements.find(e => e.id === id), video.context().motion !== false) !== null));
       previewAnimation.shown({ nextMs: frame?.nextMs, elapsed });
     },
-    fail: (_, id) => { previewAnimation.stop(); drawPreview(null, id); },
+    fail: (_, id) => { trial.stop(); previewAnimation.stop(); root.querySelector('.inspector-try')?.setAttribute('aria-pressed', 'false'); drawPreview(null, id); },
   });
   const previewAnimation = createPreviewAnimation({
     request: requestPreview,
+    perSecond: 30,
     enabled: () => !document.hidden && video.context().motion !== false && Boolean(root.querySelector('.inspector-preview')),
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { previewAnimation.stop(); previews.cancel(); }
+    if (document.hidden) { trial.stop(); previewAnimation.stop(); previews.cancel(); }
     else requestPreview();
   });
   let previewWidth = root.clientWidth;
@@ -1238,6 +1249,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     return el('div', { class: 'inspector-head' }, [
       kindIcon(e.isGroup ? 'groupFrame' : widget),
       el('div', { class: 'inspector-title' }, [name, el('div', { class: 'inspector-sub' }, [el('h2', { text: t(`widget.${widget}`) }), ` · ${where}`])]),
+      tool(t('insp.tryObject'), ICONS.play, () => { trial.start(e); requestPreview(); }, { class: 'quiet inspector-try', disabled: video.context().motion === false, 'aria-pressed': String(trial.at(e, video.context().motion !== false) !== null) }),
       tool(t(hidden ? 'common.show' : 'common.hide'), hidden ? ICONS.eyeOff : ICONS.eye, () => update(e.id, { visible: hidden })),
       tool(t(e.locked ? 'common.unlock' : 'common.lock'), e.locked ? ICONS.lock : ICONS.unlock, () => update(e.id, { locked: !e.locked }), { 'aria-pressed': String(Boolean(e.locked)) }),
       tool(t('insp.more'), ICONS.more, (evt) => {
@@ -1388,7 +1400,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   function elementForm(e, theme, assets) {
     const f = e.frame, widget = widgetOf(e);
     const kind = e.card ? 'card' : e.isGroup ? 'group' : widget;
-    if (shownElement?.id !== e.id) customSource = false;
+    if (shownElement?.id !== e.id) { customSource = false; trial.stop(); }
     shownElement = e;
     const setFrame = patch => store.dispatch('setFrame', { id: e.id, frame: { ...f, ...patch } });
     const position = section('position', t('inspector.position'), [
@@ -1457,9 +1469,11 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     const chosen = selection.map(id => theme.elements.find(e => e.id === id)).filter(Boolean);
     let nodes;
     if (chosen.length === 0) {
+      trial.stop();
       shownElement = null;
       nodes = themeForm(theme, assets);
     } else {
+      if (chosen.length > 1) trial.stop();
       background.dismiss();
       nodes = chosen.length === 1 ? elementForm(chosen[0], theme, assets) : multiForm(chosen.map((e) => e.id));
     }

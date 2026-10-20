@@ -12,6 +12,7 @@ import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js
 import { fadeLine } from './shape-fade.js';
 import { weatherText } from './weather-format.js';
 import { formatClock } from './clock-format.js';
+import { weatherIconPaths } from './weather-icon.js';
 import { easedDemoValue } from './value-transition.js';
 import { barGeometry, blockMetrics, blockRows, coverShare, fitPlayer, placeBlock, playerText, progressOf, PROGRESS_SPACING } from './player-parts.js';
 // An approximate renderer for demo mode (browser only). The real preview is
@@ -127,17 +128,17 @@ function drawProgress(ctx, c, s, area, shown) {
   return { ...area, height: Math.max(0, area.height - m.height - (alone ? 0 : PROGRESS_SPACING)) };
 }
 
-function drawText(ctx, e, t, value, measure = false) {
+function drawText(ctx, e, t, value, measure = false, trial = null) {
   const k = e.kind;
   const s = k.style;
   let text = k.content.text ?? '';
   if (k.content.type === 'clock') {
-    const d = new Date(t * 1000);
+    const d = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
     text = formatClock(k.content.pattern, d, k.content.language, k.content.casing);
   } else if (k.content.type === 'weather') {
-    text = weatherText(k.content, 20, 3);
+    text = weatherText(k.content, 20, trial?.weatherCode ?? 3);
   } else if (k.content.type === 'player') {
-    text = playerText(k.content, DEMO_MEDIA).lines.join('\n');
+    text = playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA).lines.join('\n');
   } else if (k.content.type === 'sensor') {
     text = `${k.content.prefix ?? ''}${Number.isFinite(value) ? Math.round(value * 100) : '\u2014'}${k.content.format?.showUnit === false ? '' : '%'}${k.content.suffix ?? ''}`;
   }
@@ -166,20 +167,28 @@ function drawText(ctx, e, t, value, measure = false) {
     ctx.translate(f.x, f.y + (f.height - side) / 2);
     ctx.scale(side / 24, side / 24);
     ctx.strokeStyle = paint(s.paint); ctx.lineWidth = 1.6;
-    const cloud = new Path2D('M5 16C-1 16 1 8 7 10C8 3 19 5 18 11C24 10 24 16 19 16Z');
-    if (['colored','dimensional'].includes(k.content.iconStyle)) {
-      ctx.fillStyle='#dbeafe';ctx.strokeStyle='#93c5fd';
-      if (k.content.iconStyle==='dimensional') { const g=ctx.createLinearGradient(5,5,18,18);g.addColorStop(0,'#f0f9ff');g.addColorStop(1,'#6792bc');ctx.fillStyle=g;ctx.shadowColor='#0006';ctx.shadowBlur=2;ctx.shadowOffsetY=1; }
-      ctx.fill(cloud);
-    } else if (k.content.iconStyle === 'filled') ctx.fill(cloud);
-    ctx.stroke(cloud);
+    const colored = ['colored','dimensional'].includes(k.content.iconStyle);
+    ctx.lineWidth = Math.max(colored ? 1.5 : 1.6, 24 / side);
+    ctx.lineCap = colored ? 'round' : 'butt';
+    for (const component of weatherIconPaths(trial?.weatherCode ?? 3, colored)) {
+      const path = new Path2D(component.path);
+      ctx.fillStyle = ctx.strokeStyle = colored ? component.light : paint(s.paint);
+      if (colored && k.content.iconStyle === 'dimensional') {
+        if (component.fill) { ctx.save(); ctx.translate(.5, .9); ctx.fillStyle = 'rgba(0,0,0,0.255)'; ctx.fill(path); ctx.restore(); }
+        const g = ctx.createLinearGradient(...fadeLine({ x: 0, y: 0, width: 24, height: 24 }, 65));
+        g.addColorStop(0, component.light); g.addColorStop(1, component.dark);
+        ctx.fillStyle = ctx.strokeStyle = g;
+      }
+      if (colored ? component.fill : k.content.iconStyle === 'filled') ctx.fill(path);
+      ctx.stroke(path);
+    }
     ctx.restore();
     f = { ...f, x: f.x + side + gap, width: Math.max(0, f.width - side - gap) };
   }
   if (k.content.type==='player') {
     ctx.textBaseline='top';
     if(k.content.showCover !== false){const {side,gap}=textFurniture(k).layout(f);ctx.save();ctx.beginPath();ctx.roundRect(f.x,f.y,side,side,k.content.coverCorners ?? k.content.coverRadius ?? 0);ctx.clip();ctx.fillStyle='#334155';ctx.fillRect(f.x,f.y,side,side);ctx.fillStyle=paint(s.paint);ctx.fillText('\u266b',f.x+side*.3,f.y+side*.3);ctx.restore();f={...f,x:f.x+side+gap,width:f.width-side-gap};}
-    f = drawProgress(ctx, k.content, s, f, playerText(k.content, DEMO_MEDIA));
+    f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
   ctx.fillStyle=paint(s.paint);
   const x = s.align === 'center' ? f.x + f.width / 2 : s.align === 'right' ? f.x + f.width : f.x;
@@ -262,20 +271,21 @@ function drawSpectrum(ctx, e, seconds) {
   ctx.restore();
 }
 
-function drawElement(ctx, e, t, refresh = 1, motion = true) {
+function drawElement(ctx, e, t, refresh = 1, motion = true, trial = null) {
   const angle = appliedRotation(e);
-  if (!angle) { drawUprightElement(ctx, e, t, refresh, motion); return; }
+  if (!angle) { drawUprightElement(ctx, e, t, refresh, motion, trial); return; }
   const center = centerOf(e.frame);
   ctx.save();
   ctx.translate(center.x, center.y); ctx.rotate(angle * Math.PI / 180); ctx.translate(-center.x, -center.y);
   ctx.beginPath(); ctx.rect(e.frame.x, e.frame.y, e.frame.width, e.frame.height); ctx.clip();
-  drawUprightElement(ctx, { ...e, rotation: 0 }, t, refresh, motion);
+  drawUprightElement(ctx, { ...e, rotation: 0 }, t, refresh, motion, trial);
   ctx.restore();
 }
 
-function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
-  if (e.kind.content?.type === 'spectrum') { drawSpectrum(ctx,e,t); return; }
-  const value = shownFraction(e, t, refresh, motion);
+function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null) {
+  if (e.kind.content?.type === 'spectrum') { drawSpectrum(ctx, trial ? { ...e, kind: { ...e.kind, content: { ...e.kind.content, demo: true } } } : e, trial ? trial.elapsedMs / 1000 : t); return; }
+  let value = shownFraction(e, t, refresh, motion);
+  if (trial && boundKey(e)) value = (Number.isFinite(value) ? value : 0) + (Math.max(1, Number.isFinite(value) ? value : 0) - (Number.isFinite(value) ? value : 0)) * trial.pulse;
   e = withValueColor(e, demoColorValue(e, value, key => demoSensorValue(key, Math.floor(t / refresh) * refresh)));
   const k = e.kind;
   const f = e.frame;
@@ -283,7 +293,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
     const layer = new OffscreenCanvas(Math.ceil(f.width), Math.ceil(f.height));
     const lc = layer.getContext('2d');
     lc.translate(-f.x, -f.y);
-    drawElement(lc, { ...e, opacity: 1, kind: { ...k, fade: null } }, t, refresh, motion);
+    drawElement(lc, { ...e, opacity: 1, kind: { ...k, fade: null } }, t, refresh, motion, trial);
     lc.globalCompositeOperation = 'destination-in';
     lc.save();
     if (k.fade.radial) { lc.translate(f.x, f.y); lc.scale(f.width, f.height); }
@@ -305,10 +315,11 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
   const frac = value;
   ctx.save();
   ctx.globalAlpha = e.opacity ?? 1;
-  if (drawVisualization(ctx,e,frac,k.type==='graph'?demoGraphPoints(k,refresh,t,e.id):null,k.type==='graph'&&e.visualization?.secondary?demoGraphPoints({...k,binding:e.visualization.secondary},refresh,t,e.id+197):null)) { ctx.restore(); return; }
+  const graphPoints = trial && k.type === 'graph' ? Array.from({ length: 60 }, (_, i) => .5 + .4 * Math.sin(i * .25 + trial.elapsedMs / 1000)) : null;
+  if (drawVisualization(ctx,e,frac,k.type==='graph'?(graphPoints ?? demoGraphPoints(k,refresh,t,e.id)):null,k.type==='graph'&&e.visualization?.secondary?(graphPoints ?? demoGraphPoints({...k,binding:e.visualization.secondary},refresh,t,e.id+197)):null)) { ctx.restore(); return; }
   switch (k.type) {
     case 'text':
-      drawText(ctx, e, t, frac);
+      drawText(ctx, e, t, frac, false, trial);
       break;
     case 'shape':
       ctx.fillStyle = k.videoWindow ? '#1f2330' : paint(k.fill);
@@ -385,7 +396,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
       ctx.strokeStyle = color(k.color);
       ctx.lineWidth = k.lineWidth;
       ctx.beginPath();
-      const points = demoGraphPoints(k, refresh, t, e.id);
+      const points = graphPoints ?? demoGraphPoints(k, refresh, t, e.id);
       const n = points.length;
       for (let i = 0; i < n; i += 1) {
         const x = f.x + (f.width * i) / (n - 1);
@@ -398,7 +409,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true) {
     }
     case 'image':
       if (String(k.asset).toLowerCase().endsWith('.gif')) {
-        ctx.fillStyle = GIF_COLORS[Math.floor((t * 1000) / DEMO_GIF_FRAME_MS) % GIF_COLORS.length];
+        ctx.fillStyle = GIF_COLORS[Math.floor((trial?.elapsedMs ?? t * 1000) / DEMO_GIF_FRAME_MS) % GIF_COLORS.length];
         ctx.fillRect(f.x, f.y, f.width, f.height);
       }
       ctx.strokeStyle = k.color ? color(k.color) : 'rgba(255,255,255,0.4)';
@@ -563,7 +574,7 @@ function drawCardTransition(ctx, theme, parent, transition, t) {
  * Without `motion` values show their last sample (no easing).
  * @returns {{width:number, height:number, rgba: Uint8ClampedArray}}
  */
-export function renderApprox(theme, t, video = null, transitions = new Map(), scale = 1, motion = true) {
+export function renderApprox(theme, t, video = null, transitions = new Map(), scale = 1, motion = true, trial = null) {
   const width = Math.max(1, Math.round(theme.canvas.width * scale));
   const height = Math.max(1, Math.round(theme.canvas.height * scale));
   const canvas = new OffscreenCanvas(width, height);
@@ -579,7 +590,7 @@ export function renderApprox(theme, t, video = null, transitions = new Map(), sc
     if (e.isGroup) continue;
     if (transitions.has(e.id)) { drawCardTransition(ctx, theme, e, transitions.get(e.id), t); continue; }
     if (transitions.has(e.cardMember?.parent) || !isShown(theme, e)) continue;
-    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, t, theme.refreshSeconds, motion);
+    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, t, theme.refreshSeconds, motion, trial?.elementId === e.id ? trial : null);
   }
   return { width, height, rgba: ctx.getImageData(0, 0, width, height).data };
 }

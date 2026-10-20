@@ -884,6 +884,7 @@ fn canvas_backpressure_scaling_inspector_and_measure_are_bounded() {
             element: 1,
             max: 64,
             motion: false,
+            trial_ms: None,
         },
         &[],
     )
@@ -918,13 +919,62 @@ fn canvas_backpressure_scaling_inspector_and_measure_are_bounded() {
             RuntimeOp::Inspect {
                 element: 999,
                 max: 64,
-                motion: true
+                motion: true,
+                trial_ms: None,
             },
             &[]
         )
         .is_err()
     );
     assert!(send(&mut f.engine, &f.key, RuntimeOp::Live { on: false }, &[1]).is_err());
+}
+
+#[test]
+fn a_wire_inspector_trial_never_changes_the_document_sample_or_live_frame() {
+    let mut f = fixture();
+    f.engine.document(&f.key, 0, doc(), true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    let before = f.engine.scenes[&f.key].runtime.snapshot().clone();
+    let theme = f.engine.scenes[&f.key].runtime.theme().clone();
+    let sequence = f.engine.image(&f.key, 0, 64).unwrap().sequence;
+    let (value, _) = send(
+        &mut f.engine,
+        &f.key,
+        RuntimeOp::Inspect {
+            element: 1,
+            max: 64,
+            motion: true,
+            trial_ms: Some(1500),
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(value["nextMs"], 33);
+    let history = &f.seen.lock().unwrap().last().unwrap().history.clone();
+    assert_eq!(history.len(), 60);
+    assert!(
+        history
+            .iter()
+            .flatten()
+            .all(|value| (10. ..=90.).contains(value))
+    );
+    assert_eq!(*f.engine.scenes[&f.key].runtime.snapshot(), before);
+    assert_eq!(*f.engine.scenes[&f.key].runtime.theme(), theme);
+    assert_eq!(f.engine.image(&f.key, 0, 64).unwrap().sequence, sequence);
+    let (value, _) = send(
+        &mut f.engine,
+        &f.key,
+        RuntimeOp::Inspect {
+            element: 1,
+            max: 64,
+            motion: false,
+            trial_ms: Some(1500),
+        },
+        &[],
+    )
+    .unwrap();
+    assert_ne!(value["nextMs"], 33);
+    assert!(f.seen.lock().unwrap().last().unwrap().history.len() < 60);
 }
 #[test]
 fn untrusted_document_lengths_paths_dimensions_and_versions_are_rejected() {

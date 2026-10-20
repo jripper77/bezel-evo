@@ -7,6 +7,7 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.tryObject': 'Try animation',
     'insp.transitionInertia': 'Inertia',
     'insp.transitionSettling': 'Settling time',
     'insp.transitionInertiaHint': 'Gains speed gradually, then brakes towards the reading. New readings preserve its momentum.',
@@ -176,6 +177,7 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.tryObject': 'Testar animação',
     'insp.transitionInertia': 'Inércia',
     'insp.transitionSettling': 'Tempo de estabilização',
     'insp.transitionInertiaHint': 'Acelera gradualmente e freia até a leitura. Novas leituras preservam seu impulso.',
@@ -345,6 +347,7 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.tryObject': 'Prova animazione',
     'insp.transitionInertia': 'Inerzia',
     'insp.transitionSettling': 'Tempo di assestamento',
     'insp.transitionInertiaHint': 'Prende velocità gradualmente e poi frena verso il valore. Le nuove letture conservano lo slancio del movimento.',

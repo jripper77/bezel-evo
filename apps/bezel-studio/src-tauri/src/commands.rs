@@ -245,13 +245,14 @@ pub async fn render_element_preview(
     element: u32,
     max: Option<u32>,
     motion: Option<bool>,
+    trial_ms: Option<u32>,
 ) -> UiResult<Response> {
     let motion = motion_of(motion);
     blocking(&state, move |b| {
-        b.render_element(
+        b.render_element_with(
             &theme,
             element,
-            max,
+            (max, trial_ms),
             now(),
             std::time::Instant::now(),
             motion,

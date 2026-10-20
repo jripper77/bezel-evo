@@ -116,7 +116,7 @@
 /* An object (artboards Main, GraphData/Look, PlayerData/Look): its head
    (kind, name, layer, eye, lock, more), its preview, the tabs, position
    and size, then the sections of the open tab. */
-.inspector-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) repeat(3, 28px); align-items: center; gap: 8px; margin: 2px 0 12px; }
+.inspector-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) repeat(4, 28px); align-items: center; gap: 8px; margin: 2px 0 12px; }
 .inspector-type { grid-column: 1 / -1; margin: 0; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 10px; }
 .inspector-head > .icon-button { width: 28px; height: 28px; }
 .inspector-type > span { font-size: var(--fs-small); }

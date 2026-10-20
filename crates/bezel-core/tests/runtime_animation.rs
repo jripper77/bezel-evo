@@ -320,3 +320,56 @@ fn a_detached_preview_draws_another_theme_on_its_own_clock() {
     assert_eq!(again, None);
     assert_eq!(rt.theme().elements[0].id, ElementId(1));
 }
+
+#[test]
+fn detached_trial_readings_never_replace_the_live_sample_or_clock() {
+    use bezel_core::domain::{
+        history::Histories,
+        sensor::{Reading, SensorKey, Snapshot},
+    };
+    struct Probe {
+        key: SensorKey,
+        values: Vec<f64>,
+    }
+    impl FrameRenderer for Probe {
+        fn render(
+            &mut self,
+            theme: &Theme,
+            _: &BTreeMap<AssetRef, Vec<u8>>,
+            context: RenderContext<'_>,
+        ) -> Result<Frame> {
+            self.values
+                .push(context.snapshot.get(&self.key).value().unwrap_or(-1.));
+            assert!(context.shown.is_empty());
+            Ok(Frame::filled(theme.canvas, Rgba::BLACK))
+        }
+    }
+    let mut rt = runtime(vec![image(1, "assets/logo.png")]);
+    let key = SensorKey::new("cpu.temperature").unwrap();
+    rt.want_also([key.clone()].into_iter().collect());
+    rt.sample_on_time(&mut FakeSensors::demo(), Duration::ZERO)
+        .unwrap();
+    let original = rt.snapshot().clone();
+    let original_value = original.get(&key).value().unwrap();
+    let mut snapshot = Snapshot::default();
+    snapshot.insert(key.clone(), Reading::Value(100.));
+    let histories = Histories::new(&[]);
+    let apart = rt.theme().clone();
+    let mut renderer = Probe {
+        key,
+        values: vec![],
+    };
+    rt.preview_detached_sample(
+        &mut renderer,
+        &apart,
+        TIME,
+        ms(1500),
+        Some((&snapshot, &histories)),
+    )
+    .unwrap();
+    rt.preview_detached(&mut renderer, &apart, TIME, ms(8000))
+        .unwrap();
+    assert_eq!(renderer.values, vec![100., original_value]);
+    assert_eq!(*rt.snapshot(), original);
+    assert_eq!(*rt.theme(), apart);
+}

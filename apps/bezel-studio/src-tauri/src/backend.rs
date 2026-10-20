@@ -1195,6 +1195,19 @@ impl Backend {
         now: Instant,
         motion: Motion,
     ) -> UiResult<Vec<u8>> {
+        self.render_element_with(theme, element, (max, None), time, now, motion)
+    }
+
+    /// Preview options are transport-only; trial time is never part of a theme.
+    pub fn render_element_with(
+        &self,
+        theme: &ThemeDto,
+        element: u32,
+        (max, trial_ms): (Option<u32>, Option<u32>),
+        time: LocalTime,
+        now: Instant,
+        motion: Motion,
+    ) -> UiResult<Vec<u8>> {
         if let Some(engine) = &self.engine {
             self.studio().set_theme(theme_of(theme)?);
             let key = self.sync_engine(false)?;
@@ -1204,6 +1217,7 @@ impl Backend {
                     element,
                     max: side_of(max),
                     motion: motion == Motion::Allowed,
+                    trial_ms,
                 },
             )?;
             bezel_runtime::wire::frame(&value, pixels.clone())?;
@@ -1212,7 +1226,8 @@ impl Backend {
         let theme = theme_of(theme)?;
         let mut studio = self.studio();
         studio.set_theme(theme);
-        let (frame, change) = studio.element_preview(ElementId(element), time, now, motion)?;
+        let (frame, change) =
+            studio.element_trial(ElementId(element), time, now, motion, trial_ms)?;
         drop(studio);
         Ok(frame_bytes(&fit_within(frame, side_of(max)), change))
     }
@@ -2384,6 +2399,44 @@ mod tests {
         theme.background = Background::Color(Rgba::opaque(9, 9, 9));
         theme.elements = elements;
         theme
+    }
+
+    #[test]
+    fn inspector_try_renders_full_scale_and_returns_without_changing_the_theme() {
+        use bezel_core::domain::theme::{Binding, BoxF, Direction, ElementKind, Paint};
+        let f = fixture("inspector-trial");
+        f.backend.studio().sample().unwrap();
+        let fill = Rgba::opaque(0, 200, 0);
+        let mut bar = crate::element_preview::tests::shape(1, BoxF::new(0., 0., 200., 10.), fill);
+        bar.kind = ElementKind::Bar {
+            binding: Binding {
+                key: SensorKey::new("cpu.temperature").unwrap(),
+                min: 0.,
+                max: 100.,
+            },
+            direction: Direction::LeftToRight,
+            fill: Paint::solid(fill),
+            track: None,
+            radius: 0.,
+            segments: None,
+        };
+        let theme = landscape(vec![bar]);
+        let dto = ThemeDto::from(&theme);
+        for (trial_ms, motion, expected, next) in [
+            (None, Motion::Allowed, 920, STILL),
+            (Some(1500), Motion::Allowed, 2000, 33),
+            (Some(3000), Motion::Allowed, 920, STILL),
+            (Some(1500), Motion::Reduced, 920, STILL),
+        ] {
+            let bytes = f
+                .backend
+                .render_element_with(&dto, 1, (None, trial_ms), TIME, Instant::now(), motion)
+                .unwrap();
+            assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), next);
+            let frame = Frame::from_rgba(Size::new(200, 10), bytes[12..].to_vec()).unwrap();
+            assert_eq!(count(&frame, fill), expected);
+            assert_eq!(*f.backend.studio().theme(), theme);
+        }
     }
 
     #[test]
