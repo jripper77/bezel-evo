@@ -28,5 +28,20 @@ Verifiche: 53 unitari/statici/i18n mirati e 16 e2e dell'area verdi nei quattro
 progetti; screenshot chiaro/scuro ispezionati. Output in
 target/logs/visualizations-next e target/scratch/visualizations-next.
 
-Consegna locale prevista .60 mediante build-evo.ps1; la release pubblica resta
-.59. Nessun nuovo setup o push richiesto in questo turno.
+Consegna locale .60 completata mediante build-evo.ps1 -Version 0.1.60
+(2 minuti); CLI e metadati Studio verificati. Avviato direttamente
+target/release/bezel-studio.exe: PID 16348 rispondente, titolo Bezel Evo 0.1.60;
+Light PID 55056. Nessun processo Studio/Light presente prima della build.
+SHA256 Studio 8D47322EE838A6A063DD7AD67A77DC509E7A0EEB021A826DDD8B0C55592B8095;
+CLI AACBACBEC47E07D82D661A106D89812031275BDAD28DAE4B9080B71E4ADF5495.
+
+Avvio osservato nei log: timeout IPC e pipe occupata fino alle 00:14:18 UTC;
+screen2 segnala un errore I/O e 4427 eventi scene fino alle 00:15:02, poi
+riprende Present regolari (1393 entro 00:15:52). Screen1 ha 3996 Present fino
+alle 00:14:55. Non dichiarare avvio senza errori o entrambi gli schermi
+verificati a vista: la causa della fase transitoria non è diagnosticata.
+Nessun arresto forzato o modifica ai documenti per questa verifica.
+
+La release pubblica resta .59 e l'installata .45. Nessun nuovo setup o push.
+Da confermare a vista i nuovi controlli e il comportamento di riaggancio
+all'avvio, soprattutto sull'8,8 pollici.
