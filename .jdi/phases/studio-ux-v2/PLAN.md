@@ -138,7 +138,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   `apps/bezel-studio/src/demo-render.js`, test
 - **Acceptance:** punto di ancoraggio (9 posizioni) per Riempi; trasparenza radiale con centro e morbidezza (lineare esiste);
   GIF/video: riproduzione in ripetizione/una volta e velocità 0,5×/1×/2×. Test pixel dell'ancoraggio e della trasparenza radiale.
-- **Dipendenze:** nessuna · **Test:** G10 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G10 · **Status:** completed (immagini e GIF) — ancoraggio a 9 punti per Riempi, GIF una volta/in ripetizione e velocità con fotogrammi per oggetto, radiale già esistente; video negli oggetti rimandati a T-11 (D-2026-10-21-studio-ux-v2-16). Test Rust (core 327, themes 88, render 124), clippy/fmt, 62 unitari UI, e2e dell'area verdi tranne 6 già rosse sulla base (T-10). Vedi `SUMMARY-T-5.md`. Commit `44ad938`, `c27d678`.
 
 #### T-6: Profili — nuove regole e profilo attivo
 - **Decisioni:** 12 · **Tavole:** ProfilesNew
@@ -162,7 +162,8 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 #### T-7b: Inspector di Orologio, Meteo, Player, Spettro, Forma, Immagine
 - **Decisioni:** 01–07, 09 · **Tavole:** ClockInspectorOpen, WeatherInspectorOpen, PlayerInspectorOpen, SpectrumInspectorOpen, ShapeInspectorOpen, ImageInspectorOpen
 - **Files:** `src/ui/inspector/{clock,weather,player,spectrum,shape,image}.js`, css, i18n, test dell'area
-- **Acceptance:** come le tavole, con orologio digitale/analogico (T-1, T-2), animazione meteo (T-4), immagine/video (T-5),
+- **Acceptance:** come le tavole, con orologio digitale/analogico (T-1, T-2), animazione meteo (T-4), immagine e GIF (T-5;
+  voci di riproduzione solo per le GIF finché non c'è T-11, D-2026-10-21-studio-ux-v2-16),
   forma con immagine ripetuta (esistente), copertina del player con trasparenza (esistente).
 - **Dipendenze:** T-0, T-1, T-2, T-4, T-5 · **Test:** G1–G9 · **Status:** pending
 
@@ -210,6 +211,13 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Files:** `themes/<nome>/` (nuove cartelle, formato come i temi moderni esistenti), `crates/bezel-cli/tests/bundled_themes.rs`, asset in vettoriale se servono
 - **Acceptance:** quattro temi orizzontali 1920×480 fedeli alle tavole, solo widget nativi e font inclusi (Doto, IBM Plex Mono, ...); test dei temi inclusi verde.
 - **Dipendenze:** T-1…T-4 per le funzioni che usano (altrimenti versione senza e annotazione) · **Test:** G10 · **Status:** pending
+
+#### T-11: Video negli oggetti Immagine (dopo la Wave 2)
+- **Decisioni:** D-2026-10-21-studio-ux-v2-16 · **Tavole:** ImageInspectorOpen (file .mp4, Riproduzione, Velocità, Audio muto)
+- **Primo passo:** misurare sull'8,8″ quanti fps regge un video in una zona piccola, media e grande dello schermo, ripartendo
+  dai dati della prova del 18 ottobre (`docs/experiments/scene-streaming.md`); poi l'utente decide i limiti (dimensione
+  massima, fps). Solo dopo: decodifica sul PC con la pipeline dello sfondo, ripetizione/una volta, velocità, muto, demo.
+- **Dipendenze:** T-5, T-7b · **Status:** pending
 
 ### Wave 3 — Integrazione
 
