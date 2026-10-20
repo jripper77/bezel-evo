@@ -16,7 +16,7 @@
 //! and a screen too slow to draw two frames within a transition ([`Pace`])
 //! shows the new value at once.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
 
 use super::sensor::Snapshot;
@@ -46,7 +46,14 @@ pub enum TransitionMode {
     Smooth,
     /// Critically damped pursuit, retaining momentum when readings change.
     Inertia,
+    /// The number counts evenly through the values in between.
+    Count,
+    /// Each digit turns like a wheel to the new one (an odometer).
+    Roll,
 }
+
+/// Most readings a value can be averaged over.
+pub const MAX_AVERAGE: u8 = 30;
 
 /// An element's value transition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +63,9 @@ pub struct ValueTransition {
     /// How long a smooth transition lasts, milliseconds (kept while the mode
     /// is none, so switching back restores it).
     pub duration_ms: u32,
+    /// The value shown is the mean of the last `average` readings, which
+    /// calms a number that jumps; 1 shows each reading as it is.
+    pub average: u8,
 }
 
 impl ValueTransition {
@@ -64,7 +74,13 @@ impl ValueTransition {
         Self {
             mode: TransitionMode::Smooth,
             duration_ms,
+            average: 1,
         }
+    }
+
+    /// Readings averaged, within 1..=[`MAX_AVERAGE`].
+    pub fn readings(&self) -> usize {
+        usize::from(self.average.clamp(1, MAX_AVERAGE))
     }
 
     /// How long a change lasts: `None` when the value jumps (mode none, or
@@ -72,7 +88,12 @@ impl ValueTransition {
     /// [`MIN_TRANSITION_MS`]..=[`MAX_TRANSITION_MS`].
     pub fn length(&self) -> Option<Duration> {
         match self.mode {
-            TransitionMode::Smooth | TransitionMode::Inertia if self.duration_ms > 0 => {
+            TransitionMode::Smooth
+            | TransitionMode::Inertia
+            | TransitionMode::Count
+            | TransitionMode::Roll
+                if self.duration_ms > 0 =>
+            {
                 Some(Duration::from_millis(u64::from(
                     self.duration_ms.clamp(MIN_TRANSITION_MS, MAX_TRANSITION_MS),
                 )))
@@ -122,6 +143,8 @@ pub fn target(element: &Element, snapshot: &Snapshot) -> Option<f64> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tween {
     mode: TransitionMode,
+    /// Shown even at rest: the value is an average, not the reading.
+    held: bool,
     velocity: f64,
     from: f64,
     to: f64,
@@ -134,6 +157,7 @@ impl Tween {
     pub fn settled(value: f64) -> Self {
         Self {
             mode: TransitionMode::Smooth,
+            held: false,
             velocity: 0.,
             from: value,
             to: value,
@@ -146,6 +170,7 @@ impl Tween {
     pub fn new(from: f64, to: f64, start: Duration, length: Duration) -> Self {
         Self {
             mode: TransitionMode::Smooth,
+            held: false,
             velocity: 0.,
             from,
             to,
@@ -183,6 +208,9 @@ impl Tween {
             return self.from;
         }
         let progress = (at - self.start).as_secs_f64() / self.length.as_secs_f64();
+        if self.mode == TransitionMode::Count {
+            return self.from + (self.to - self.from) * progress.clamp(0., 1.);
+        }
         if self.mode == TransitionMode::Inertia {
             let time = (at - self.start).as_secs_f64();
             let omega = 8. / self.length.as_secs_f64();
@@ -206,6 +234,9 @@ impl Tween {
                 - omega * (self.velocity + omega * (self.from - self.to)) * time)
                 * (-omega * time).exp();
         }
+        if self.mode == TransitionMode::Count {
+            return (self.to - self.from) / length;
+        }
         3. * (self.to - self.from) / length * (1. - time / length).powi(2)
     }
 
@@ -219,34 +250,92 @@ impl Tween {
     }
 }
 
-/// The values to draw in place of the readings: only elements whose
-/// transition still moves.
+/// The values to draw in place of the readings: elements whose transition
+/// still moves, and averaged ones.
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct ShownValues(BTreeMap<ElementId, f64>);
+pub struct ShownValues {
+    values: BTreeMap<ElementId, f64>,
+    rolls: BTreeMap<ElementId, Roll>,
+}
 
 /// Nothing moving: every element shows its reading (a one-off frame).
-pub static NOTHING_SHOWN: ShownValues = ShownValues(BTreeMap::new());
+pub static NOTHING_SHOWN: ShownValues = ShownValues {
+    values: BTreeMap::new(),
+    rolls: BTreeMap::new(),
+};
 
 impl FromIterator<(ElementId, f64)> for ShownValues {
     fn from_iter<I: IntoIterator<Item = (ElementId, f64)>>(values: I) -> Self {
-        Self(values.into_iter().collect())
+        Self {
+            values: values.into_iter().collect(),
+            rolls: BTreeMap::new(),
+        }
     }
 }
 
 impl ShownValues {
-    /// The value element `id` shows, when it is moving.
+    /// The value element `id` shows, when it is moving or averaged.
     pub fn get(&self, id: ElementId) -> Option<f64> {
-        self.0.get(&id).copied()
+        self.values.get(&id).copied()
     }
 
-    /// Whether nothing moves.
+    /// The wheels of element `id`, while its number rolls.
+    pub fn roll(&self, id: ElementId) -> Option<Roll> {
+        self.rolls.get(&id).copied()
+    }
+
+    /// Whether nothing is shown in place of a reading.
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.values.is_empty()
     }
 
-    /// Number of moving elements.
+    /// Number of elements shown in place of their reading.
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.values.len()
+    }
+}
+
+/// A number rolling from one value to another ([`TransitionMode::Roll`]).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Roll {
+    /// The value it leaves.
+    pub from: f64,
+    /// The value it goes to.
+    pub to: f64,
+    /// Eased share of the way done, 0..=1.
+    pub progress: f64,
+}
+
+impl Roll {
+    /// The wheels of the `digits` digit columns of a number written with
+    /// `decimals` decimals, left to right: the digit each shows and how far
+    /// (0..1) it has turned towards the next one. The units column turns
+    /// evenly from the rounded old number to the rounded new one; a column
+    /// turns only while every column to its right shows 9 and turns, like
+    /// an odometer. Signs are left out (magnitudes roll).
+    pub fn wheels(&self, decimals: u32, digits: usize) -> Vec<(u8, f32)> {
+        let scale = 10f64.powi(decimals.min(9) as i32);
+        let units = |v: f64| {
+            if v.is_finite() {
+                (v.abs() * scale).round()
+            } else {
+                0.
+            }
+        };
+        let (from, to) = (units(self.from), units(self.to));
+        let at = from + (to - from) * self.progress.clamp(0., 1.);
+        let mut out = Vec::with_capacity(digits);
+        let (mut turn, mut column) = (at.fract() as f32, at.trunc());
+        for _ in 0..digits {
+            let digit = (column % 10.) as u8;
+            out.push((digit, turn));
+            if digit != 9 {
+                turn = 0.;
+            }
+            column = (column / 10.).trunc();
+        }
+        out.reverse();
+        out
     }
 }
 
@@ -303,6 +392,8 @@ pub enum View {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Transitions {
     tweens: BTreeMap<ElementId, Tween>,
+    /// The last readings of averaged elements, oldest first.
+    readings: BTreeMap<ElementId, VecDeque<f64>>,
     pace: Pace,
     still_previews: bool,
 }
@@ -316,49 +407,102 @@ impl Transitions {
         })
     }
 
-    /// A sample: every element that eases goes to its value in `snapshot`,
-    /// from the value it shows at `now` (`None`: a sample with no clock, the
-    /// values settle at once). A first value, or an element whose reading
-    /// is not a number, settles.
+    /// The elements of `theme` that ease or average, with their transition.
+    fn tracked(theme: &Theme) -> impl Iterator<Item = (&Element, ValueTransition)> {
+        theme.elements.iter().filter_map(|element| {
+            let t = element.value_transition?;
+            (t.length().is_some() || t.readings() > 1).then_some((element, t))
+        })
+    }
+
+    /// A sample: every element that eases goes to its value in `snapshot`
+    /// (the mean of its last readings when it averages), from the value it
+    /// shows at `now` (`None`: a sample with no clock, the values settle at
+    /// once). A first value, or an element whose reading is not a number,
+    /// settles.
     pub fn retarget(&mut self, theme: &Theme, snapshot: &Snapshot, now: Option<Duration>) {
         let mut next = BTreeMap::new();
-        for (element, length) in Self::eased(theme) {
-            let Some(to) = target(element, snapshot) else {
+        let mut readings = BTreeMap::new();
+        for (element, transition) in Self::tracked(theme) {
+            let held = transition.readings() > 1;
+            let mut kept = self.readings.remove(&element.id).unwrap_or_default();
+            let Some(reading) = target(element, snapshot) else {
+                if held {
+                    readings.insert(element.id, kept);
+                }
                 continue;
             };
-            let mode = element
-                .value_transition
-                .map_or(TransitionMode::None, |t| t.mode);
-            let tween = match (self.tweens.get(&element.id), now) {
-                (Some(tween), _) if tween.to == to && tween.mode == mode => *tween,
-                (Some(tween), Some(now)) => tween.retarget(to, now, length, mode),
+            let to = if held {
+                kept.push_back(reading);
+                while kept.len() > transition.readings() {
+                    kept.pop_front();
+                }
+                let mean = kept.iter().sum::<f64>() / kept.len() as f64;
+                readings.insert(element.id, kept);
+                mean
+            } else {
+                reading
+            };
+            let mode = transition.mode;
+            let mut tween = match (self.tweens.get(&element.id), now, transition.length()) {
+                (Some(tween), _, Some(_)) if tween.to == to && tween.mode == mode => *tween,
+                (Some(tween), Some(now), Some(length)) => tween.retarget(to, now, length, mode),
                 _ => {
                     let mut tween = Tween::settled(to);
                     tween.mode = mode;
                     tween
                 }
             };
+            tween.held = held;
             next.insert(element.id, tween);
         }
         self.tweens = next;
+        self.readings = readings;
     }
 
     /// An edit: `theme` replaces the theme shown. What it no longer eases is
     /// dropped, and what now shows another value (another sensor, another
-    /// range) settles there at once: an edit shows as it is.
+    /// range) settles there at once: an edit shows as it is. An averaged
+    /// element keeps its readings (an edit is not a sample).
     pub fn edited(&mut self, theme: &Theme, snapshot: &Snapshot) {
         let mut next = BTreeMap::new();
-        for (element, _) in Self::eased(theme) {
-            let Some(to) = target(element, snapshot) else {
+        let mut readings = BTreeMap::new();
+        for (element, transition) in Self::tracked(theme) {
+            let held = transition.readings() > 1;
+            let mut kept = if held {
+                self.readings.remove(&element.id).unwrap_or_default()
+            } else {
+                VecDeque::new()
+            };
+            let Some(reading) = target(element, snapshot) else {
+                if held {
+                    readings.insert(element.id, kept);
+                }
                 continue;
             };
-            let tween = match self.tweens.get(&element.id) {
-                Some(tween) if tween.to == to => *tween,
+            let to = if held {
+                while kept.len() > transition.readings() {
+                    kept.pop_front();
+                }
+                if kept.is_empty() {
+                    kept.push_back(reading);
+                }
+                let mean = kept.iter().sum::<f64>() / kept.len() as f64;
+                readings.insert(element.id, kept);
+                mean
+            } else {
+                reading
+            };
+            let mut tween = match self.tweens.get(&element.id) {
+                Some(tween) if tween.to == to && transition.length().is_some() => *tween,
                 _ => Tween::settled(to),
             };
+            tween.mode = transition.mode;
+            tween.held = held;
             next.insert(element.id, tween);
         }
         self.tweens = next;
+        self.readings = readings;
     }
 
     /// Whether previews snap to the readings (reduced motion) instead of
@@ -417,11 +561,29 @@ impl Transitions {
         !self.still_previews && Self::eased(theme).any(|(element, _)| theme.is_visible(element))
     }
 
-    /// What `view` draws at `at` for the visible elements of `theme`.
+    /// What `view` draws at `at` for the visible elements of `theme`: the
+    /// values still moving, the wheels of those that roll, and the averages
+    /// at rest.
     pub fn shown(&self, theme: &Theme, at: Duration, view: View) -> ShownValues {
-        self.moving(theme, at, view)
-            .map(|(id, tween)| (id, tween.value_at(at)))
-            .collect()
+        let mut shown = ShownValues::default();
+        for (id, tween) in self.moving(theme, at, view) {
+            shown.values.insert(id, tween.value_at(at));
+            if tween.mode == TransitionMode::Roll {
+                let done = at.saturating_sub(tween.start).as_secs_f64();
+                let roll = Roll {
+                    from: tween.from,
+                    to: tween.to,
+                    progress: ease(done / tween.length.as_secs_f64()),
+                };
+                shown.rolls.insert(id, roll);
+            }
+        }
+        for element in theme.elements.iter().filter(|e| theme.is_visible(e)) {
+            if let Some(tween) = self.tweens.get(&element.id).filter(|t| t.held) {
+                shown.values.entry(element.id).or_insert(tween.to);
+            }
+        }
+        shown
     }
 
     /// When `view` needs its next frame after one drawn at `at`: a step
@@ -533,6 +695,7 @@ mod tests {
             Some(ValueTransition {
                 mode: TransitionMode::Inertia,
                 duration_ms: 800,
+                average: 1,
             }),
         )]);
         let mut transitions = Transitions::default();
@@ -575,6 +738,7 @@ mod tests {
         let none = ValueTransition {
             mode: TransitionMode::None,
             duration_ms: 400,
+            average: 1,
         };
         assert_eq!(none.length(), None);
         assert_eq!(TransitionMode::default(), TransitionMode::None);
@@ -683,6 +847,7 @@ mod tests {
                 Some(ValueTransition {
                     mode: TransitionMode::None,
                     duration_ms: 400,
+                    average: 1,
                 }),
             ),
         ]);
@@ -804,5 +969,144 @@ mod tests {
         assert_eq!(tr.pace(), Pace::default());
         assert_eq!(Pace::default().step(), MIN_TRANSITION_STEP);
         assert_eq!(MIN_TRANSITION_STEP, ms(50));
+    }
+
+    #[test]
+    fn a_count_moves_evenly_and_a_roll_turns_its_wheels() {
+        let mut tween = Tween::new(10.0, 50.0, ms(0), ms(400));
+        tween.mode = TransitionMode::Count;
+        assert!((tween.value_at(ms(200)) - 30.0).abs() < 1e-9, "linear");
+        assert!((tween.velocity_at(ms(200)) - 100.0).abs() < 1e-9);
+        assert_eq!(tween.value_at(ms(400)), 50.0);
+        for mode in [TransitionMode::Count, TransitionMode::Roll] {
+            let t = ValueTransition {
+                mode,
+                duration_ms: 300,
+                average: 1,
+            };
+            assert_eq!(t.length(), Some(ms(300)));
+        }
+
+        let t = theme(vec![element(
+            1,
+            text(),
+            Some(ValueTransition {
+                mode: TransitionMode::Roll,
+                duration_ms: 400,
+                average: 1,
+            }),
+        )]);
+        let mut tr = Transitions::default();
+        tr.retarget(&t, &snapshot(36.0), Some(ms(0)));
+        tr.retarget(&t, &snapshot(41.0), Some(ms(1_000)));
+        let shown = tr.shown(&t, ms(1_200), View::Screen);
+        let roll = shown.roll(ElementId(1)).expect("rolls");
+        assert_eq!((roll.from, roll.to), (36.0, 41.0));
+        assert!((roll.progress - 0.875).abs() < 1e-9, "eased");
+        assert!(
+            tr.shown(&t, ms(1_400), View::Screen)
+                .roll(ElementId(1))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn wheels_turn_like_an_odometer() {
+        let roll = |from, to, progress| Roll { from, to, progress };
+        assert_eq!(roll(36., 41., 0.).wheels(0, 2), vec![(3, 0.), (6, 0.)]);
+        assert_eq!(roll(36., 41., 1.).wheels(0, 2), vec![(4, 0.), (1, 0.)]);
+        let mid = roll(36., 41., 0.7).wheels(0, 2);
+        assert_eq!((mid[0].0, mid[1].0), (3, 9), "at 39.5");
+        assert!(
+            (mid[1].1 - 0.5).abs() < 1e-6 && (mid[0].1 - 0.5).abs() < 1e-6,
+            "9 carries"
+        );
+        let tens_still = roll(36., 41., 0.2).wheels(0, 2);
+        assert_eq!(tens_still[0], (3, 0.), "only turns while the units pass 9");
+        let decimals = roll(4.70, 4.72, 0.5).wheels(2, 3);
+        assert_eq!(decimals, vec![(4, 0.), (7, 0.), (1, 0.)]);
+        assert_eq!(roll(-5., -7., 1.).wheels(0, 1), vec![(7, 0.)], "magnitudes");
+        assert_eq!(roll(f64::NAN, 3., 1.).wheels(0, 1), vec![(3, 0.)]);
+        assert_eq!(
+            roll(99., 100., 0.).wheels(0, 3),
+            vec![(0, 0.), (9, 0.), (9, 0.)]
+        );
+    }
+
+    #[test]
+    fn an_average_calms_the_value_and_is_always_shown() {
+        let averaged = |mode| {
+            theme(vec![element(
+                1,
+                text(),
+                Some(ValueTransition {
+                    mode,
+                    duration_ms: 400,
+                    average: 3,
+                }),
+            )])
+        };
+        let t = averaged(TransitionMode::None);
+        let mut tr = Transitions::default();
+        tr.retarget(&t, &snapshot(30.0), Some(ms(0)));
+        assert_eq!(
+            tr.shown(&t, ms(0), View::Screen).get(ElementId(1)),
+            Some(30.0)
+        );
+        tr.retarget(&t, &snapshot(60.0), Some(ms(1_000)));
+        tr.retarget(&t, &snapshot(90.0), Some(ms(2_000)));
+        assert_eq!(
+            tr.shown(&t, ms(2_000), View::Screen).get(ElementId(1)),
+            Some(60.0)
+        );
+        tr.retarget(&t, &snapshot(0.0), Some(ms(3_000)));
+        assert_eq!(
+            tr.shown(&t, ms(3_000), View::Screen).get(ElementId(1)),
+            Some(50.0),
+            "the oldest reading drops"
+        );
+        assert_eq!(
+            tr.next_change(&t, ms(3_000), View::Screen),
+            None,
+            "no frames at rest"
+        );
+        let mut missing = Snapshot::default();
+        missing.insert(key(), Reading::Unavailable("gone".into()));
+        tr.retarget(&t, &missing, Some(ms(4_000)));
+        assert!(tr.shown(&t, ms(4_000), View::Screen).is_empty());
+        tr.retarget(&t, &snapshot(30.0), Some(ms(5_000)));
+        assert_eq!(
+            tr.shown(&t, ms(5_000), View::Screen).get(ElementId(1)),
+            Some(40.0),
+            "readings survive a gap: 90, 0, 30"
+        );
+        tr.edited(&t, &snapshot(99.0));
+        assert_eq!(
+            tr.shown(&t, ms(5_000), View::Screen).get(ElementId(1)),
+            Some(40.0),
+            "an edit is not a sample"
+        );
+
+        let eased = averaged(TransitionMode::Smooth);
+        let mut tr = Transitions::default();
+        tr.retarget(&eased, &snapshot(0.0), Some(ms(0)));
+        tr.retarget(&eased, &snapshot(60.0), Some(ms(1_000)));
+        let shown = tr.shown(&eased, ms(1_200), View::Screen);
+        assert!((shown.get(ElementId(1)).unwrap_or_default() - 26.25).abs() < 1e-9);
+        let mut fresh = Transitions::default();
+        fresh.edited(&eased, &snapshot(10.0));
+        assert_eq!(
+            fresh.shown(&eased, ms(0), View::Screen).get(ElementId(1)),
+            Some(10.0)
+        );
+        let mut hidden = eased.clone();
+        hidden.elements[0].visible = false;
+        assert!(tr.shown(&hidden, ms(1_200), View::Screen).is_empty());
+        assert_eq!(ValueTransition::smooth(1).readings(), 1);
+        let many = ValueTransition {
+            average: 200,
+            ..ValueTransition::smooth(1)
+        };
+        assert_eq!(many.readings(), usize::from(MAX_AVERAGE));
     }
 }

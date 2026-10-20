@@ -6,7 +6,7 @@
 //! The model is plain data so the editor can change it freely and every
 //! adapter (renderer, file formats, importers) reads the same thing.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
 use super::clock::{ClockCase, Language};
@@ -260,6 +260,16 @@ pub struct TextStyle {
     pub valign: VAlign,
     /// Extra space between characters, pixels.
     pub letter_spacing: f32,
+    /// Every digit as wide as the widest one, so a changing number does not
+    /// move (D-2026-10-20-studio-ux-v2-05); on by default. Only texts that
+    /// show changing numbers (sensor values, clocks, weather) use it.
+    pub tabular_digits: bool,
+    /// What a line wider than the box does; `None` draws it past the box
+    /// edge (clipped), as before.
+    pub overflow: Option<TextOverflow>,
+    /// Parts of a value or a digital clock with a style of their own
+    /// (D-2026-10-20-studio-ux-v2-06).
+    pub parts: TextParts,
 }
 
 impl Default for TextStyle {
@@ -272,7 +282,107 @@ impl Default for TextStyle {
             align: HAlign::Left,
             valign: VAlign::Top,
             letter_spacing: 0.0,
+            tabular_digits: true,
+            overflow: None,
+            parts: TextParts::default(),
         }
+    }
+}
+
+/// What a line wider than its box does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextOverflow {
+    /// The whole text gets smaller until it fits.
+    Shrink,
+    /// The end is cut and replaced by an ellipsis.
+    Ellipsis,
+    /// The line scrolls sideways, round and round.
+    Scroll,
+}
+
+/// A piece of a value or of a digital clock that can have its own style.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum TextPart {
+    /// Value: the text before the number.
+    Prefix,
+    /// Value: the number.
+    Number,
+    /// Value: the unit after the number.
+    Unit,
+    /// Value: the text after the unit.
+    Suffix,
+    /// Clock: the hours.
+    Hours,
+    /// Clock: the minutes.
+    Minutes,
+    /// Clock: the seconds.
+    Seconds,
+    /// Clock: what stands between hours, minutes and seconds.
+    Separators,
+}
+
+/// Where a part sits on the line.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Baseline {
+    /// On the baseline, like the rest of the text.
+    #[default]
+    Base,
+    /// Raised, its top level with the top of the number (an exponent).
+    Super,
+}
+
+/// The style of one part; every field left empty follows the text's style.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct PartStyle {
+    /// Font family.
+    pub family: Option<String>,
+    /// Bundled font file of that family.
+    pub asset: Option<AssetRef>,
+    /// Size in percent of the text's size.
+    pub size_percent: Option<f32>,
+    /// CSS-like weight, 100..=900.
+    pub weight: Option<u16>,
+    /// Colour, in place of the text's paint.
+    pub color: Option<Rgba>,
+    /// Where it sits on the line.
+    pub baseline: Baseline,
+}
+
+impl PartStyle {
+    /// Allowed range of [`PartStyle::size_percent`].
+    pub const SIZE_PERCENT: std::ops::RangeInclusive<f32> = 10.0..=400.0;
+
+    /// Whether it changes nothing.
+    pub fn is_plain(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// Its size for a text of `size` pixels.
+    pub fn size(&self, size: f32) -> f32 {
+        self.size_percent.map_or(size, |p| {
+            size * p.clamp(*Self::SIZE_PERCENT.start(), *Self::SIZE_PERCENT.end()) / 100.0
+        })
+    }
+}
+
+/// The parts of a text with a style of their own.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct TextParts {
+    /// Style of each part that has one.
+    pub styles: BTreeMap<TextPart, PartStyle>,
+    /// Clock separators blink: shown for the first half of every second.
+    pub blink_separators: bool,
+}
+
+impl TextParts {
+    /// Whether no part has a style and nothing blinks.
+    pub fn is_empty(&self) -> bool {
+        !self.blink_separators && self.styles.values().all(PartStyle::is_plain)
+    }
+
+    /// The style of `part`, if it has one.
+    pub fn style(&self, part: TextPart) -> Option<&PartStyle> {
+        self.styles.get(&part).filter(|s| !s.is_plain())
     }
 }
 
@@ -821,7 +931,10 @@ impl Theme {
                     image: Some(image), ..
                 } => out.push(image.asset.clone()),
                 ElementKind::Needle { asset: Some(a), .. } => out.push(a.clone()),
-                ElementKind::Text { style, .. } => out.extend(style.font.asset.clone()),
+                ElementKind::Text { style, .. } => {
+                    out.extend(style.font.asset.clone());
+                    out.extend(style.parts.styles.values().filter_map(|p| p.asset.clone()));
+                }
                 _ => {}
             }
         }
@@ -1164,6 +1277,49 @@ mod tests {
         ];
         let shown: Vec<&str> = t.shown_images().map(|a| a.0.as_str()).collect();
         assert_eq!(shown, ["shown.gif"]);
+    }
+
+    #[test]
+    fn parts_with_a_style_and_their_fonts() {
+        let mut parts = TextParts::default();
+        assert!(parts.is_empty());
+        parts.styles.insert(TextPart::Number, PartStyle::default());
+        assert!(parts.is_empty(), "an empty style changes nothing");
+        assert_eq!(parts.style(TextPart::Number), None);
+        let unit = PartStyle {
+            size_percent: Some(55.0),
+            asset: Some(AssetRef("assets/unit.ttf".into())),
+            ..PartStyle::default()
+        };
+        parts.styles.insert(TextPart::Unit, unit.clone());
+        assert_eq!(parts.style(TextPart::Unit), Some(&unit));
+        assert!((unit.size(64.0) - 35.2).abs() < 1e-4);
+        assert_eq!(PartStyle::default().size(64.0), 64.0);
+        let huge = PartStyle {
+            size_percent: Some(9_000.0),
+            ..PartStyle::default()
+        };
+        assert_eq!(huge.size(10.0), 40.0, "at most 400 %");
+        let blinking = TextParts {
+            blink_separators: true,
+            ..TextParts::default()
+        };
+        assert!(!blinking.is_empty());
+        assert!(TextStyle::default().tabular_digits, "on by default");
+
+        let mut t = Theme::blank("x", Size::new(480, 1920), Orientation::Portrait);
+        let style = TextStyle {
+            parts,
+            ..TextStyle::default()
+        };
+        t.elements = vec![element(
+            1,
+            ElementKind::Text {
+                content: TextContent::Static("1".into()),
+                style,
+            },
+        )];
+        assert_eq!(t.assets(), vec![AssetRef("assets/unit.ttf".into())]);
     }
 
     #[test]

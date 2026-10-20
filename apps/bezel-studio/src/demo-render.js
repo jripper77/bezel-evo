@@ -11,9 +11,10 @@ import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
 import { fadeLine } from './shape-fade.js';
 import { weatherText } from './weather-format.js';
-import { formatClock } from './clock-format.js';
+import { clockParts, formatClock } from './clock-format.js';
+import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { weatherIconPaths } from './weather-icon.js';
-import { easedDemoValue } from './value-transition.js';
+import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
 import { barGeometry, blockMetrics, blockRows, coverShare, fitPlayer, placeBlock, playerText, progressOf, PROGRESS_SPACING } from './player-parts.js';
 // An approximate renderer for demo mode (browser only). The real preview is
 // the Rust renderer's frame; this only has to look plausible and be fast.
@@ -128,7 +129,82 @@ function drawProgress(ctx, c, s, area, shown) {
   return { ...area, height: Math.max(0, area.height - m.height - (alone ? 0 : PROGRESS_SPACING)) };
 }
 
-function drawText(ctx, e, t, value, measure = false, trial = null) {
+/** When the texts drawn by this render next want a frame (scrolling lines, blinking separators), ms. */
+let textDue = null;
+const wantFrame = (ms) => { if (ms !== null) textDue = textDue === null ? ms : Math.min(textDue, ms); };
+
+const fontOf = (face) => `${face.italic ? 'italic ' : ''}${face.weight} ${face.size}px ${face.family}, sans-serif`;
+const canvasMeasure = (ctx) => (text, face) => { ctx.font = fontOf(face); return ctx.measureText(text).width; };
+
+/**
+ * The pieces of a value, a clock, the weather or a fixed text that
+ * overflows, like the backend's (D-2026-10-20-studio-ux-v2-05/06): parts
+ * with their style, separators off in the second half of a second, a
+ * rolling number's wheels.
+ */
+function textPieces(e, text, t, value, refresh, motion, trial) {
+  const k = e.kind, s = k.style;
+  const piece = (body, part = null, extra = {}) => ({ text: applyTextCase(body, s.casing), part: part && partStyle(s, part), hidden: false, wheels: null, ...extra });
+  if (k.content.type === 'sensor') {
+    const key = boundKey(e);
+    const roll = key && !trial ? demoRoll(e, (at) => demoSensorValue(key, at), t, refresh, motion) : null;
+    const number = roll ? String(Math.round(roll.to)) : Number.isFinite(value) ? String(Math.round(value * 100)) : '—';
+    const wheels = roll ? rollWheels(roll, 0, [...number].filter((ch) => ch >= '0' && ch <= '9').length) : null;
+    return [piece(k.content.prefix ?? '', 'prefix'), piece(number, 'number', { wheels }), piece(k.content.format?.showUnit === false ? '' : '%', 'unit'), piece(k.content.suffix ?? '', 'suffix')];
+  }
+  if (k.content.type === 'clock') {
+    const ms = t * 1000;
+    wantFrame(blinkDue(s, ms, motion));
+    const d = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
+    return clockParts(k.content.pattern, d, k.content.language, k.content.casing)
+      .map(({ part, text: body }) => piece(body, part, { hidden: part === 'separators' && separatorsOff(s, ms, motion) }));
+  }
+  return [piece(text)];
+}
+
+/** Draws `pieces` in `f` with the backend's layout; a rolling digit turns inside its line. */
+function drawPieces(ctx, s, f, pieces, t, motion, tabular) {
+  const measure = canvasMeasure(ctx);
+  const fit = fitText(pieces, s, f, measure, { tabular, seconds: t, motion });
+  if (!fit) return;
+  wantFrame(fit.dueMs);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(f.x, f.y, f.width, f.height); ctx.clip();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  let top = fit.top;
+  fit.lines.forEach((line, i) => {
+    const baseline = top + line.ascent;
+    for (const start of fit.starts[i]) {
+      let x = start;
+      for (const frag of line.frags) {
+        if (!frag.hidden) {
+          ctx.font = fontOf(frag.face);
+          ctx.fillStyle = frag.face.color ? color(frag.face.color) : paint(s.paint);
+          const y = baseline - frag.raise;
+          for (const cell of frag.cells) {
+            const left = x + cell.x;
+            const wheel = cell.digit !== null ? frag.wheels?.[cell.digit] : null;
+            if (!wheel) { ctx.fillText(cell.text, left + (cell.slot - cell.w) / 2, y); continue; }
+            const [digit, turn] = wheel;
+            ctx.save();
+            ctx.beginPath(); ctx.rect(left - 1, top, cell.slot + 2, line.height); ctx.clip();
+            for (const [n, dy] of [[digit, -turn * line.height], [(digit + 1) % 10, (1 - turn) * line.height]]) {
+              if (n !== digit && turn <= 0) continue;
+              const ch = String(n);
+              ctx.fillText(ch, left + (cell.slot - ctx.measureText(ch).width) / 2, y + dy);
+            }
+            ctx.restore();
+          }
+        }
+        x += frag.width;
+      }
+    }
+    top += line.height;
+  });
+  ctx.restore();
+}
+
+function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, motion = true) {
   const k = e.kind;
   const s = k.style;
   let text = k.content.text ?? '';
@@ -151,6 +227,12 @@ function drawText(ctx, e, t, value, measure = false, trial = null) {
     const block = lines.length ? { width: Math.max(...lines.map(line => ctx.measureText(line).width)), height: lines.length * Math.ceil(s.size * 1.2) } : null;
     const m = blockMetrics(k.content, DEMO_MEDIA, shown, timeLabel(ctx, s), s.size);
     return fitPlayer(k.content, shown, block, m, e.frame, s.size);
+  }
+  const pieces = laidInPieces(k);
+  const tabular = s.tabularDigits !== false && k.content.type !== 'static';
+  if (measure && pieces) {
+    const size = measureText(textPieces(e, text, t, value, refresh, false, trial), s, canvasMeasure(ctx), { tabular });
+    return size && textFurniture(k).fit(size.width, size.height);
   }
   if (measure) {
     const lines = text.split('\n');
@@ -190,6 +272,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null) {
     if(k.content.showCover !== false){const {side,gap}=textFurniture(k).layout(f);ctx.save();ctx.beginPath();ctx.roundRect(f.x,f.y,side,side,k.content.coverCorners ?? k.content.coverRadius ?? 0);ctx.clip();ctx.fillStyle='#334155';ctx.fillRect(f.x,f.y,side,side);ctx.fillStyle=paint(s.paint);ctx.fillText('\u266b',f.x+side*.3,f.y+side*.3);ctx.restore();f={...f,x:f.x+side+gap,width:f.width-side-gap};}
     f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
+  if (pieces) { drawPieces(ctx, s, f, textPieces(e, text, t, value, refresh, motion, trial), t, motion, tabular); return; }
   ctx.fillStyle=paint(s.paint);
   const x = s.align === 'center' ? f.x + f.width / 2 : s.align === 'right' ? f.x + f.width : f.x;
   const y = s.valign === 'top' ? f.y : s.valign === 'bottom' ? f.y + f.height : f.y + f.height / 2;
@@ -319,7 +402,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
   if (drawVisualization(ctx,e,frac,k.type==='graph'?(graphPoints ?? demoGraphPoints(k,refresh,t,e.id)):null,k.type==='graph'&&e.visualization?.secondary?(graphPoints ?? demoGraphPoints({...k,binding:e.visualization.secondary},refresh,t,e.id+197)):null)) { ctx.restore(); return; }
   switch (k.type) {
     case 'text':
-      drawText(ctx, e, t, frac, false, trial);
+      drawText(ctx, e, t, frac, false, trial, refresh, motion);
       break;
     case 'shape':
       ctx.fillStyle = k.videoWindow ? '#1f2330' : paint(k.fill);
@@ -571,8 +654,9 @@ function drawCardTransition(ctx, theme, parent, transition, t) {
  * Renders a theme to RGBA pixels; `video` is the video background's picture
  * the demo backend chose (see `drawBackdrop`), if any. `scale` (at most 1)
  * reduces the picture: the canvas shrinks, the theme is drawn the same.
- * Without `motion` values show their last sample (no easing).
- * @returns {{width:number, height:number, rgba: Uint8ClampedArray}}
+ * Without `motion` values show their last sample (no easing). `textMs`
+ * says when a scrolling line or blinking separators want the next frame.
+ * @returns {{width:number, height:number, rgba: Uint8ClampedArray, textMs: number|null}}
  */
 export function renderApprox(theme, t, video = null, transitions = new Map(), scale = 1, motion = true, trial = null) {
   const width = Math.max(1, Math.round(theme.canvas.width * scale));
@@ -580,6 +664,7 @@ export function renderApprox(theme, t, video = null, transitions = new Map(), sc
   const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
+  textDue = null;
   const device = theme.background.type === 'deviceVideo';
   const windows = theme.elements.some((e) => isShown(theme, e) && e.kind.type === 'shape' && e.kind.videoWindow);
   if (device) {
@@ -592,7 +677,7 @@ export function renderApprox(theme, t, video = null, transitions = new Map(), sc
     if (transitions.has(e.cardMember?.parent) || !isShown(theme, e)) continue;
     drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, trial && e.kind.type === 'image' ? trial.elapsedMs / 1000 : t, theme.refreshSeconds, motion, trial?.elementId === e.id ? trial : null);
   }
-  return { width, height, rgba: ctx.getImageData(0, 0, width, height).data };
+  return { width, height, rgba: ctx.getImageData(0, 0, width, height).data, textMs: textDue };
 }
 
 /** Natural dimensions from the same formatter and canvas font used to draw. */
@@ -600,7 +685,7 @@ export function measureApprox(theme, id, t) {
   const e = theme.elements.find(e => e.id === id);
   if (!e || e.kind.type !== 'text') return null;
   const ctx = new OffscreenCanvas(1, 1).getContext('2d');
-  const size = drawText(ctx, e, t, shownFraction(e, t, theme.refreshSeconds, true), true);
+  const size = drawText(ctx, e, t, shownFraction(e, t, theme.refreshSeconds, true), true, null, theme.refreshSeconds);
   if (!size || size.width <= 0 || size.height <= 0) return null;
   const style = e.kind.style, f = e.frame;
   const ax = style.align === 'right' ? 1 : style.align === 'center' ? 0.5 : 0;

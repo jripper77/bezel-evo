@@ -708,6 +708,7 @@ impl Importer {
             valign,
             casing: Default::default(),
             letter_spacing: 0.0,
+            ..TextStyle::default()
         };
         self.b
             .push(name, frame, true, ElementKind::Text { content, style });
@@ -1081,6 +1082,7 @@ impl Importer {
             valign: VAlign::Middle,
             casing: Default::default(),
             letter_spacing: 0.0,
+            ..TextStyle::default()
         };
         let content = self.content(block, key, source);
         self.b.push(

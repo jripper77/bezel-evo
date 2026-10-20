@@ -216,6 +216,7 @@ fn style(size: f32, align: HAlign, valign: VAlign) -> TextStyle {
         valign,
         casing: Default::default(),
         letter_spacing: 0.0,
+        ..TextStyle::default()
     }
 }
 
@@ -1409,6 +1410,7 @@ fn player_cover_progress_and_stopped_state_use_measured_context() {
                     valign: VAlign::Top,
                     casing: Default::default(),
                     letter_spacing: 0.,
+                    ..TextStyle::default()
                 },
             },
         )],

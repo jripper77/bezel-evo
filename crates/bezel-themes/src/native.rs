@@ -694,7 +694,8 @@ mod tests {
             ring_transition_after(set(serde_json::json!({"mode": "none", "durationMs": 700}))),
             Ok(Some(ValueTransition {
                 mode: TransitionMode::None,
-                duration_ms: 700
+                duration_ms: 700,
+                average: 1,
             })),
             "the duration is kept for when it is turned on again"
         );
@@ -713,6 +714,29 @@ mod tests {
             "no duration: it jumps"
         );
         assert!(ring_transition_after(set(serde_json::json!({"mode": "bounce"}))).is_err());
+        for (name, mode) in [
+            ("count", TransitionMode::Count),
+            ("roll", TransitionMode::Roll),
+        ] {
+            assert_eq!(
+                ring_transition_after(set(
+                    serde_json::json!({"mode": name, "durationMs": 400, "average": 3})
+                )),
+                Ok(Some(ValueTransition {
+                    mode,
+                    duration_ms: 400,
+                    average: 3,
+                }))
+            );
+        }
+        assert_eq!(
+            ring_transition_after(set(
+                serde_json::json!({"mode": "none", "durationMs": 400, "average": 99})
+            ))
+            .map(|t| t.map(|t| t.average)),
+            Ok(Some(30)),
+            "at most thirty readings"
+        );
 
         let mut eased = theme.clone();
         for e in &mut eased.elements {
@@ -721,6 +745,22 @@ mod tests {
         let bytes = manifest(&eased).unwrap();
         assert!(String::from_utf8_lossy(&bytes).contains("\"durationMs\": 400"));
         assert_eq!(parse_manifest(&bytes).unwrap(), eased);
+        assert!(
+            !String::from_utf8_lossy(&bytes).contains("average"),
+            "1 is omitted"
+        );
+        let mut rolled = theme.clone();
+        for e in &mut rolled.elements {
+            e.value_transition = Some(ValueTransition {
+                mode: TransitionMode::Roll,
+                duration_ms: 600,
+                average: 4,
+            });
+        }
+        let bytes = manifest(&rolled).unwrap();
+        let text = String::from_utf8_lossy(&bytes);
+        assert!(text.contains("\"mode\": \"roll\"") && text.contains("\"average\": 4"));
+        assert_eq!(parse_manifest(&bytes).unwrap(), rolled);
     }
 
     #[test]
@@ -1794,6 +1834,7 @@ mod tests {
         theme.elements[0].value_transition = Some(ValueTransition {
             mode: TransitionMode::Inertia,
             duration_ms: 800,
+            average: 1,
         });
         let dto = ThemeDto::from(&theme);
         let mut json = serde_json::to_value(&dto).unwrap();

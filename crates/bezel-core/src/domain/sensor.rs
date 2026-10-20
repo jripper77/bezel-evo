@@ -580,15 +580,26 @@ impl Default for DisplayFormat {
 
 /// Formats a reading, e.g. `63°C`, `4.72 GHz`, `12.4 MiB/s`, `—` when unavailable.
 pub fn format_reading(reading: &Reading, quantity: Quantity, format: DisplayFormat) -> String {
+    let (number, unit) = format_reading_parts(reading, quantity, format);
+    number + &unit
+}
+
+/// [`format_reading`] cut into the number and the unit after it
+/// (`("4.72", " GHz")`); a text, a duration or `—` is all number.
+pub fn format_reading_parts(
+    reading: &Reading,
+    quantity: Quantity,
+    format: DisplayFormat,
+) -> (String, String) {
     match reading {
-        Reading::Text(t) => t.clone(),
-        Reading::Unavailable(_) => "—".to_string(),
-        Reading::Value(v) if !v.is_finite() => "—".to_string(),
+        Reading::Text(t) => (t.clone(), String::new()),
+        Reading::Unavailable(_) => ("—".to_string(), String::new()),
+        Reading::Value(v) if !v.is_finite() => ("—".to_string(), String::new()),
         Reading::Value(v) => format_value(*v, quantity, format),
     }
 }
 
-fn format_value(v: f64, quantity: Quantity, f: DisplayFormat) -> String {
+fn format_value(v: f64, quantity: Quantity, f: DisplayFormat) -> (String, String) {
     let (number, unit, default_decimals) = match quantity {
         Quantity::Percent => (v, "%", 0),
         Quantity::Celsius => match f.temperature {
@@ -603,19 +614,22 @@ fn format_value(v: f64, quantity: Quantity, f: DisplayFormat) -> String {
         Quantity::Rpm => (v, " RPM", 0),
         Quantity::Bytes => return scaled_bytes(v, "", f),
         Quantity::BytesPerSecond => return scaled_bytes(v, "/s", f),
-        Quantity::Seconds => return duration_text(v),
+        Quantity::Seconds => return (duration_text(v), String::new()),
         Quantity::Number | Quantity::Text => (v, "", 1),
     };
     let decimals = usize::from(f.decimals.unwrap_or(default_decimals));
     let text = format!("{number:.decimals$}");
-    if f.show_unit {
-        format!("{text}{unit}")
-    } else {
-        text
-    }
+    (
+        text,
+        if f.show_unit {
+            unit.to_string()
+        } else {
+            String::new()
+        },
+    )
 }
 
-fn scaled_bytes(v: f64, suffix: &str, f: DisplayFormat) -> String {
+fn scaled_bytes(v: f64, suffix: &str, f: DisplayFormat) -> (String, String) {
     let (base, names): (f64, [&str; 5]) = match f.bytes {
         ByteUnits::Binary => (1024.0, ["B", "KiB", "MiB", "GiB", "TiB"]),
         ByteUnits::Decimal => (1000.0, ["B", "kB", "MB", "GB", "TB"]),
@@ -629,11 +643,12 @@ fn scaled_bytes(v: f64, suffix: &str, f: DisplayFormat) -> String {
     let default_decimals = if index == 0 || value >= 100.0 { 0 } else { 1 };
     let decimals = usize::from(f.decimals.unwrap_or(default_decimals));
     let text = format!("{value:.decimals$}");
-    if f.show_unit {
-        format!("{text} {}{suffix}", names[index])
+    let unit = if f.show_unit {
+        format!(" {}{suffix}", names[index])
     } else {
-        text
-    }
+        String::new()
+    };
+    (text, unit)
 }
 
 fn duration_text(secs: f64) -> String {
@@ -861,6 +876,45 @@ mod tests {
             "—"
         );
         assert_eq!(format_reading(&v(f64::NAN), Quantity::Percent, f), "—");
+    }
+
+    #[test]
+    fn a_reading_splits_into_number_and_unit() {
+        let f = DisplayFormat::default();
+        let parts = |r: Reading, q| format_reading_parts(&r, q, f);
+        let pair = |a: &str, b: &str| (a.to_string(), b.to_string());
+        assert_eq!(
+            parts(Reading::Value(36.2), Quantity::Percent),
+            pair("36", "%")
+        );
+        assert_eq!(
+            parts(Reading::Value(4725.0), Quantity::Megahertz),
+            pair("4.72", " GHz")
+        );
+        assert_eq!(
+            parts(Reading::Value(150.0 * 1048576.0), Quantity::BytesPerSecond),
+            pair("150", " MiB/s")
+        );
+        assert_eq!(
+            parts(Reading::Value(3_700.0), Quantity::Seconds),
+            pair("01:01", "")
+        );
+        assert_eq!(
+            parts(Reading::Text("RTX".into()), Quantity::Text),
+            pair("RTX", "")
+        );
+        assert_eq!(
+            parts(Reading::Value(f64::NAN), Quantity::Percent),
+            pair("—", "")
+        );
+        let hidden = DisplayFormat {
+            show_unit: false,
+            ..f
+        };
+        assert_eq!(
+            format_reading_parts(&Reading::Value(512.0), Quantity::Bytes, hidden),
+            pair("512", "")
+        );
     }
 
     #[test]

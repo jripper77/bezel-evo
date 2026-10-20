@@ -12,8 +12,10 @@ export const TRANSITION_BOUNDS = Object.freeze({ min: 50, max: 5000 });
 export const TRANSITION_RANGE = Object.freeze({ min: 100, max: 2000, step: 50 });
 /** Shortest time between two frames drawn while a value moves, ms (20 fps). */
 export const TRANSITION_STEP_MS = 50;
-/** The modes, in the inspector's order. */
-export const TRANSITION_MODES = Object.freeze(['none', 'smooth', 'inertia']);
+/** The modes, in the inspector's order; `count` and `roll` are for numbers (D-2026-10-20-studio-ux-v2-05). */
+export const TRANSITION_MODES = Object.freeze(['none', 'smooth', 'inertia', 'count', 'roll']);
+/** How many readings a value can be averaged over («Media su»); 1 is off. */
+export const AVERAGE_RANGE = Object.freeze({ min: 1, max: 30 });
 
 /** The transition of an object made in the Studio. */
 export const defaultTransition = () => ({ mode: 'smooth', durationMs: TRANSITION_DEFAULT_MS });
@@ -34,7 +36,7 @@ export function easesValue(element) {
  */
 export function transitionOf(element) {
   const t = element?.valueTransition;
-  const mode = t?.mode === 'inertia' || (t?.mode === 'smooth' && t.inertia) ? 'inertia' : t?.mode === 'smooth' ? 'smooth' : 'none';
+  const mode = t?.mode === 'inertia' || (t?.mode === 'smooth' && t.inertia) ? 'inertia' : ['smooth', 'count', 'roll'].includes(t?.mode) ? t.mode : 'none';
   const ms = Number(t?.durationMs);
   return { mode, durationMs: Number.isFinite(ms) && ms > 0 ? ms : TRANSITION_DEFAULT_MS };
 }
@@ -45,18 +47,30 @@ export function transitionOf(element) {
  * its duration). The duration is held within the inspector's range.
  */
 export function transitionPatch(element, change) {
-  const next = { ...transitionOf(element), ...change };
+  const next = { ...transitionOf(element), average: averageOf(element), ...change };
   const mode = TRANSITION_MODES.includes(next.mode) ? next.mode : 'none';
   const ms = Math.round(Number(next.durationMs));
   const durationMs = Number.isFinite(ms) ? Math.min(TRANSITION_RANGE.max, Math.max(TRANSITION_RANGE.min, ms)) : TRANSITION_DEFAULT_MS;
+  const average = clampAverage(next.average);
   return { mode: mode === 'inertia' ? 'smooth' : mode, durationMs,
-    ...(mode === 'inertia' || element?.valueTransition?.inertia ? { inertia: mode === 'inertia' } : {}) };
+    ...(mode === 'inertia' || element?.valueTransition?.inertia ? { inertia: mode === 'inertia' } : {}),
+    ...(average > 1 ? { average } : {}) };
+}
+
+const clampAverage = (n) => {
+  const v = Math.round(Number(n));
+  return Number.isFinite(v) ? Math.min(AVERAGE_RANGE.max, Math.max(AVERAGE_RANGE.min, v)) : 1;
+};
+
+/** Readings the shown value is the mean of (1: each reading as it is), like the backend's. */
+export function averageOf(element) {
+  return clampAverage(element?.valueTransition?.average ?? 1);
 }
 
 /** How long a change lasts, ms, like the backend's; null when it jumps. */
 export function transitionLength(element) {
   const t = element?.valueTransition;
-  if (!['smooth', 'inertia'].includes(t?.mode) || !(t.durationMs > 0)) return null;
+  if (!['smooth', 'inertia', 'count', 'roll'].includes(t?.mode) || !(t.durationMs > 0)) return null;
   return Math.min(TRANSITION_BOUNDS.max, Math.max(TRANSITION_BOUNDS.min, t.durationMs));
 }
 
@@ -83,14 +97,16 @@ export const formatMs = (n) => `${n} ms`;
 
 /**
  * The demo's value of an element at `t` seconds. The demo samples every
- * `refresh` seconds: `fractionAt(s)` is the reading of the sample taken at
+ * `refresh` seconds: `read(s)` is the reading of the sample taken at
  * `s`. An element with a transition eases from the previous sample to the
  * last one for its length after it; without one (or with `motion` off) it
- * shows the last sample.
- * @param {(seconds: number) => number} fractionAt
+ * shows the last sample; one that averages shows the mean of its last
+ * `average` samples.
+ * @param {(seconds: number) => number} read
  */
-export function easedDemoValue(element, fractionAt, t, refresh, motion = true) {
+export function easedDemoValue(element, read, t, refresh, motion = true) {
   const every = refresh > 0 ? refresh : 1;
+  const fractionAt = averagedReading(element, read, every);
   const sampled = Math.floor(t / every) * every;
   const to = fractionAt(sampled);
   const length = motion ? transitionLength(element) : null;
@@ -115,7 +131,63 @@ export function easedDemoValue(element, fractionAt, t, refresh, motion = true) {
   const since = sinceSample(t, every);
   if (since >= length) return to;
   const from = fractionAt(sampled - every);
-  return from + (to - from) * ease(since / length);
+  const share = element.valueTransition?.mode === 'count' ? Math.min(1, since / length) : ease(since / length);
+  return from + (to - from) * share;
+}
+
+/** `read` averaged over the element's last readings, one sample `every` s apart. */
+function averagedReading(element, read, every) {
+  const n = averageOf(element);
+  if (n <= 1) return read;
+  return (s) => {
+    const values = [];
+    for (let k = 0; k < n; k++) {
+      const v = read(s - k * every);
+      if (!Number.isFinite(v)) break;
+      values.push(v);
+    }
+    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : read(s);
+  };
+}
+
+/**
+ * The demo's rolling number of `element` at `t` seconds, like the backend's
+ * `Roll`: `{from, to, progress}` while a `roll` transition moves, else null.
+ */
+export function demoRoll(element, read, t, refresh, motion = true) {
+  if (element?.valueTransition?.mode !== 'roll' || !motion) return null;
+  const length = transitionLength(element);
+  if (length === null) return null;
+  const every = refresh > 0 ? refresh : 1;
+  const fractionAt = averagedReading(element, read, every);
+  const sampled = Math.floor(t / every) * every;
+  const since = sinceSample(t, every);
+  const from = fractionAt(sampled - every), to = fractionAt(sampled);
+  if (since >= length || from === to || !Number.isFinite(from) || !Number.isFinite(to)) return null;
+  return { from, to, progress: ease(since / length) };
+}
+
+/**
+ * The wheels of the `digits` digit columns of a number with `decimals`
+ * decimals, left to right, like the backend's `Roll::wheels`: `[digit,
+ * turn]`, the units column turning evenly from the rounded old number to the
+ * rounded new one and a column turning only while every column to its right
+ * shows 9 (an odometer).
+ */
+export function rollWheels({ from, to, progress }, decimals, digits) {
+  const scale = 10 ** Math.min(9, decimals);
+  const units = (v) => Number.isFinite(v) ? Math.round(Math.abs(v) * scale) : 0;
+  const a = units(from), b = units(to);
+  const at = a + (b - a) * Math.min(1, Math.max(0, progress));
+  const out = [];
+  let turn = at - Math.trunc(at), column = Math.trunc(at);
+  for (let k = 0; k < digits; k++) {
+    const digit = column % 10;
+    out.push([digit, turn]);
+    if (digit !== 9) turn = 0;
+    column = Math.trunc(column / 10);
+  }
+  return out.reverse();
 }
 
 /**

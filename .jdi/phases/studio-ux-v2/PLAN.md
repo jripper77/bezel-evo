@@ -99,7 +99,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   - Transizione del numero: oltre a Salta/Fluida/Inerzia esistenti, `count` (il numero scorre) e `roll` (cifre a rullo);
     `average: n` letture (1 = spento).
   - Andata e ritorno DTO per ogni campo; pixel test per parti e cifre fisse; demo-render uguale.
-- **Dipendenze:** nessuna · **Test:** G10, G1 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G10, G1 · **Status:** completed — cifre fisse (tnum + avanzamento uguale), parti con stile e separatori lampeggianti, Rimpicciolisci/Taglia/Scorre, Conta/Rullo/Media nel dominio, nel file del tema, nel renderer e nel demo. 314+80+108 test Rust, clippy/fmt, 81 unitari UI verdi; e2e dell'area 56 verdi, 28 rossi già rossi sulla base (spec ancora a schede, per T-10). Vedi `SUMMARY-T-1.md`. Commit `7465262`, `ba0a6d0`, `39a0650`, `5d5689e`.
 
 #### T-2: Orologio analogico
 - **Decisioni:** 07 · **Tavole:** ClockInspectorOpen (colonna Analogico)

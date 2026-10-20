@@ -80,3 +80,5 @@ mod modern_themes_tests;
 mod shape_image_tests;
 #[cfg(test)]
 mod text_case_tests;
+#[cfg(test)]
+mod text_parts_tests;
