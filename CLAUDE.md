@@ -4,7 +4,8 @@
 
 Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
 Versioni: pubblicata **0.1.63** (Latest su GitHub, tag `v0.1.63`, con i font Doto,
-Doto Rounded e IBM Plex Mono inclusi); installata anche sul PC dal setup. Push e release solo su richiesta.
+Doto Rounded e IBM Plex Mono inclusi); installata sul PC **0.1.64** (locale, non
+pubblicata: immagine di sfondo nelle forme con ripetizione). Push e release solo su richiesta.
 Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p (redesign Studio,
 logo Pixel, sfondo, profili, schermata di accensione, 4 temi predefiniti 1920×480);
 stato e decisioni nella sezione «Design» del passaggio.
