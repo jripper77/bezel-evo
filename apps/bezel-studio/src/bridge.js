@@ -596,6 +596,8 @@ function tauriBridge(invoke, tauri = {}) {
     closeWindow: () => invoke('close_window'),
     quitApp: () => invoke('quit_app'),
     preferences: () => invoke('preferences'),
+    // Pass the native Overview through: status.active and status.rules are
+    // measured by the shared engine, never inferred from the selected UI row.
     profiles: () => invoke('profiles'),
     profilesRequested: () => invoke('profiles_requested'),
     onProfilesRequested: (cb) => (typeof tauri.event?.listen === 'function' ? tauri.event.listen('profiles-requested', cb) : Promise.resolve(() => {})),

@@ -59,7 +59,7 @@ test('the studio speaks Portuguese (Brazil), English and Italian', () => {
 // tables) uses; index.js merges them and refuses a key defined twice.
 
 test('the texts are split by area: shell, library, inspector, card, screen and connect', () => {
-  assert.deepEqual(Object.keys(AREAS), ['shell', 'library', 'inspector', 'card', 'screen', 'connect', 'pickers']);
+  assert.deepEqual(Object.keys(AREAS), ['shell', 'library', 'inspector', 'card', 'screen', 'connect', 'pickers', 'profileRules']);
   for (const [name, area] of Object.entries(AREAS)) assert.deepEqual(Object.keys(area.tables).sort(), ['en', 'it', 'pt-BR'], name);
 });
 

@@ -1,3 +1,4 @@
+import { createProfileSelection } from './profile-selection.js';
 import { appliedRotation, rotatedBounds } from './editor/rotation.js';
 import { createSensorMotion, supportsSensorMotion } from './sensor-motion.js';
 import { demoSensorValue } from './demo-sensors.js';
@@ -1135,6 +1136,7 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
  *   `letGo` (tests)
  */
 export function createDemoBackend(scenario, clock = {}, hooks = {}) {
+  const profileSelection = createProfileSelection();
   let profileConfig = { profiles: [], automatic: true, manual: null, defaultProfile: null };
   const systemText = { 'system.hostname': 'bezel-demo-workstation', 'system.os': 'Windows 11', 'system.audio.device': 'Demo headphones' };
   const cards = createCardMotion();
@@ -1148,6 +1150,21 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     { key: 'lhm.psu.corsair.0.power.14', category: 'board', label: 'Corsair HX1500i Total Output', quantity: 'watts', source: 'LibreHardwareMonitor' },
   ] : [];
   const now = clock.now ?? (() => Date.now() / 1000);
+  function sampleReadings(t) {
+      const readings = {};
+      DEMO_SENSORS.forEach(([key, , , quantity, base, swing], i) => {
+        const value = demoValue(base, swing, t, i);
+        readings[key] = { value, display: demoFormat(value, quantity) };
+      });
+      readings['gpu.1.fan'] = { unavailable: 'no fan sensor', display: '—' };
+      for (const [key, value] of Object.entries(systemText)) readings[key] = { text: value, display: value };
+      if (hooks.libre) {
+        readings['lhm.intelcpu.0.temperature.0'] = libreOffline ? { unavailable: 'No readings', display: '—' } : { value: 52, display: '52°C' };
+        readings['lhm.psu.corsair.0.voltage.3'] = libreFailed ? { unavailable: 'No readings', display: '—' } : { value: 230, display: '230 V' };
+        readings['lhm.psu.corsair.0.power.14'] = { value: libreFailed ? 0 : 158, display: libreFailed ? '0 W' : '158 W' };
+      }
+    return readings;
+  }
   // Frames drawn while a value eases (D-2026-10-15-studio-redesign-fidelity-18),
   // counted for the page (`hooks.onTransitionFrame`): the e2e measures their rate.
   let transitionFrames = 0;
@@ -1407,13 +1424,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     ] }),
     sample: () => {
       const t = now();
-      const readings = {};
-      DEMO_SENSORS.forEach(([key, , , quantity, base, swing], i) => {
-        const value = demoValue(base, swing, t, i);
-        readings[key] = { value, display: demoFormat(value, quantity) };
-      });
-      readings['gpu.1.fan'] = { unavailable: 'no fan sensor', display: '—' };
-      for (const [key, value] of Object.entries(systemText)) readings[key] = { text: value, display: value };
+      const readings = sampleReadings(t);
       // A hung screen stops live mode, like a frame the screen stopped reading.
       let liveError = null;
       if (live && screenState.hung) {
@@ -1426,11 +1437,6 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       if (live && screenState.away > 0) {
         screenState.away -= 1;
         reconnecting = { attempt: 1, attempts: 3 };
-      }
-      if (hooks.libre) {
-        readings['lhm.intelcpu.0.temperature.0'] = libreOffline ? { unavailable: 'No readings', display: '—' } : { value: 52, display: '52°C' };
-        readings['lhm.psu.corsair.0.voltage.3'] = libreFailed ? { unavailable: 'No readings', display: '—' } : { value: 230, display: '230 V' };
-        readings['lhm.psu.corsair.0.power.14'] = { value: libreFailed ? 0 : 158, display: libreFailed ? '0 W' : '158 W' };
       }
       const liveFps = live && !reconnecting ? DEMO_LIVE_FPS : null;
       return Promise.resolve({ sampleMillis: 3, readings, live: live || null, liveError, video: videoOfTheme(), reconnecting, liveFps, activity: structuredClone(DEMO_ACTIVITY) });
@@ -1665,13 +1671,19 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     openLogsFolder: () => Promise.resolve(),
     setDebug: (on, show, corner) => { debug = on; debugShowReadings = show; debugCorner = corner ?? "bottom-left"; return Promise.resolve(); },
     setAudioCapture: (on) => { audioCapture = Boolean(on); return Promise.resolve(); },
-    profiles: () => Promise.resolve({ config: structuredClone(profileConfig), displays: devices.screens.map((screen) => {
+    profiles: () => {
+      const seconds = now(), date = new Date(seconds * 1000);
+      const status = profileSelection.evaluate(profileConfig, { readings: sampleReadings(seconds), activity: DEMO_ACTIVITY,
+        idleSeconds: DEMO_ACTIVITY.idleSeconds, locked: DEMO_ACTIVITY.locked }, seconds,
+        { weekday: (date.getDay() + 6) % 7, hour: date.getHours(), minute: date.getMinutes() });
+      return Promise.resolve({ status, config: structuredClone(profileConfig), displays: devices.screens.map((screen) => {
       const current = screen.key === selectedScreen ? theme : screenDocuments.get(screen.key)?.theme;
       const selected = saved.find((entry) => current && entry.theme.name === current.name)
         ?? saved.find((entry) => demoFits(entry.theme).models.some((id) => screen.models.some((m) => m.id === id)));
       return { key: screen.key, name: screen.models[0]?.name ?? screen.family, theme: selected?.location ?? null,
         themeName: current?.name ?? selected?.theme.name ?? null, connected: true };
-    }) }),
+    }) });
+    },
     profilesRequested: () => Promise.resolve(false),
     onProfilesRequested: () => Promise.resolve(() => {}),
     saveProfiles: (config) => { profileConfig = structuredClone(config); return Promise.resolve(); },

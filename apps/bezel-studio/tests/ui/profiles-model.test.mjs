@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { translator } from '../../src/i18n/index.js';
 import {
-  PROFILE_EFFECTS, directed, firstIncomplete, modeOf, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
+  PROFILE_EFFECTS, directed, firstIncomplete, minuteOf, validProfileRule, modeOf, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
 } from '../../src/profiles-model.js';
 
 const t = translator('it');
@@ -72,4 +72,41 @@ test('the first incomplete profile is found before saving', () => {
   assert.equal(firstIncomplete(config({ profiles: [{ ...music, rules: [{ ...music.rules[0], priority: 101 }] }] }), displays), 'music');
   // A disconnected display keeps its theme or none.
   assert.equal(firstIncomplete(config(), [{ key: 'COM9', connected: false }]), null);
+});
+
+test('new rule types validate their own fields and preserve default any', () => {
+  const rule = (source, extra = {}) => ({ source, priority: 10, returnSeconds: 3, ...extra });
+  const sensor = rule('sensor', { key: 'cpu.temperature', compare: 'above', value: 80 });
+  const time = rule('time', { from: '22:00', to: '06:00', days: [6] });
+  for (const r of [sensor, time, rule('idle',{minutes:2}),rule('locked')]) {
+    assert.equal(validProfileRule(r),true);
+    assert.equal(firstIncomplete(config({profiles:[{...music,rules:[r],match:'all'}]}),[]),null);
+    assert.equal(validProfileRule({...r,priority:101}),false);
+    assert.equal(validProfileRule({...r,returnSeconds:301}),false);
+  }
+  for (const patch of [{key:''},{key:'bad key'},{compare:'equals'},{value:NaN},{forSeconds:-1},{forSeconds:3601},{forSeconds:null}]) assert.equal(validProfileRule({...sensor,...patch}),false);
+  for (const patch of [{from:'24:00'},{to:'06:60'},{from:'6:00'},{days:[7]},{days:Array(8).fill(0)},{days:'Monday'}]) assert.equal(validProfileRule({...time,...patch}),false);
+  for (const minutes of [0,1441,1.5]) assert.equal(validProfileRule(rule('idle',{minutes})),false);
+  assert.equal(validProfileRule(rule('future')),false);
+  assert.equal(validProfileRule(rule('locked',{app:1})),false);
+  assert.equal(validProfileRule(rule('locked',{app:null})),false);
+  assert.equal(validProfileRule({...time,days:null}),false);
+  assert.equal(validProfileRule(rule('mediaPlaying',{app:'x'.repeat(257)})),false);
+  assert.equal(firstIncomplete(config({profiles:[{...music,match:'future'}]}),[]),'music');
+  assert.equal(firstIncomplete(config({profiles:[{...music,match:null}]}),[]),'music');
+  assert.equal(minuteOf(null),null);
+  assert.equal(minuteOf('23:59'),1439);
+});
+
+test('all locales describe the new rule types without technical fallback text', () => {
+  const rules=[{source:'sensor',key:'cpu.temperature',compare:'above',value:80,forSeconds:2},
+    {source:'time',days:[0,6],from:'22:00',to:'06:00'},{source:'idle',minutes:5},{source:'locked'}];
+  for (const locale of ['en','it','pt-BR']) for (const rule of rules) {
+    const summary=ruleSummary(translator(locale),rule);
+    assert.ok(summary.length>10);
+    assert.doesNotMatch(summary,/profileRules\.|\{\w+\}/);
+  }
+  assert.match(ruleSummary(t,{source:'time',from:'00:00',to:'23:00'}),/ogni giorno/);
+  assert.equal(ruleSummary(t,{source:'sensor',key:'x',compare:'below',value:1}), 'quando x resta sotto 1 per 0 s');
+  assert.deepEqual(rules.map(r=>profileIcon({rules:[r]})),['sliders','clock','clock','lock']);
 });

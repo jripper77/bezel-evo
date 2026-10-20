@@ -594,6 +594,11 @@ impl Backend {
                 .cmp(&a.connected)
                 .then_with(|| a.key.cmp(&b.key))
         });
+        // The active profile and why come from the engine that applies them.
+        overview.status = match &self.engine {
+            Some(engine) => engine.profile_status().ok().flatten(),
+            None => None,
+        };
         Ok(overview)
     }
 
@@ -2065,6 +2070,7 @@ mod tests {
                     name: "Gaming".into(),
                     themes: paths.clone(),
                     rules: vec![],
+                    combine: Default::default(),
                 }],
                 ..Config::default()
             })

@@ -491,6 +491,10 @@ pub struct Snapshot {
     pub foreground: Option<String>,
     /// True after a successful process scan.
     pub activity_available: bool,
+    /// Seconds since the last keyboard or mouse input; `None` when unknown.
+    pub idle_seconds: Option<u32>,
+    /// Whether the PC is locked; `None` when unknown.
+    pub locked: Option<bool>,
     readings: BTreeMap<SensorKey, Reading>,
 }
 

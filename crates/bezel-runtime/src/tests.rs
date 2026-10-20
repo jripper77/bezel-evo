@@ -246,6 +246,7 @@ fn a_profile_switch_restores_the_unsaved_editor_and_never_replaces_its_published
             name: "Music".into(),
             themes: BTreeMap::from([(f.key.clone(), path.display().to_string())]),
             rules: vec![],
+            combine: Default::default(),
         }],
         automatic: false,
         manual: Some("music".into()),
@@ -255,7 +256,21 @@ fn a_profile_switch_restores_the_unsaved_editor_and_never_replaces_its_published
     .unwrap();
     f.engine.scenes.get_mut(&f.key).unwrap().live = true;
     let mut service = Service::new(file.clone());
-    service.tick(&mut f.engine, &Snapshot::default(), Duration::ZERO);
+    service.tick(&mut f.engine, &Snapshot::default(), Duration::ZERO, time());
+    let status = service.status();
+    assert_eq!(
+        status.active,
+        Some(crate::profiles::Active {
+            profile: "music".into(),
+            reason: crate::profiles::Reason::Manual,
+        }),
+        "the runtime says which profile is on and why"
+    );
+    assert_eq!(status.rules["music"], Vec::<bool>::new());
+    assert!(
+        f.engine.profile_status().is_none(),
+        "this engine has no profile service"
+    );
     let scene = &f.engine.scenes[&f.key];
     assert_eq!(scene.runtime.theme().name, "music profile");
     assert!(scene.saved == saved);
@@ -273,10 +288,16 @@ fn a_profile_switch_restores_the_unsaved_editor_and_never_replaces_its_published
         &mut f.engine,
         &Snapshot::default(),
         Duration::from_millis(100),
+        time(),
     );
     // Simulate the editing grace period expiring without a wall-clock sleep.
     f.engine.scenes.get_mut(&f.key).unwrap().profile_edit_at = None;
-    service.tick(&mut f.engine, &Snapshot::default(), Duration::from_secs(1));
+    service.tick(
+        &mut f.engine,
+        &Snapshot::default(),
+        Duration::from_secs(1),
+        time(),
+    );
     assert_eq!(
         f.engine.scenes[&f.key].runtime.theme().name,
         "freshly saved music"
@@ -285,7 +306,12 @@ fn a_profile_switch_restores_the_unsaved_editor_and_never_replaces_its_published
     assert!(f.engine.scenes[&f.key].frame.as_ref().unwrap().as_ref() != &published);
     // Reading the canvas returns the editor's frame, not the live profile.
     assert!(f.engine.image(&f.key, 0, 2320).unwrap().frame.as_ref() == Some(&published));
-    service.tick(&mut f.engine, &Snapshot::default(), Duration::from_secs(1));
+    service.tick(
+        &mut f.engine,
+        &Snapshot::default(),
+        Duration::from_secs(1),
+        time(),
+    );
     let scene = &f.engine.scenes[&f.key];
     assert_eq!(scene.runtime.theme().name, "unsaved editor");
     assert!(scene.saved == saved);
@@ -340,6 +366,7 @@ fn one_gaming_profile_switches_two_different_displays_and_restores_both() {
             name: "Gaming".into(),
             themes: themes.clone(),
             rules: vec![],
+            combine: Default::default(),
         }],
         automatic: false,
         manual: Some("gaming".into()),
@@ -360,7 +387,7 @@ fn one_gaming_profile_switches_two_different_displays_and_restores_both() {
             .map(|a| a.phase)
     };
     // The cover closes over the old themes first; nothing is applied yet.
-    service.tick(&mut f.engine, &Snapshot::default(), Duration::ZERO);
+    service.tick(&mut f.engine, &Snapshot::default(), Duration::ZERO, time());
     for key in ["wide", "round"] {
         assert_eq!(
             f.engine.scenes[key].runtime.theme().name,
@@ -382,6 +409,7 @@ fn one_gaming_profile_switches_two_different_displays_and_restores_both() {
         &mut f.engine,
         &Snapshot::default(),
         Duration::from_millis(400),
+        time(),
     );
     for key in ["wide", "round"] {
         assert_eq!(
@@ -394,7 +422,12 @@ fn one_gaming_profile_switches_two_different_displays_and_restores_both() {
     assert!(f.engine.scenes["wide"].saved == wide);
     assert!(f.engine.scenes["round"].saved == round);
     file.select(None, false).unwrap();
-    service.tick(&mut f.engine, &Snapshot::default(), Duration::from_secs(2));
+    service.tick(
+        &mut f.engine,
+        &Snapshot::default(),
+        Duration::from_secs(2),
+        time(),
+    );
     // Still fully covered (no frame drawn yet): the change needs no new closing.
     for key in ["wide", "round"] {
         assert_eq!(phase(&f.engine, key), Some(Phase::Covered));
@@ -606,6 +639,7 @@ fn a_tried_profile_shows_under_the_cover_then_the_screen_returns() {
         &mut f.engine,
         &Snapshot::default(),
         started + Duration::from_millis(200),
+        time(),
     );
     advance(&mut f.engine, started + Duration::from_millis(200), time()).unwrap();
     assert_eq!(
@@ -628,16 +662,18 @@ fn a_tried_profile_shows_under_the_cover_then_the_screen_returns() {
         &mut f.engine,
         &Snapshot::default(),
         shown_at + PREVIEW_HOLD - Duration::from_millis(1),
+        time(),
     );
     assert_eq!(name(&f), "tried, unsaved profile");
     // Then it closes again over it and returns to the base theme.
     let back = shown_at + PREVIEW_HOLD;
-    service.tick(&mut f.engine, &Snapshot::default(), back);
+    service.tick(&mut f.engine, &Snapshot::default(), back, time());
     assert_eq!(phase(&f), Some(Phase::Closing));
     service.tick(
         &mut f.engine,
         &Snapshot::default(),
         back + Duration::from_millis(400),
+        time(),
     );
     let scene = &f.engine.scenes[&f.key];
     assert_eq!(scene.runtime.theme().name, base.theme.name);

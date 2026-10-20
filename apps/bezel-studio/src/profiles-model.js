@@ -9,6 +9,31 @@ export const PROFILE_EFFECTS = Object.freeze(['none', 'curtain', 'wipe', 'blinds
 /** The cover effects that move in a direction (the mosaic has none). */
 export const directed = (effect) => effect !== 'none' && effect !== 'mosaic';
 
+export const PROFILE_RULE_SOURCES = Object.freeze(['mediaPlaying', 'foreground', 'process', 'sensor', 'time', 'idle', 'locked']);
+const within = (value, max, min = 0) => Number.isInteger(value) && value >= min && value <= max;
+export function minuteOf(text) {
+  if (typeof text !== 'string' || !/^\d{2}:\d{2}$/.test(text)) return null;
+  const [hour, minute] = text.split(':').map(Number);
+  return hour < 24 && minute < 60 ? hour * 60 + minute : null;
+}
+
+/** The same bounds and source-specific requirements as runtime::profiles::Rule. */
+export function validProfileRule(rule) {
+  const app = rule.app === undefined ? '' : rule.app;
+  const days = rule.days === undefined ? [] : rule.days;
+  if (!PROFILE_RULE_SOURCES.includes(rule.source) || !within(rule.priority, 100) || !within(rule.returnSeconds, 300)
+    || typeof app !== 'string' || app.length > 256) return false;
+  switch (rule.source) {
+    case 'foreground': case 'process': return Boolean(rule.app?.trim());
+    case 'sensor': return typeof rule.key === 'string' && rule.key.length > 0 && !/\s/.test(rule.key)
+      && ['above', 'below'].includes(rule.compare) && Number.isFinite(rule.value) && within(rule.forSeconds === undefined ? 0 : rule.forSeconds, 3600);
+    case 'time': return Array.isArray(days) && days.length <= 7
+      && days.every(day => within(day, 6)) && minuteOf(rule.from) !== null && minuteOf(rule.to) !== null;
+    case 'idle': return within(rule.minutes ?? 0, 1440, 1);
+    default: return true;
+  }
+}
+
 /**
  * Who decides: `auto` (the rules, `fallback` when none holds) or `manual`
  * (always `manual`). A `null` profile is the base themes.
@@ -54,12 +79,11 @@ export function withoutProfile(config, id) {
  * watches no app or with a priority or delay out of range. `null` when all fit.
  */
 export function firstIncomplete(config, displays) {
-  const within = (value, max) => Number.isInteger(value) && value >= 0 && value <= max;
   const connected = displays.filter((d) => d.connected).map((d) => d.key);
   const bad = config.profiles.find((profile) => !profile.name?.trim()
     || connected.some((key) => !profile.themes[key])
-    || profile.rules.some((rule) => (rule.source !== 'mediaPlaying' && !rule.app?.trim())
-      || !within(rule.priority, 100) || !within(rule.returnSeconds, 300)));
+    || !['any', 'all'].includes(profile.match === undefined ? 'any' : profile.match)
+    || profile.rules.some(rule => !validProfileRule(rule)));
   return bad?.id ?? null;
 }
 
@@ -78,6 +102,10 @@ export function triedThemes(config, id, displays) {
 /** One rule in plain words: "when music is playing", "when game.exe is in front". */
 export function ruleSummary(t, rule) {
   const app = rule.app?.trim();
+  if (rule.source === 'sensor') return t('profileRules.sensor', { key: rule.key, comparison: t(`profileRules.${rule.compare}`), value: rule.value, seconds: rule.forSeconds ?? 0 });
+  if (rule.source === 'time') return t('profileRules.time', { days: rule.days?.length ? rule.days.map(day => t(`profileRules.day${day}`)).join(', ') : t('profileRules.everyDay'), from: rule.from, to: rule.to });
+  if (rule.source === 'idle') return t('profileRules.idle', { minutes: rule.minutes });
+  if (rule.source === 'locked') return t('profileRules.locked');
   if (rule.source === 'mediaPlaying') {
     return app ? t('profiles.summary.mediaIn', { app }) : t('profiles.summary.media');
   }
@@ -97,6 +125,9 @@ export function profileIcon(profile) {
   const source = profile.rules[0]?.source;
   if (source === 'mediaPlaying') return 'player';
   if (source === 'foreground' || source === 'process') return 'chip';
+  if (source === 'sensor') return 'sliders';
+  if (source === 'time' || source === 'idle') return 'clock';
+  if (source === 'locked') return 'lock';
   return 'themes';
 }
 

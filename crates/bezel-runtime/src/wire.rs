@@ -68,6 +68,9 @@ pub enum RuntimeOp {
     Sensors {
         listed: Option<Vec<String>>,
     },
+    /// What the profiles do now (the scene named is ignored): the active
+    /// profile and why, and which rules are true.
+    ProfileStatus,
 }
 #[derive(Serialize, Deserialize)]
 pub struct Reply {
@@ -366,6 +369,10 @@ fn dispatch_inner(
                 u32::MAX,
             ))
         }
+        RuntimeOp::ProfileStatus => Ok((
+            serde_json::to_value(engine.profile_status()).unwrap_or(Value::Null),
+            Vec::new(),
+        )),
         RuntimeOp::Sensors { listed } => {
             if let Some(keys) = listed {
                 let wanted = keys

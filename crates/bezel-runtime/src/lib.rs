@@ -440,6 +440,11 @@ impl Engine {
             }
         }
     }
+    /// What the profiles do now (the active profile and why, every rule's
+    /// truth); `None` without the profile service.
+    pub fn profile_status(&self) -> Option<profiles::Status> {
+        self.profiles.as_ref().map(profiles::Service::status)
+    }
     /// Attach a physical display once, preserving the runtime and its clocks.
     /// Tries a profile cover on every live screen, whoever opened its scene
     /// (Light's saved themes or Studio's drafts). It closes over what the
@@ -594,7 +599,7 @@ impl Engine {
         }
         let reading = self.sensors.latest();
         if let Some(mut profiles) = self.profiles.take() {
-            let changed = profiles.tick(self, &reading.snapshot, now);
+            let changed = profiles.tick(self, &reading.snapshot, now, time);
             self.profiles = Some(profiles);
             if changed {
                 self.schedule_sensors();

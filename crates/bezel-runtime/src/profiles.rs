@@ -3,6 +3,7 @@ use crate::{Document, Engine, invalid};
 use bezel_core::{
     Result,
     domain::{
+        clock::LocalTime,
         cover::{self, Cover, CoverDirection, CoverEffect, CoverStage},
         playback::{CardTrigger, TriggerSource},
         sensor::{SensorKey, Snapshot, Wanted},
@@ -16,55 +17,236 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+/// What a rule watches (D-2026-10-20-studio-ux-v2-12).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Source {
+    /// An app is in the foreground.
     Foreground,
+    /// An app is running.
     Process,
+    /// Music is playing.
     MediaPlaying,
+    /// A sensor is above or below a value (for some seconds).
+    Sensor,
+    /// The day of the week and the time of day.
+    Time,
+    /// Nobody has touched the PC for some minutes.
+    Idle,
+    /// The PC is locked.
+    Locked,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Above or below, for a sensor rule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Compare {
+    /// Strictly above the value.
+    Above,
+    /// Strictly below the value.
+    Below,
+}
+
+/// How a profile's rules combine.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Combine {
+    /// Any true rule selects the profile.
+    #[default]
+    Any,
+    /// Every rule must be true together.
+    All,
+}
+
+fn is_zero(v: &u32) -> bool {
+    *v == 0
+}
+
+fn is_any(v: &Combine) -> bool {
+    *v == Combine::Any
+}
+
+/// Longest wait a sensor rule can ask for, seconds.
+pub const MAX_FOR_SECONDS: u32 = 3600;
+/// Longest inactivity a rule can wait for, minutes.
+pub const MAX_IDLE_MINUTES: u32 = 1440;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rule {
     pub source: Source,
+    /// The app of a foreground or process rule.
+    #[serde(default)]
     pub app: String,
     pub priority: u32,
     pub return_seconds: u32,
+    /// Sensor rules: the sensor.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub key: String,
+    /// Sensor rules: above or below.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compare: Option<Compare>,
+    /// Sensor rules: the value, in the sensor's units.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+    /// Sensor rules: how long it must hold before it counts, seconds.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub for_seconds: u32,
+    /// Time rules: the days, 0 = Monday … 6 = Sunday (none: every day).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub days: Vec<u8>,
+    /// Time rules: from `HH:MM` …
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub from: String,
+    /// … to `HH:MM` (earlier than `from`: past midnight).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub to: String,
+    /// Idle rules: minutes without input.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub minutes: u32,
 }
+
+/// Minutes into the day of `HH:MM`.
+fn minute_of(text: &str) -> Option<u32> {
+    let (h, m) = text.split_once(':')?;
+    let (h, m): (u32, u32) = (h.parse().ok()?, m.parse().ok()?);
+    (h < 24 && m < 60 && text.len() == 5).then_some(h * 60 + m)
+}
+
 impl Rule {
-    fn available(&self, snapshot: &Snapshot) -> bool {
-        match self.source {
-            Source::MediaPlaying => snapshot.media_available,
-            _ => snapshot.activity_available,
+    /// A rule watching `source`, every other field empty.
+    pub fn of(source: Source) -> Self {
+        Self {
+            source,
+            app: String::new(),
+            priority: 0,
+            return_seconds: 0,
+            key: String::new(),
+            compare: None,
+            value: None,
+            for_seconds: 0,
+            days: Vec::new(),
+            from: String::new(),
+            to: String::new(),
+            minutes: 0,
         }
     }
-    fn matches(&self, snapshot: &Snapshot) -> bool {
-        self.available(snapshot)
-            && CardTrigger {
-                source: match self.source {
-                    Source::Foreground => TriggerSource::Foreground,
-                    Source::Process => TriggerSource::Process,
-                    Source::MediaPlaying => TriggerSource::MediaPlaying,
-                },
-                app: self.app.clone(),
-                face: 0,
-                priority: self.priority,
-                return_seconds: self.return_seconds,
-                return_face: None,
-                interval_seconds: None,
-                next_face: false,
+
+    fn valid(&self) -> bool {
+        if self.priority > 100 || self.return_seconds > 300 || self.app.len() > 256 {
+            return false;
+        }
+        match self.source {
+            Source::Foreground | Source::Process => !self.app.trim().is_empty(),
+            Source::MediaPlaying | Source::Locked => true,
+            Source::Sensor => {
+                SensorKey::new(self.key.as_str()).is_some()
+                    && self.compare.is_some()
+                    && self.value.is_some_and(f64::is_finite)
+                    && self.for_seconds <= MAX_FOR_SECONDS
             }
-            .matches(snapshot)
+            Source::Time => {
+                self.days.len() <= 7
+                    && self.days.iter().all(|d| *d <= 6)
+                    && minute_of(&self.from).is_some()
+                    && minute_of(&self.to).is_some()
+            }
+            Source::Idle => (1..=MAX_IDLE_MINUTES).contains(&self.minutes),
+        }
+    }
+
+    /// The sensor keys the rule needs measured.
+    fn needs(&self) -> Option<String> {
+        Some(match self.source {
+            Source::MediaPlaying => "media.sessions".into(),
+            Source::Foreground | Source::Process => "activity.processes".into(),
+            Source::Idle | Source::Locked => "activity.presence".into(),
+            Source::Sensor => self.key.clone(),
+            Source::Time => return None,
+        })
+    }
+
+    fn available(&self, snapshot: &Snapshot, time: Option<&LocalTime>) -> bool {
+        match self.source {
+            Source::MediaPlaying => snapshot.media_available,
+            Source::Foreground | Source::Process => snapshot.activity_available,
+            Source::Sensor => SensorKey::new(self.key.as_str())
+                .is_some_and(|key| snapshot.get(&key).value().is_some()),
+            Source::Time => time.is_some(),
+            Source::Idle => snapshot.idle_seconds.is_some(),
+            Source::Locked => snapshot.locked.is_some(),
+        }
+    }
+
+    /// Whether the rule's condition holds now (before any wait).
+    fn holds(&self, snapshot: &Snapshot, time: Option<&LocalTime>) -> bool {
+        if !self.available(snapshot, time) {
+            return false;
+        }
+        match self.source {
+            Source::Foreground | Source::Process | Source::MediaPlaying => {
+                self.app_matches(snapshot)
+            }
+            Source::Sensor => {
+                let reading =
+                    SensorKey::new(self.key.as_str()).and_then(|key| snapshot.get(&key).value());
+                match (reading, self.value, self.compare) {
+                    (Some(v), Some(limit), Some(Compare::Above)) => v > limit,
+                    (Some(v), Some(limit), Some(Compare::Below)) => v < limit,
+                    _ => false,
+                }
+            }
+            Source::Time => time.is_some_and(|t| {
+                let (Some(from), Some(to)) = (minute_of(&self.from), minute_of(&self.to)) else {
+                    return false;
+                };
+                let now = u32::from(t.hour) * 60 + u32::from(t.minute);
+                let (inside, day) = if from <= to {
+                    (now >= from && now < to, t.weekday)
+                } else if now >= from {
+                    (true, t.weekday)
+                } else {
+                    // Past midnight: the window began the day before.
+                    (now < to, (t.weekday + 6) % 7)
+                };
+                inside && (self.days.is_empty() || self.days.contains(&day))
+            }),
+            Source::Idle => snapshot
+                .idle_seconds
+                .is_some_and(|s| s >= self.minutes.saturating_mul(60)),
+            Source::Locked => snapshot.locked == Some(true),
+        }
+    }
+
+    fn app_matches(&self, snapshot: &Snapshot) -> bool {
+        CardTrigger {
+            source: match self.source {
+                Source::Foreground => TriggerSource::Foreground,
+                Source::Process => TriggerSource::Process,
+                Source::MediaPlaying => TriggerSource::MediaPlaying,
+                _ => return false,
+            },
+            app: self.app.clone(),
+            face: 0,
+            priority: self.priority,
+            return_seconds: self.return_seconds,
+            return_face: None,
+            interval_seconds: None,
+            next_face: false,
+        }
+        .matches(snapshot)
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Profile {
     pub id: String,
     pub name: String,
     pub themes: BTreeMap<String, String>,
     pub rules: Vec<Rule>,
+    /// How the rules combine; `any` is omitted.
+    #[serde(rename = "match", skip_serializing_if = "is_any")]
+    pub combine: Combine,
 }
 
 impl<'de> Deserialize<'de> for Profile {
@@ -83,6 +265,8 @@ impl<'de> Deserialize<'de> for Profile {
             #[serde(default)]
             theme: Option<String>,
             rules: Vec<Rule>,
+            #[serde(default, rename = "match")]
+            combine: Combine,
         }
         let mut stored = Stored::deserialize(deserializer)?;
         match (stored.screen, stored.theme) {
@@ -97,11 +281,12 @@ impl<'de> Deserialize<'de> for Profile {
             name: stored.name,
             themes: stored.themes,
             rules: stored.rules,
+            combine: stored.combine,
         })
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
 pub struct Config {
     /// Shared effect used for manual, automatic and fallback changes.
@@ -149,14 +334,8 @@ impl Config {
             {
                 return Err(invalid("invalid profile"));
             }
-            for r in &p.rules {
-                if r.priority > 100
-                    || r.return_seconds > 300
-                    || r.app.len() > 256
-                    || (r.source != Source::MediaPlaying && r.app.trim().is_empty())
-                {
-                    return Err(invalid("invalid profile rule"));
-                }
+            if p.rules.iter().any(|r| !r.valid()) {
+                return Err(invalid("invalid profile rule"));
             }
         }
         for id in [&self.manual, &self.default_profile].into_iter().flatten() {
@@ -181,13 +360,7 @@ impl Config {
         self.profiles
             .iter()
             .flat_map(|p| &p.rules)
-            .filter_map(|r| {
-                SensorKey::new(if r.source == Source::MediaPlaying {
-                    "media.sessions"
-                } else {
-                    "activity.processes"
-                })
-            })
+            .filter_map(|r| SensorKey::new(r.needs()?))
             .collect()
     }
 }
@@ -397,10 +570,13 @@ pub struct Display {
     pub connected: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Overview {
     pub config: Config,
     pub displays: Vec<Display>,
+    /// What the profiles do now, when the engine runs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<Status>,
 }
 /// Native tray strings, also used while no WebView is running.
 pub fn menu_labels(language: bezel_core::domain::clock::Language) -> [&'static str; 4] {
@@ -468,7 +644,11 @@ impl ProfileFile {
                 }
             })
             .collect();
-        Ok(Overview { config, displays })
+        Ok(Overview {
+            config,
+            displays,
+            status: None,
+        })
     }
     pub fn load(&self) -> Result<Config> {
         let metadata = match std::fs::metadata(&self.0) {
@@ -503,35 +683,168 @@ impl ProfileFile {
     }
 }
 
+/// Why the active profile is on.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+pub enum Reason {
+    /// Chosen by hand (Manual mode).
+    Manual,
+    /// These rules (indices) are true now.
+    Rules { rules: Vec<usize> },
+    /// Its rules stopped being true; it stays for its return delay.
+    Returning { rules: Vec<usize> },
+    /// No rule is true: the default profile.
+    Default,
+}
+
+/// The profile on show and why.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Active {
+    pub profile: String,
+    pub reason: Reason,
+}
+
+/// What the profiles do now: the active profile and, for every profile,
+/// which of its rules are true now (D-2026-10-20-studio-ux-v2-12).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Status {
+    pub automatic: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active: Option<Active>,
+    /// Per profile id, `trueNow` of each rule in order.
+    pub rules: BTreeMap<String, Vec<bool>>,
+}
+
 #[derive(Default)]
 struct Selection {
     active: Option<String>,
     release: Option<Duration>,
     return_seconds: u32,
     priority: u32,
+    /// The rules that made the active profile.
+    reason: Vec<usize>,
+    /// Whether the active profile's rules chose it this time (else it waits
+    /// out its return delay).
+    matched: bool,
+    /// Since when each rule's condition has held, by profile id and index.
+    since: BTreeMap<(String, usize), Duration>,
+    status: Status,
 }
 impl Selection {
+    /// Which rules are true now, after their wait: the conditions that hold
+    /// and have held for their `for_seconds`.
+    fn truths(
+        &mut self,
+        config: &Config,
+        snapshot: &Snapshot,
+        now: Duration,
+        time: Option<&LocalTime>,
+    ) -> BTreeMap<String, Vec<bool>> {
+        let mut since = BTreeMap::new();
+        let mut out = BTreeMap::new();
+        for p in &config.profiles {
+            let truths = p
+                .rules
+                .iter()
+                .enumerate()
+                .map(|(i, r)| {
+                    if !r.holds(snapshot, time) {
+                        return false;
+                    }
+                    let key = (p.id.clone(), i);
+                    let start = self.since.get(&key).copied().unwrap_or(now);
+                    since.insert(key, start);
+                    now.saturating_sub(start) >= Duration::from_secs(u64::from(r.for_seconds))
+                })
+                .collect();
+            out.insert(p.id.clone(), truths);
+        }
+        self.since = since;
+        out
+    }
+
+    #[cfg(test)]
     fn choose(&mut self, config: &Config, snapshot: &Snapshot, now: Duration) -> Option<String> {
+        self.choose_at(config, snapshot, now, None)
+    }
+
+    fn choose_at(
+        &mut self,
+        config: &Config,
+        snapshot: &Snapshot,
+        now: Duration,
+        time: Option<&LocalTime>,
+    ) -> Option<String> {
+        let truths = self.truths(config, snapshot, now, time);
+        let chosen = self.pick(config, snapshot, now, time, &truths);
+        let reason = match (&chosen, config.automatic) {
+            (None, _) => None,
+            (Some(_), false) => Some(Reason::Manual),
+            (Some(id), true) if self.active.as_ref() == Some(id) => {
+                let rules = self.reason.clone();
+                Some(if self.matched {
+                    Reason::Rules { rules }
+                } else {
+                    Reason::Returning { rules }
+                })
+            }
+            (Some(_), true) => Some(Reason::Default),
+        };
+        self.status = Status {
+            automatic: config.automatic,
+            active: chosen
+                .clone()
+                .zip(reason)
+                .map(|(profile, reason)| Active { profile, reason }),
+            rules: truths,
+        };
+        chosen
+    }
+
+    fn pick(
+        &mut self,
+        config: &Config,
+        snapshot: &Snapshot,
+        now: Duration,
+        time: Option<&LocalTime>,
+        truths: &BTreeMap<String, Vec<bool>>,
+    ) -> Option<String> {
+        self.matched = false;
         if !config.automatic {
             self.active = config.manual.as_ref().cloned();
             self.release = None;
             return self.active.clone();
         }
-        let matching = config
-            .profiles
-            .iter()
-            .flat_map(|p| p.rules.iter().map(move |r| (p, r)))
-            .filter(|(_, r)| r.matches(snapshot))
-            // Stable saved order wins ties.
-            .fold(None, |best: Option<(&Profile, &Rule)>, candidate| {
-                if best.is_none_or(|(_, r)| candidate.1.priority > r.priority) {
-                    Some(candidate)
-                } else {
-                    best
+        // Each candidate: the profile, its priority, its return delay and the rules that select it.
+        let mut best: Option<(&Profile, u32, u32, Vec<usize>)> = None;
+        for p in &config.profiles {
+            let true_now = truths.get(&p.id).map(Vec::as_slice).unwrap_or_default();
+            let candidates: Vec<(u32, u32, Vec<usize>)> = match p.combine {
+                Combine::Any => p
+                    .rules
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| true_now.get(*i) == Some(&true))
+                    .map(|(i, r)| (r.priority, r.return_seconds, vec![i]))
+                    .collect(),
+                Combine::All if !p.rules.is_empty() && true_now.iter().all(|t| *t) => vec![(
+                    p.rules.iter().map(|r| r.priority).max().unwrap_or(0),
+                    p.rules.iter().map(|r| r.return_seconds).max().unwrap_or(0),
+                    (0..p.rules.len()).collect(),
+                )],
+                Combine::All => Vec::new(),
+            };
+            for (priority, back, rules) in candidates {
+                // Stable saved order wins ties.
+                if best.as_ref().is_none_or(|b| priority > b.1) {
+                    best = Some((p, priority, back, rules));
                 }
-            });
-        if let Some((p, r)) = matching {
-            if self.active.as_ref().is_some_and(|id| id != &p.id) && r.priority < self.priority {
+            }
+        }
+        if let Some((p, priority, back, rules)) = best {
+            if self.active.as_ref().is_some_and(|id| id != &p.id) && priority < self.priority {
                 let until = *self
                     .release
                     .get_or_insert(now + Duration::from_secs(u64::from(self.return_seconds)));
@@ -540,15 +853,17 @@ impl Selection {
                 }
             }
             self.active = Some(p.id.clone());
-            self.return_seconds = r.return_seconds;
-            self.priority = r.priority;
+            self.return_seconds = back;
+            self.priority = priority;
+            self.reason = rules;
+            self.matched = true;
             self.release = None;
         } else if let Some(profile) = self
             .active
             .as_ref()
             .and_then(|id| config.profiles.iter().find(|p| &p.id == id))
         {
-            if profile.rules.iter().any(|r| !r.available(snapshot)) {
+            if profile.rules.iter().any(|r| !r.available(snapshot, time)) {
                 return self.active.clone();
             }
             let until = *self
@@ -594,7 +909,17 @@ impl Service {
     pub fn wanted(&self) -> Wanted {
         self.config.wanted()
     }
-    pub fn tick(&mut self, engine: &mut Engine, snapshot: &Snapshot, now: Duration) -> bool {
+    /// What the profiles do now.
+    pub fn status(&self) -> Status {
+        self.selection.status.clone()
+    }
+    pub fn tick(
+        &mut self,
+        engine: &mut Engine,
+        snapshot: &Snapshot,
+        now: Duration,
+        time: LocalTime,
+    ) -> bool {
         let mut changed = false;
         let poll = now >= self.poll;
         if poll {
@@ -629,7 +954,9 @@ impl Service {
         });
         let config_changed = changed;
         let mut budget: usize = engine.scenes.values().map(scene_bytes).sum();
-        let selected = self.selection.choose(&self.config, snapshot, now);
+        let selected = self
+            .selection
+            .choose_at(&self.config, snapshot, now, Some(&time));
         let cover = self.config.transition.cover().ok().flatten();
         let duration_ms = self.config.transition.duration_ms;
         for (key, scene) in &mut engine.scenes {
@@ -856,22 +1183,23 @@ mod tests {
                     name: "Music".into(),
                     themes: BTreeMap::from([("screen".into(), "music.bezeltheme".into())]),
                     rules: vec![Rule {
-                        source: Source::MediaPlaying,
-                        app: String::new(),
                         priority: 10,
                         return_seconds: 3,
+                        ..Rule::of(Source::MediaPlaying)
                     }],
+                    combine: Combine::Any,
                 },
                 Profile {
                     id: "game".into(),
                     name: "Game".into(),
                     themes: BTreeMap::from([("screen".into(), "game.bezeltheme".into())]),
                     rules: vec![Rule {
-                        source: Source::Foreground,
                         app: "Game.exe".into(),
                         priority: 20,
                         return_seconds: 2,
+                        ..Rule::of(Source::Foreground)
                     }],
+                    combine: Combine::Any,
                 },
             ],
             ..Config::default()
@@ -1003,5 +1331,389 @@ mod tests {
         assert_eq!(loaded.manual.as_deref(), Some("music"));
         std::fs::remove_file(&file.0).unwrap();
         std::fs::remove_dir(directory).unwrap();
+    }
+
+    fn profile(id: &str, combine: Combine, rules: Vec<Rule>) -> Profile {
+        Profile {
+            id: id.into(),
+            name: id.into(),
+            themes: BTreeMap::from([("screen".into(), format!("{id}.bezeltheme"))]),
+            rules,
+            combine,
+        }
+    }
+
+    fn sensor(key: &str, compare: Compare, value: f64, for_seconds: u32) -> Rule {
+        Rule {
+            key: key.into(),
+            compare: Some(compare),
+            value: Some(value),
+            for_seconds,
+            priority: 50,
+            ..Rule::of(Source::Sensor)
+        }
+    }
+
+    fn reading(key: &str, value: f64) -> Snapshot {
+        let mut s = Snapshot::default();
+        s.insert(
+            SensorKey::new(key).unwrap(),
+            bezel_core::domain::sensor::Reading::Value(value),
+        );
+        s
+    }
+
+    #[test]
+    fn native_and_demo_share_profile_selection_fixtures() {
+        let cases: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../apps/bezel-studio/tests/fixtures/profile-selection.json"
+        ))
+        .unwrap();
+        for case in cases.as_array().unwrap() {
+            let config: Config = serde_json::from_value(case["config"].clone()).unwrap();
+            config.validate().unwrap();
+            let mut selection = Selection::default();
+            for step in case["steps"].as_array().unwrap() {
+                let mut snapshot = Snapshot::default();
+                snapshot.idle_seconds = step["idleSeconds"].as_u64().map(|n| n as u32);
+                snapshot.locked = step["locked"].as_bool();
+                if let Some(readings) = step["readings"].as_object() {
+                    for (key, value) in readings {
+                        snapshot.insert(
+                            SensorKey::new(key.as_str()).unwrap(),
+                            bezel_core::domain::sensor::Reading::Value(value.as_f64().unwrap()),
+                        );
+                    }
+                }
+                let time = step["time"].as_object().map(|time| {
+                    at(
+                        time["weekday"].as_u64().unwrap() as u8,
+                        time["hour"].as_u64().unwrap() as u8,
+                        time["minute"].as_u64().unwrap() as u8,
+                    )
+                });
+                selection.choose_at(
+                    &config,
+                    &snapshot,
+                    Duration::from_secs(step["now"].as_u64().unwrap()),
+                    time.as_ref(),
+                );
+                assert_eq!(
+                    serde_json::to_value(&selection.status).unwrap(),
+                    step["expected"],
+                    "{} at {}",
+                    case["name"],
+                    step["now"]
+                );
+            }
+        }
+    }
+
+    fn at(weekday: u8, hour: u8, minute: u8) -> LocalTime {
+        LocalTime {
+            year: 2026,
+            month: 10,
+            day: 19 + weekday,
+            hour,
+            minute,
+            second: 0,
+            weekday,
+            millisecond: 0,
+        }
+    }
+
+    #[test]
+    fn a_sensor_rule_counts_once_it_has_held_long_enough() {
+        let c = Config {
+            profiles: vec![profile(
+                "hot",
+                Combine::Any,
+                vec![sensor("cpu.temperature", Compare::Above, 80.0, 10)],
+            )],
+            ..Config::default()
+        };
+        c.validate().unwrap();
+        let mut choice = Selection::default();
+        let s = Duration::from_secs;
+        assert_eq!(
+            choice.choose(&c, &reading("cpu.temperature", 85.0), s(0)),
+            None
+        );
+        assert_eq!(
+            choice.status.rules["hot"],
+            vec![false],
+            "not yet ten seconds"
+        );
+        assert_eq!(
+            choice.choose(&c, &reading("cpu.temperature", 85.0), s(9)),
+            None
+        );
+        assert_eq!(
+            choice
+                .choose(&c, &reading("cpu.temperature", 86.0), s(10))
+                .as_deref(),
+            Some("hot")
+        );
+        assert_eq!(
+            choice.status.active,
+            Some(Active {
+                profile: "hot".into(),
+                reason: Reason::Rules { rules: vec![0] }
+            })
+        );
+        assert_eq!(
+            choice.choose(&c, &reading("cpu.temperature", 70.0), s(11)),
+            None
+        );
+        choice.choose(&c, &reading("cpu.temperature", 90.0), s(12));
+        assert_eq!(
+            choice.choose(&c, &reading("cpu.temperature", 90.0), s(20)),
+            None,
+            "the wait starts again after a dip"
+        );
+        let below = sensor("cpu.usage", Compare::Below, 10.0, 0);
+        assert!(below.holds(&reading("cpu.usage", 5.0), None));
+        assert!(!below.holds(&reading("cpu.usage", 15.0), None));
+        assert!(!below.holds(&Snapshot::default(), None), "no reading");
+    }
+
+    #[test]
+    fn time_rules_follow_days_and_windows_past_midnight() {
+        let evening = Rule {
+            days: vec![0, 1, 2, 3, 4],
+            from: "18:00".into(),
+            to: "23:30".into(),
+            ..Rule::of(Source::Time)
+        };
+        assert!(evening.valid());
+        assert!(evening.holds(&Snapshot::default(), Some(&at(1, 19, 0))));
+        assert!(
+            !evening.holds(&Snapshot::default(), Some(&at(1, 23, 30))),
+            "the end is out"
+        );
+        assert!(
+            !evening.holds(&Snapshot::default(), Some(&at(5, 19, 0))),
+            "Saturday"
+        );
+        assert!(!evening.holds(&Snapshot::default(), None), "no clock");
+        let night = Rule {
+            days: vec![4],
+            from: "22:00".into(),
+            to: "02:00".into(),
+            ..Rule::of(Source::Time)
+        };
+        assert!(
+            night.holds(&Snapshot::default(), Some(&at(4, 23, 0))),
+            "Friday night"
+        );
+        assert!(
+            night.holds(&Snapshot::default(), Some(&at(5, 1, 0))),
+            "still the night of Friday"
+        );
+        assert!(
+            !night.holds(&Snapshot::default(), Some(&at(4, 1, 0))),
+            "the night of Thursday"
+        );
+        let every_day = Rule {
+            days: vec![],
+            ..night.clone()
+        };
+        assert!(every_day.holds(&Snapshot::default(), Some(&at(2, 23, 0))));
+        for bad in ["24:00", "7:00", "aa:bb", ""] {
+            assert!(
+                !Rule {
+                    from: bad.into(),
+                    ..night.clone()
+                }
+                .valid(),
+                "{bad}"
+            );
+        }
+        assert!(
+            !Rule {
+                days: vec![7],
+                ..night
+            }
+            .valid()
+        );
+    }
+
+    #[test]
+    fn idle_and_locked_rules_read_presence() {
+        let idle = Rule {
+            minutes: 5,
+            ..Rule::of(Source::Idle)
+        };
+        let mut s = Snapshot::default();
+        assert!(!idle.holds(&s, None), "unknown");
+        s.idle_seconds = Some(299);
+        assert!(!idle.holds(&s, None));
+        s.idle_seconds = Some(300);
+        assert!(idle.holds(&s, None));
+        let locked = Rule::of(Source::Locked);
+        assert!(!locked.holds(&s, None));
+        s.locked = Some(true);
+        assert!(locked.holds(&s, None));
+        assert!(locked.valid());
+        assert!(!Rule::of(Source::Idle).valid(), "zero minutes");
+        assert!(
+            !Rule {
+                minutes: 5000,
+                ..idle
+            }
+            .valid()
+        );
+        let c = Config {
+            profiles: vec![profile(
+                "away",
+                Combine::Any,
+                vec![Rule::of(Source::Locked)],
+            )],
+            ..Config::default()
+        };
+        assert!(c.wanted().contains("activity.presence"));
+        let hot = Config {
+            profiles: vec![profile(
+                "hot",
+                Combine::Any,
+                vec![sensor("cpu.usage", Compare::Above, 1.0, 0)],
+            )],
+            ..Config::default()
+        };
+        assert!(
+            hot.wanted().contains("cpu.usage"),
+            "a sensor rule wants its sensor"
+        );
+    }
+
+    #[test]
+    fn all_together_needs_every_rule_and_any_needs_one() {
+        let rules = || {
+            vec![
+                sensor("gpu.usage", Compare::Above, 50.0, 0),
+                Rule {
+                    priority: 70,
+                    return_seconds: 4,
+                    ..Rule::of(Source::Locked)
+                },
+            ]
+        };
+        let c = Config {
+            profiles: vec![profile("both", Combine::All, rules())],
+            ..Config::default()
+        };
+        let mut s = reading("gpu.usage", 80.0);
+        s.locked = Some(false);
+        let mut choice = Selection::default();
+        assert_eq!(choice.choose(&c, &s, Duration::ZERO), None);
+        assert_eq!(choice.status.rules["both"], vec![true, false]);
+        s.locked = Some(true);
+        assert_eq!(
+            choice.choose(&c, &s, Duration::ZERO).as_deref(),
+            Some("both")
+        );
+        assert_eq!(
+            choice.status.active.as_ref().map(|a| a.reason.clone()),
+            Some(Reason::Rules { rules: vec![0, 1] })
+        );
+        assert_eq!(choice.priority, 70, "the highest of its rules");
+        s.locked = Some(false);
+        assert_eq!(
+            choice.choose(&c, &s, Duration::from_secs(1)).as_deref(),
+            Some("both"),
+            "returns after the longest delay"
+        );
+        assert!(matches!(
+            choice.status.active.as_ref().map(|a| &a.reason),
+            Some(Reason::Returning { .. })
+        ));
+        assert_eq!(choice.choose(&c, &s, Duration::from_secs(5)), None);
+
+        let any = Config {
+            profiles: vec![profile("either", Combine::Any, rules())],
+            ..Config::default()
+        };
+        assert_eq!(
+            Selection::default()
+                .choose(&any, &s, Duration::ZERO)
+                .as_deref(),
+            Some("either")
+        );
+        let empty = Config {
+            profiles: vec![profile("never", Combine::All, vec![])],
+            ..Config::default()
+        };
+        assert_eq!(
+            Selection::default().choose(&empty, &s, Duration::ZERO),
+            None
+        );
+    }
+
+    #[test]
+    fn the_status_names_manual_and_default_profiles() {
+        let mut c = config();
+        c.default_profile = Some("music".into());
+        let mut choice = Selection::default();
+        choice.choose(&c, &Snapshot::default(), Duration::ZERO);
+        assert_eq!(
+            choice
+                .status
+                .active
+                .as_ref()
+                .map(|a| (&a.profile[..], a.reason.clone())),
+            Some(("music", Reason::Default))
+        );
+        c.select(Some("game"), false).unwrap();
+        choice.choose(&c, &Snapshot::default(), Duration::ZERO);
+        assert_eq!(
+            choice.status.active.as_ref().map(|a| a.reason.clone()),
+            Some(Reason::Manual)
+        );
+        assert!(!choice.status.automatic);
+        let json = serde_json::to_value(&choice.status).unwrap();
+        assert_eq!(json["active"]["reason"]["kind"], "manual");
+        assert_eq!(json["rules"]["game"], serde_json::json!([false]));
+    }
+
+    #[test]
+    fn new_rules_and_all_together_round_trip_and_old_files_still_read() {
+        let mut c = config();
+        c.profiles.push(profile(
+            "work",
+            Combine::All,
+            vec![
+                sensor("cpu.usage", Compare::Above, 60.0, 30),
+                Rule {
+                    days: vec![0, 4],
+                    from: "09:00".into(),
+                    to: "18:00".into(),
+                    ..Rule::of(Source::Time)
+                },
+                Rule {
+                    minutes: 10,
+                    ..Rule::of(Source::Idle)
+                },
+            ],
+        ));
+        c.validate().unwrap();
+        let json = serde_json::to_value(&c).unwrap();
+        assert_eq!(json["profiles"][2]["match"], "all");
+        assert!(json["profiles"][0].get("match").is_none(), "any is omitted");
+        assert!(json["profiles"][0]["rules"][0].get("key").is_none());
+        assert_eq!(json["profiles"][2]["rules"][0]["forSeconds"], 30);
+        let back: Config = serde_json::from_value(json).unwrap();
+        assert_eq!(back, c);
+        let old = r#"{"profiles":[{"id":"g","name":"G","themes":{"s":"t"},"rules":[{"source":"foreground","app":"steam","priority":5,"returnSeconds":0}]}]}"#;
+        let old: Config = serde_json::from_str(old).unwrap();
+        assert_eq!(old.profiles[0].combine, Combine::Any);
+        old.validate().unwrap();
+        let mut bad = c.clone();
+        bad.profiles[2].rules[0].value = Some(f64::NAN);
+        assert!(bad.validate().is_err());
+        bad.profiles[2].rules[0] = Rule {
+            key: "not a key!".into(),
+            ..sensor("x", Compare::Above, 1.0, 0)
+        };
+        assert!(bad.validate().is_err());
     }
 }

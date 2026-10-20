@@ -89,6 +89,11 @@ fn run(weak: std::sync::Weak<Mutex<Cached>>, request: Arc<AtomicU8>) {
                     .process(sysinfo::Pid::from_u32(pid))
                     .map(|p| app_name(&p.name().to_string_lossy()));
             }
+            if need & 4 != 0 {
+                let (idle, locked) = presence();
+                snapshot.idle_seconds = idle;
+                snapshot.locked = locked;
+            }
             if need & 2 != 0 && initialized {
                 let deadline = Instant::now() + Duration::from_secs(2);
                 if manager.is_none() {
@@ -158,7 +163,8 @@ impl Provider for Activity {
     }
     fn want(&mut self, wanted: &Wanted) {
         let flag = u8::from(wanted.contains("activity.processes"))
-            | (u8::from(wanted.contains("media.sessions")) << 1);
+            | (u8::from(wanted.contains("media.sessions")) << 1)
+            | (u8::from(wanted.contains("activity.presence")) << 2);
         self.wanted.store(flag, Ordering::Relaxed);
     }
     fn sample(&mut self, now: Instant, out: &mut Snapshot) {
@@ -172,8 +178,57 @@ impl Provider for Activity {
             out.applications.clone_from(&cache.snapshot.applications);
             out.foreground.clone_from(&cache.snapshot.foreground);
             out.activity_available = cache.snapshot.activity_available;
+            out.idle_seconds = cache.snapshot.idle_seconds;
+            out.locked = cache.snapshot.locked;
         }
     }
+}
+
+/// Seconds since the last keyboard or mouse input, and whether the PC is
+/// locked (the input desktop is not the user's `Default` desktop, or cannot
+/// be opened: the lock screen or the secure desktop). `None` when unknown.
+fn presence() -> (Option<u32>, Option<bool>) {
+    use windows_sys::Win32::System::StationsAndDesktops::{
+        CloseDesktop, DESKTOP_READOBJECTS, GetUserObjectInformationW, OpenInputDesktop, UOI_NAME,
+    };
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+    let mut last = LASTINPUTINFO {
+        cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32,
+        dwTime: 0,
+    };
+    // SAFETY: `last` is a valid, sized LASTINPUTINFO for the call to fill.
+    #[allow(unsafe_code)]
+    let idle = unsafe {
+        (GetLastInputInfo(&mut last) != 0).then(|| {
+            let now = windows_sys::Win32::System::SystemInformation::GetTickCount();
+            now.wrapping_sub(last.dwTime) / 1000
+        })
+    };
+    // SAFETY: the desktop handle is only read and always closed; the name
+    // buffer is large enough and its length is passed.
+    #[allow(unsafe_code)]
+    let locked = unsafe {
+        let desktop = OpenInputDesktop(0, 0, DESKTOP_READOBJECTS);
+        if desktop.is_null() {
+            Some(true)
+        } else {
+            let mut name = [0u16; 64];
+            let mut needed = 0;
+            let read = GetUserObjectInformationW(
+                desktop,
+                UOI_NAME,
+                name.as_mut_ptr().cast(),
+                (name.len() * 2) as u32,
+                &mut needed,
+            ) != 0;
+            CloseDesktop(desktop);
+            read.then(|| {
+                let end = name.iter().position(|c| *c == 0).unwrap_or(name.len());
+                !String::from_utf16_lossy(&name[..end]).eq_ignore_ascii_case("default")
+            })
+        }
+    };
+    (idle, locked)
 }
 fn wait<T: RuntimeType>(op: IAsyncOperation<T>, deadline: Instant) -> windows_core::Result<T> {
     while op.Status()? == AsyncStatus::Started {
@@ -322,5 +377,12 @@ mod tests {
         let mut out = Snapshot::default();
         activity.sample(Instant::now(), &mut out);
         assert!(!out.activity_available && out.media.is_empty());
+    }
+
+    #[test]
+    fn presence_is_known_on_a_signed_in_desktop() {
+        let (idle, locked) = super::presence();
+        assert!(idle.is_some(), "the last input time is readable");
+        assert!(locked.is_some(), "the input desktop is readable or refused");
     }
 }

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "sensor delay, equality, missing readings and return to default",
+    "config": {"automatic":true,"defaultProfile":"base","profiles":[
+      {"id":"hot","name":"Hot","themes":{"screen":"hot.theme"},"rules":[{"source":"sensor","key":"cpu.temperature","compare":"above","value":80,"forSeconds":2,"priority":20,"returnSeconds":3}]},
+      {"id":"base","name":"Base","themes":{"screen":"base.theme"},"rules":[]}
+    ]},
+    "steps": [
+      {"now":0,"readings":{"cpu.temperature":90},"expected":{"automatic":true,"active":{"profile":"base","reason":{"kind":"default"}},"rules":{"hot":[false],"base":[]}}},
+      {"now":2,"readings":{"cpu.temperature":90},"expected":{"automatic":true,"active":{"profile":"hot","reason":{"kind":"rules","rules":[0]}},"rules":{"hot":[true],"base":[]}}},
+      {"now":3,"readings":{"cpu.temperature":80},"expected":{"automatic":true,"active":{"profile":"hot","reason":{"kind":"returning","rules":[0]}},"rules":{"hot":[false],"base":[]}}},
+      {"now":8,"readings":{},"expected":{"automatic":true,"active":{"profile":"hot","reason":{"kind":"returning","rules":[0]}},"rules":{"hot":[false],"base":[]}}},
+      {"now":9,"readings":{"cpu.temperature":79},"expected":{"automatic":true,"active":{"profile":"base","reason":{"kind":"default"}},"rules":{"hot":[false],"base":[]}}}
+    ]
+  },
+  {
+    "name": "all rules with a Sunday overnight window, idle and lock",
+    "config":{"automatic":true,"profiles":[{"id":"night","name":"Night","themes":{"screen":"night.theme"},"match":"all","rules":[
+      {"source":"time","days":[6],"from":"22:00","to":"06:00","priority":10,"returnSeconds":0},
+      {"source":"idle","minutes":2,"priority":20,"returnSeconds":0},
+      {"source":"locked","priority":30,"returnSeconds":0}
+    ]}]},
+    "steps":[
+      {"now":0,"time":{"weekday":6,"hour":23,"minute":0},"idleSeconds":120,"locked":true,"expected":{"automatic":true,"active":{"profile":"night","reason":{"kind":"rules","rules":[0,1,2]}},"rules":{"night":[true,true,true]}}},
+      {"now":1,"time":{"weekday":0,"hour":5,"minute":59},"idleSeconds":120,"locked":false,"expected":{"automatic":true,"rules":{"night":[true,true,false]}}},
+      {"now":2,"time":{"weekday":0,"hour":6,"minute":0},"idleSeconds":120,"locked":true,"expected":{"automatic":true,"rules":{"night":[false,true,true]}}}
+    ]
+  },
+  {
+    "name":"manual and rule truth remain independent",
+    "config":{"automatic":false,"manual":"manual","profiles":[{"id":"manual","name":"Manual","themes":{"screen":"manual.theme"},"rules":[{"source":"locked","priority":1,"returnSeconds":0}]}]},
+    "steps":[{"now":0,"locked":false,"expected":{"automatic":false,"active":{"profile":"manual","reason":{"kind":"manual"}},"rules":{"manual":[false]}}}]
+  }
+]

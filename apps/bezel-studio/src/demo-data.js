@@ -429,6 +429,8 @@ export const DEMO_LIBRARY = Object.freeze([
  * Player shows.
  */
 export const DEMO_ACTIVITY = Object.freeze({
+  idleSeconds: 0,
+  locked: false,
   available: true,
   foreground: 'chrome',
   applications: Object.freeze(['chrome', 'code', 'discord', 'explorer', 'spotify', 'steam']),
