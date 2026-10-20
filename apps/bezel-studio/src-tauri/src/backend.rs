@@ -1760,8 +1760,11 @@ mod tests {
         let f = fixture("font-catalog");
         let catalog = f.backend.font_catalog();
         assert_eq!(catalog.fallback.as_deref(), Some("JetBrains Mono NL"));
-        assert_eq!(catalog.families.len(), 1);
-        let family = &catalog.families[0];
+        // Fonts the user dropped into %APPDATA%\Bezel Evo\fonts are listed too;
+        // they belong to this machine, not to the fixture, so look at bundled ones.
+        let bundled: Vec<_> = catalog.families.iter().filter(|f| f.bundled).collect();
+        assert_eq!(bundled.len(), 1);
+        let family = bundled[0];
         assert_eq!(family.name, "JetBrains Mono NL");
         assert_eq!(
             family.faces,
@@ -1775,11 +1778,14 @@ mod tests {
             ("mono", true, true)
         );
         let json = serde_json::to_value(&catalog).unwrap();
-        assert_eq!(json["families"][0]["faces"][0]["weight"], 400);
-        assert!(
-            json["families"][0].get("aliases").is_none(),
-            "no aliases, not written"
-        );
+        let entry = json["families"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|f| f["name"] == "JetBrains Mono NL")
+            .unwrap();
+        assert_eq!(entry["faces"][0]["weight"], 400);
+        assert!(entry.get("aliases").is_none(), "no aliases, not written");
         assert_eq!(
             f.backend.font_face("jetbrains mono nl", 400, false),
             TEST_FONT
