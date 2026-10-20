@@ -88,3 +88,5 @@ mod shape_image_tests;
 mod text_case_tests;
 #[cfg(test)]
 mod text_parts_tests;
+#[cfg(test)]
+mod weather_motion_tests;

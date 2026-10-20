@@ -137,6 +137,17 @@ pub struct SkiaRenderer {
     text_due: Option<std::time::Duration>,
     /// Peak marks of needles, by scene and element.
     peaks: HashMap<(u64, ElementId), bezel_core::domain::needle::Peak>,
+    /// Weather icons: the family shown and, while it fades in, the one it
+    /// replaces and when the change began.
+    icons: HashMap<(u64, ElementId), IconFade>,
+}
+
+/// The condition family a weather icon shows and the fade from the last one.
+#[derive(Debug, Clone, Copy)]
+struct IconFade {
+    family: usize,
+    from: Option<(u16, std::time::Duration)>,
+    code: u16,
 }
 
 /// Where an element sits in its theme: z-index and id.
@@ -232,6 +243,7 @@ impl SkiaRenderer {
             rotor_due: None,
             text_due: None,
             peaks: HashMap::new(),
+            icons: HashMap::new(),
         }
     }
 }
@@ -442,6 +454,9 @@ impl FrameRenderer for SkiaRenderer {
     ) -> Result<Frame> {
         self.rotor_due = None;
         self.text_due = None;
+        if self.icons.len() > 4096 {
+            self.icons.retain(|(scene, _), _| *scene == self.card_scene);
+        }
         if self.peaks.len() > 4096 {
             self.peaks.retain(|(scene, _), _| *scene == self.card_scene);
         }
@@ -1469,13 +1484,8 @@ impl SkiaRenderer {
                         bezel_core::domain::sensor::Reading::Value(v) => v as u16,
                         _ => 999,
                     };
-                    crate::weather::draw(
-                        layer,
-                        BoxF::new(area.x, area.y + (area.height - side) / 2.0, side, side),
-                        code,
-                        &style.paint,
-                        w.icon_style,
-                    );
+                    let icon = BoxF::new(area.x, area.y + (area.height - side) / 2.0, side, side);
+                    self.draw_weather_icon(layer, element.id, icon, code, w, &style.paint, context);
                     area.x += side + gap;
                     area.width = (area.width - side - gap).max(0.0);
                 }
@@ -1866,6 +1876,73 @@ impl SkiaRenderer {
                 self.text_due = due.into_iter().chain(self.text_due).min();
             }
         }
+    }
+}
+
+impl SkiaRenderer {
+    /// A weather icon: at rest, or moving with its family's movement and
+    /// cross-fading from the last family for [`ICON_FADE`]; asks for the next
+    /// frame while it moves (D-2026-10-20-studio-ux-v2-09).
+    #[allow(clippy::too_many_arguments)]
+    fn draw_weather_icon(
+        &mut self,
+        layer: &mut Layer<'_>,
+        id: ElementId,
+        icon: BoxF,
+        code: u16,
+        weather: &bezel_core::domain::weather::Weather,
+        paint: &bezel_core::domain::theme::Paint,
+        context: &RenderContext<'_>,
+    ) {
+        use bezel_core::domain::weather::{ICON_FADE, IconPose, family, pose};
+        let step = weather.icon_motion.step().filter(|_| self.cards.motion);
+        let Some(step) = step else {
+            self.icons.remove(&(self.card_scene, id));
+            crate::weather::draw(
+                layer,
+                icon,
+                code,
+                paint,
+                weather.icon_style,
+                &IconPose::REST,
+            );
+            return;
+        };
+        let now = context.animation;
+        let current = family(code);
+        let state = self.icons.entry((self.card_scene, id)).or_insert(IconFade {
+            family: current,
+            from: None,
+            code,
+        });
+        if state.family != current {
+            state.from = Some((state.code, now));
+            state.family = current;
+        }
+        state.code = code;
+        let fading = state
+            .from
+            .filter(|(_, since)| now.saturating_sub(*since) < ICON_FADE);
+        if fading.is_none() {
+            state.from = None;
+        }
+        let at = now.as_secs_f32();
+        let amplitude = weather.icon_motion.amplitude();
+        let speed = weather.icon_speed;
+        let progress = fading.map_or(1.0, |(_, since)| {
+            now.saturating_sub(since).as_secs_f32() / ICON_FADE.as_secs_f32()
+        });
+        if let Some((old, _)) = fading {
+            let before = pose(family(old), at, amplitude, speed);
+            crate::weather::faded(layer, icon, 1.0 - progress, |layer| {
+                crate::weather::draw(layer, icon, old, paint, weather.icon_style, &before);
+            });
+        }
+        let shown = pose(current, at, amplitude, speed);
+        crate::weather::faded(layer, icon, progress, |layer| {
+            crate::weather::draw(layer, icon, code, paint, weather.icon_style, &shown);
+        });
+        self.text_due = Some(now + step).into_iter().chain(self.text_due).min();
     }
 }
 
@@ -2336,6 +2413,8 @@ mod tests {
                 icon_style: Default::default(),
                 icon_gap: Some(12.),
                 icon_size: Some(50.),
+                icon_motion: Default::default(),
+                icon_speed: 1.0,
             }),
             TextContent::Player(bezel_core::domain::playback::Player {
                 source: String::new(),

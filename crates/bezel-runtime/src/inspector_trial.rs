@@ -260,6 +260,8 @@ mod tests {
             icon_style: IconStyle::Outline,
             icon_gap: None,
             icon_size: None,
+            icon_motion: Default::default(),
+            icon_speed: 1.0,
         };
         let [temperature, code] = w.keys();
         let theme = text(TextContent::Weather(w));

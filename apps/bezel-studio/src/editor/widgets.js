@@ -70,7 +70,7 @@ export function createWidget(widget, canvas, sensor = {}) {
     case 'player':
       return { kind: {type:'text', content:{type:'player',source:'',showCover:true,showProgress:true,showSource:false,hideWhenStopped:false,emptyText:'No media session'},style:textStyle(Math.max(10,Math.round(fontSize*.65)))},width:short*.95,height:short*.4 };
     case 'weather':
-      return { kind: { type: 'text', content: { type: 'weather', city: 'Roma', latitude: 41.9028, longitude: 12.4964, language: null, fahrenheit: false, showIcon: true }, style: textStyle(Math.max(10, Math.round(fontSize * 0.6))) }, width: short * 0.9, height: fontSize * 3.5 };
+      return { kind: { type: 'text', content: { type: 'weather', city: 'Roma', latitude: 41.9028, longitude: 12.4964, language: null, fahrenheit: false, showIcon: true, iconMotion: 'gentle' }, style: textStyle(Math.max(10, Math.round(fontSize * 0.6))) }, width: short * 0.9, height: fontSize * 3.5 };
     case 'clock':
       return { kind: { type: 'text', content: { type: 'clock', pattern: '%H:%M' }, style: textStyle(Math.round(fontSize * 2), 'center') }, width: short * 0.8, height: fontSize * 2.6 };
     case 'image':

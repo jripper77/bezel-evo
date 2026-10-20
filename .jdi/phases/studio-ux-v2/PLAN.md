@@ -130,7 +130,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
     stessi movimenti nei 4 stili; il 3D aggiunge l'ombra che segue e il lampo sul riquadro.
   - Funzione pura `pose(family, t, amplitude) → trasformazioni` testata (periodicità: pose(t) = pose(t + periodo)); `next_ms`
     ≤ 50 ms solo con movimento attivo; fermo con movimento ridotto.
-- **Dipendenze:** nessuna · **Test:** G10, G11 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G10, G11 · **Status:** completed — `iconMotion`/`iconSpeed`, posa pura per le otto famiglie (periodica), icone a parti (ferme identiche a prima), ombra/alone/lampo 3D, dissolvenza 300 ms, 33/50 ms solo in movimento; demo uguale, nuovi oggetti `gentle`. Test Rust (core 325, themes 87, render 122), clippy/fmt, 117 unitari UI, 36 e2e verdi. Vedi `SUMMARY-T-4.md`. Commit `59bcec5`, `7715dc3`.
 
 #### T-5: Immagine e video
 - **Decisioni:** 04 (Immagine), tavola ImageInspectorOpen

@@ -22,6 +22,7 @@ use bezel_core::domain::transition::{
     MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
 };
 use bezel_core::domain::value_color::{ColorByValue, ColorThreshold};
+use bezel_core::domain::weather::{ICON_SPEED, IconMotion};
 use serde::{Deserialize, Serialize};
 
 use crate::color::{from_hex, to_hex};
@@ -1217,6 +1218,16 @@ pub enum ContentDto {
         /// Icon side, pixels; absent follows text size.
         #[serde(default, rename = "iconSize", skip_serializing_if = "Option::is_none")]
         icon_size: Option<f32>,
+        /// `still` (absent), `gentle` or `lively` (D-2026-10-20-studio-ux-v2-09).
+        #[serde(
+            default,
+            rename = "iconMotion",
+            skip_serializing_if = "Option::is_none"
+        )]
+        icon_motion: Option<String>,
+        /// Speed of the movement, 0.5..=2 (absent: 1).
+        #[serde(default, rename = "iconSpeed", skip_serializing_if = "Option::is_none")]
+        icon_speed: Option<f32>,
     },
     /// Fixed text.
     Static {
@@ -2301,6 +2312,12 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                     .into(),
                     icon_gap: w.icon_gap,
                     icon_size: w.icon_size,
+                    icon_motion: match w.icon_motion {
+                        IconMotion::Still => None,
+                        IconMotion::Gentle => Some("gentle".to_string()),
+                        IconMotion::Lively => Some("lively".to_string()),
+                    },
+                    icon_speed: (w.icon_speed != 1.0).then_some(w.icon_speed),
                 },
                 TextContent::Clock {
                     pattern,
@@ -2520,6 +2537,8 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                     icon_style,
                     icon_gap,
                     icon_size,
+                    icon_motion,
+                    icon_speed,
                 } => {
                     if !bezel_core::domain::weather::valid(city, *latitude, *longitude) {
                         return err("invalid weather location");
@@ -2551,6 +2570,15 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                         },
                         icon_gap: *icon_gap,
                         icon_size: *icon_size,
+                        icon_motion: match icon_motion.as_deref() {
+                            None | Some("still") => IconMotion::Still,
+                            Some("gentle") => IconMotion::Gentle,
+                            Some("lively") => IconMotion::Lively,
+                            Some(other) => return err(format!("unknown icon motion {other:?}")),
+                        },
+                        icon_speed: icon_speed
+                            .filter(|v| v.is_finite())
+                            .map_or(1.0, |v| v.clamp(*ICON_SPEED.start(), *ICON_SPEED.end())),
                     })
                 }
                 ContentDto::Clock {
@@ -3767,5 +3795,63 @@ mod needle_look_tests {
         ] {
             assert!(needle(bad).is_err());
         }
+    }
+}
+
+#[cfg(test)]
+mod weather_motion_tests {
+    use super::*;
+
+    fn weather(extra: serde_json::Value) -> R<(IconMotion, f32, serde_json::Value)> {
+        let mut content = serde_json::json!({"type": "weather", "city": "Roma",
+            "latitude": 41.9, "longitude": 12.5});
+        for (k, v) in extra.as_object().unwrap() {
+            content[k] = v.clone();
+        }
+        let dto: KindDto = serde_json::from_value(serde_json::json!({
+            "type": "text", "content": content,
+            "style": {"font": {"family": "Inter", "weight": 400}, "size": 24,
+                "paint": "#ffffffff", "align": "left", "valign": "top"}
+        }))
+        .unwrap();
+        let k = kind(&dto)?;
+        let ElementKind::Text {
+            content: TextContent::Weather(w),
+            ..
+        } = &k
+        else {
+            unreachable!()
+        };
+        let written = serde_json::to_value(kind_dto(&k)).unwrap()["content"].clone();
+        Ok((w.icon_motion, w.icon_speed, written))
+    }
+
+    #[test]
+    fn icon_motion_round_trips_and_old_themes_stay_still() {
+        let (motion, speed, written) = weather(serde_json::json!({})).unwrap();
+        assert_eq!((motion, speed), (IconMotion::Still, 1.0));
+        assert!(written.get("iconMotion").is_none() && written.get("iconSpeed").is_none());
+        for (name, motion) in [
+            ("gentle", IconMotion::Gentle),
+            ("lively", IconMotion::Lively),
+        ] {
+            let (read, speed, written) =
+                weather(serde_json::json!({"iconMotion": name, "iconSpeed": 1.5})).unwrap();
+            assert_eq!((read, speed), (motion, 1.5));
+            assert_eq!(written["iconMotion"], name);
+            assert_eq!(written["iconSpeed"], 1.5);
+        }
+        let (motion, _, written) = weather(serde_json::json!({"iconMotion": "still"})).unwrap();
+        assert_eq!(motion, IconMotion::Still);
+        assert!(written.get("iconMotion").is_none());
+        assert_eq!(
+            weather(serde_json::json!({"iconSpeed": 9.0})).unwrap().1,
+            2.0
+        );
+        assert_eq!(
+            weather(serde_json::json!({"iconSpeed": 0.1})).unwrap().1,
+            0.5
+        );
+        assert!(weather(serde_json::json!({"iconMotion": "wild"})).is_err());
     }
 }
