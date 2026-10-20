@@ -1,5 +1,5 @@
 import { canRotate, appliedRotation } from '../editor/rotation.js';
-import { visualization, visualStyles } from '../visualization.js';
+import { visualization, visualStyles, visualArt, matrixFrame } from '../visualization.js';
 import { defaultSensorMotion, supportsSensorMotion } from '../sensor-motion.js';
 import { sensorNativeUnit } from '../sensor-picker-model.js';
 import { sensorPicker, closeSensorPicker, refreshSensorPicker } from './sensor-picker.js';
@@ -1280,8 +1280,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       (specific.data ??= []).splice(1, 0, section('secondary-source', t('visual.secondary'), [
         sourceCard(e.id, b?.key ?? '', key => ({ visualization: { ...v, secondary: { key, min: b?.min ?? 0, max: b?.max ?? 100 } } }), { numeric: true, label: t('visual.secondary'), scope: 'secondary-source' }),
         b && !e.kind.autoscale && fieldGrid([
-          prefixedField(t('insp.minPrefix'), t('inspector.min'), b.min, min => set({ secondary: { ...b, min: Math.min(min,b.max-0.001) } }), { step:'any' }),
-          prefixedField(t('insp.maxPrefix'), t('inspector.max'), b.max, max => set({ secondary: { ...b, max: Math.max(max,b.min+0.001) } }), { step:'any' }),
+          prefixedField(t('insp.minPrefix'), t('visual.secondaryMin'), b.min, min => set({ secondary: { ...b, min: Math.min(min,b.max-0.001) } }), { step:'any' }),
+          prefixedField(t('insp.maxPrefix'), t('visual.secondaryMax'), b.max, max => set({ secondary: { ...b, max: Math.max(max,b.min+0.001) } }), { step:'any' }),
         ]),
         colorField(t('visual.secondaryColor'), v.secondaryColor, secondaryColor => set({ secondaryColor })),
         el('p', { class:'hint', text:t('visual.mirroredHint') }),
@@ -1312,13 +1312,29 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     if (!styles.length || e.isGroup) return null;
     const v = e.visualization;
     const set = patch => update(e.id, { visualization: { ...v, ...patch } });
-    const n = (key, value, min, max) => numberField(t(`visual.${key}`), value, x => set({ [key]: Math.min(max,Math.max(min,Math.round(x))) }), { min,max });
+    const n = (key, value, min, max, label = `visual.${key}`) => numberField(t(label), value, x => set({ [key]: Math.min(max,Math.max(min,Math.round(x))) }), { min,max });
+    const presets = optionTiles(t('visual.preset'), styles.map(style => ({
+      text:t(`visual.${style}`), art:visualArt(e.kind.type,style), pressed:style === (v?.style ?? 'standard'),
+      onClick:()=>{ if(style !== (v?.style ?? 'standard')) update(e.id, { visualization:visualization(style,v ?? {}), ...(style === 'rounded' ? { kind:{style:'bars'} } : {}) }); },
+    })));
+    presets.classList.add('visualization-presets');
+    const fitMatrix = () => {
+      // Commit a pending number edit before reading the current grid. Retain
+      // pointer focus until click so that the blur redraw cannot remove it.
+      if (root.contains(document.activeElement)) document.activeElement.blur();
+      const { theme } = store.getState();
+      const current = theme.elements.find(item => item.id === e.id);
+      if (current?.visualization?.style !== 'matrix') return;
+      store.dispatch('setFrame',{id:current.id,frame:matrixFrame(current.frame,current.visualization,theme.canvas)});
+      root.querySelector('[data-action="fit-matrix"]')?.focus({preventScroll:true});
+    };
     return section('visualization', t('visual.title'), [
-      selectField(t('visual.preset'), v?.style ?? 'standard', styles.map(s => [s,t(`visual.${s}`)]), style => update(e.id, { visualization: visualization(style,v ?? {}), ...(style === 'rounded' ? { kind: { style:'bars' } } : {}) })),
+      presets,
       v?.style === 'matrix' && fieldGrid([n('columns',v.columns,1,64),n('rows',v.rows,1,32)]),
+      v?.style === 'matrix' && el('button',{type:'button',class:'text-button',text:t('visual.fitMatrix'),dataset:{action:'fit-matrix'},onpointerdown:event=>{if(event.button===0)event.preventDefault();},onclick:fitMatrix}),
       ['matrix','rounded','mirrored'].includes(v?.style) && numberField(t('visual.gap'),v.gap,gap=>set({gap:Math.max(0,Math.min(32,gap))}),{min:0,max:32,unit:'px'}),
       ['matrix','pixel'].includes(v?.style) && numberField(t('visual.radius'),v.radius,radius=>set({radius:Math.max(0,Math.min(32,radius))}),{min:0,max:32,unit:'px'}),
-      ['pixel','dial'].includes(v?.style) && n('ticks',v.ticks,2,120),
+      ['pixel','dial'].includes(v?.style) && n('ticks',v.ticks,2,120,v.style === 'pixel' ? 'visual.cells' : 'visual.ticks'),
       v?.style === 'dial' && switchRow(t('visual.marker'),v.marker,marker=>set({marker})),
     ]);
   }

@@ -1,6 +1,6 @@
 import { test, expect, watchErrors, expectAccessible, copyAndPaste, pickSensor } from './helpers.mjs';
 
-test('native visualization presets, scoped controls, second sensor and Undo',async({page,t})=>{
+test('native visualization presets, scoped controls, second sensor and Undo',async({page,t},info)=>{
   const errors=watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const detail=page.locator('#inspector');
@@ -8,23 +8,33 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
     await page.getByRole('button',{name:t('library.addWidget',{name:t(`widget.${kind}`)}),exact:true}).click();
     await detail.getByRole('tab',{name:t('inspector.tab.look'),exact:true}).click();
   };
-  const preset=()=>detail.getByRole('combobox',{name:t('visual.preset'),exact:true});
-  await add('bar');await preset().selectOption('matrix');
+  const preset=name=>detail.locator('[data-section="visualization"]').getByRole('button',{name:t(`visual.${name}`),exact:true});
+  await add('bar');await preset('matrix').click();
   await detail.getByRole('spinbutton',{name:t('visual.columns'),exact:true}).fill('12');
   await detail.getByRole('spinbutton',{name:t('visual.columns'),exact:true}).dispatchEvent('change');
+  const height=detail.getByRole('spinbutton',{name:t('inspector.height'),exact:true});
+  const beforeFit=await height.inputValue();
+  await detail.getByRole('button',{name:t('visual.fitMatrix'),exact:true}).click();
+  await expect(height).not.toHaveValue(beforeFit);
+  await page.locator('#undo').click();
+  await expect(height).toHaveValue(beforeFit);
   await copyAndPaste(page);
-  await expect(preset()).toHaveValue('matrix');
+  await expect(preset('matrix')).toHaveAttribute('aria-pressed','true');
   await expect(detail.getByRole('spinbutton',{name:t('visual.columns'),exact:true})).toHaveValue('12');
-  await preset().selectOption('standard');await page.locator('#undo').click();
-  await expect(preset()).toHaveValue('matrix');
-  await add('ring');await preset().selectOption('pixel');
+  await preset('standard').click();await page.locator('#undo').click();
+  await expect(preset('matrix')).toHaveAttribute('aria-pressed','true');
+  await add('ring');await preset('pixel').click();
   await expect(detail.getByRole('spinbutton',{name:t('visual.rows'),exact:true})).toHaveCount(0);
-  await preset().selectOption('dial');
+  await expect(detail.getByRole('spinbutton',{name:t('visual.cells'),exact:true})).toBeVisible();
+  await preset('dial').click();
   await detail.getByRole('switch',{name:t('visual.marker'),exact:true}).uncheck();
-  await add('graph');await preset().selectOption('mirrored');
+  await detail.screenshot({path:info.outputPath('visualization-tiles.png')});
+  await add('graph');await preset('mirrored').click();
   await detail.getByRole('tab',{name:t('inspector.tab.data'),exact:true}).click();
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toBeVisible();
   await pickSensor(page,t,detail,'gpu.usage',t('visual.secondary'));
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toHaveAttribute('data-sensor-key','gpu.usage');
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMin'),exact:true})).toHaveCount(1);
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toHaveCount(1);
   await expectAccessible(page);expect(errors).toEqual([]);
 });

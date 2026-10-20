@@ -221,6 +221,8 @@
 .option-tile span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .option-tile:hover { border-color: var(--accent); }
 .option-tile[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.visualization-presets .option-tile { justify-content: flex-start; }
+.visualization-presets .option-tile span { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 
 /* The player's apps: a dot on each chip, green while it plays; "Other…" dashed. */
 .app-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
