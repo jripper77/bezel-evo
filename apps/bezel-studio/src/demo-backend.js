@@ -1455,7 +1455,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const rotor = sensorMotion(playback.theme, t, key => demoSensorValue(key, Math.floor(t / (next.refreshSeconds || 1)) * (next.refreshSeconds || 1)), motion, selectedScreen);
       const frame = renderApprox(rotor.theme, t, video, transitions, 1, motion);
       const easing = valuesDue(playback.theme, t, motion);
-      const due = [rotor.nextMs, demoNextChange(playback.theme, t * 1000), playback.nextMs, video?.nextMs ?? null, transitions.size ? 33 : null, easing].filter((ms) => ms !== null);
+      const due = [rotor.nextMs, demoNextChange(playback.theme, t * 1000), playback.nextMs, video?.nextMs ?? null, transitions.size ? 33 : null, easing, frame.textMs ?? null].filter((ms) => ms !== null);
       return Promise.resolve({ ...frame, millis: performance.now() - started, nextMs: due.length ? Math.min(...due) : null });
     },
     /**
@@ -1490,7 +1490,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const { width, height } = alone.canvas;
       const rotor = sensorMotion(alone, t, key => demoSensorValue(key, Math.floor(t / (next.refreshSeconds || 1)) * (next.refreshSeconds || 1)), motion, `inspect:${selectedScreen}`);
       const frame = renderApprox(rotor.theme, t, null, new Map(), Math.min(1, demoElementSide(max) / Math.max(width, height)), motion, trial);
-      const due = [trial ? TRIAL_FRAME_MS : null, rotor.nextMs, demoNextChange(alone, t * 1000), valuesDue(alone, t, motion, false)].filter((ms) => ms !== null);
+      const due = [trial ? TRIAL_FRAME_MS : null, rotor.nextMs, demoNextChange(alone, t * 1000), valuesDue(alone, t, motion, false), frame.textMs ?? null].filter((ms) => ms !== null);
       return Promise.resolve({ ...frame, pixels: frame.rgba, nextMs: due.length ? Math.min(...due) : null, millis: performance.now() - started });
     },
     /** What Auto is for the theme's video background, like `video_auto`. */

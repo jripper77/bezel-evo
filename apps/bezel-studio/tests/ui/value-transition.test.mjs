@@ -46,7 +46,7 @@ test('a patch always carries both fields within the inspector range', () => {
   assert.deepEqual(transitionPatch(bar(smooth()), { durationMs: 412.6 }), { mode: 'smooth', durationMs: 413 });
   assert.deepEqual(transitionPatch(bar(smooth()), { durationMs: 'x' }), { mode: 'smooth', durationMs: TRANSITION_DEFAULT_MS });
   assert.deepEqual(transitionPatch(bar(smooth()), { mode: 'bounce' }), { mode: 'none', durationMs: 400 });
-  assert.deepEqual(TRANSITION_MODES, ['none', 'smooth', 'inertia']);
+  assert.deepEqual(TRANSITION_MODES, ['none', 'smooth', 'inertia', 'count', 'roll']);
   assert.equal(formatMs(400), '400 ms');
 });
 
@@ -175,4 +175,52 @@ test('the demo backend times its frames and counts those of moving values (fps m
   assert.equal((await demo.renderElement(eased, 1, { max: 64, motion: false })).nextMs, null);
   ms = 1_000_500;
   assert.equal((await demo.render(eased)).nextMs, 500, 'settled: the next sample');
+});
+
+test('count and roll are number transitions with a length; the average is kept only above 1', async () => {
+  const { AVERAGE_RANGE, averageOf } = await import('../../src/value-transition.js');
+  for (const mode of ['count', 'roll']) {
+    assert.deepEqual(transitionOf(bar({ mode, durationMs: 300 })), { mode, durationMs: 300 });
+    assert.equal(transitionLength(bar({ mode, durationMs: 300 })), 300);
+    assert.deepEqual(transitionPatch(bar(), { mode }), { mode, durationMs: TRANSITION_DEFAULT_MS });
+  }
+  assert.ok(TRANSITION_MODES.includes('count') && TRANSITION_MODES.includes('roll'));
+  assert.equal(averageOf(bar()), 1);
+  assert.equal(averageOf(bar({ mode: 'none', durationMs: 400, average: 3 })), 3);
+  assert.equal(averageOf(bar({ mode: 'none', durationMs: 400, average: 99 })), AVERAGE_RANGE.max);
+  assert.deepEqual(transitionPatch(bar(), { average: 3 }), { mode: 'none', durationMs: TRANSITION_DEFAULT_MS, average: 3 });
+  assert.deepEqual(transitionPatch(bar({ mode: 'count', durationMs: 400, average: 3 }), { durationMs: 500 }), { mode: 'count', durationMs: 500, average: 3 }, 'kept');
+  assert.deepEqual(transitionPatch(bar({ mode: 'count', durationMs: 400, average: 3 }), { average: 1 }), { mode: 'count', durationMs: 400 }, '1 is omitted');
+  assert.deepEqual(transitionPatch(bar(), { average: 'x' }), { mode: 'none', durationMs: TRANSITION_DEFAULT_MS });
+});
+
+test('the demo counts evenly, averages its samples and rolls like the backend', async () => {
+  const { demoRoll, rollWheels } = await import('../../src/value-transition.js');
+  const step = (s) => (s < 10 ? 10 : 50);
+  const counting = bar({ mode: 'count', durationMs: 400 });
+  assert.equal(easedDemoValue(counting, step, 10.2, 1), 30, 'half way, evenly');
+  assert.equal(easedDemoValue(bar(smooth(400)), step, 10.2, 1), 45, 'eased');
+  const averaged = bar({ mode: 'none', durationMs: 400, average: 3 });
+  const seq = (s) => [30, 60, 90, 0][Math.floor(s)] ?? NaN;
+  assert.equal(easedDemoValue(averaged, seq, 2.5, 1), 60);
+  assert.equal(easedDemoValue(averaged, seq, 3.5, 1), 50, 'the oldest drops');
+  assert.equal(easedDemoValue(averaged, seq, 0.5, 1), 30, 'fewer readings at the start');
+  assert.ok(Number.isNaN(easedDemoValue(averaged, () => NaN, 1, 1)));
+
+  const rolling = bar({ mode: 'roll', durationMs: 400 });
+  assert.deepEqual(demoRoll(rolling, step, 10.2, 1), { from: 10, to: 50, progress: 0.875 });
+  assert.equal(demoRoll(rolling, step, 10.5, 1), null, 'landed');
+  assert.equal(demoRoll(rolling, step, 10.2, 1, false), null, 'reduced motion');
+  assert.equal(demoRoll(bar(smooth(400)), step, 10.2, 1), null);
+  assert.equal(demoRoll(bar({ mode: 'roll', durationMs: 0 }), step, 10.2, 1), null);
+  assert.equal(demoRoll(rolling, (s) => 5, 10.2, 1), null, 'nothing changes');
+
+  assert.deepEqual(rollWheels({ from: 36, to: 41, progress: 0 }, 0, 2), [[3, 0], [6, 0]]);
+  assert.deepEqual(rollWheels({ from: 36, to: 41, progress: 1 }, 0, 2), [[4, 0], [1, 0]]);
+  assert.deepEqual(rollWheels({ from: 36, to: 41, progress: 0.7 }, 0, 2), [[3, 0.5], [9, 0.5]], '9 carries');
+  assert.deepEqual(rollWheels({ from: 36, to: 41, progress: 0.2 }, 0, 2)[0], [3, 0]);
+  assert.deepEqual(rollWheels({ from: 4.7, to: 4.72, progress: 0.5 }, 2, 3), [[4, 0], [7, 0], [1, 0]]);
+  assert.deepEqual(rollWheels({ from: -5, to: -7, progress: 1 }, 0, 1), [[7, 0]]);
+  assert.deepEqual(rollWheels({ from: NaN, to: 3, progress: 1 }, 0, 1), [[3, 0]]);
+  assert.deepEqual(rollWheels({ from: 99, to: 100, progress: 0 }, 0, 3), [[0, 0], [9, 0], [9, 0]]);
 });
