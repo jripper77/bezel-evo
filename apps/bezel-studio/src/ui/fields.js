@@ -271,6 +271,42 @@ export function propertySection(key, label, nodes, { count: n = null, tool = nul
 }
 
 /**
+ * Controlled, independent inspector disclosure (D-01/D-04). The owner keeps
+ * state with createSectionMemory and calls setExpanded on all peers after a
+ * toggle. Bodies stay mounted: closing never discards a field or its edit.
+ * Native buttons provide Enter/Space; arrows/Home/End visit sibling titles.
+ */
+export function accordionSection({ id, title, icon: name = 'sliders', summary = '', expanded = false, onToggle, render }, ctx) {
+  const bodyId = fieldId();
+  const titleId = fieldId();
+  const readout = el('span', { class: 'accordion-summary', 'aria-hidden': 'true', text: summary });
+  const toggle = el('button', {
+    type: 'button', id: titleId, class: 'accordion-toggle', 'aria-controls': bodyId,
+    'aria-expanded': String(expanded), 'aria-label': title,
+    onclick: event => onToggle({ exclusive: event.altKey }),
+  }, [icon(ICONS[name], 16), el('span', { class: 'accordion-title', text: title }), readout, icon(ICONS.chevronDown, 12)]);
+  const body = el('div', { class: 'accordion-body', id: bodyId, role: 'region', 'aria-labelledby': titleId, hidden: !expanded });
+  render(body, ctx);
+  const section = el('section', { class: 'accordion-section', dataset: { section: id } }, [el('h3', { class: 'accordion-heading' }, [toggle]), body]);
+  toggle.addEventListener('keydown', event => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const peers = [...section.parentElement.querySelectorAll(':scope > .accordion-section > .accordion-heading > .accordion-toggle')];
+    const index = peers.indexOf(toggle);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? peers.length - 1
+      : (index + (event.key === 'ArrowDown' ? 1 : -1) + peers.length) % peers.length;
+    event.preventDefault();
+    peers[next]?.focus();
+  });
+  const setExpanded = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    body.hidden = !open;
+    readout.hidden = open;
+  };
+  setExpanded(expanded);
+  return { element: section, setExpanded };
+}
+
+/**
  * A panel's head: its 15px title, a count (a node with an id that the panel
  * keeps up to date, or a text) and quiet tools.
  * @param {string} title

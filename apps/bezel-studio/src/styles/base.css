@@ -7,7 +7,21 @@
    labelled field, check, colour), segmented control and subtabs, chip,
    pill, badge, tag, panel head, search, dashed hint, slider with value,
    list card, kind icon, screen thumbnail, notice, status dot, dialogs,
-   popover. */
+   popover, independent accordion section (accordionSection). */
+
+/* InspectorComponents: a 48px disclosure row, readout only when closed.
+   The native button is the full row; its body retains the current controls. */
+.accordion-section { border-top: 1px solid var(--line); }
+.accordion-section > .accordion-heading { margin: 0; font: inherit; }
+.accordion-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 14px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.accordion-toggle:hover { background: var(--surface-2); }
+.accordion-title { flex: none; font-size: var(--fs-field); font-weight: 600; }
+.accordion-summary { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.accordion-toggle > .ic { color: var(--dim); }
+.accordion-toggle > .ic:last-child { margin-left: auto; }
+.accordion-toggle[aria-expanded="true"] > .ic:first-child { color: var(--accent-ink); }
+.accordion-toggle[aria-expanded="true"] > .ic:last-child { transform: rotate(180deg); }
+.accordion-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 2px 16px 20px; }
 
 /* IBM Plex, bundled (assets/fonts/ibm-plex, SIL OFL 1.1). Only the weights
    the window uses ship: Sans 400/500/600 and Mono 400/500. */
