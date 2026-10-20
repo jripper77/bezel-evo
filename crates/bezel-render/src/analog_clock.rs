@@ -5,7 +5,9 @@
 
 use std::collections::BTreeMap;
 
-use bezel_core::domain::clock::{AnalogClock, DialTicks, HandShape, Language, LocalTime};
+use bezel_core::domain::clock::{
+    AnalogClock, DialNumbers, DialTicks, HandShape, Language, LocalTime,
+};
 use bezel_core::domain::frame::Rgba;
 use bezel_core::domain::theme::{AssetRef, BoxF, HAlign, Paint, TextStyle, VAlign};
 use tiny_skia::{LineCap, PathBuilder, Stroke};
@@ -24,14 +26,16 @@ const MARK_OUTER: f32 = 26.0;
 const HOUR_MARK_INNER: f32 = 21.0;
 /// Minute marks are shorter.
 const MINUTE_MARK_INNER: f32 = 24.0;
-/// Where the numbers stand, without and with marks.
+/// Where the numbers stand, without and with marks (roman ones, wider, a
+/// unit further in).
 const NUMBERS_FREE: f32 = 21.0;
-const NUMBERS_MARKED: f32 = 16.0;
-/// Size of the numbers and of the date.
-const NUMBER_SIZE: f32 = 8.0;
-const DATE_SIZE: f32 = 6.5;
-/// Where the date stands below the centre.
-const DATE_AT: f32 = 12.0;
+const NUMBERS_MARKED: f32 = 15.5;
+/// Size of the numbers (roman ones smaller) and of the date.
+const NUMBER_SIZE: f32 = 6.5;
+const ROMAN_SIZE: f32 = 5.0;
+const DATE_SIZE: f32 = 5.0;
+/// Where the date stands below the centre, inside the numbers.
+const DATE_AT: f32 = 9.0;
 /// Hands: length, width, tail.
 const HOUR_HAND: (f32, f32, f32) = (11.7, 3.5, 0.0);
 const MINUTE_HAND: (f32, f32, f32) = (20.9, 2.5, 0.0);
@@ -110,22 +114,17 @@ pub(crate) fn draw(
     }
     marks(layer, dial, clock);
     let numerals = clock.numerals();
-    let radius = if clock.ticks == DialTicks::None {
-        NUMBERS_FREE
-    } else {
-        NUMBERS_MARKED
+    let roman = clock.numbers == DialNumbers::Roman;
+    let (radius, size) = match (clock.ticks == DialTicks::None, roman) {
+        (true, false) => (NUMBERS_FREE, NUMBER_SIZE),
+        (true, true) => (NUMBERS_FREE - 1.0, ROMAN_SIZE),
+        (false, false) => (NUMBERS_MARKED, NUMBER_SIZE),
+        (false, true) => (NUMBERS_MARKED - 1.0, ROMAN_SIZE),
     };
     let mut words = words;
     for (hour, text) in numerals {
         let (x, y) = dial.at(radius, f32::from(hour) * 30.0);
-        write(
-            &mut words,
-            layer,
-            &text,
-            (x, y),
-            NUMBER_SIZE * u,
-            clock.marks,
-        );
+        write(&mut words, layer, &text, (x, y), size * u, clock.marks);
     }
     let date = clock.date_text(time, language);
     if !date.is_empty() {

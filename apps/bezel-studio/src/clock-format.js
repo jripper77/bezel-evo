@@ -56,3 +56,53 @@ export function clockParts(pattern, date = new Date(), language = null, casing =
   });
   return out;
 }
+
+/**
+ * An analog clock's settings with every absent field at the backend's
+ * default (D-2026-10-20-studio-ux-v2-07): hour marks, no numbers, three
+ * rounded hands, a 2 px outline, the design's colours, stepping seconds,
+ * no date.
+ */
+export function analogOf(analog) {
+  return {
+    ticks: 'hours', numbers: 'none', hourHand: true, minuteHand: true, secondHand: true, handShape: 'rounded', border: 2,
+    face: '#0b0d0fff', marks: '#aeb5bdff', hourColor: '#e8eaedff', minuteColor: '#e8eaedff', secondColor: '#ff9248ff',
+    sweep: false, date: 'none', ...(analog ?? {}),
+  };
+}
+
+/** Where the hands point at `date`, degrees clockwise from 12, like the backend's; `sweep` (with motion) moves the seconds between seconds. */
+export function handAngles(analog, date, sweep = true) {
+  const a = analogOf(analog);
+  const second = date.getSeconds() + (sweep && a.sweep ? date.getMilliseconds() / 1000 : 0);
+  const minute = date.getMinutes() + second / 60;
+  const hour = (date.getHours() % 12) + minute / 60;
+  return { hour: hour * 30, minute: minute * 6, second: second * 6 };
+}
+
+/** When the dial next changes, ms from `date`: each second with a second hand, 33 ms while it sweeps; null without. */
+export function dialDue(analog, date, sweep = true) {
+  const a = analogOf(analog);
+  if (!a.secondHand) return null;
+  return sweep && a.sweep ? 33 : 1000 - date.getMilliseconds();
+}
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+/** The numbers on the dial: `[hour, text]`. */
+export function dialNumerals(analog) {
+  const { numbers } = analogOf(analog);
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  if (numbers === 'quarters') return hours.filter((h) => h % 3 === 0).map((h) => [h, String(h)]);
+  if (numbers === 'all') return hours.map((h) => [h, String(h)]);
+  if (numbers === 'roman') return hours.map((h) => [h, ROMAN[h - 1]]);
+  return [];
+}
+
+/** The date written on the dial, like the backend's: the day, or the day and the short month. */
+export function dialDate(analog, date, language = null) {
+  const { date: kind } = analogOf(analog);
+  if (kind === 'day') return formatClock('%e', date, language);
+  if (kind === 'dayMonth') return formatClock('%e %b', date, language);
+  return '';
+}
