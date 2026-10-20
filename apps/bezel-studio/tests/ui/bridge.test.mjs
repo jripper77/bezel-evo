@@ -4,6 +4,21 @@ import { DEMO_CLOSE_EVENT, DEMO_LET_GO_EVENT, DEMO_QUIT_EVENT, STILL, createBrid
 
 const page = (search = '', hostname = 'localhost') => ({ location: { hostname, search } });
 
+test('profile IPC preserves new rules, match and the engine status without inferring selection', async () => {
+  const config = { automatic: true, profiles: [{ id: 'hot', match: 'all', rules: [
+    { source: 'sensor', key: 'cpu.temperature', compare: 'above', value: 80, forSeconds: 5, priority: 20, returnSeconds: 3 },
+    { source: 'locked', priority: 10, returnSeconds: 0 },
+  ] }] };
+  const overview = { config, displays: [], status: { automatic: true, active: { profile: 'hot', reason: { kind: 'rules', rules: [0, 1] } }, rules: { hot: [true, true] } } };
+  const calls = [];
+  const bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => {
+    calls.push([command, args]); return command === 'profiles' ? overview : null;
+  } } } });
+  assert.deepEqual(await bridge.profiles(), overview);
+  await bridge.saveProfiles(config);
+  assert.deepEqual(calls, [['profiles', undefined], ['save_profiles', { config }]]);
+});
+
 function frameBytes(width, height, next = STILL, renderMillis) {
   const bytes = new Uint8Array(12 + width * height * 4 + (renderMillis === undefined ? 0 : 8));
   const view = new DataView(bytes.buffer);

@@ -1,3 +1,4 @@
+import profileRules, { PREFIXES as PROFILE_RULES } from './areas/profile-rules.js';
 // Tiny i18n: pick a locale from the browser, translate keys with {param}
 // substitution, and apply `data-i18n*` attributes to the DOM.
 import ptBR from './pt-BR.js';
@@ -59,6 +60,7 @@ export const AREAS = Object.freeze({
   screen: { prefixes: SCREEN, tables: screen },
   connect: { prefixes: CONNECT, tables: connect },
   pickers: { prefixes: PICKERS, tables: pickers },
+  profileRules: { prefixes: PROFILE_RULES, tables: profileRules },
 });
 
 /**
