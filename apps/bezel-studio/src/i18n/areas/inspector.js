@@ -7,6 +7,8 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.widthPrefix': 'W',
+    'insp.heightPrefix': 'H',
     'insp.type': 'Type',
     'insp.waiting': 'Waiting',
     'insp.live': 'Live',
@@ -185,6 +187,8 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.widthPrefix': 'L',
+    'insp.heightPrefix': 'A',
     'insp.type': 'Tipo',
     'insp.waiting': 'Aguardando',
     'insp.live': 'Ao vivo',
@@ -363,6 +367,8 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.widthPrefix': 'L',
+    'insp.heightPrefix': 'A',
     'insp.type': 'Tipo',
     'insp.waiting': 'In attesa',
     'insp.live': 'Live',

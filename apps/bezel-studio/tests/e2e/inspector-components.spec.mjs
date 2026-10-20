@@ -1,5 +1,27 @@
 import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection } from './helpers.mjs';
 
+test.describe('Italian numeric fields', () => {
+  test.use({ locale: 'it-IT' });
+  test('localized size prefixes leave four digits readable in the narrow inspector', async ({ page, t }) => {
+    const errors = watchErrors(page);
+    await page.goto('/index.html?demo=turing88');
+    await clickAddWidget(page, t, 'ring');
+    const inspector = page.locator('#inspector');
+    const width = inspector.getByRole('spinbutton', { name: t('inspector.width'), exact: true });
+    await width.fill('4321'); await width.press('Tab');
+    for (const label of ['inspector.width', 'inspector.height']) {
+      const field = inspector.getByRole('spinbutton', { name: t(label), exact: true });
+      await expect(field).toHaveValue('4321');
+      expect(await field.evaluate(input => {
+        const context = document.createElement('canvas').getContext('2d');
+        context.font = getComputedStyle(input).font;
+        return context.measureText(input.value).width <= input.clientWidth;
+      })).toBe(true);
+    }
+    await expectAccessible(page); expect(errors).toEqual([]);
+  });
+});
+
 test('linked size keeps proportions with one Undo and linking never changes the document', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');

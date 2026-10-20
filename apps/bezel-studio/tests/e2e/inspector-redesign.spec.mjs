@@ -11,7 +11,7 @@ test('all widget inspectors separate navigation from geometry and keep integrate
     const position = inspector.locator('[data-section="position"]');
     const geometry = position.locator('.geometry-fields, .size-field');
     await expect(geometry.getByRole('spinbutton')).toHaveCount(4);
-    await expect(geometry.locator('.fld-prefix')).toHaveText([t('insp.xPrefix'), t('insp.yPrefix'), t('insp.widthLabel'), t('insp.heightLabel')]);
+    await expect(geometry.locator('.fld-prefix')).toHaveText([t('insp.xPrefix'), t('insp.yPrefix'), t('insp.widthPrefix'), t('insp.heightPrefix')]);
     expect(await geometry.locator('.geometry-fields input, .size-field input').evaluateAll(nodes => nodes.every(node => node.clientWidth >= 38))).toBe(true);
     expect(await inspector.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
     for (const section of await inspector.locator(':scope > [data-inspector-section]').all()) {

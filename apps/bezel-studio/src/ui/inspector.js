@@ -566,7 +566,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
         prefixedField(t('insp.xPrefix'), t('inspector.x'), f.x, v => setFrame({ x: v }), { unit: 'px' }),
         prefixedField(t('insp.yPrefix'), t('inspector.y'), f.y, v => setFrame({ y: v }), { unit: 'px' }),
       ]),
-      sizeField({ widthPrefix: t('insp.widthLabel'), heightPrefix: t('insp.heightLabel'), width: t('inspector.width'), height: t('inspector.height'), link: t('insp.linkSize') }, f,
+      sizeField({ widthPrefix: t('insp.widthPrefix'), heightPrefix: t('insp.heightPrefix'), width: t('inspector.width'), height: t('inspector.height'), link: t('insp.linkSize') }, f,
         patch => setFrame(resizedFrame(f, patch, sizeLinks.get(e.id) ?? ['ring', 'image'].includes(widget))), {
           linked: sizeLinks.get(e.id) ?? ['ring', 'image'].includes(widget),
           onLink: linked => { sizeLinks.set(e.id, linked); render(shown.assets); },

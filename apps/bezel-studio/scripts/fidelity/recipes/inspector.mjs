@@ -32,6 +32,7 @@ export default {
       await standalone(app, 'ring');
       for (const id of ['layout', 'data', 'shape', 'color', 'behavior']) await openSection(app.page, id);
       await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+      await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
     } },
     { name: 'ux2-main', run: app => app.add('ring') },
     { name: 'ux2-theme', run: async app => {
