@@ -5,6 +5,15 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.1.64] - 2026-10-20
+
+### Widgets
+- **A picture inside a shape**: a shape can show a PNG, JPEG, GIF or SVG over
+  its fill and under its outline, cut to the shape. Choose how it covers the
+  shape: fill (crop), fit inside, stretch, center, or tile in both directions,
+  along a row or down a column; size and shift the copies, and fade the
+  picture on its own. SVG stays sharp at any size and GIFs keep playing.
+
 ## [0.1.63] - 2026-10-20
 
 0.1.62 was a local build; this entry and the ones below cover it.

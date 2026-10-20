@@ -193,6 +193,27 @@ Shapes, Cards, images and the player's cover share one corners control:
 **Equal** (one radius) or **Individual** (each corner), with a drawing of the
 four corners that shows what you set at any size.
 
+### A picture inside a shape
+
+A shape can show a picture (PNG, JPEG, GIF or SVG) over its fill and under its
+outline, cut to the shape: a rounded panel with a texture, an ellipse with a
+photo, a strip of repeated icons. Add the picture to the theme first (Media,
+or an icon), then select the shape and choose it in **Image**. The tiles under
+it set how it covers the shape:
+
+- **Fill (crop)** covers the shape and crops what overflows;
+- **Fit inside** shows the whole picture, with the fill around it;
+- **Stretch** follows the shape's box exactly;
+- **Center** shows one copy at its own size;
+- **Tile**, **Tile across** and **Tile down** repeat it in both directions,
+  along one row or down one column.
+
+For Center and the three tiles, **Image size** scales the picture (100 % is its
+own size) and **Shift right / Shift down** move the copies. **Image opacity**
+fades the picture without touching the fill. SVG pictures stay sharp at any
+size, and an animated GIF keeps playing. A shape used as a video window shows
+the screen's video instead.
+
 ### Graphs
 
 A graph has its own time window, independent of the theme's refresh. In
