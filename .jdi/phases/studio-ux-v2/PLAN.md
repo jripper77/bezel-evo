@@ -148,7 +148,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Acceptance:** `Source` += `Sensor { key, above|below, value, forSeconds }`, `Time { days, from, to }`, `Idle { minutes }`, `Locked`;
   `Profile.match: 'any'|'all'` (predefinito any, omesso); il comando dei profili restituisce `active: { profile, reason }` e
   per ogni regola `trueNow`; test del motore per ogni tipo e per any/all; Light usa lo stesso codice (nessuna duplicazione).
-- **Dipendenze:** nessuna · **Test:** G10, G1 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G10, G1 · **Status:** completed — nuove regole Sensore/Orario/Inattività/Blocco, any/all e profilo attivo con motivo nel motore condiviso Light/Studio; modello JS e demo allineati con fixture comune. 697 test Rust distinti, clippy/fmt, 139 unitari JS e 16 e2e Profili verdi. Vedi `SUMMARY-T-6.md`. Commit `8c2c148` (Claude), `ec0cfb7`, `63eb739` (ChatGPT).
 
 ### Wave 2 — UI per area (in parallelo; parte dal merge di T-0 e delle task Rust già finite)
 
