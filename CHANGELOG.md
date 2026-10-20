@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.1.63] - 2026-10-20
+
+0.1.62 was a local build; this entry and the ones below cover it.
+
+### Fonts
+- **Doto**, **Doto Rounded** and **IBM Plex Mono** are now built in, next to
+  Inter and JetBrains Mono: every theme can use them on any PC with nothing to
+  install. Doto is a dot-matrix face for clocks and big readings, in nine
+  weights; IBM Plex Mono, Studio's own typeface, comes in seven weights with
+  italics.
+
 ## [0.1.62] - 2026-10-20
 
 0.1.61 was a local build; this entry and the one below cover it.
