@@ -371,6 +371,8 @@ mod tests {
                     fade: None,
                     asset: a.clone(),
                     fit: Default::default(),
+                    anchor: Default::default(),
+                    playback: Default::default(),
                 },
             );
         }

@@ -82,6 +82,8 @@ fn theme() -> (Theme, BTreeMap<AssetRef, Vec<u8>>) {
             fade: None,
             asset: asset.clone(),
             fit: Fit::Fill,
+            anchor: Default::default(),
+            playback: Default::default(),
         },
     });
     (theme, BTreeMap::from([(asset, gif())]))

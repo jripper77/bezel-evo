@@ -1608,6 +1608,8 @@ mod tests {
                 fade: None,
                 asset: gif,
                 fit: Fit::Fill,
+                anchor: Default::default(),
+                playback: Default::default(),
             },
         });
         FsThemeStore.save(&location, &theme, &assets).unwrap();

@@ -11,7 +11,7 @@ use bezel_core::domain::playback::PROGRESS_SPACING;
 use bezel_core::domain::sensor::{Reading, format_reading, format_reading_parts, fraction};
 use bezel_core::domain::theme::{
     AssetRef, Background, Binding, BoxF, Element, ElementId, ElementKind, Fit, ImageRepeat,
-    ShapeImage, TextContent, TextOverflow, TextPart, TextStyle, Theme,
+    Playback, ShapeImage, TextContent, TextOverflow, TextPart, TextStyle, Theme,
 };
 use bezel_core::ports::{Backdrop, FrameRenderer, RenderContext};
 use bezel_core::{BezelError, Result};
@@ -1419,7 +1419,7 @@ impl SkiaRenderer {
                                 self.draw_image(
                                     layer,
                                     &asset,
-                                    Fit::Contain,
+                                    (Fit::Contain, Default::default(), Playback::default()),
                                     BoxF::new(area.x, area.y, side, side),
                                     &covers,
                                     context,
@@ -1538,8 +1538,21 @@ impl SkiaRenderer {
                     self.text.draw(layer, &job, assets, &mut self.diagnostics);
                 }
             }
-            ElementKind::Image { asset, fit, .. } => {
-                self.draw_image(layer, asset, *fit, area, assets, context);
+            ElementKind::Image {
+                asset,
+                fit,
+                anchor,
+                playback,
+                ..
+            } => {
+                self.draw_image(
+                    layer,
+                    asset,
+                    (*fit, *anchor, *playback),
+                    area,
+                    assets,
+                    context,
+                );
                 if let Some(color) = color {
                     tint(layer, color);
                 }
@@ -1616,18 +1629,18 @@ impl SkiaRenderer {
         &mut self,
         layer: &mut Layer<'_>,
         asset: &AssetRef,
-        fit: Fit,
+        (fit, anchor, playback): (Fit, bezel_core::domain::theme::Anchor, Playback),
         area: BoxF,
         assets: &BTreeMap<AssetRef, Vec<u8>>,
         context: &RenderContext<'_>,
     ) {
         let Some((image, plan)) =
             self.images
-                .placed(asset, fit, area, assets, &mut self.diagnostics)
+                .placed_at(asset, fit, anchor, area, assets, &mut self.diagnostics)
         else {
             return;
         };
-        if let Some(frame) = image.frame_at(context.animation) {
+        if let Some(frame) = image.frame_playing(context.animation, playback) {
             layer.blit(
                 frame.as_ref(),
                 plan.at.0.round() as i32,
@@ -2291,6 +2304,8 @@ mod tests {
             ElementKind::Image {
                 asset: AssetRef("icon.svg".into()),
                 fit: Fit::Contain,
+                anchor: Default::default(),
+                playback: Default::default(),
                 fade: None,
             },
         ];
@@ -2521,6 +2536,8 @@ mod tests {
                 ElementKind::Image {
                     asset: AssetRef(asset.into()),
                     fit: Fit::Contain,
+                    anchor: Default::default(),
+                    playback: Default::default(),
                     fade: None,
                 },
             );
@@ -2927,6 +2944,8 @@ mod tests {
             fade: None,
             asset: AssetRef("a.gif".into()),
             fit: Fit::Fill,
+            anchor: Default::default(),
+            playback: Default::default(),
         };
         scene.assets.insert(
             AssetRef("a.gif".into()),

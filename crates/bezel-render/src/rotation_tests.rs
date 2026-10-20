@@ -255,6 +255,8 @@ fn rotation_turns_text_graph_and_spectrum_content() {
         ElementKind::Image {
             asset: AssetRef("test.png".into()),
             fit: Fit::Fill,
+            anchor: Default::default(),
+            playback: Default::default(),
             fade: None,
         },
     ];

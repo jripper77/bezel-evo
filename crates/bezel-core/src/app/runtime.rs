@@ -242,9 +242,11 @@ fn image_change(
     at: Duration,
 ) -> Option<Duration> {
     theme
-        .shown_images()
-        .filter_map(|asset| timelines.get(asset)?.as_ref())
-        .map(|timeline| timeline.next_change(at))
+        .shown_pictures()
+        .filter_map(|(asset, playback)| {
+            let timeline = timelines.get(asset)?.as_ref()?;
+            playback.next_change(at, timeline.total(), |local| timeline.next_change(local))
+        })
         .min()
 }
 

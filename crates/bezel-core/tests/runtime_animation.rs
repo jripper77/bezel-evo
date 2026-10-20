@@ -96,6 +96,8 @@ fn image(id: u32, asset: &str) -> Element {
             fade: None,
             asset: AssetRef(asset.into()),
             fit: Fit::Fill,
+            anchor: Default::default(),
+            playback: Default::default(),
         },
     }
 }

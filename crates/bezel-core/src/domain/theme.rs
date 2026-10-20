@@ -99,6 +99,111 @@ pub enum Fit {
     None,
 }
 
+/// Which part of a picture stays in view when it covers its box: one of
+/// nine points (D-2026-10-20-studio-ux-v2-04, Immagine).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Anchor {
+    /// Top left corner.
+    TopLeft,
+    /// Middle of the top edge.
+    Top,
+    /// Top right corner.
+    TopRight,
+    /// Middle of the left edge.
+    Left,
+    /// The centre.
+    #[default]
+    Center,
+    /// Middle of the right edge.
+    Right,
+    /// Bottom left corner.
+    BottomLeft,
+    /// Middle of the bottom edge.
+    Bottom,
+    /// Bottom right corner.
+    BottomRight,
+}
+
+impl Anchor {
+    /// Every anchor, row by row.
+    pub const ALL: [Anchor; 9] = [
+        Anchor::TopLeft,
+        Anchor::Top,
+        Anchor::TopRight,
+        Anchor::Left,
+        Anchor::Center,
+        Anchor::Right,
+        Anchor::BottomLeft,
+        Anchor::Bottom,
+        Anchor::BottomRight,
+    ];
+
+    /// The anchor as shares of the width and height (0, 0.5 or 1).
+    pub fn shares(self) -> (f32, f32) {
+        let index = Self::ALL.iter().position(|a| *a == self).unwrap_or(4);
+        ((index % 3) as f32 / 2.0, (index / 3) as f32 / 2.0)
+    }
+}
+
+/// How an animated picture (GIF) plays.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Playback {
+    /// Plays once and stays on its last frame, instead of looping.
+    pub once: bool,
+    /// Speed: 1 as made, 0.5 half as fast, 2 twice as fast.
+    pub speed: f32,
+}
+
+impl Default for Playback {
+    fn default() -> Self {
+        Self {
+            once: false,
+            speed: 1.0,
+        }
+    }
+}
+
+impl Playback {
+    /// Allowed range of [`Playback::speed`].
+    pub const SPEED: std::ops::RangeInclusive<f32> = 0.25..=4.0;
+
+    fn speed(&self) -> f64 {
+        f64::from(self.speed.clamp(*Self::SPEED.start(), *Self::SPEED.end()))
+    }
+
+    /// The moment of an animation lasting `total` shown `elapsed` after the
+    /// theme started: sped up or slowed down, and held just before the end
+    /// (its last frame) once a single play is over.
+    pub fn moment(&self, elapsed: Duration, total: Duration) -> Duration {
+        let local = elapsed.mul_f64(self.speed());
+        if self.once && !total.is_zero() && local >= total {
+            total - Duration::from_nanos(1)
+        } else {
+            local
+        }
+    }
+
+    /// When the frame shown at `elapsed` changes, on the theme's clock, for
+    /// a frame that changes at `change` on the animation's own clock
+    /// (`None` once a single play has reached its last frame).
+    pub fn next_change(
+        &self,
+        elapsed: Duration,
+        total: Duration,
+        change: impl FnOnce(Duration) -> Duration,
+    ) -> Option<Duration> {
+        let local = elapsed.mul_f64(self.speed());
+        if self.once && local >= total {
+            return None;
+        }
+        let next = change(local);
+        if self.once && next >= total {
+            return None;
+        }
+        Some(elapsed + (next.saturating_sub(local)).div_f64(self.speed()))
+    }
+}
+
 /// How a shape's image covers the shape.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ImageRepeat {
@@ -512,6 +617,10 @@ pub enum ElementKind {
         asset: AssetRef,
         /// How it fills the box.
         fit: Fit,
+        /// What stays in view when it covers the box.
+        anchor: Anchor,
+        /// How a GIF plays.
+        playback: Playback,
     },
     /// A filled shape.
     Shape {
@@ -1027,6 +1136,23 @@ impl Theme {
         keys
     }
 
+    /// The pictures a frame shows (as [`Theme::shown_images`]) with how
+    /// each plays: an image element's own playback, the default for a
+    /// shape's picture.
+    pub fn shown_pictures(&self) -> impl Iterator<Item = (&AssetRef, Playback)> {
+        let shown: Vec<&AssetRef> = self.shown_images().collect();
+        self.elements.iter().filter_map(move |e| {
+            let asset = e.kind.picture()?;
+            shown.iter().any(|s| std::ptr::eq(*s, asset)).then(|| {
+                let playback = match &e.kind {
+                    ElementKind::Image { playback, .. } => *playback,
+                    _ => Playback::default(),
+                };
+                (asset, playback)
+            })
+        })
+    }
+
     /// The pictures of the image elements and shape images a frame shows:
     /// visible, not fully transparent, with a box that reaches into the
     /// canvas. An animated one among them sets the pace of the frames
@@ -1174,6 +1300,8 @@ mod tests {
                     fade: None,
                     asset: AssetRef("assets/logo.png".into()),
                     fit: Fit::Contain,
+                    anchor: Default::default(),
+                    playback: Default::default(),
                 },
             ),
             element(
@@ -1268,6 +1396,8 @@ mod tests {
                     fade: None,
                     asset: AssetRef(name.into()),
                     fit: Fit::Fill,
+                    anchor: Default::default(),
+                    playback: Default::default(),
                 },
             )
         };
@@ -1335,6 +1465,90 @@ mod tests {
             },
         )];
         assert_eq!(t.assets(), vec![AssetRef("assets/unit.ttf".into())]);
+    }
+
+    #[test]
+    fn anchors_and_playback() {
+        assert_eq!(Anchor::default().shares(), (0.5, 0.5));
+        assert_eq!(Anchor::TopLeft.shares(), (0.0, 0.0));
+        assert_eq!(Anchor::Right.shares(), (1.0, 0.5));
+        assert_eq!(Anchor::BottomRight.shares(), (1.0, 1.0));
+        let ms = Duration::from_millis;
+        let total = ms(1_000);
+        let looping = Playback::default();
+        assert_eq!(looping.moment(ms(2_500), total), ms(2_500));
+        let fast = Playback {
+            speed: 2.0,
+            ..looping
+        };
+        assert_eq!(fast.moment(ms(300), total), ms(600));
+        let once = Playback {
+            once: true,
+            ..looping
+        };
+        assert_eq!(once.moment(ms(400), total), ms(400));
+        assert_eq!(
+            once.moment(ms(5_000), total),
+            total - Duration::from_nanos(1)
+        );
+        let step = |at: Duration| ms((at.as_millis() as u64 / 100 + 1) * 100);
+        assert_eq!(looping.next_change(ms(250), total, step), Some(ms(300)));
+        assert_eq!(
+            fast.next_change(ms(250), total, step),
+            Some(ms(300)),
+            "500 → 600 at 2×"
+        );
+        let slow = Playback {
+            speed: 0.5,
+            ..looping
+        };
+        assert_eq!(slow.next_change(ms(250), total, step), Some(ms(400)));
+        assert_eq!(
+            once.next_change(ms(950), total, step),
+            None,
+            "the last frame stays"
+        );
+        assert_eq!(once.next_change(ms(1_500), total, step), None);
+        assert_eq!(once.next_change(ms(850), total, step), Some(ms(900)));
+        let wild = Playback {
+            speed: 99.0,
+            ..looping
+        };
+        assert_eq!(wild.moment(ms(100), total), ms(400), "at most 4×");
+    }
+
+    #[test]
+    fn shown_pictures_carry_their_playback() {
+        let mut t = Theme::blank("x", Size::new(480, 1920), Orientation::Portrait);
+        let once = Playback {
+            once: true,
+            speed: 2.0,
+        };
+        t.elements = vec![
+            element(
+                1,
+                ElementKind::Image {
+                    fade: None,
+                    asset: AssetRef("a.gif".into()),
+                    fit: Fit::Fill,
+                    anchor: Anchor::Center,
+                    playback: once,
+                },
+            ),
+            element(
+                2,
+                ElementKind::Shape {
+                    video_window: false,
+                    fade: None,
+                    shape: ShapeKind::Ellipse,
+                    fill: None,
+                    image: Some(ShapeImage::new(AssetRef("b.gif".into()))),
+                    stroke: None,
+                },
+            ),
+        ];
+        let shown: Vec<_> = t.shown_pictures().map(|(a, p)| (a.0.as_str(), p)).collect();
+        assert_eq!(shown, [("a.gif", once), ("b.gif", Playback::default())]);
     }
 
     #[test]

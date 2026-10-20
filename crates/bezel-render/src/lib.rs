@@ -79,6 +79,8 @@ mod rotation_tests;
 #[cfg(test)]
 mod analog_clock_tests;
 #[cfg(test)]
+mod image_options_tests;
+#[cfg(test)]
 mod modern_themes_tests;
 #[cfg(test)]
 mod needle_look_tests;
