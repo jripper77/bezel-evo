@@ -15,10 +15,20 @@ try {
     if ($ExpectedUserSid -and $identity.User.Value -ne $ExpectedUserSid) {
         throw 'Use the same Windows account for sensor setup and installation.'
     }
+    # Task Scheduler stores the principal registered as DOMAIN\user in its short
+    # form ("user"), so compare accounts by SID rather than by spelling.
+    function Same-User([string]$account) {
+        if (-not $account) { return $false }
+        if ($account -in @($identity.Name, $identity.User.Value)) { return $true }
+        try {
+            $sid = ([Security.Principal.NTAccount]$account).Translate([Security.Principal.SecurityIdentifier]).Value
+        } catch { return $false }
+        return $sid -eq $identity.User.Value
+    }
     function Owned-Task {
         $task = Get-ScheduledTask -TaskName 'Bezel-Sensors' -TaskPath '\' -ErrorAction SilentlyContinue
         if ($task -and @($task.Actions).Count -eq 1 -and
-            $task.Principal.UserId -in @($identity.Name, $identity.User.Value) -and
+            (Same-User $task.Principal.UserId) -and
             [IO.Path]::GetFullPath($task.Actions[0].Execute).TrimEnd('\') -ieq $helper) { return $task }
         return $null
     }
