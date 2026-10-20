@@ -66,13 +66,18 @@ export function adoptControl(current, fresh) {
 }
 
 /** A labelled number input. `step` 1 rounds to integers. */
-export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName } = {}) {
+export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null } = {}) {
+  if (prefix !== undefined) {
+    const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName });
+    return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
+  }
   const id = fieldId();
   const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange);
-  return el('label', { class: 'field number-field', for: id }, [
+  const field = el('label', { class: 'field number-field', for: id }, [
     el('span', { class: 'field-label' }, [iconName ? icon(ICONS[iconName], 16) : null, label]),
     el('span', { class: 'number-control' }, [input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
   ]);
+  return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
 }
 
 /** A labelled text input (committed on change). */
@@ -131,6 +136,89 @@ export function segmented(label, value, options, onChange, { bare = false } = {}
     group.append(el('button', { type: 'button', text: l, 'aria-pressed': String(v === value), onclick: () => onChange(v) }));
   }
   return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
+}
+
+/** Native pressed choices. Each option is [value, translated label, icon name]. */
+export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false } = {}) {
+  const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
+  for (const [v, text, name] of options) group.append(el('button', {
+    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), onclick: () => onChange(v),
+  }, [name ? icon(ICONS[name], 18) : null, iconOnly ? null : text]));
+  return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
+}
+
+/** The same preview tile in every widget. */
+export function previewChoice(label, tiles) {
+  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label }, tiles.map(({ text, art, pressed, onClick }) =>
+    el('button', { type: 'button', class: 'option-tile', 'aria-pressed': String(pressed), onclick: onClick }, [icon(art, 32), el('span', { text })])));
+}
+
+/** Inspector toggles use native buttons with a visible state and accessible name. */
+export function toggleField(label, pressed, onChange, { iconName = 'eye' } = {}) {
+  return el('div', { class: 'inspector-toggle' }, [el('span', { text: label }),
+    iconName === 'bolt' ? bindButton(label, pressed, () => onChange(!pressed))
+      : iconButton(label, ICONS[iconName], () => onChange(!pressed), { 'aria-pressed': String(Boolean(pressed)) }),
+  ]);
+}
+
+/** Binding affordance: callers own the supported binding and its editor. */
+export function bindButton(label, connected, onClick) {
+  return iconButton(label, ICONS.bolt ?? ICONS.sliders, onClick, { class: 'bind-button', 'aria-pressed': String(Boolean(connected)) });
+}
+
+/** A compact header, whose preview comes from the renderer rather than an example. */
+export function objectHeader({ preview, name, subtitle, live, tryButton, menuButton }) {
+  return el('div', { class: 'object-header' }, [preview,
+    el('div', { class: 'object-heading' }, [name, subtitle]),
+    el('div', { class: 'object-tools' }, [tryButton, menuButton, live]),
+  ]);
+}
+
+export function typeRow(label, value, options, onChange) {
+  const row = iconChoice(label, value, options, onChange, { iconOnly: true, wide: true });
+  row.classList.add('inspector-type');
+  return row;
+}
+
+/** Clickable styled parts, followed by the active part's own editor. */
+export function partsRow(label, parts, selected, onSelect, renderEditor) {
+  return el('div', { class: 'parts-field' }, [iconChoice(label, selected, parts, onSelect), renderEditor?.(selected)]);
+}
+
+/** One asset choice and its shared detail controls; import stays with the caller. */
+export function imageField(label, value, choices, onChange, { preview = null, details = [] } = {}) {
+  return el('div', { class: 'image-field' }, [preview, selectField(label, value, choices, onChange), ...details]);
+}
+
+/** Width and height. Linking is UI state; the caller owns aspect-ratio updates. */
+export function sizeField(texts, value, onChange, { linked = false, onLink = null, min = 4 } = {}) {
+  return el('div', { class: 'size-field' }, [
+    prefixedField(texts.widthPrefix, texts.width, value.width, width => onChange({ width: Math.max(min, width) }), { min, unit: 'px' }),
+    onLink && iconButton(texts.link, ICONS.link ?? ICONS.lock, () => onLink(!linked), { 'aria-pressed': String(linked) }),
+    prefixedField(texts.heightPrefix, texts.height, value.height, height => onChange({ height: Math.max(min, height) }), { min, unit: 'px' }),
+  ]);
+}
+
+// Public name for the existing shared corner implementation.
+export const cornersField = (...args) => cornerRadii(...args);
+
+/** Existing fade model, including imported radial settings, without new theme fields. */
+export function fadeField(texts, value, onChange) {
+  const f = value;
+  const percent = (label, v, apply, min = 0, max = 100) => numberField(label, Math.round(v * 100), n => apply(Math.max(min, Math.min(max, n)) / 100), { min, max, unit: '%' });
+  return el('div', { class: 'fade-field' }, [
+    iconChoice(texts.mode, !f ? 'none' : f.radial ? 'radial' : 'linear', ['none', 'linear', 'radial'].map(mode => [mode, texts[mode], `fade-${mode}`]), mode => onChange(mode === 'none' ? null : { angle: f?.angle ?? 0, start: f?.start ?? 1, end: f?.end ?? 0, radial: mode === 'radial' ? f?.radial ?? [.5, .5, .5] : null })),
+    ...(f ? [
+      ...(f.radial ? [
+        percent(texts.centerX, f.radial[0], x => onChange({ radial: [x, f.radial[1], f.radial[2]] })),
+        percent(texts.centerY, f.radial[1], y => onChange({ radial: [f.radial[0], y, f.radial[2]] })),
+        percent(texts.extent, f.radial[2], r => onChange({ radial: [f.radial[0], f.radial[1], r] }), 1, 200),
+      ] : [numberField(texts.angle, f.angle, angle => onChange({ angle: Math.max(-360, Math.min(360, angle)) }), { min: -360, max: 360, unit: '°' }),
+        rangeField(texts.midpoint, Math.round((f.midpoint ?? .5) * 100), v => onChange({ midpoint: v / 100 }), { min: 5, max: 95, format: v => `${v}%` })]),
+      rangeField(texts.start, Math.round(f.start * 100), v => onChange({ start: v / 100 }), { format: v => `${v}%` }),
+      rangeField(texts.end, Math.round(f.end * 100), v => onChange({ end: v / 100 }), { format: v => `${v}%` }),
+    ] : []),
+  ]);
 }
 
 /**
@@ -268,6 +356,42 @@ export function propertySection(key, label, nodes, { count: n = null, tool = nul
   head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
   if (tool) head.append(tool);
   return el('section', { class: 'property-section', dataset: { section: key } }, [head, el('div', { class: 'property-section-body' }, contents)]);
+}
+
+/**
+ * Controlled, independent inspector disclosure (D-01/D-04). The owner keeps
+ * state with createSectionMemory and calls setExpanded on all peers after a
+ * toggle. Bodies stay mounted: closing never discards a field or its edit.
+ * Native buttons provide Enter/Space; arrows/Home/End visit sibling titles.
+ */
+export function accordionSection({ id, title, icon: name = 'sliders', summary = '', expanded = false, onToggle, render }, ctx) {
+  const bodyId = fieldId();
+  const titleId = fieldId();
+  const readout = el('span', { class: 'accordion-summary', 'aria-hidden': 'true', text: summary });
+  const toggle = el('button', {
+    type: 'button', id: titleId, class: 'accordion-toggle', 'aria-controls': bodyId,
+    'aria-expanded': String(expanded), 'aria-label': title,
+    onclick: event => onToggle({ exclusive: event.altKey }),
+  }, [icon(ICONS[name], 16), el('span', { class: 'accordion-title', text: title }), readout, icon(ICONS.chevronDown, 12)]);
+  const body = el('div', { class: 'accordion-body', id: bodyId, role: 'region', 'aria-labelledby': titleId, hidden: !expanded });
+  render(body, ctx);
+  const section = el('section', { class: 'accordion-section', dataset: { inspectorSection: id } }, [el('h3', { class: 'accordion-heading' }, [toggle]), body]);
+  toggle.addEventListener('keydown', event => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const peers = [...section.parentElement.querySelectorAll(':scope > .accordion-section > .accordion-heading > .accordion-toggle')];
+    const index = peers.indexOf(toggle);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? peers.length - 1
+      : (index + (event.key === 'ArrowDown' ? 1 : -1) + peers.length) % peers.length;
+    event.preventDefault();
+    peers[next]?.focus();
+  });
+  const setExpanded = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    body.hidden = !open;
+    readout.hidden = open;
+  };
+  setExpanded(expanded);
+  return { element: section, setExpanded };
 }
 
 /**

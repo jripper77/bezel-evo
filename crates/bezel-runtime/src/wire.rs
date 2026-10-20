@@ -49,6 +49,8 @@ pub enum RuntimeOp {
         element: u32,
         max: u32,
         motion: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        trial_ms: Option<u32>,
     },
     Measure {
         element: u32,
@@ -316,11 +318,18 @@ fn dispatch_inner(
             element,
             max,
             motion,
-        } => Ok(image(
-            Some(engine.inspect(key, ElementId(element), max, motion)?),
-            0,
-            50,
-        )),
+            trial_ms,
+        } => {
+            let (frame, next) =
+                engine.inspect_trial(key, ElementId(element), max, motion, trial_ms)?;
+            Ok(image(
+                Some(frame),
+                0,
+                next.map_or(u32::MAX, |d| {
+                    d.as_millis().min(u128::from(u32::MAX - 1)) as u32
+                }),
+            ))
+        }
         RuntimeOp::Measure { element } => {
             let value = engine
                 .measure(key, ElementId(element))?

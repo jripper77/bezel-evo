@@ -1383,17 +1383,38 @@ impl ThemeRuntime {
         time: LocalTime,
         now: Duration,
     ) -> Result<(Frame, Option<Duration>)> {
+        self.preview_detached_sample(renderer, theme, time, now, None)
+    }
+
+    /// Detached inspector trial with temporary readings and histories. Neither
+    /// the running scene nor its transitions, sensors or histories are edited.
+    pub fn preview_detached_sample(
+        &mut self,
+        renderer: &mut dyn FrameRenderer,
+        theme: &Theme,
+        time: LocalTime,
+        now: Duration,
+        sample: Option<(&Snapshot, &Histories)>,
+    ) -> Result<(Frame, Option<Duration>)> {
         for asset in unknown_images(theme, &self.timelines) {
             let timeline = renderer.animation(&asset, &self.scene.assets);
             self.timelines.insert(asset, timeline);
         }
         renderer.set_content_revision(0);
-        let shown = self.transitions.shown(theme, now, View::Preview);
+        let shown = if sample.is_some() {
+            Default::default()
+        } else {
+            self.transitions.shown(theme, now, View::Preview)
+        };
         let moment = Moment {
             time,
             animation: now,
         };
-        let context = self.scene.context(moment, Backdrop::Poster, &shown);
+        let mut context = self.scene.context(moment, Backdrop::Poster, &shown);
+        if let Some((snapshot, histories)) = sample {
+            context.snapshot = snapshot;
+            context.histories = histories;
+        }
         let frame = renderer.render(theme, &self.scene.assets, context)?;
         let change = image_change(theme, &self.timelines, now)
             .into_iter()

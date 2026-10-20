@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 pub mod element_preview;
 mod images;
+pub mod inspector_trial;
 mod presentation;
 pub mod profiles;
 mod sampling;
@@ -995,6 +996,19 @@ impl Engine {
     }
     /// Isolated inspector scene, with the runtime's current readings/histories.
     pub fn inspect(&mut self, key: &str, id: ElementId, max: u32, motion: bool) -> Result<Frame> {
+        self.inspect_trial(key, id, max, motion, None)
+            .map(|(frame, _)| frame)
+    }
+
+    /// Like inspect, with optional temporary inputs for the inspector's Try action.
+    pub fn inspect_trial(
+        &mut self,
+        key: &str,
+        id: ElementId,
+        max: u32,
+        motion: bool,
+        trial_ms: Option<u32>,
+    ) -> Result<(Frame, Option<Duration>)> {
         let scene = self
             .scenes
             .get_mut(key)
@@ -1003,15 +1017,41 @@ impl Engine {
             .ok_or_else(|| invalid("unknown element"))?;
         self.renderer.set_scene(scene.id | (1 << 63));
         self.renderer.set_motion(motion);
-        let (frame, _) = scene.runtime.preview_detached(
-            self.renderer.as_mut(),
-            &theme,
+        let trial = inspector_trial::Trial::new(
+            scene.runtime.theme(),
+            id,
+            scene.runtime.snapshot(),
             (self.clock)(),
-            self.origin.elapsed(),
+            trial_ms,
+            motion,
+        );
+        if trial.is_some() {
+            self.renderer.set_scene(scene.id | (1 << 62));
+        }
+        let (theme, time, animation, sample) = match &trial {
+            Some(trial) => (
+                &trial.theme,
+                trial.time,
+                trial.animation,
+                Some((&trial.snapshot, &trial.histories)),
+            ),
+            None => (&theme, (self.clock)(), self.origin.elapsed(), None),
+        };
+        let (frame, change) = scene.runtime.preview_detached_sample(
+            self.renderer.as_mut(),
+            theme,
+            time,
+            animation,
+            sample,
         )?;
-        Ok(element_preview::fit_within(
-            frame,
-            element_preview::side_of(Some(max)),
+        let next = if trial.is_some() {
+            Some(Duration::from_millis(inspector_trial::FRAME_MS))
+        } else {
+            change.map(|at| at.saturating_sub(animation))
+        };
+        Ok((
+            element_preview::fit_within(frame, element_preview::side_of(Some(max))),
+            next,
         ))
     }
     /// Measure through the same renderer without advancing the live scene.

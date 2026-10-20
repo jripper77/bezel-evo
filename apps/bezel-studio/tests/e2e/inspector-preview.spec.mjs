@@ -2,7 +2,7 @@
 // PlayerData/Look): its head, its preview rendered alone by the backend
 // (D-2026-10-09-studio-redesign-fidelity-8), the graph's scale and window,
 // and the player's apps, all from the demo's real data.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, setColor } from './helpers.mjs';
+import { openSection, openInspectorTab, test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, setColor } from './helpers.mjs';
 import { joinWords, sentenceParts } from '../../src/sentence.js';
 
 /** Whether the preview's canvas has a pixel drawn (`any`) or a strong red one (`red`). */
@@ -88,11 +88,11 @@ test('the head names the object, its kind and layer; the eye hides it and the lo
   await page.goto('/index.html?demo=turing88');
   await add(page, t, 'ring');
   const inspector = page.locator('#inspector');
-  const subtitle = new RegExp(`^${t('widget.ring')} · ${t('insp.layer', { level: '(\\d+)', total: '(\\d+)' })}$`);
-  const text = await inspector.locator('.inspector-sub').textContent();
-  const [, level, total] = text.match(subtitle);
-  // A new object goes on top: the last layer.
-  expect(Number(level)).toBe(Number(total));
+  const head = inspector.locator('.object-header');
+  const level = Number(await head.getAttribute('data-layer'));
+  const total = Number(await head.getAttribute('data-total'));
+  expect(level).toBe(total);
+  await expect(head.locator('.inspector-sub')).toContainText('CPU');
   await page.locator('#tab-layers').click();
   await expect(page.locator('#layer-list .layer-row')).toHaveCount(Number(total));
 
@@ -101,19 +101,20 @@ test('the head names the object, its kind and layer; the eye hides it and the lo
   await name.press('Tab');
   await expect(page.locator('.layer-name').filter({ hasText: 'Gauge 42' })).toHaveCount(1);
 
-  await inspector.getByRole('button', { name: t('common.hide'), exact: true }).click();
-  const show = inspector.getByRole('button', { name: t('common.show'), exact: true });
-  await expect(show).toBeVisible();
-  await show.click();
-  await expect(inspector.getByRole('button', { name: t('common.hide'), exact: true })).toBeVisible();
-
-  const lock = inspector.getByRole('button', { name: t('common.lock'), exact: true });
-  await expect(lock).toHaveAttribute('aria-pressed', 'false');
-  await lock.click();
-  await expect(inspector.getByRole('button', { name: t('common.unlock'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const menu = async () => {
+    await inspector.getByRole('button', { name: t('insp.more'), exact: true }).click();
+    return page.getByRole('menu');
+  };
+  await (await menu()).getByRole('menuitem', { name: t('common.hide'), exact: true }).click();
+  await expect((await menu()).getByRole('menuitem', { name: t('common.show'), exact: true })).toBeVisible();
+  await page.getByRole('menuitem', { name: t('common.show'), exact: true }).click();
+  await (await menu()).getByRole('menuitem', { name: t('common.lock'), exact: true }).click();
+  await expect((await menu()).getByRole('menuitem', { name: t('common.unlock'), exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.locator('#undo').click();
-  await expect(lock).toHaveAttribute('aria-pressed', 'false');
-
+  await expect((await menu()).getByRole('menuitem', { name: t('common.lock'), exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await openSection(page, 'shape');
   // The source card shows the sensor's key and value now over its select.
   await expect(inspector.locator('.source-card .list-card-sub')).toHaveText('cpu.usage');
   await expect(inspector.locator('.source-card .list-card-value')).toHaveText(/%$/);
@@ -139,6 +140,10 @@ test('the head names the object, its kind and layer; the eye hides it and the lo
   const x = inspector.getByRole('spinbutton', { name: t('inspector.x'), exact: true });
   await inspector.getByRole('button', { name: t('align.left'), exact: true }).click();
   await expect(x).toHaveValue('0');
+  await (await menu()).getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
+  await expect(page.locator('#layer-list .layer-row')).toHaveCount(total + 1);
+  await (await menu()).getByRole('menuitem', { name: t('common.delete'), exact: true }).click();
+  await expect(page.locator('#layer-list .layer-row')).toHaveCount(total);
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
@@ -279,6 +284,7 @@ test('the player lists the apps with a media session, the playing one marked, an
   await expect(apps.getByRole('button', { name: t('insp.automatic'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(source).toHaveCount(0);
 
+  await openSection(page, 'behavior');
   const stopped = inspector.getByRole('radiogroup', { name: t('insp.stopped'), exact: true });
   await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedText')) })).toBeChecked();
   await expect(inspector.getByRole('textbox', { name: t('player.empty'), exact: true })).toBeVisible();

@@ -73,6 +73,10 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   `src/ui/fields.js`, `src/ui/icons.js`, `src/styles/{base,inspector}.css`, `src/i18n/areas/inspector.js`,
   `tests/ui/inspector-sections.test.mjs` (nuovo), `tests/ui/*.test.mjs` toccati, `tests/e2e/inspector-*.spec.mjs`, `tests/e2e/helpers.mjs`,
   `scripts/fidelity/recipes/inspector.mjs`
+- **Estensione approvata dall'utente (20 ottobre):** includere in T-0 il supporto completo di ▶ Prova nel bridge,
+  nel motore Rust condiviso e nel demo; file aggiuntivi `src/{bridge,demo-backend,demo-render,inspector-trial,weather-icon}.js`,
+  `src-tauri/src/{backend,commands,studio}.rs`, `crates/bezel-core/src/app/runtime.rs`,
+  `crates/bezel-runtime/src/{inspector_trial,lib,wire}.rs` e test delle aree toccate. Restano vietate build prodotto e pubblicazione.
 - **Acceptance:**
   - Ogni tipo di oggetto mostra le sue voci di oggi raggruppate nelle sezioni nell'ordine D-01, con riassunto da chiuse;
     Alt+clic esclusivo; stato per tipo ricordato tra selezioni e riavvii.
@@ -80,7 +84,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
     ⋯ con le azioni del menu oggetto esistente) e riga Tipo per valore/barra/anello/lancetta/grafico (cambia `kind` come oggi «Mostra come»).
   - Componenti del contratto in `fields.js`, documentati nel catalogo dei primitivi; gli interruttori dell'inspector diventano pulsanti-icona.
   - Nessuna funzione persa: le spec e2e dell'inspector esistenti passano (adattando solo come si apre una sezione al posto di una scheda, in `helpers.mjs`: `openSection(page, id)`).
-- **Dipendenze:** nessuna · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** nessuna · **Test:** G1–G11 secondo i file toccati · **Status:** completed — sezioni e componenti collegati, intestazione 72 px, Tipo e menu condiviso; ▶ Prova completo nativo/demo. 595 test Rust, clippy/fmt, 188 unitari UI e 96 e2e distinti dell'area verdi; riassunti e leggibilità italiana verificati, confronto it chiaro/scuro registrato. Vedi `SUMMARY-T-0.md` e `INSPECTOR-COMPONENTS.md`. Ultimi commit di codice/verifica: `812fbaf`, `29de8a3`, `374a14c`, `fc4cf6b`.
 
 #### T-1: Testo — cifre fisse, parti con stile, testo troppo lungo, transizioni del numero
 - **Decisioni:** 05, 06 · **Tavole:** ValueInspectorOpen, ClockInspectorOpen (parti digitali)

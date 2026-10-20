@@ -1500,6 +1500,18 @@ impl Studio {
         now: Instant,
         motion: Motion,
     ) -> Result<(Frame, Option<Duration>)> {
+        self.element_trial(id, time, now, motion, None)
+    }
+
+    /// An isolated inspector trial, using the same inputs as the shared engine.
+    pub fn element_trial(
+        &mut self,
+        id: ElementId,
+        time: LocalTime,
+        now: Instant,
+        motion: Motion,
+        trial_ms: Option<u32>,
+    ) -> Result<(Frame, Option<Duration>)> {
         let theme = crate::element_preview::isolate(self.runtime.theme(), id)
             .ok_or_else(|| BezelError::InvalidInput(format!("no element {} in the theme", id.0)))?;
         self.element_renderer
@@ -1507,6 +1519,31 @@ impl Studio {
         self.runtime
             .still_previews(matches!(motion, Motion::Reduced));
         let clock = self.clock(now);
+        let trial = bezel_runtime::inspector_trial::Trial::new(
+            self.runtime.theme(),
+            id,
+            self.runtime.snapshot(),
+            time,
+            trial_ms,
+            matches!(motion, Motion::Allowed),
+        );
+        self.element_renderer
+            .set_scene(if trial.is_some() { 2 } else { 1 });
+        if let Some(trial) = trial {
+            let (frame, _) = self.runtime.preview_detached_sample(
+                &mut self.element_renderer,
+                &trial.theme,
+                trial.time,
+                trial.animation,
+                Some((&trial.snapshot, &trial.histories)),
+            )?;
+            return Ok((
+                frame,
+                Some(Duration::from_millis(
+                    bezel_runtime::inspector_trial::FRAME_MS,
+                )),
+            ));
+        }
         let (frame, change) =
             self.runtime
                 .preview_detached(&mut self.element_renderer, &theme, time, clock)?;

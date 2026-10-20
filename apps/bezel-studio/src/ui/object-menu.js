@@ -14,11 +14,23 @@ export function wireObjectMenu({store,canvasView,stage,layers,t,fitContent=()=>{
   if(id!==null&&!selection.includes(id)){store.select([id]);selection=[id];}
   if(!selection.length&&!store.canPaste())return;
   evt.preventDefault();
+  const items=objectMenuItems({store,t,fitContent});
+  const box=keyboard?evt.target.getBoundingClientRect():null;
+  openMenu({label:t('menu.title'),items,x:keyboard?box.left:evt.clientX,y:keyboard?box.bottom:evt.clientY,onClose:reason=>{if(reason==='item'||reason==='escape')focusStage();}});
+ }
+ for(const target of [stage,layers]){target.addEventListener('contextmenu',evt=>open(evt));target.addEventListener('keydown',evt=>{if(evt.key==='ContextMenu'||evt.shiftKey&&evt.key==='F10')open(evt,true);});}
+ stage.addEventListener('scroll',()=>closeMenu());
+ return {close:closeMenu};
+}
+
+/** The same actions in the canvas, layers and inspector. */
+export function objectMenuItems({store,t,fitContent=()=>{}}) {
+  const {theme,selection}=store.getState();
   const selected=theme.elements.filter(e=>selection.includes(e.id));
   const editable=selected.some(e=>!owners(theme,e).some(p=>p.locked));
   const action=(label,run,disabled=false)=>({label,run,disabled});
   const dispatch=(command,args={})=>()=>store.dispatch(command,{ids:selection,...args});
-  const items=[
+  return [
    action(t('insp.fitContent'),()=>fitContent(selection[0]),selection.length!==1||!canFitContent(theme,selection[0])),
    action(t('menu.cut'),()=>store.cutSelection(),!editable),action(t('menu.copy'),()=>store.copySelection(),!selected.length),
    action(t('menu.paste'),()=>store.paste(),!store.canPaste()),action(t('common.duplicate'),dispatch('duplicate'),!selected.length),
@@ -32,10 +44,4 @@ export function wireObjectMenu({store,canvasView,stage,layers,t,fitContent=()=>{
    action(t(selected.every(e=>e.visible===false)?'common.show':'common.hide'),dispatch('updateSelection',{patch:{visible:selected.every(e=>e.visible===false)}}),!selected.length),
    SEPARATOR,action(t('common.delete'),dispatch('remove',{ids:selected.filter(e=>!owners(theme,e).some(p=>p.locked)).map(e=>e.id)}),!editable),
   ];
-  const box=keyboard?evt.target.getBoundingClientRect():null;
-  openMenu({label:t('menu.title'),items,x:keyboard?box.left:evt.clientX,y:keyboard?box.bottom:evt.clientY,onClose:reason=>{if(reason==='item'||reason==='escape')focusStage();}});
- }
- for(const target of [stage,layers]){target.addEventListener('contextmenu',evt=>open(evt));target.addEventListener('keydown',evt=>{if(evt.key==='ContextMenu'||evt.shiftKey&&evt.key==='F10')open(evt,true);});}
- stage.addEventListener('scroll',()=>closeMenu());
- return {close:closeMenu};
 }

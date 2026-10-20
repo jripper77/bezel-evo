@@ -400,13 +400,13 @@ function tauriBridge(invoke, tauri = {}) {
      * Rejects `invalidInput` when the theme has no element `elementId`.
      * @param {object} theme
      * @param {number} elementId
-     * @param {{max?: number, motion?: boolean}} [options]
+     * @param {{max?: number, motion?: boolean, trialMs?: number|null}} [options] trialMs replays temporary inspector inputs, never Live
      * @returns {Promise<PreviewFrameDto & {pixels: Uint8ClampedArray}>}
      */
     measureElement: (theme, elementId) => invoke('measure_element', { theme, element: elementId }),
-    renderElement: async (theme, elementId, { max = 512, motion = true } = {}) => {
+    renderElement: async (theme, elementId, { max = 512, motion = true, trialMs = null } = {}) => {
       const started = performance.now();
-      const frame = parseFrame(await invoke('render_element_preview', { theme, element: elementId, max, motion }));
+      const frame = parseFrame(await invoke('render_element_preview', { theme, element: elementId, max, motion, ...(trialMs === null ? {} : { trialMs }) }));
       return { ...frame, pixels: frame.rgba, millis: performance.now() - started };
     },
     /**

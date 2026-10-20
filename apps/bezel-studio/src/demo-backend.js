@@ -24,6 +24,7 @@ import { pickLocale } from './i18n/index.js';
 import { liveScreenIn } from './live-screen.js';
 import { AXES, SCOPES } from './theme-filter.js';
 import { demoSampleDue, demoTransitionDue } from './value-transition.js';
+import { trialAt, TRIAL_FRAME_MS } from './inspector-trial.js';
 
 /** Well-known demo sensors: key, category, label, quantity, base value, swing. */
 
@@ -1475,9 +1476,12 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const scale = Math.max(e.frame.width, e.frame.height) / Math.max(image.naturalWidth, image.naturalHeight);
       return { ...e.frame, width: image.naturalWidth * scale, height: image.naturalHeight * scale };
     },
-    renderElement: (next, elementId, { max = DEMO_ELEMENT_SIDE, motion = true } = {}) => {
+    renderElement: (next, elementId, { max = DEMO_ELEMENT_SIDE, motion = true, trialMs = null } = {}) => {
       const started = performance.now();
-      const alone = demoIsolate(next, elementId);
+      const element = next.elements.find(e => e.id === elementId);
+      const trial = trialAt(element, trialMs, motion);
+      const prepared = trial && element.card ? { ...next, elements: next.elements.map(e => e.id === elementId ? { ...e, card: { ...e.card, activeFace: (e.card.activeFace + 1) % Math.max(1, e.card.faces.length) } } : e) } : next;
+      const alone = demoIsolate(prepared, elementId);
       if (!alone) {
         const detail = `no element ${elementId} in the theme`;
         return Promise.reject(Object.assign(new Error(`invalid input: ${detail}`), { code: 'invalidInput', args: { detail } }));
@@ -1485,8 +1489,8 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const t = now();
       const { width, height } = alone.canvas;
       const rotor = sensorMotion(alone, t, key => demoSensorValue(key, Math.floor(t / (next.refreshSeconds || 1)) * (next.refreshSeconds || 1)), motion, `inspect:${selectedScreen}`);
-      const frame = renderApprox(rotor.theme, t, null, new Map(), Math.min(1, demoElementSide(max) / Math.max(width, height)), motion);
-      const due = [rotor.nextMs, demoNextChange(alone, t * 1000), valuesDue(alone, t, motion, false)].filter((ms) => ms !== null);
+      const frame = renderApprox(rotor.theme, t, null, new Map(), Math.min(1, demoElementSide(max) / Math.max(width, height)), motion, trial);
+      const due = [trial ? TRIAL_FRAME_MS : null, rotor.nextMs, demoNextChange(alone, t * 1000), valuesDue(alone, t, motion, false)].filter((ms) => ms !== null);
       return Promise.resolve({ ...frame, pixels: frame.rgba, nextMs: due.length ? Math.min(...due) : null, millis: performance.now() - started });
     },
     /** What Auto is for the theme's video background, like `video_auto`. */

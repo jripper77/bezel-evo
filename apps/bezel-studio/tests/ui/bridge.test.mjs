@@ -166,10 +166,12 @@ test('tauri mode maps the redesign contracts to their commands', async () => {
   assert.equal(frame.pixels, frame.rgba, 'the same RGBA under both names');
   assert.ok(frame.millis >= 0);
   await bridge.renderElement(theme, 3, { max: 128, motion: false });
+  await bridge.renderElement(theme, 7, { trialMs: 1500 });
   await bridge.duplicateTheme('/themes/a.bezeltheme', 'Copy of A');
   assert.deepEqual(calls, [
     ['render_element_preview', { theme, element: 7, max: 512, motion: true }],
     ['render_element_preview', { theme, element: 3, max: 128, motion: false }],
+    ['render_element_preview', { theme, element: 7, max: 512, motion: true, trialMs: 1500 }],
     ['duplicate_theme', { location: '/themes/a.bezeltheme', name: 'Copy of A' }],
   ]);
 });

@@ -116,36 +116,31 @@
 /* An object (artboards Main, GraphData/Look, PlayerData/Look): its head
    (kind, name, layer, eye, lock, more), its preview, the tabs, position
    and size, then the sections of the open tab. */
-.inspector-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) repeat(3, 28px); align-items: center; gap: 8px; margin: 2px 0 12px; }
-.inspector-type { grid-column: 1 / -1; margin: 0; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 10px; }
-.inspector-head > .icon-button { width: 28px; height: 28px; }
-.inspector-type > span { font-size: var(--fs-small); }
-.inspector-title { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .inspector-name { width: 100%; min-width: 0; padding: 1px 4px; margin-left: -5px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: var(--fs-heading); font-weight: 600; text-overflow: ellipsis; }
 .inspector-name:hover { border-color: var(--border); }
 .inspector-name:focus { border-color: var(--accent); background: var(--well); }
 .inspector-sub { margin: 0; color: var(--muted); font-size: var(--fs-small); overflow-wrap: anywhere; line-height: 1.35; }
 .inspector .inspector-sub h2 { display: inline; margin: 0; color: inherit; font: inherit; letter-spacing: 0; text-transform: none; }
-.inspector-head .icon-button { flex: none; }
-.inspector-head .icon-button[aria-pressed="true"], .inspector-head .icon-button[aria-expanded="true"] { background: var(--surface-3); color: var(--text); }
+.object-header .icon-button { flex: none; }
+.object-header .icon-button[aria-pressed="true"], .object-header .icon-button[aria-expanded="true"] { background: var(--surface-3); color: var(--text); }
 .inspector > .property-section[data-section="actions"] { margin: 0 0 12px; }
 
 /* The preview: the object rendered alone (D-8), on the screen's black. */
-.inspector-preview { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--screen-thumb); color: var(--screen-thumb-ink); }
-.inspector-preview-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.inspector-preview-label { font-family: var(--font-mono); font-size: var(--fs-meta); letter-spacing: var(--caps-spacing); text-transform: uppercase; }
-.inspector-preview-value { color: var(--screen-chip-ink); font-family: var(--font-mono); font-size: var(--fs-heading); font-weight: 500; font-variant-numeric: tabular-nums; }
-.inspector-preview-stage { display: grid; place-items: center; min-height: 40px; overflow: hidden; }
+/* The 72px isolated preview in the common object header. */
+.inspector-preview { width: 72px; height: 72px; margin: 0; padding: 0; border-radius: 10px; background: var(--screen-thumb); color: var(--screen-thumb-ink); overflow: hidden; }
+.inspector-preview-stage { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; }
 .inspector-preview-stage canvas { display: block; max-width: 100%; }
-.inspector-preview-stage .inspector-preview-off { margin: 0; color: var(--screen-thumb-ink); font-size: var(--fs-small); }
-.inspector-preview-axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--fs-tiny); }
+.inspector-preview-stage .inspector-preview-off { margin: 0; font-size: var(--fs-tiny); color: var(--screen-thumb-ink); }
+.inspector > .accordion-section { margin-inline: -12px; }
+.inspector .accordion-body > .property-section { margin: 0; }
+.inspector .accordion-body .section-head { margin-top: 0; }
+.inspector-type { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; margin: 16px 0; }
+.inspector-sub { display: flex; flex-direction: column; min-width: 0; }
+.inspector-sub > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inspector-live { grid-column: 1 / -1; text-align: right; font-size: var(--fs-tiny); color: var(--muted); white-space: nowrap; }
+
 
 /* Independent navigation, separated from the geometry toolbar above it. */
-.inspector-tabs.subtabs { display: flex; margin: var(--inspector-tabs-gap) 0 8px; padding: 3px; border: 1px solid var(--border); background: var(--well); }
-.inspector-tabs [role="tab"] { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 0; min-width: 0; height: var(--control-height); padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: none; }
-.inspector-tabs [role="tab"][aria-selected="true"] { background: var(--accent); color: var(--accent-text); box-shadow: none; }
-.inspector-tabs:has([data-tab="faces"]) .ic { display: none; }
-.inspector-tabs [role="tab"]:focus-visible { outline-offset: 0; }
 
 /* Property groups have a visible boundary; short values keep a stable width. */
 .inspector .property-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -241,3 +236,7 @@
 @container inspector (max-width: 285px) {
   .arc-row .fld-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.inspector-live::before { content: "● "; color: var(--dim); }
+.inspector-live[data-live="true"]::before { color: var(--ok); }
+.inspector-preview-axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--fs-tiny); }
