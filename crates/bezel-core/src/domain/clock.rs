@@ -1,6 +1,8 @@
 //! Date and time text for clock elements, from a local wall-clock time the
 //! driving adapter provides (the core never reads the clock).
 
+use super::theme::TextPart;
+
 /// A local date and time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LocalTime {
@@ -185,15 +187,70 @@ fn month_name(t: &LocalTime, lang: Language, short: bool) -> String {
 /// year, `%A`/`%a` weekday name full/short, `%B`/`%b` month name full/short,
 /// `%%` a percent sign. Unknown directives are copied as they are.
 pub fn format_clock(pattern: &str, t: &LocalTime, lang: Language) -> String {
-    let mut out = String::with_capacity(pattern.len() + 8);
+    pieces(pattern, t, lang)
+        .into_iter()
+        .map(|(_, text)| text)
+        .collect()
+}
+
+/// The text of a clock cut into its parts (D-2026-10-20-studio-ux-v2-06):
+/// hours (`%H`, `%I`), minutes (`%M`), seconds (`%S`), the separators (the
+/// fixed text between two of those) and the rest (`None`), in order, with
+/// neighbours of the same part joined. Joined, they are [`format_clock`].
+pub fn clock_parts(
+    pattern: &str,
+    t: &LocalTime,
+    lang: Language,
+) -> Vec<(Option<TextPart>, String)> {
+    let pieces = pieces(pattern, t, lang);
+    let timed = |p: &Piece| matches!(p, Piece::Time(_));
+    let mut out: Vec<(Option<TextPart>, String)> = Vec::new();
+    for (index, (piece, text)) in pieces.iter().enumerate() {
+        let part = match piece {
+            Piece::Time(part) => Some(*part),
+            Piece::Literal
+                if pieces[..index].iter().any(|(p, _)| timed(p))
+                    && pieces[index + 1..]
+                        .iter()
+                        .find(|(p, _)| !matches!(p, Piece::Literal))
+                        .is_some_and(|(p, _)| timed(p)) =>
+            {
+                Some(TextPart::Separators)
+            }
+            _ => None,
+        };
+        match out.last_mut() {
+            Some((last, joined)) if *last == part => joined.push_str(text),
+            _ => out.push((part, text.clone())),
+        }
+    }
+    out
+}
+
+/// What a piece of a clock's text comes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Piece {
+    /// Fixed text of the pattern.
+    Literal,
+    /// Hours, minutes or seconds.
+    Time(TextPart),
+    /// Any other directive.
+    Other,
+}
+
+fn pieces(pattern: &str, t: &LocalTime, lang: Language) -> Vec<(Piece, String)> {
+    let mut out: Vec<(Piece, String)> = Vec::new();
     let mut chars = pattern.chars();
     while let Some(c) = chars.next() {
         if c != '%' {
-            out.push(c);
+            match out.last_mut() {
+                Some((Piece::Literal, text)) => text.push(c),
+                _ => out.push((Piece::Literal, c.to_string())),
+            }
             continue;
         }
         let Some(d) = chars.next() else {
-            out.push('%');
+            out.push((Piece::Literal, "%".to_string()));
             break;
         };
         let hour12 = match t.hour % 12 {
@@ -201,24 +258,29 @@ pub fn format_clock(pattern: &str, t: &LocalTime, lang: Language) -> String {
             h => h,
         };
         let piece = match d {
-            'H' => format!("{:02}", t.hour),
-            'I' => format!("{hour12:02}"),
-            'p' => if t.hour < 12 { "AM" } else { "PM" }.to_string(),
-            'M' => format!("{:02}", t.minute),
-            'S' => format!("{:02}", t.second),
-            'd' => format!("{:02}", t.day),
-            'e' => t.day.to_string(),
-            'm' => format!("{:02}", t.month),
-            'Y' => t.year.to_string(),
-            'y' => format!("{:02}", t.year.rem_euclid(100)),
-            'A' => day_name(t, lang, false),
-            'a' => day_name(t, lang, true),
-            'B' => month_name(t, lang, false),
-            'b' => month_name(t, lang, true),
-            '%' => "%".to_string(),
-            other => format!("%{other}"),
+            'H' => (Piece::Time(TextPart::Hours), format!("{:02}", t.hour)),
+            'I' => (Piece::Time(TextPart::Hours), format!("{hour12:02}")),
+            'M' => (Piece::Time(TextPart::Minutes), format!("{:02}", t.minute)),
+            'S' => (Piece::Time(TextPart::Seconds), format!("{:02}", t.second)),
+            other => (
+                Piece::Other,
+                match other {
+                    'p' => if t.hour < 12 { "AM" } else { "PM" }.to_string(),
+                    'd' => format!("{:02}", t.day),
+                    'e' => t.day.to_string(),
+                    'm' => format!("{:02}", t.month),
+                    'Y' => t.year.to_string(),
+                    'y' => format!("{:02}", t.year.rem_euclid(100)),
+                    'A' => day_name(t, lang, false),
+                    'a' => day_name(t, lang, true),
+                    'B' => month_name(t, lang, false),
+                    'b' => month_name(t, lang, true),
+                    '%' => "%".to_string(),
+                    other => format!("%{other}"),
+                },
+            ),
         };
-        out.push_str(&piece);
+        out.push(piece);
     }
     out
 }
@@ -288,6 +350,47 @@ mod tests {
         assert_eq!(language_of(Some("PT_pt")), Language::PortugueseBr);
         assert_eq!(language_of(Some("en-US")), Language::English);
         assert_eq!(language_of(None), Language::English);
+    }
+
+    #[test]
+    fn a_clock_is_cut_into_hours_separators_minutes_and_seconds() {
+        let parts = |p: &str| clock_parts(p, &T, Language::English);
+        use TextPart::*;
+        assert_eq!(
+            parts("%H:%M:%S"),
+            vec![
+                (Some(Hours), "21".into()),
+                (Some(Separators), ":".into()),
+                (Some(Minutes), "05".into()),
+                (Some(Separators), ":".into()),
+                (Some(Seconds), "09".into()),
+            ]
+        );
+        assert_eq!(
+            parts("at %I.%M %p"),
+            vec![
+                (None, "at ".into()),
+                (Some(Hours), "09".into()),
+                (Some(Separators), ".".into()),
+                (Some(Minutes), "05".into()),
+                (None, " PM".into()),
+            ],
+            "text outside the time and other directives keep the text's style"
+        );
+        assert_eq!(
+            parts("%H%a%M"),
+            vec![
+                (Some(Hours), "21".into()),
+                (None, "Wed".into()),
+                (Some(Minutes), "05".into()),
+            ]
+        );
+        assert_eq!(parts("%d/%m"), vec![(None, "30/09".into())]);
+        assert!(parts("").is_empty());
+        for pattern in ["%H:%M:%S", "%A %e %B, %I:%M %p", "100%% %q %"] {
+            let joined: String = parts(pattern).into_iter().map(|(_, t)| t).collect();
+            assert_eq!(joined, format_clock(pattern, &T, Language::English));
+        }
     }
 
     #[test]
