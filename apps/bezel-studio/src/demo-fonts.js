@@ -13,6 +13,13 @@ const family = (name, faces, category, extra = {}) => ({ name, faces, monospace:
 const BUNDLED = [
   family('Inter', [f(400), f(500), f(600), f(700)], 'sans', { bundled: true }),
   family('JetBrains Mono', [f(400), f(500), f(700)], 'mono', { bundled: true }),
+  family('Doto', Array.from({ length: 9 }, (_, i) => f((i + 1) * 100)), 'display', { bundled: true }),
+  family('Doto Rounded', Array.from({ length: 9 }, (_, i) => f((i + 1) * 100)), 'display', { bundled: true }),
+  family('IBM Plex Mono', [100, 200, 300, 400, 500, 600, 700].flatMap((w) => [f(w), f(w, true)]), 'mono', { bundled: true }),
+  family('Fraunces 144pt', [f(300, true), f(400, true), f(300), f(400), f(600)], 'serif', { bundled: true }),
+  family('Instrument Sans', [f(400), f(500), f(600)], 'sans', { bundled: true }),
+  family('Space Grotesk', [f(400), f(500), f(600)], 'sans', { bundled: true }),
+  family('Bricolage Grotesque 96pt', [f(400), f(500), f(700), f(800)], 'sans', { bundled: true }),
 ];
 
 /** A stock Windows 11's families. */
