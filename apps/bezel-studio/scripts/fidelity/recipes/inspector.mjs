@@ -47,6 +47,23 @@ export default {
   }],
   artboards: ['Main', 'GraphData', 'GraphLook', 'PlayerData', 'PlayerLook'],
   states: [
+    ...['clock', 'analog', 'weather', 'player', 'spectrum', 'shape', 'image', 'gif'].map(kind => ({ name: `ux2-media-${kind}`, capture: '#inspector', run: async app => {
+      if (kind === 'gif') { const url = new URL(app.page.url()); url.searchParams.set('demo', 'gif'); await app.page.goto(url.href); }
+      await standalone(app, ['image', 'shape', 'gif'].includes(kind) ? null : kind === 'analog' ? 'clock' : kind);
+      const root = inspector(app);
+      if (['shape', 'image'].includes(kind)) {
+        await app.page.locator('#tab-media').click(); await app.page.getByRole('tab', { name: t('media.icons'), exact: true }).click(); await app.page.locator('#icon-search').fill('cpu'); await app.page.locator('[data-icon="cpu"]').click();
+        await openSection(app.page, 'data');
+        const source = await root.getByRole('combobox', { name: t('common.image'), exact: true }).inputValue();
+        if (kind === 'shape') { await app.add('shape'); await openSection(app.page, 'color'); await root.getByRole('combobox', { name: t('common.image'), exact: true }).selectOption(source); await root.getByRole('button', { name: t('shape.repeat.tile'), exact: true }).click(); }
+      }
+      if (kind === 'gif') { await app.page.locator('#tab-layers').click(); await app.page.locator('.layer-name').first().click(); }
+      if (kind === 'analog') await root.getByRole('button', { name: t('insp.clock.analog'), exact: true }).click();
+      if (kind === 'player') await root.locator('[data-section="cover-fade"]').getByRole('button', { name: t('fade.linear'), exact: true }).click();
+      for (const section of await root.locator(':scope > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));
+      await root.evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+      await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+    } })),
     ...['value', 'text', 'bar', 'needle', 'graph'].map(kind => ({ name: `ux2-linked-${kind}`, capture: '#inspector', run: app => linkedBoard(app, kind) })),
     { name: 'ux2-linked-multi', capture: '#inspector', run: async app => {
       await standalone(app, null);

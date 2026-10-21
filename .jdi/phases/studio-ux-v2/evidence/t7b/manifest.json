@@ -1,0 +1,130 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-clock",
+    "file": "dark/app/inspector/ux2-media-clock.png",
+    "detail": "dark/app/inspector/ux2-media-clock-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "dark/app/inspector/ux2-media-analog.png",
+    "detail": "dark/app/inspector/ux2-media-analog-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-weather",
+    "file": "dark/app/inspector/ux2-media-weather.png",
+    "detail": "dark/app/inspector/ux2-media-weather-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-player",
+    "file": "dark/app/inspector/ux2-media-player.png",
+    "detail": "dark/app/inspector/ux2-media-player-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-spectrum",
+    "file": "dark/app/inspector/ux2-media-spectrum.png",
+    "detail": "dark/app/inspector/ux2-media-spectrum-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-shape",
+    "file": "dark/app/inspector/ux2-media-shape.png",
+    "detail": "dark/app/inspector/ux2-media-shape-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-image",
+    "file": "dark/app/inspector/ux2-media-image.png",
+    "detail": "dark/app/inspector/ux2-media-image-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-gif",
+    "file": "dark/app/inspector/ux2-media-gif.png",
+    "detail": "dark/app/inspector/ux2-media-gif-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-clock",
+    "file": "light/app/inspector/ux2-media-clock.png",
+    "detail": "light/app/inspector/ux2-media-clock-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "light/app/inspector/ux2-media-analog.png",
+    "detail": "light/app/inspector/ux2-media-analog-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-weather",
+    "file": "light/app/inspector/ux2-media-weather.png",
+    "detail": "light/app/inspector/ux2-media-weather-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-player",
+    "file": "light/app/inspector/ux2-media-player.png",
+    "detail": "light/app/inspector/ux2-media-player-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-spectrum",
+    "file": "light/app/inspector/ux2-media-spectrum.png",
+    "detail": "light/app/inspector/ux2-media-spectrum-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-shape",
+    "file": "light/app/inspector/ux2-media-shape.png",
+    "detail": "light/app/inspector/ux2-media-shape-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-image",
+    "file": "light/app/inspector/ux2-media-image.png",
+    "detail": "light/app/inspector/ux2-media-image-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-gif",
+    "file": "light/app/inspector/ux2-media-gif.png",
+    "detail": "light/app/inspector/ux2-media-gif-detail.png"
+  }
+]
