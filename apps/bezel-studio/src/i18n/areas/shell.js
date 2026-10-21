@@ -7,6 +7,7 @@ export const PREFIXES = Object.freeze(['shell.']);
 
 export default {
   en: {
+    'shell.exitCard': 'Finish editing this Card (Escape)',
     'shell.textEditHint': 'Ctrl+Enter to apply · Escape to cancel',
     "shell.handle.resize.nw": "Resize top left",
     "shell.handle.resize.n": "Resize top",
@@ -45,6 +46,7 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   'pt-BR': {
+    'shell.exitCard': 'Concluir edição deste Card (Esc)',
     'shell.textEditHint': 'Ctrl+Enter para aplicar · Esc para cancelar',
     "shell.handle.resize.nw": "Redimensionar canto superior esquerdo",
     "shell.handle.resize.n": "Redimensionar parte superior",
@@ -83,6 +85,7 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   it: {
+    'shell.exitCard': 'Termina modifica della Card (Esc)',
     'shell.textEditHint': 'Ctrl+Invio per applicare · Esc per annullare',
     "shell.handle.resize.nw": "Ridimensiona in alto a sinistra",
     "shell.handle.resize.n": "Ridimensiona in alto",
