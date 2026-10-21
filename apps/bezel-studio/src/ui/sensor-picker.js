@@ -10,14 +10,18 @@ let sequence = 0;
 export const refreshSensorPicker = () => activePicker?.refresh();
 export const closeSensorPicker = () => activePicker?.close('dismiss');
 
-export function sensorPicker({ t, key, catalog, readings, onChange, label, numeric = false, scope = label }) {
+export function sensorPicker({ t, key, catalog, readings, onChange, label, numeric = false, scope = label, summary = null }) {
   const entry = catalog().find(s => s.key === key);
   const card = listCard({ icon: SENSOR_CATEGORY_ICONS[entry?.category] ?? 'sensors', title: entry?.label ?? (key || t('insp.sensorPickerChoose')), subtitle: key || null, value: readings()?.[key]?.display ?? '…', label });
+  if (summary) {
+    card.querySelector('.list-card-title').textContent = summary.title;
+    card.querySelector('.list-card-value').textContent = summary.value;
+  }
   card.setAttribute('role', 'combobox');
   card.setAttribute('aria-haspopup', 'dialog');
   card.setAttribute('aria-expanded', 'false');
   card.dataset.sensorKey = key;
-  card.querySelector('.list-card-value').dataset.liveKey = key;
+  if (!summary) card.querySelector('.list-card-value').dataset.liveKey = key;
   const wrap = el('div', { class: 'source-card', dataset: { focusScope: `sensor-${scope}` } }, [card]);
 
   function open() {

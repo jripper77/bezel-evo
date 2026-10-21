@@ -23,18 +23,19 @@ export function iconButton(label, paths, onclick, { size = 18, class: extra = ''
 const changeOf = new WeakMap();
 
 /** A number input whose `change` calls its handler with the parsed value (`step` 1 rounds to integers). */
-function numberInput(attrs, step, onChange) {
+function numberInput(attrs, step, onChange, nullable = false) {
   const input = el('input', { ...attrs, type: 'number', step });
-  changeOf.set(input, onChange);
-  input.addEventListener('change', () => {
-    const v = Number(input.value);
-    if (Number.isFinite(v)) changeOf.get(input)(step === 1 ? Math.round(v) : v);
+  changeOf.set(input, raw => {
+    if (nullable && raw === '') { onChange(null); return; }
+    const v = Number(raw);
+    if (Number.isFinite(v)) onChange(step === 1 ? Math.round(v) : v);
   });
+  input.addEventListener('change', () => changeOf.get(input)(input.value));
   return input;
 }
 
 /** What the input of a form drawn again takes from its counterpart in the new form. */
-const ADOPTED = Object.freeze(['id', 'min', 'max', 'step', 'aria-label', 'disabled']);
+const ADOPTED = Object.freeze(['id', 'min', 'max', 'step', 'aria-label', 'disabled', 'placeholder']);
 
 /**
  * Keeps `current`, a number input of these builders that has focus, in the
@@ -66,13 +67,13 @@ export function adoptControl(current, fresh) {
 }
 
 /** A labelled number input. `step` 1 rounds to integers. */
-export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null } = {}) {
+export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false } = {}) {
   if (prefix !== undefined) {
-    const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName });
+    const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName, nullable });
     return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
   }
   const id = fieldId();
-  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange);
+  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange, nullable);
   const field = el('label', { class: 'field number-field', for: id }, [
     el('span', { class: 'field-label' }, [iconName ? icon(ICONS[iconName], 16) : null, label]),
     el('span', { class: 'number-control' }, [input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
@@ -81,9 +82,9 @@ export function numberField(label, value, onChange, { min, max, step = 1, unit, 
 }
 
 /** A labelled text input (committed on change). */
-export function textField(label, value, onChange, { placeholder, list } = {}) {
+export function textField(label, value, onChange, { placeholder, list, multiline = false } = {}) {
   const id = fieldId();
-  const input = el('input', { id, type: 'text', value: value ?? '', placeholder, list, spellcheck: false });
+  const input = el(multiline ? 'textarea' : 'input', { id, ...(multiline ? { text: value ?? '', rows: 3 } : { type: 'text', value: value ?? '' }), placeholder, list, spellcheck: false });
   input.addEventListener('change', () => onChange(input.value));
   return el('label', { class: 'field', for: id }, [el('span', { text: label }), input]);
 }
@@ -228,9 +229,9 @@ export function fadeField(texts, value, onChange) {
  * @param {string} label the accessible name, e.g. "X (px)"
  * @param {{min?: number, max?: number, step?: number|'any', unit?: string}} [opts]
  */
-export function prefixedField(prefix, label, value, onChange, { min, max, step = 1, unit, iconName } = {}) {
+export function prefixedField(prefix, label, value, onChange, { min, max, step = 1, unit, iconName, nullable = false } = {}) {
   const id = fieldId();
-  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange);
+  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange, nullable);
   return el('label', { class: 'fld', for: id }, [
     iconName ? icon(ICONS[iconName], 16) : null,
     el('span', { class: 'fld-prefix', 'aria-hidden': 'true', text: prefix }),
@@ -513,7 +514,7 @@ const FONT_CHUNK = 40;
  * @param {(font: {family: string, weight: number, italic: boolean, asset?: string|null}) => void} onChange
  * @param {{catalog: () => object|null, themeFamilies: () => string[], recent: () => string[], remember: (name: string) => void, sample: string, showFace?: (name: string, face: object) => void}} source
  */
-export function fontPicker(texts, value, onChange, source) {
+export function fontPicker(texts, value, onChange, source, { faceSample = null, fixedItalic = null } = {}) {
   const catalog = source.catalog();
   const status = fontStatus(catalog, value);
   const current = { weight: value.weight, italic: Boolean(value.italic) };
@@ -536,11 +537,20 @@ export function fontPicker(texts, value, onChange, source) {
     try { await source.reload?.(); } finally { button.disabled = false; }
     openFontList(button, texts, value, onChange, source);
   });
-  const faces = faceOptions(status.family, current).map((o) => [o.value, o.missing ? texts.faceMissing(o, o.nearest) : texts.faceName(o)]);
-  const face = selectField(texts.face, faceValue(current), faces, (v) => {
+  const faces = faceOptions(status.family, current).filter(option => fixedItalic === null || Boolean(option.italic) === fixedItalic).map((o) => [o.value, o.missing ? texts.faceMissing(o, o.nearest) : texts.faceName(o)]);
+  const choose = (v) => {
     const next = parseFaceValue(v);
     if (next) onChange({ family: value.family, asset: value.asset ?? null, ...next });
-  });
+  };
+  const face = faceSample && faces.length <= 6
+    ? iconChoice(texts.face, faceValue(current), faces, choose, { wide: true })
+    : selectField(texts.face, faceValue(current), faces, choose);
+  if (faceSample) for (const button of face.querySelectorAll('button')) {
+    const index = [...face.querySelectorAll('button')].indexOf(button), spec = parseFaceValue(faces[index][0]);
+    button.textContent = faceSample;
+    button.style.fontWeight = String(spec.weight);
+    button.style.fontStyle = spec.italic ? 'italic' : 'normal';
+  }
   return el('div', { class: 'font-picker' }, [
     el('div', { class: 'field' }, [el('label', { for: id, text: texts.family }), button, note]),
     face,
