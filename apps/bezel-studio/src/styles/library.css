@@ -334,7 +334,7 @@ button.layer-group-title { cursor: pointer; }
 .themes-dialog .theme-card { padding: 10px; gap: 6px; }
 .themes-dialog .theme-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .themes-dialog .theme-screen { white-space: normal; }
-.themes-dialog .theme-duplicate { display: none; }
+.themes-dialog .theme-duplicate, .themes-dialog #theme-save-as { display: none; }
 .themes-dialog .theme-card .thumb { aspect-ratio: 4 / 3; }
 .themes-dialog .theme-card .thumb .screen-thumb { width: min(86%, calc(64.5% * var(--ratio))); }
 .themes-gallery-detail { padding: 18px; border-left: 1px solid var(--border); overflow-y: auto; font-family: var(--font-sans); background: var(--surface-2); }

@@ -182,6 +182,7 @@ test('the full gallery uses real previews, usage facts and accessible menus insi
   await page.locator('#theme-gallery').click();
   const dialog = page.locator('.themes-dialog');
   await expect(dialog).toBeVisible();
+  await expect(dialog.locator('#theme-save-as')).not.toBeVisible();
   await expect(dialog.locator('.gallery-preview')).toBeVisible();
   await expect.poll(() => dialog.locator('.gallery-preview').evaluate(e => e.style.backgroundImage)).toContain('data:image/');
   await expect(dialog.locator('.themes-gallery-detail')).toContainText(t('themesPanel.sensors'));
