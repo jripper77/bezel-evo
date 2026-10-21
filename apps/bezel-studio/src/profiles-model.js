@@ -10,6 +10,14 @@ export const PROFILE_EFFECTS = Object.freeze(['none', 'curtain', 'wipe', 'blinds
 export const directed = (effect) => effect !== 'none' && effect !== 'mosaic';
 
 export const PROFILE_RULE_SOURCES = Object.freeze(['mediaPlaying', 'foreground', 'process', 'sensor', 'time', 'idle', 'locked']);
+/** A fresh rule; changing its source keeps priority and delay in the caller. */
+export function newProfileRule(source, catalog = []) {
+  const rule = { source, app: '', priority: 10, returnSeconds: 3 };
+  if (source === 'sensor') Object.assign(rule, { key: catalog.find(s => s.quantity !== 'text')?.key ?? '', compare: 'above', value: 70, forSeconds: 0 });
+  if (source === 'time') Object.assign(rule, { days: [], from: '09:00', to: '18:00' });
+  if (source === 'idle') rule.minutes = 5;
+  return rule;
+}
 const within = (value, max, min = 0) => Number.isInteger(value) && value >= min && value <= max;
 export function minuteOf(text) {
   if (typeof text !== 'string' || !/^\d{2}:\d{2}$/.test(text)) return null;
@@ -75,13 +83,12 @@ export function withoutProfile(config, id) {
 
 /**
  * The first profile the runtime would refuse, so the dialog can show it
- * before saving: no name, a connected display without a theme, a rule that
+ * before saving: no name, no screen theme assigned, a rule that
  * watches no app or with a priority or delay out of range. `null` when all fit.
  */
 export function firstIncomplete(config, displays) {
-  const connected = displays.filter((d) => d.connected).map((d) => d.key);
   const bad = config.profiles.find((profile) => !profile.name?.trim()
-    || connected.some((key) => !profile.themes[key])
+    || !Object.values(profile.themes).some(Boolean)
     || !['any', 'all'].includes(profile.match === undefined ? 'any' : profile.match)
     || profile.rules.some(rule => !validProfileRule(rule)));
   return bad?.id ?? null;

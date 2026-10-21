@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { translator } from '../../src/i18n/index.js';
 import {
-  PROFILE_EFFECTS, directed, firstIncomplete, minuteOf, validProfileRule, modeOf, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
+  PROFILE_EFFECTS, directed, firstIncomplete, minuteOf, validProfileRule, modeOf, newProfileRule, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
 } from '../../src/profiles-model.js';
 
 const t = translator('it');
@@ -109,4 +109,13 @@ test('all locales describe the new rule types without technical fallback text', 
   assert.match(ruleSummary(t,{source:'time',from:'00:00',to:'23:00'}),/ogni giorno/);
   assert.equal(ruleSummary(t,{source:'sensor',key:'x',compare:'below',value:1}), 'quando x resta sotto 1 per 0 s');
   assert.deepEqual(rules.map(r=>profileIcon({rules:[r]})),['sliders','clock','clock','lock']);
+});
+
+test('new rule sources start with distinct native defaults and allow keeping other screens unchanged', () => {
+  const sensors=[{key:'system.hostname',quantity:'text'},{key:'cpu.temperature',quantity:'celsius'}];
+  assert.equal(newProfileRule('sensor',sensors).key,'cpu.temperature');
+  for(const source of ['sensor','time','idle','locked','mediaPlaying']) assert.equal(validProfileRule(newProfileRule(source,sensors)),true);
+  assert.equal(validProfileRule(newProfileRule('foreground')),false);
+  const first=newProfileRule('time'); first.days.push(1); assert.deepEqual(newProfileRule('time').days,[]);
+  assert.equal(firstIncomplete(config(),[{key:'COM6',connected:true},{key:'COM8',connected:true}]),null);
 });

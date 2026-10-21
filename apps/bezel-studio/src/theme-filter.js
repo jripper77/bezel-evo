@@ -60,8 +60,8 @@ export function filterThemes(list, filter, screen) {
 }
 
 /** The entries whose name has every word of `query` (accents and case ignored). */
-export function searchThemes(list, query) {
-  return list.filter((entry) => matchesQuery(query, entry.name));
+export function searchThemes(list, query, catalog = []) {
+  return list.filter((entry) => matchesQuery(query, [entry.name, ...(entry.sensors ?? []).map(key => catalog.find(sensor => sensor.key === key)?.label ?? key)].join(' ')));
 }
 
 /** How many themes fit `screen` whatever the filter (`null` without a screen): the head's second count. */
