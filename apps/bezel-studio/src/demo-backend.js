@@ -1,7 +1,7 @@
 import { createProfileSelection } from './profile-selection.js';
 import { appliedRotation, rotatedBounds } from './editor/rotation.js';
 import { createSensorMotion, supportsSensorMotion } from './sensor-motion.js';
-import { demoSensorValue } from './demo-sensors.js';
+import { demoSensorValue, DEMO_SYSTEM_TEXT } from './demo-sensors.js';
 import { normalizeCardTheme } from './card-config.js';
 import { DEMO_SENSORS, demoValue } from './demo-sensors.js';
 export { DEMO_SENSORS, demoValue } from './demo-sensors.js';
@@ -1138,7 +1138,7 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
 export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   const profileSelection = createProfileSelection();
   let profileConfig = { profiles: [], automatic: true, manual: null, defaultProfile: null };
-  const systemText = { 'system.hostname': 'bezel-demo-workstation', 'system.os': 'Windows 11', 'system.audio.device': 'Demo headphones' };
+  const systemText = DEMO_SYSTEM_TEXT;
   const cards = createCardMotion();
   const sensorMotion = createSensorMotion();
   const cardTimers = createCardTimers();
