@@ -9,15 +9,29 @@ every editing tool of Bezel Studio.
 
 - **Icon rail.** **Widgets**, **Sensors**, **Layers**, **Themes**, **Media**
   (Design) and **Screen** (Device). The library panel shows the one you pick.
-- **Top bar.** The theme's path (*Themes › Ember*), an **Unsaved** badge while
-  there are changes, the screen selector, **Preferences** (the sliders icon),
-  **Live** and **Save** (**Ctrl+S**).
+- **Top bar.** The theme's name, with a pencil to rename it, and under it
+  whether everything is saved (*● unsaved changes · last saved 4 min ago*);
+  the screen selector, **Preferences** (the sliders icon), **Live**, **Save**
+  (**Ctrl+S**) and **⋯**, with Preferences again and the version of Studio.
 - **Canvas bars.** At the top: **Vertical** / **Horizontal**, rotate 180°, undo,
-  redo and **Show guides and grid**. At the bottom: zoom out, the zoom level,
+  redo, **Show guides and grid** and
+  [**Trial values**](#trial-values). At the bottom: zoom out, the zoom level,
   zoom in and **Fit**.
-- **Status bar.** Whether everything is saved and when, the
-  [sensor chip](sensors.md#the-sensor-status), the memory chip, the time the
-  last frame took to draw and whether the screen is awake.
+- **Status bar.** On the left, what is selected: its name, position and size,
+  or while you drag, what the gesture does and the key that changes it
+  (*Alt = no snapping*, *Shift = keep proportions*). On the right three chips,
+  each opening a panel when clicked:
+  - **Sensors** (*sensors 20/21*): how many sensors read, the probes and
+    **Restart** ([the sensor status](sensors.md#the-sensor-status));
+  - **Bezel** (*Bezel 11 ms · 182 MB*): how long the last frame took to draw
+    and how much memory Studio, Light and the sensor reader use, with a graph
+    of the last minute and **Copy diagnostics**. It turns yellow when a frame
+    takes longer than 33 ms;
+  - **Screen** (*Turing 8.8″ 30 fps*): green while live, grey when not, yellow
+    when something is wrong. Its panel says what the screen is doing, its
+    connection, resolution and frames, the theme and the active
+    [profile](profiles.md), with **Screen settings** and **Go live** /
+    **Stop live**.
 - **Panels.** Drag the edge of the library or of the inspector to resize it;
   Studio remembers the widths.
 
@@ -51,7 +65,8 @@ Language**.
 With several objects selected, the alignment buttons line them up on the first
 one you selected; with one, they align it on the screen.
 
-In **Layers**, combine the name/sensor search with **Object type** to find
+In **Layers**, combine the name/sensor search with **Object type** (behind the
+funnel button next to the search; a dot on it says a filter is on) to find
 text, values, clocks, graphs, images, cards, groups or other widget types.
 **All types** clears the type filter. Matching children keep their card/group
 ancestry visible; folded containers expand temporarily, then return to their
@@ -60,41 +75,95 @@ its complete contents. Filtering leaves the document and selection unchanged.
 
 ![Layers filtered to rings, retaining their parent group](../images/studio-layers-filter.png)
 
+## Handles on the canvas
+
+Besides the frame's own handles (move, resize, rotate), a selected object shows
+handles for what it draws. While you drag one, its value shows next to the
+pointer and the matching inspector field lights up, opening its section. With a
+handle focused, the arrow keys step it (**Shift**: a bigger step). A drag is one
+undo step.
+
+| Object | Handles |
+|---|---|
+| Ring | start and end on the circle (**Shift**: steps of 15°), thickness |
+| Needle | pivot, length, start and end of the arc, the edges between zones |
+| Bar | a **trial value** (below), corners |
+| Shape | corners (**Alt**: one corner only); double-click to move and scale a repeated picture |
+| Graph | the minimum and maximum of the scale (rounded); double-click for automatic |
+| Value and text | text size (**Ctrl** on the bottom-right corner scales the text); click a part (number, unit…) to pick it in the inspector; double-click to write a fixed text |
+| Analog clock | the length of each hand; the hands stay on the real time |
+| Image | where the picture is anchored when it fills its frame (nine positions), the fade |
+| Media player | the fade on the cover, and the divider between cover and texts |
+| Card | a tab for each face under the Card, **+** for a new one; double-click a tab to edit that face |
+| Spectrum | bar width and gap |
+| Several objects | one frame for all, resized in proportion, rotated together when they all can, pink guides with the distance between them |
+
+A bar's trial value holds its sensor where you drag it, so you see the bar at
+that level. Nothing is saved, and the screen keeps showing the real reading.
+
+**The floating bar** above the selection holds the linked sensor (click it to
+choose another), **▶ Try** (the same trial as the inspector's preview),
+**Duplicate** and **⋯** (the right-click menu). It hides during a drag, moves
+below the object when the canvas toolbar is in the way, and with several
+objects keeps only Duplicate and ⋯.
+
+### Trial values
+
+The test-tube button in the canvas bar shows the whole theme with trial values
+instead of the sensors: every bound sensor sweeps from the bottom to the top of
+its scale and back in 3 seconds, clocks run, the weather goes through its
+conditions, players play and graphs draw a wave. A full cycle takes 24 seconds.
+Use it to check that nothing overlaps at 100% or gets lost at 0%. Nothing is
+saved and the screen keeps showing the real sensors. It is off when Windows
+asks for reduced motion.
+
 ## Removing imported media
 
-In **Media → This theme**, use the trash button on a file to remove it from
-the theme's media list. Files still used by images, needles, fonts or the
-background are protected: replace or remove those references first, including
-objects on hidden card faces. The original file on your computer is preserved.
+In **Media → This theme**, each file says where it is used (*in use: Cover,
+background*), counting objects on hidden card faces too. Only a file nothing
+uses has a trash button, which removes it from the theme's media list: to
+remove a file still used by images, needles, fonts or the background, replace
+or remove those references first. **+** adds a picture or a video. The original file on your computer is preserved.
 Saving includes only assets the theme uses. Session bytes remain available so
 Undo can restore a previously removed image object; importing the file again
 also restores it to the list.
 
 ## The inspector
 
-With nothing selected, the inspector shows the **theme**: its name, **Vertical**
-or **Horizontal**, the [background](#the-background) and how often it refreshes
-(quick values 0.5, 1, 2 and 5 s).
+With nothing selected, the inspector shows the **theme**: a preview, its name,
+the screen and its size, whether it is saved (with **Save**, **Save as** and
+**Duplicate** in its menu), **Vertical** or **Horizontal** and the 180° turn,
+the [background](#the-background) and how often it refreshes (quick values 0.5,
+1, 2 and 5 s).
 
 With an object selected, it shows from top to bottom:
 
-- a **header** with the object's name, kind and layer, a visible object-type
-  selector, and buttons to hide it, lock it and open more actions;
+- a **header** with the object's name, kind and layer, and buttons to hide it,
+  lock it and open more actions;
 - a **live preview** of the object on its own, drawn by the same renderer as the
   screen, with its real readings: you see each change at once, even when the
-  object is small on the canvas;
-- **Membership**, then **Position and size**, including rotation for supported
-  independent objects; these stay above the tabs;
-- the **Data** tab: what it shows (sensor and range, text, clock format,
-  weather location, graph window, media app);
-- the **Look** tab: colours, font, corners, thickness, transitions and the
-  other visual settings.
+  object is small on the canvas. **▶ Try** plays it with trial values: a value
+  climbs to its maximum and back, a clock runs through a day, the weather shows
+  each condition, a Card shows its next face. Nothing is saved;
+- the **sections**, in this order, each only when the object has something in
+  it: **Layout** (position, size, rotation, the group or Card it belongs to),
+  **Data** (sensor and range, text, clock format, weather location, graph
+  window, media app), **Shape** (form, arc, ticks, visualization, corners),
+  **Text** (font, parts, letter case), **Color** (fills, gradients, shadow,
+  transparency) and **Behavior** (transitions, animation, playback,
+  sensor-driven motion, long text).
+
+Click a section's title to open or close it; **Alt+click** opens it alone and
+closes the others. A closed section shows a summary of its values (*240 × 240 ·
+0°*). Studio remembers which sections are open for each kind of object.
+With several objects selected, the inspector shows a preview of each and only
+the fields they share; a field whose values differ says *mixed*.
 
 Number fields take the arrow keys and keep their focus while you step.
 Scrollable panels use slim rounded scrollbars; source descriptions in Sensors
 wrap within the panel rather than forcing horizontal scrolling.
 
-![The inspector of a CPU ring, Look tab, with the colour picker open](../images/studio-color-picker.png)
+![The inspector of a CPU ring, Color section, with the colour picker open](../images/studio-color-picker.png)
 
 ### Choosing a sensor
 
@@ -106,7 +175,7 @@ sensors. Use the arrow keys and Enter to choose, or Escape to cancel.
 
 ### Sensor-driven motion
 
-Select an image, icon, shape or another ordinary widget and open **Look →
+Select an image, icon, shape or another ordinary widget and open **Behavior →
 Sensor-driven motion**. Turn on **Rotate with the sensor**, then choose a
 numeric sensor. Containers and device-video cutouts do not offer this control;
 ordinary objects inside cards and groups do.
@@ -170,7 +239,7 @@ from and how to pack one inside a theme.
 ### Smooth values
 
 Rings, bars, needles and values can glide to each new reading instead of
-jumping. In **Look → Transition**, pick **Smooth** and a duration (100 to
+jumping. In **Behavior → Transition**, pick **Smooth** and a duration (100 to
 2000 ms), or **Inertia** and a settling time. Inertia preserves the current
 position and velocity when a new reading arrives, then slows towards the new
 target. **None** updates immediately. Older Bezel builds open inertial themes
@@ -182,7 +251,7 @@ value at once. The editor honours Windows' reduced-motion setting.
 ### Colour by value
 
 Texts, values, rings, bars, needles, graphs, shapes and SVG icons can change
-colour with a sensor's value. In **Look**, turn on **Colour by value**, choose
+colour with a sensor's value. In **Color**, turn on **Colour by value**, choose
 the sensor (a bound object uses its own), a **Base colour**, then **Add
 threshold**: *From ≥ 70* orange, *From ≥ 90* red. Values use the sensor's own
 units; the highest threshold reached wins.
@@ -214,6 +283,56 @@ fades the picture without touching the fill. SVG pictures stay sharp at any
 size, and an animated GIF keeps playing. A shape used as a video window shows
 the screen's video instead.
 
+### Values and texts
+
+- **Text → Time parts** for a clock, or the parts of a value (prefix, number,
+  unit, suffix): each part can have its own font, weight, colour and
+  **Relative size**, and **Raised** lifts it like an exponent (*4.72* with a
+  small raised *GHz*). A part you leave alone follows the whole text.
+  On the canvas, click a part to pick it.
+- **Fixed-width digits** (on by default) keeps every digit the same width, so a
+  changing number does not wobble.
+- A text longer than its frame can **Shrink**, be **Cut …** or **Scroll**.
+- A value's **Behavior → Transition** also offers **Count** (the number runs to
+  the new reading) and **Roll** (digits turn like an odometer), and **Average
+  over readings** smooths a jumpy sensor.
+- A text can have a soft **shadow**, with its colour and blur.
+
+### Clocks
+
+A clock is **Digital** or **Analog**. Digital clocks take a format with time
+codes (**Insert time code**), a language, their own style for hours, minutes,
+seconds and separators, and **Blinking separators**. Analog clocks set the
+**Dial** (ticks, **Numbers** 3 6 9 12, 1–12 or Roman, border, **Dial face**
+colour), each of the three **Hands** with its colour, the **Hand shape**, a
+**Date on dial** and whether the second hand steps or sweeps. Switching back to
+digital keeps the digital format.
+
+### Needles
+
+A needle can be drawn as a full gauge: an arc with **Zones** (up to eight, in
+the sensor's units, each with a colour; the needle can take the colour of its
+zone) or a single colour or gradient, **Ticks and numbers**, the needle's shape
+(**Thin**, **Tapered**, **Arrow**, **Dot**), **Length** and **Tail**, a **Pivot
+cap**, a **Centre value** styled like a value, and a **Peak marker** that stays
+at the highest reading for a while, then falls back. A needle made before keeps
+its simple look until you change it.
+
+### Weather
+
+**Behavior → Icon animation** moves the weather icon: **Still**, **Gentle** or
+**Lively**, with a speed. Each condition has its own movement (the sun turns
+and glows, clouds drift, rain and snow fall, lightning flashes) and changing
+condition fades in 300 ms. New weather objects start **Gentle**; reduced motion
+keeps the icon still.
+
+### Images and GIFs
+
+When a picture fills its frame, the **Anchor point** chooses which part stays
+in view (nine positions, also draggable on the canvas). An animated GIF has
+**Playback** (**Loop** or **Once**, stopping on its last frame) and **Playback
+speed**.
+
 ### Graphs
 
 A graph has its own time window, independent of the theme's refresh. In
@@ -231,23 +350,24 @@ them. Add one from **Widgets**, or select objects and choose **Make card** in
 
 ![A Card selected: its faces list, shared background and transition](../images/studio-card-faces.png)
 
-**Faces tab.**
+The Card's inspector has the sections **Layout**, **Faces**, **Shape**, **Color**
+and **Behavior**; its header says which face is in view and how many there are.
+
+**Faces.**
 
 - The faces are a list: number, name, **in view** on the face the screen shows,
-  **Edit** to show that face on the canvas and edit its objects, and a **⋯** menu
-  with **Rename**, **Duplicate**, move earlier or later, and **Delete**.
-  **+ Add** adds a face.
-- **Shared background** holds the objects visible under every face; **Edit** it
+  the pencil to show that face on the canvas and edit its objects, and a **⋯**
+  menu with **Rename**, **Duplicate**, move earlier or later, and **Delete**.
+  **+ Add** adds a face. On the canvas, the tabs under the Card do the same.
+- **Shared background** holds the objects visible under every face; edit it
   like a face.
+
+**Behavior.**
+
 - **Transition between faces**: one effect for the whole Card (none, fade, slide
-  or flip), its duration (150 to 1500 ms) and, for slide and flip, its direction.
-  **Animate next face** tries it.
-
-**Motion tab.** The same transition with all its options, including whether the
-shared background moves with the faces.
-
-**Triggers tab.**
-
+  or flip), its duration (150 to 1500 ms), for slide and flip its direction, and
+  whether the shared background moves with the faces. **Animate next face**
+  tries it.
 - **Timed triggers** change the face at regular intervals: *every 30 s → show
   the next face* (or a given face). **Add timed trigger** adds one.
 - **App triggers** show a face for a while: when an application is running, is
@@ -271,10 +391,10 @@ browser, a video player. Covers and titles depend on what each app publishes.
 - **Data**: **Which app** (automatic, an app playing now, or **Other…** by name),
   **When nothing plays** (hide the player or show a text) and the **Times
   shown** (elapsed / total, elapsed / remaining, elapsed, remaining or total).
-- **Look → What to show**: turn **Cover**, **Title**, **Artist**, **Time**,
+- **Shape → What to show**: turn **Cover**, **Title**, **Artist**, **Time**,
   **Progress** and **App name** on or off. Several players with different parts
   make a layout of your own (a big cover here, the title there).
-- **Look → Progress bar**: fill and track colours, thickness, round ends, a knob
+- **Shape → Progress bar**: fill and track colours, thickness, round ends, a knob
   at the position, **Continuous**, **Segments** or **Dots**, and where the times
   go (**In the text**, **At the sides**, **Above**).
 - **Cover corners** and the spacing between cover and text.
@@ -303,7 +423,35 @@ position) is described in [Framing the video](storage-and-video.md#framing-the-v
 group, a Card face or its shared background. Select several (Ctrl+click) to
 **Group** them (**Ctrl+G**) or **Make card**. Each row can be hidden, locked and
 renamed (double-click the name). Cards show their shared background and each
-face, with **in view** on the shown one.
+face, with **in view** on the shown one and how many objects it holds. With
+several rows selected, the bar under the list also offers **Align** (six
+alignments and two distributions, as in the inspector).
+
+## Widgets and Sensors
+
+**Widgets** groups the widget kinds in four groups you can fold: values, time
+and media, text and shapes, containers. A search opens the groups that match.
+
+**Sensors** lists the sensors by category, each with its main reading in the
+title. A row shows the full name and the value, then the key and a small
+graph; a sensor that cannot be read shows *—* and why (*not available ·
+needs LibreHardwareMonitor*). The chips **All**, **Available** and
+**Unavailable** filter the list; probe and status are behind the funnel button.
+
+## Themes and the gallery
+
+**Themes → Open theme gallery** shows every theme as a real preview, with
+search, filters and the newest first. Select one to see its size and number of
+objects, the sensors it reads (with their current values, and the ones this PC
+cannot read), and where it is used: the base theme of a screen, or a
+[profile](profiles.md). From there: **Open in the editor**, **Duplicate**,
+**Export .bezeltheme…** and **Delete**. A theme in use, or one included
+with Bezel, cannot be deleted. **▶** on a theme shows it on the live screen
+for 30 seconds, then the screen goes back to what it showed; nothing is saved.
+A new theme starts empty or as a copy of one included with Bezel.
+
+Bezel includes, among others, four horizontal themes for 1920×480 screens:
+**Pixel**, **Nebula**, **Paper** and **Now Playing**.
 
 ## Saving
 
@@ -315,7 +463,8 @@ when saving.
 
 ## Preferences
 
-The sliders icon in the top bar opens **Preferences**:
+The sliders icon in the top bar, or **⋯ → Preferences**, opens
+**Preferences**:
 
 - **Language** of Studio and of Light's tray menu;
 - **Debug**: diagnostic logs and on-screen readings, for reporting a problem;

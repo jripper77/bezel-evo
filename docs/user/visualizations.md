@@ -1,6 +1,6 @@
 # Native visualization presets
 
-Select a bar, ring or graph and open **Look → Visualization**. Choose a preset
+Select a bar, ring or graph and open **Shape → Visualization**. Choose a preset
 from its schematic preview tile. The preview uses
 the same native renderer as connected displays. **Classic** keeps the previous
 appearance and is the default for existing themes.

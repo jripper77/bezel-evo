@@ -5,7 +5,7 @@ Studio and Light draw text with the same fonts, from three places. The
 
 ## Letter case
 
-Select a text widget and open **Look → Font → Letter case**. Choose Original,
+Select a text widget and open **Text → Letter case**. Choose Original,
 UPPERCASE, lowercase, First letter uppercase or Capitalize Each Word. The same
 control applies to values, clocks, weather and media metadata.
 

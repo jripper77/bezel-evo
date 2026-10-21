@@ -26,8 +26,10 @@ has three parts:
   dials, rounded bars and independent mirrored histories.
 
 - [Editing in Studio](studio-editing.md): the workspace, the inspector and its
-  live preview, colours, fonts, Cards, the media player, backgrounds, layers
-  and saving.
+  live preview, the handles on the canvas, trial values, colours, fonts, Cards,
+  the media player, backgrounds, layers, the theme gallery and saving.
+- [Profiles and automation](profiles.md): show a different theme when a game
+  runs, music plays, a sensor runs hot, at certain hours or when the PC is idle.
 - [Fonts](fonts.md): the fonts included with Bezel, your own fonts folder and
   fonts packed inside a theme.
 - [Sensors](sensors.md): what Bezel measures, the sensor status, and why a value
