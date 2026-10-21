@@ -705,12 +705,24 @@ pub struct Active {
     pub reason: Reason,
 }
 
+/// A temporary display trial; never part of the saved configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewStatus {
+    pub themes: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    pub remaining_seconds: u32,
+}
+
 /// What the profiles do now: the active profile and, for every profile,
 /// which of its rules are true now (D-2026-10-20-studio-ux-v2-12).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
     pub automatic: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview: Option<PreviewStatus>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active: Option<Active>,
     /// Per profile id, `trueNow` of each rule in order.
@@ -793,6 +805,7 @@ impl Selection {
             (Some(_), true) => Some(Reason::Default),
         };
         self.status = Status {
+            preview: None,
             automatic: config.automatic,
             active: chosen
                 .clone()
@@ -1085,7 +1098,7 @@ impl Service {
     }
 }
 
-fn scene_bytes(scene: &crate::Scene) -> usize {
+pub(crate) fn scene_bytes(scene: &crate::Scene) -> usize {
     scene.runtime.assets().values().map(Vec::len).sum::<usize>()
         + scene.saved.bytes()
         + scene.profile_restore.as_ref().map_or(0, Document::bytes)

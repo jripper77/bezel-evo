@@ -84,6 +84,11 @@ pub enum RuntimeOp {
         #[serde(default)]
         themes: BTreeMap<String, String>,
     },
+    /// A thirty-second trial on live displays, without editing saved profiles.
+    TryThemes {
+        themes: BTreeMap<String, String>,
+        profile: Option<String>,
+    },
     Sensors {
         listed: Option<Vec<String>>,
     },
@@ -321,6 +326,18 @@ fn dispatch_inner(
         RuntimeOp::Live { on } => {
             engine.live(key, on)?;
             Ok((Value::Null, Vec::new()))
+        }
+        RuntimeOp::TryThemes { themes, profile } => {
+            if themes.len() > MAX_SCENES
+                || themes
+                    .iter()
+                    .any(|(key, path)| key.len() > 256 || path.len() > 32768)
+                || profile.as_ref().is_some_and(|id| id.len() > 160)
+            {
+                return Err(invalid("invalid trial themes"));
+            }
+            let screens = engine.try_themes(&themes, profile)?;
+            Ok((json!({ "screens": screens }), Vec::new()))
         }
         RuntimeOp::PreviewCover { transition, themes } => {
             if themes.len() > MAX_SCENES

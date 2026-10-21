@@ -161,6 +161,7 @@ type Handoff = (
 pub struct Engine {
     targets: Arc<targets::Targets>,
     profiles: Option<profiles::Service>,
+    theme_trial: Option<(Duration, profiles::PreviewStatus)>,
     scenes: BTreeMap<String, Scene>,
     renderer: Box<dyn FrameRenderer>,
     sensors: sampling::Sampler,
@@ -213,6 +214,7 @@ impl Engine {
         Ok(Self {
             targets,
             profiles: None,
+            theme_trial: None,
             scenes: BTreeMap::new(),
             renderer,
             sensors,
@@ -443,7 +445,22 @@ impl Engine {
     /// What the profiles do now (the active profile and why, every rule's
     /// truth); `None` without the profile service.
     pub fn profile_status(&self) -> Option<profiles::Status> {
-        self.profiles.as_ref().map(profiles::Service::status)
+        let mut status = self.profiles.as_ref().map(profiles::Service::status)?;
+        if let Some((until, preview)) = &self.theme_trial {
+            let mut preview = preview.clone();
+            preview.remaining_seconds = until
+                .saturating_sub(self.origin.elapsed())
+                .as_secs_f64()
+                .ceil() as u32;
+            if preview.remaining_seconds > 0 {
+                status.active = preview.profile.clone().map(|profile| profiles::Active {
+                    profile,
+                    reason: profiles::Reason::Manual,
+                });
+                status.preview = Some(preview);
+            }
+        }
+        Some(status)
     }
     /// Attach a physical display once, preserving the runtime and its clocks.
     /// Tries a profile cover on every live screen, whoever opened its scene
@@ -493,6 +510,89 @@ impl Engine {
         }
         Ok(covered)
     }
+    /// Show the requested themes for thirty seconds, preserving the editor and config.
+    pub fn try_themes(
+        &mut self,
+        themes: &BTreeMap<String, String>,
+        profile: Option<String>,
+    ) -> Result<usize> {
+        // The service owns expiry and restoration. Without it a trial cannot run.
+        if self.profiles.is_none() {
+            return Ok(0);
+        }
+        let until = self.origin.elapsed() + Duration::from_secs(30);
+        let documents: Vec<_> = themes
+            .iter()
+            .filter_map(|(key, path)| {
+                let scene = self.scenes.get(key)?;
+                if !scene.live || scene.frame.is_none() {
+                    return None;
+                }
+                let document =
+                    profiles::load_document(path).filter(|d| profiles::fits(scene, d))?;
+                Some((key.clone(), path.clone(), document))
+            })
+            .collect();
+        if documents.is_empty() {
+            return Ok(0);
+        }
+        // A new trial replaces the previous one, including screens no longer targeted.
+        if self.theme_trial.take().is_some() {
+            for scene in self
+                .scenes
+                .values_mut()
+                .filter(|s| s.profile_id.as_deref() == Some(profiles::PREVIEW_ID))
+            {
+                scene.restore_profile();
+                scene.dirty = true;
+            }
+        }
+        let mut budget: usize = self.scenes.values().map(profiles::scene_bytes).sum();
+        let mut shown = BTreeMap::new();
+        for (key, path, document) in documents {
+            let Some(scene) = self.scenes.get_mut(&key) else {
+                continue;
+            };
+            let before = profiles::scene_bytes(scene);
+            let retained = scene.profile_restore.as_ref().map_or_else(
+                || scene.runtime.assets().values().map(Vec::len).sum(),
+                Document::bytes,
+            );
+            let after = scene.saved.bytes() + retained + document.bytes();
+            let next = budget.saturating_sub(before).saturating_add(after);
+            if next > MAX_ALL_ASSETS {
+                continue;
+            }
+            budget = next;
+            if scene.profile_restore.is_none() {
+                scene.profile_restore = Some(Document {
+                    theme: scene.runtime.theme().clone(),
+                    assets: scene.runtime.assets().clone(),
+                });
+            }
+            scene.profile_animation = None;
+            scene.profile_id = Some(profiles::PREVIEW_ID.into());
+            scene.update(document);
+            scene.runtime.automatic_cards(true);
+            scene.preview_until = Some(until);
+            scene.dirty = true;
+            shown.insert(key, path);
+        }
+        let count = shown.len();
+        if count > 0 {
+            self.theme_trial = Some((
+                until,
+                profiles::PreviewStatus {
+                    themes: shown,
+                    profile,
+                    remaining_seconds: 30,
+                },
+            ));
+            self.wake.notify();
+        }
+        Ok(count)
+    }
+
     pub fn live(&mut self, key: &str, on: bool) -> Result<()> {
         let scene = self
             .scenes
@@ -591,6 +691,13 @@ impl Engine {
     }
     /// Deterministic clock entry for tests and the same loop's scheduling.
     pub fn tick_at(&mut self, now: Duration, time: LocalTime) -> Result<Duration> {
+        if self
+            .theme_trial
+            .as_ref()
+            .is_some_and(|(until, _)| now >= *until)
+        {
+            self.theme_trial = None;
+        }
         if self.suspended {
             if let Some(audio) = &self.audio {
                 audio.sync(Vec::new(), false);

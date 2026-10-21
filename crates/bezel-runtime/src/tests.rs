@@ -2103,3 +2103,76 @@ fn a_spectrum_on_the_pcs_output_listens_without_any_player() {
     }
     assert!(opened.lock().unwrap().iter().all(|s| s == SYSTEM_SOURCE));
 }
+
+#[test]
+fn a_thirty_second_theme_trial_restores_without_changing_saved_documents() {
+    use crate::profiles::{Config, ProfileFile, Service};
+    use bezel_core::ports::{ThemeLocation, ThemeStore};
+    let temporary = tempfile::Builder::new()
+        .prefix("bezel-profile-thirty-")
+        .tempdir()
+        .unwrap();
+    let mut f = fixture();
+    let base = doc();
+    f.engine.document(&f.key, 1, base.clone(), true).unwrap();
+    f.engine.tick_at(Duration::ZERO, time()).unwrap();
+    let file = ProfileFile(temporary.path().join("profiles.json"));
+    let config = Config {
+        automatic: false,
+        ..Default::default()
+    };
+    file.save(&config).unwrap();
+    f.engine.profiles = Some(Service::new(file.clone()));
+    let mut tried = base.clone();
+    tried.theme.name = "thirty seconds".into();
+    let location = ThemeLocation(
+        temporary
+            .path()
+            .join("trial.bezeltheme")
+            .display()
+            .to_string(),
+    );
+    bezel_themes::FsThemeStore
+        .save(&location, &tried.theme, &tried.assets)
+        .unwrap();
+    let themes = BTreeMap::from([(f.key.clone(), location.0.clone())]);
+    assert_eq!(
+        f.engine.try_themes(&themes, None).unwrap(),
+        0,
+        "no live screen"
+    );
+    f.engine.scenes.get_mut(&f.key).unwrap().live = true;
+    assert_eq!(
+        f.engine
+            .try_themes(&BTreeMap::from([(f.key.clone(), "missing".into())]), None)
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        f.engine
+            .try_themes(&themes, Some("profile-1".into()))
+            .unwrap(),
+        1
+    );
+    let scene = &f.engine.scenes[&f.key];
+    assert_eq!(scene.runtime.theme().name, tried.theme.name);
+    assert_eq!(scene.saved.theme.name, base.theme.name);
+    let until = scene.preview_until.unwrap();
+    let status = f.engine.profile_status().unwrap();
+    assert_eq!(status.active.unwrap().profile, "profile-1");
+    assert_eq!(status.preview.unwrap().themes, themes);
+    f.engine
+        .tick_at(until - Duration::from_millis(1), time())
+        .unwrap();
+    assert_eq!(
+        f.engine.scenes[&f.key].runtime.theme().name,
+        tried.theme.name
+    );
+    f.engine.tick_at(until, time()).unwrap();
+    assert_eq!(
+        f.engine.scenes[&f.key].runtime.theme().name,
+        base.theme.name
+    );
+    assert!(f.engine.profile_status().unwrap().preview.is_none());
+    assert_eq!(file.load().unwrap(), config);
+}
