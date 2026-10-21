@@ -4,7 +4,7 @@
 // binding it, the Libre notice, Layers names in full, its filter and the
 // multiple-selection bar, the "New theme" card, the theme search and
 // Duplicate, and the Media totals.
-import { test, expect, watchErrors, expectAccessible, dragTo, layers, libraryTabKey } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, dragTo, layers, libraryTabKey, addMedia } from './helpers.mjs';
 
 const tab = (page, t, name) => page.getByRole('tab', { name: t(libraryTabKey(name)), exact: true }).click();
 
@@ -272,7 +272,8 @@ test('Media says what the theme holds and opens the GIF search from its foot', a
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
   await expect(panel.locator('.media-drop-title')).toHaveText(t('mediaPanel.dropTitle'));
-  await expect(panel.locator('#media-head .section-title')).toHaveText(t('media.inTheme'));
+  await expect(panel.locator('#media-head .accordion-title')).toHaveText(t('media.inTheme'));
+  await expect(panel.getByRole('button', { name: t('mediaPanel.choose'), exact: true })).toHaveAttribute('aria-haspopup', 'menu');
   const open = panel.getByRole('button', { name: t('media.searchGifs') });
   await expect(open).toBeVisible();
   await expect(open).toContainText(t('mediaPanel.provider'));
@@ -354,42 +355,51 @@ test('the Themes dialog reuses its grid, selects before opening, duplicates and 
 });
 
 
-test('Media lists bridge imports, counts files without posters and applies their background', async ({ page, t }) => {
+test('Media lists bridge imports, counts files without posters and says where each is used', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
   const items = panel.locator('.media-item');
   await expect(items).toHaveCount(0);
-  await panel.locator('#media-add').click();
+  await addMedia(page, t, 'image');
   await expect(items).toHaveCount(1);
-  await expect(items.first().locator('.media-kind')).toHaveText('PNG');
-  await panel.locator('#media-add-video').click();
+  await expect(items.first().locator('.media-name small')).toHaveText(/^PNG/);
+  await addMedia(page, t, 'video');
   await expect(items).toHaveCount(2);
-  await expect(panel.locator('#media-head .count')).toContainText(t('media.count', { count: 2 }));
-  const video = items.filter({ has: page.getByText(t('common.video'), { exact: true }) });
+  await expect(panel.locator('#media-count')).toContainText(t('media.count', { count: 2 }));
+  await expect(panel.locator('.media-group .accordion-summary')).toHaveText('2');
+  const video = items.filter({ has: page.getByText(new RegExp(`^${t('common.video')} ·`)) });
   await expect(video).toHaveCount(1);
+  await video.hover();
   await video.getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
-  await expect(video).toHaveClass(/is-background/);
-  await expect(video.locator('.media-bg')).toBeVisible();
+  // The badge says where the file is used, from the theme's own references.
+  const where = t('mediaPanel.usedBy', { where: t('common.background').toLocaleLowerCase() });
+  await expect(video.locator('.media-uses')).toHaveText(where);
+  await expect(video).toHaveClass(/in-use/);
   await page.locator('#undo').click();
-  await expect(video.locator('.media-bg')).toBeHidden();
+  await expect(video.locator('.media-uses')).toHaveCount(0);
+  await expect(panel.locator('.media-hint')).toHaveText(t('mediaPanel.usesHint'));
+  // From the collection and Icons lead to their tabs.
+  await panel.locator('.media-link[data-subtab="icons"]').click();
+  await expect(page.locator('#subtab-media-icons')).toHaveAttribute('aria-selected', 'true');
+  await page.locator('#subtab-media-theme').click();
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
 
-test('Media removes unused files and protects an image used as background', async ({ page, t }) => {
+test('Media offers the bin only on unused files: one used as background cannot be removed', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
-  await panel.locator('#media-add').click();
+  await addMedia(page, t, 'image');
   const item = panel.locator('.media-item');
   const remove = item.getByRole('button', { name: t('mediaPanel.remove', { name: 'image-1.png' }), exact: true });
+  await expect(remove).toBeVisible();
+  await item.hover();
   await item.getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
-  await remove.click();
-  await expect(page.locator('#toast')).toHaveText(t('mediaPanel.inUse'));
-  await expect(item).toHaveCount(1);
+  await expect(remove).toHaveCount(0);
   await page.locator('#undo').click();
   await remove.click();
   await expect(item).toHaveCount(0);

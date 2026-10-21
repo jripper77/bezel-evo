@@ -186,6 +186,29 @@ export function countLayers(nodes) {
   return nodes.reduce((n, node) => n + 1 + countLayers(node.children) + node.groups.reduce((m, g) => m + countLayers(g.nodes), 0), 0);
 }
 
+/**
+ * Where the theme uses the file `ref`, read as bezel-core Theme::assets
+ * reads a theme: `{ background: true }` for the background (its picture,
+ * video or poster), else `{ id, name }` for each object whose picture, shape
+ * image, needle picture or font (also a part's) it is. Empty: unused.
+ */
+export function assetUses(theme, ref) {
+  if (!ref) return [];
+  const uses = [];
+  const bg = theme?.background ?? {};
+  if (['image', 'video'].includes(bg.type) && (bg.asset === ref || bg.poster === ref)) uses.push({ background: true });
+  for (const e of theme?.elements ?? []) {
+    const k = e.kind ?? {};
+    const refs = k.type === 'image' ? [k.asset]
+      : k.type === 'shape' ? [k.image?.asset]
+        : k.type === 'needle' ? [k.asset, k.look?.center?.style?.font?.asset]
+          : k.type === 'text' ? [k.style?.font?.asset, ...Object.values(k.style?.parts ?? {}).map((p) => p?.fontAsset)]
+            : [];
+    if (refs.includes(ref)) uses.push({ id: e.id, name: e.name });
+  }
+  return uses;
+}
+
 /** The Media list's totals: how many files and their bytes (`null` when no size is known). */
 export function mediaTotals(items) {
   const sizes = items.map((a) => a.bytes).filter((b) => typeof b === 'number' && Number.isFinite(b));

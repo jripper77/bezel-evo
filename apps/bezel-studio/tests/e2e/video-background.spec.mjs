@@ -7,7 +7,7 @@
 // image), and without ffmpeg the video comes without a poster and the
 // inspector says what ffmpeg is for. No console errors, no serious or
 // critical accessibility violations.
-import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as bgCard, changeBackgroundButton as changeButton, backgroundChooser as chooser } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as bgCard, changeBackgroundButton as changeButton, backgroundChooser as chooser, addMedia } from './helpers.mjs';
 import { formatBytes } from '../../src/ui/storage.js';
 import { formatDuration } from '../../src/editor/background.js';
 
@@ -37,8 +37,9 @@ test('a video added from the Media panel becomes the background, and undo takes 
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('tab', { name: t('library.media') }).click();
-  await expect(page.getByText(t('mediaPanel.dropBody'))).toBeVisible();
-  await page.getByRole('button', { name: t('media.addVideo') }).click();
+  // The compact drop area (T-9a): what to do, then + for a picture or a video.
+  await expect(page.locator('.media-drop-title')).toHaveText(t('mediaPanel.dropTitle'));
+  await addMedia(page, t, 'video');
   await expect(toast(page)).toHaveText(t('toast.videoAdded', { name: 'ferias.mp4', details: feriasDetails(lang) }));
   const item = page.locator('.media-item[data-ref="assets/ferias.mp4"]');
   await expect(item).toContainText(`${t('common.video')} · ${feriasDetails(lang)}`);
@@ -47,6 +48,8 @@ test('a video added from the Media panel becomes the background, and undo takes 
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'), { timeout: 1000 });
   await expectAccessible(page);
 
+  // A file's actions show on hover or focus (T-9a).
+  await item.hover();
   await item.getByRole('button', { name: t('collection.useBackground') }).click();
   await expect(page.locator('#status-main')).toHaveText(t('status.unsaved'));
   const shown = inspector(page).getByRole('group', { name: t('bg.video') });
@@ -131,6 +134,7 @@ test('files dropped on the editing area become the background; a GIF is a video'
   const sea = page.locator('.media-item[data-ref="assets/mar.gif"]');
   await expect(sea).toContainText(t('media.animatedGif'));
   await expect(bgCard(page, t, 'bg.image')).toBeVisible({ timeout: 1000 });
+  await sea.hover();
   await sea.getByRole('button', { name: t('collection.useBackground') }).click();
   await expect(inspector(page).getByRole('group', { name: t('bg.video') })).toContainText('mar.gif');
   expect(errors).toEqual([]);

@@ -21,7 +21,7 @@ import { createThemesDialog } from './themes-dialog.js';
 import { layerGroups } from '../editor/layers.js';
 import { wireLayerDrag } from './layer-drag.js';
 import { SENSOR_CATEGORY_ICONS } from '../sensor-picker-model.js';
-import { WIDGET_GROUPS, countLayers, createHistory, groupHeadline, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
+import { WIDGET_GROUPS, assetUses, countLayers, createHistory, groupHeadline, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
 import { libreStatus } from '../libre-status.js';
 import { matchesSensor, probeOf, readingState } from '../sensor-probes.js';
 import { timeAgo } from '../relative-time.js';
@@ -158,6 +158,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   // Which groups of the Widgets panel are open (all at first), remembered.
   // Which sensor categories are open (the processor and graphics at first), remembered.
   const sensorMemory = createSectionMemory({ key: 'bezel.sensorGroups', ids: CATEGORY_ORDER, open: ['cpu', 'gpu'] });
+  // Whether Media's "In the theme" is open (at first it is), remembered.
+  const mediaMemory = createSectionMemory({ key: 'bezel.mediaGroups', ids: ['theme'], open: ['theme'] });
   const widgetMemory = createSectionMemory({ key: 'bezel.widgetGroups', ids: WIDGET_GROUPS.map(g => g.id), open: WIDGET_GROUPS.map(g => g.id) });
 
   /**
@@ -885,18 +887,27 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
    * its poster, its kind, play time and size, and becomes a video
    * background; a picture becomes a picture background or an image element.
    */
+  /** "In use: background, CPU +2": where the theme uses a file, from its real references. */
+  function usesText(uses) {
+    const names = uses.map((u) => (u.background ? t('common.background').toLocaleLowerCase(locale()) : u.name));
+    const shown = names.slice(0, 2).join(', ');
+    return t('mediaPanel.usedBy', { where: names.length > 2 ? `${shown} +${names.length - 2}` : shown });
+  }
+
   function mediaItem(a, assets) {
     const moving = moves(a);
     const poster = moving && a.poster ? assets.find((p) => p.ref === a.poster)?.dataUrl : null;
     const preview = poster ?? a.dataUrl ?? null;
-    const label = a.kind === 'video' ? t('common.video') : t('media.animatedGif');
-    const details = moving ? [label, ...videoFacts(a, (n) => formatBytes(n, locale()))].join(' · ') : null;
-    const action = (text, paths, onclick) => el('button', { type: 'button', class: 'icon-button quiet', title: text, 'aria-label': text, onclick }, [icon(paths, 16)]);
-    return el('li', { class: 'media-item', dataset: { ref: a.ref } }, [
+    const label = a.kind === 'video' ? t('common.video') : moving ? t('media.animatedGif') : kindOf(a);
+    const details = moving ? [label, ...videoFacts(a, (n) => formatBytes(n, locale()))].join(' · ')
+      : [label, Number.isFinite(a.bytes) ? formatBytes(a.bytes, locale()) : null].filter(Boolean).join(' · ');
+    const uses = assetUses(store.getState().theme, a.ref);
+    const action = (text, paths, onclick, extra = '') => el('button', { type: 'button', class: `icon-button quiet${extra}`, title: text, 'aria-label': text, onclick }, [icon(paths, 16)]);
+    // Every file says where it is used; only an unused one can go (D-2026-10-20-studio-ux-v2-14).
+    return el('li', { class: `media-item${uses.length ? ' in-use' : ''}`, dataset: { ref: a.ref, uses: String(uses.length) } }, [
       el('span', { class: 'thumb', style: preview ? { backgroundImage: `url(${preview})` } : {} }, [
         preview ? null : icon(a.kind === 'video' ? ICONS.video : ICONS.image, 22),
-        el('span', { class: 'tag media-kind', text: kindOf(a) }),
-        el('span', { class: 'tag media-bg', hidden: true, text: t('common.background') }),
+        uses.length ? el('span', { class: 'tag media-uses', text: usesText(uses) }) : null,
       ]),
       el('span', { class: 'media-name' }, [
         el('span', { text: fileNameOf(a.ref) }),
@@ -911,54 +922,89 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
           const id = store.getState().selection[0];
           store.dispatch('update', { id, patch: { kind: { asset: a.ref } } });
         }),
-        action(t('mediaPanel.remove', { name: fileNameOf(a.ref) }), ICONS.trash, () => actions.removeAsset(a)),
+        uses.length ? null : action(t('mediaPanel.remove', { name: fileNameOf(a.ref) }), ICONS.trash, () => actions.removeAsset(a), ' media-remove'),
       ]),
     ]);
   }
 
-  /** "In the theme" with how many files and their size. */
+  /** Beside the title: how many files and their size; "In the theme" folds with its count. */
   function mediaHead(items) {
     const { count, bytes } = mediaTotals(items);
     const files = count === 1 ? t('media.countOne') : count ? t('media.count', { count }) : null;
-    const text = files && bytes !== null ? `${files} · ${formatBytes(bytes, locale())}` : files;
-    $('media-head').replaceChildren(sectionTitle(t('media.inTheme'), { count: text }));
+    $('media-count').textContent = files && bytes !== null ? `${files} · ${formatBytes(bytes, locale())}` : files ?? '';
+    const section = accordionSection({
+      id: 'theme', title: t('media.inTheme'), icon: 'image', summary: String(count), keepSummary: true,
+      expanded: mediaMemory.isOpen('media', 'theme'),
+      onToggle: () => { mediaMemory.toggle('media', 'theme'); renderMedia(media); $('media-head').querySelector('.accordion-toggle')?.focus(); },
+      render: (body) => body.append($('media-list'), mediaHint),
+    }).element;
+    section.classList.add('media-group');
+    $('media-head').replaceChildren(section);
   }
+  const mediaHint = el('p', { class: 'hint media-hint', 'data-i18n': 'mediaPanel.usesHint', text: t('mediaPanel.usesHint') });
 
   function renderMedia(assets) {
     media = assets;
     const list = $('media-list');
     const items = mediaItems(assets);
     mediaHead(items);
+    usesSignature = signatureOfUses();
     if (!items.length) {
       list.replaceChildren(el('li', { class: 'empty-note', text: t('media.empty') }));
       return;
     }
     list.replaceChildren(...items.map((a) => mediaItem(a, assets)));
-    markBackground();
   }
 
-  /** The picture or video the theme uses as its background says so. */
-  function markBackground() {
-    const { asset } = store.getState().theme.background ?? {};
-    for (const item of document.querySelectorAll('#media-list .media-item')) {
-      const on = item.dataset.ref === asset;
-      item.classList.toggle('is-background', on);
-      const badge = item.querySelector('.media-bg');
-      if (badge) badge.hidden = !on;
-    }
-  }
-  store.subscribe?.(() => markBackground());
+  // An edit that changes where a file is used redraws the list (its badge, its trash).
+  let usesSignature = '';
+  const signatureOfUses = () => JSON.stringify(mediaItems(media ?? []).map((a) => assetUses(store.getState().theme, a.ref)));
+  store.subscribe?.(() => {
+    if (!media || signatureOfUses() === usesSignature) return;
+    renderMedia(media);
+  });
 
   /** While a file is added (a poster may take seconds), the add buttons wait. */
   function setAdding(on) {
     $('media-add').disabled = on;
     $('media-add-video').disabled = on;
+    mediaPlus.disabled = on;
     $('media-status').hidden = !on;
     $('panel-media').setAttribute('aria-busy', String(on));
   }
 
   $('media-add').addEventListener('click', () => actions.addImage());
   $('media-add-video').addEventListener('click', () => actions.addVideo());
+  // The compact drop area (D-14): one + offers a picture or a video, the two
+  // existing commands; the files are still dropped anywhere on the area.
+  const mediaPlus = el('button', { type: 'button', class: 'icon-button media-plus', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+    onclick: (evt) => openMenuAt(evt.currentTarget, { label: t('mediaPanel.choose'), items: [
+      { label: t('media.add'), run: () => actions.addImage() },
+      { label: t('media.addVideo'), run: () => actions.addVideo() },
+    ] }) }, [icon(ICONS.plus, 18)]);
+  $('panel-media').querySelector('.media-drop').append(mediaPlus);
+  $('panel-media').querySelector('.panel-head h2').after(el('span', { class: 'count', id: 'media-count' }));
+  // "From the collection" and "Icons" lead to their tabs.
+  const mediaLink = (subtab, iconName, title, summary) => el('button', { type: 'button', class: 'media-link', dataset: { subtab }, onclick: () => $(`subtab-media-${subtab}`).click() }, [
+    icon(ICONS[iconName], 16), el('span', { class: 'media-link-title', text: title }), el('span', { class: 'media-link-summary', text: summary }), icon(ICONS.chevronRight, 12),
+  ]);
+  function renderMediaLinks() {
+    $('media-theme').querySelector('.media-links')?.remove();
+    $('media-theme').append(el('div', { class: 'media-links' }, [
+      mediaLink('collection', 'grid', t('mediaPanel.fromCollection'), t('mediaPanel.collectionSummary')),
+      mediaLink('icons', 'star', t('media.icons'), t('mediaPanel.iconsSummary')),
+    ]));
+    mediaPlus.title = t('mediaPanel.choose');
+    mediaPlus.setAttribute('aria-label', t('mediaPanel.choose'));
+  }
+  renderMediaLinks();
+  // Each origin with its icon (board LibraryPanelsNew); the text moves into a span the translations fill.
+  for (const [subtab, name] of [['theme', 'image'], ['collection', 'grid'], ['icons', 'star']]) {
+    const tabButton = $(`subtab-media-${subtab}`);
+    if (!tabButton?.dataset.i18n) continue;
+    tabButton.replaceChildren(icon(ICONS[name], 14), el('span', { 'data-i18n': tabButton.dataset.i18n, text: t(tabButton.dataset.i18n) }));
+    delete tabButton.dataset.i18n;
+  }
 
   // "This theme" | "Collection" (D-2026-10-01-gif-sticker-search-5): the
   // collection is where GIFs and stickers are searched on KLIPY.

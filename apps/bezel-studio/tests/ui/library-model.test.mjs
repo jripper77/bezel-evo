@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  WIDGET_COUNT, WIDGET_GROUPS, countLayers, groupHeadline, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
+  WIDGET_COUNT, WIDGET_GROUPS, assetUses, countLayers, groupHeadline, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
   sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups,
 } from '../../src/library-model.js';
 import { createWidget, WIDGETS } from '../../src/editor/widgets.js';
@@ -179,4 +179,29 @@ test('a sensor category shows its first readable percentage and temperature, els
   assert.deepEqual(groupHeadline('cpu', items, null), []);
   assert.deepEqual(groupHeadline('system', items, readings), [], 'the PC information has words');
   assert.deepEqual(groupHeadline('network', [{ key: 'net.name', quantity: 'text' }], { 'net.name': { value: 1, display: 'eth0' } }), []);
+});
+
+test('a file is in use where the core reads the theme assets: background, pictures, shapes, needles and fonts', () => {
+  const theme = {
+    background: { type: 'video', asset: 'clip.mp4', poster: 'clip.png' },
+    elements: [
+      { id: 1, name: 'Logo', kind: { type: 'image', asset: 'logo.png' } },
+      { id: 2, name: 'Card base', kind: { type: 'shape', image: { asset: 'dots.svg' } } },
+      { id: 3, name: 'Gauge', kind: { type: 'needle', asset: 'hand.png', look: { center: { style: { font: { asset: 'plex.ttf' } } } } } },
+      { id: 4, name: 'Clock', kind: { type: 'text', style: { font: { asset: 'doto.ttf' }, parts: { minutes: { fontAsset: 'plex.ttf' } } } } },
+      { id: 5, name: 'Empty', kind: { type: 'image', asset: '' } },
+    ],
+  };
+  assert.deepEqual(assetUses(theme, 'clip.mp4'), [{ background: true }]);
+  assert.deepEqual(assetUses(theme, 'clip.png'), [{ background: true }], 'the poster too');
+  assert.deepEqual(assetUses(theme, 'logo.png'), [{ id: 1, name: 'Logo' }]);
+  assert.deepEqual(assetUses(theme, 'dots.svg'), [{ id: 2, name: 'Card base' }]);
+  assert.deepEqual(assetUses(theme, 'hand.png'), [{ id: 3, name: 'Gauge' }]);
+  assert.deepEqual(assetUses(theme, 'plex.ttf'), [{ id: 3, name: 'Gauge' }, { id: 4, name: 'Clock' }]);
+  assert.deepEqual(assetUses(theme, 'doto.ttf'), [{ id: 4, name: 'Clock' }]);
+  assert.deepEqual(assetUses(theme, 'unused.png'), []);
+  assert.deepEqual(assetUses(theme, ''), [], 'an empty placeholder references nothing');
+  assert.deepEqual(assetUses({ background: { type: 'image', asset: 'a.png' } }, 'a.png'), [{ background: true }]);
+  assert.deepEqual(assetUses({ background: { type: 'color' }, elements: [{ id: 9, name: 'Ring', kind: { type: 'ring' } }, { id: 8, name: 'T', kind: { type: 'text', style: {} } }] }, 'a.png'), []);
+  assert.deepEqual(assetUses(null, 'a.png'), []);
 });

@@ -1,4 +1,5 @@
-import { setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { addMedia, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { translator } from '../../../src/i18n/index.js';
 // The library panels (artboards Main's left panel, Sensors, Layers, Media, Themes).
 // The standalone artboards use 360px panels. Use the existing resizer
 // preference helper, then reload so the normal host applies that width.
@@ -33,9 +34,10 @@ export default {
     { name: 'media', run: (app) => panel(app, 'media') },
     { name: 'media-filled', run: async (app) => {
       await panel(app, 'media');
-      await app.click('#media-add');
-      await app.click('#media-add');
-      await app.click('#media-add-video');
+      const t = translator('it');
+      await addMedia(app.page, t, 'image');
+      await addMedia(app.page, t, 'image');
+      await addMedia(app.page, t, 'video');
       await app.page.locator('.media-item').nth(2).waitFor({ state: 'visible' });
       await app.page.locator('#toast').waitFor({ state: 'hidden' });
     } },
