@@ -172,7 +172,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Files:** `src/ui/inspector/{card,theme}.js`, `src/ui/{screen-panel,storage,manager,standby}.js`, `src/styles/{card,screen}.css`, i18n, test dell'area
 - **Acceptance:** come le tavole; Card senza la doppia «Transizione tra le facce»; nomi delle facce non tagliati; Schermo con riavvio e
   rilascio della porta nel menu ⋯.
-- **Dipendenze:** T-0 · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0 · **Test:** G1–G9 · **Status:** completed — Card/Tema e Schermo/Archivio collegati alle tavole; transizione unica, nomi completi, menu dispositivo e archivio estendibile. D-21 conferma l’esclusione della rotazione per Card/gruppi/membri e per selezioni miste. 252 unitari e 36 e2e distinti verdi; una vecchia cattura su tabpanel Trigger annotata per T-10. Confronto it chiaro/scuro in `evidence/t7c/`; vedi `SUMMARY-T-7c.md`.
 
 #### T-8: Canvas — maniglie per oggetto e barra mobile
 - **Decisioni:** 10 · **Tavole:** CanvasHandles, MainNew (canvas)
