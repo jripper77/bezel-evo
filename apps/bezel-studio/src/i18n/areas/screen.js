@@ -7,6 +7,16 @@ export const PREFIXES = Object.freeze(['screenPanel.', 'storagePanel.']);
 
 export default {
   en: {
+    "storagePanel.sendFile": "Send file",
+
+    "screenPanel.actions": "Screen actions",
+    "screenPanel.releaseTitle": "Hand control back?",
+    "screenPanel.releaseBody": "Bezel stops sending frames and releases the port so the screen can use its own mode.",
+    "storagePanel.space": "Space",
+    "storagePanel.maintenance": "Maintenance",
+    "storagePanel.expand": "Open full-width storage",
+    "storagePanel.filters": "File filters",
+
     'screenPanel.protocol': 'protocol {name}',
     'screenPanel.autostart': 'Start with the computer',
     'screenPanel.autostartHint': 'In the tray, with the last theme already live.',
@@ -28,6 +38,16 @@ export default {
     'storagePanel.cacheButton': 'Local copies · {size}',
   },
   'pt-BR': {
+    "storagePanel.sendFile": "Enviar arquivo",
+
+    "screenPanel.actions": "Ações da tela",
+    "screenPanel.releaseTitle": "Devolver o controle?",
+    "screenPanel.releaseBody": "O Bezel para de enviar quadros e libera a porta para a tela usar seu próprio modo.",
+    "storagePanel.space": "Espaço",
+    "storagePanel.maintenance": "Manutenção",
+    "storagePanel.expand": "Abrir o armazenamento em toda a largura",
+    "storagePanel.filters": "Filtros de arquivos",
+
     'screenPanel.protocol': 'protocolo {name}',
     'screenPanel.autostart': 'Iniciar com o computador',
     'screenPanel.autostartHint': 'Na bandeja, com o último tema já ao vivo.',
@@ -49,6 +69,16 @@ export default {
     'storagePanel.cacheButton': 'Cópias locais · {size}',
   },
   it: {
+    "storagePanel.sendFile": "Invia file",
+
+    "screenPanel.actions": "Azioni sullo schermo",
+    "screenPanel.releaseTitle": "Restituire il controllo?",
+    "screenPanel.releaseBody": "Bezel smette di inviare fotogrammi e rilascia la porta, così lo schermo può usare la propria modalità.",
+    "storagePanel.space": "Spazio",
+    "storagePanel.maintenance": "Manutenzione",
+    "storagePanel.expand": "Apri l’archivio a tutto schermo",
+    "storagePanel.filters": "Filtri dei file",
+
     'screenPanel.protocol': 'protocollo {name}',
     'screenPanel.autostart': 'Avvia con il computer',
     'screenPanel.autostartHint': 'Nella tray, con l\'ultimo tema già in diretta.',

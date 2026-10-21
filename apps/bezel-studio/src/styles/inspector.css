@@ -275,3 +275,25 @@
 .inspector-linked .image-anchor button { min-height: 28px; border: 1px solid var(--border); border-radius: var(--control-radius); }
 
 .inspector-linked .player-part-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Theme details sit below the actual rendered document thumbnail. */
+.theme-heading { display: grid; gap: 10px; padding: 14px; background: var(--chrome); }
+.theme-preview { display: block; width: 100%; height: 82px; border: 1px solid var(--border); border-radius: 8px; background: var(--screen); }
+.theme-name-row .inspector-name { flex: 1; min-width: 0; }
+.theme-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; color: var(--muted); font-size: var(--fs-small); }
+.theme-save-state { margin-left: auto; color: var(--ok-ink); }
+.theme-save-state[data-dirty="true"] { color: var(--accent-ink); }
+.theme-orientation { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); }
+.theme-orientation > span { flex: 1; }
+.theme-orientation .field-choice { flex: none; }
+.theme-orientation .field-choice button { min-width: 34px; padding-inline: 6px; }
+.theme-orientation > .icon-button { flex: none; width: 34px; }
+.inspector-theme [data-section="background"] > .section-head { display: none; }
+.theme-selection-hint { margin: 0; padding: 16px 14px; border-top: 1px solid var(--line); }
+.inspector-theme .bg-current[data-kind="color"] { display: block; border: 0; padding: 0; background: transparent; }
+.inspector-theme .bg-current[data-kind="color"] > .bg-preview { display: none; }
+.inspector-theme .bg-current[data-kind="color"] .bg-current-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.inspector-theme .bg-current[data-kind="color"] .bg-type { grid-column: 1; grid-row: 1; justify-self: start; }
+.inspector-theme .bg-current[data-kind="color"] .bg-change { grid-column: 2; grid-row: 1; }
+.inspector-theme .bg-current[data-kind="color"] .color-field { grid-column: 1 / -1; grid-row: 2; }
+.inspector-theme .bg-current[data-kind="color"] .hint { grid-column: 1 / -1; }

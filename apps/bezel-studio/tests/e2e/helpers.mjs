@@ -83,7 +83,8 @@ export async function openSection(page, id) {
 /** Legacy callers open the same controls through the new independent sections. */
 export async function openInspectorTab(page, t, key) {
   const ids = key === 'inspector.tab.look' ? ['shape', 'text', 'color', 'behavior']
-    : key === 'inspector.tab.data' ? ['data', 'shape', 'behavior'] : [key.split('.').pop()];
+    : key === 'inspector.tab.data' ? ['data', 'shape', 'behavior']
+      : ['card.tab.motion', 'card.tab.triggers'].includes(key) ? ['behavior'] : [key.split('.').pop()];
   for (const id of ids) await openSection(page, id);
 }
 

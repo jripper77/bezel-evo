@@ -255,6 +255,11 @@ const storage = createStoragePanel({
     brightness: state.brightness,
   }),
   restart: (screen) => restartScreen(screen),
+  expand: () => {
+    workspace.classList.toggle('storage-wide');
+    reportShownSensors();
+    if (!storageWide()) canvasView.fit();
+  },
 });
 // Whether the card album changed what the screen stores since the Storage
 // tab last listed it: it lists again when shown.
@@ -284,17 +289,18 @@ const connect = createConnect({
   onOpenScreen: () => library.selectTab('screen'),
 });
 
-// The Storage tab is the storage manager: shown, it takes the whole width of
-// the window (D-2026-09-30-storage-manager-4); the editor comes back with
-// any other tab.
+// Storage opens beside the editor; its maintenance action expands the same
+// manager across the window. Leaving Storage restores the normal layout.
 const workspace = document.querySelector('.workspace');
 const storageWide = () => workspace.classList.contains('storage-wide');
+let storageShown = false;
 function syncStorageWide() {
-  const wide = !$('panel-screen').hidden && !$('screen-storage').hidden;
-  if (wide === storageWide()) return;
-  workspace.classList.toggle('storage-wide', wide);
+  const shown = !$('panel-screen').hidden && !$('screen-storage').hidden;
+  if (shown === storageShown) return;
+  storageShown = shown;
+  if (!shown) workspace.classList.remove('storage-wide');
   reportShownSensors();
-  if (wide) {
+  if (shown) {
     setFramingMode(false, { restoreFocus: false });
     storage.show();
     if (storageStale) void storage.refresh();
@@ -330,6 +336,19 @@ const inspector = createInspector({
   // The last sample read, and an element of the edited theme rendered alone (D-8).
   host: {
     fitContent,
+    saveTheme: save,
+    drawThemePreview: thumbnail => {
+      const source = $('preview');
+      if (!source?.width || !source?.height || !thumbnail.clientWidth || !thumbnail.clientHeight) return;
+      const width = Math.max(1, Math.round(thumbnail.clientWidth * (window.devicePixelRatio || 1)));
+      const height = Math.max(1, Math.round(thumbnail.clientHeight * (window.devicePixelRatio || 1)));
+      if (thumbnail.width !== width) thumbnail.width = width;
+      if (thumbnail.height !== height) thumbnail.height = height;
+      const drawing = thumbnail.getContext('2d');
+      drawing.clearRect(0, 0, thumbnail.width, thumbnail.height);
+      const scale = Math.min(thumbnail.width / source.width, thumbnail.height / source.height);
+      drawing.drawImage(source, (thumbnail.width - source.width * scale) / 2, (thumbnail.height - source.height * scale) / 2, source.width * scale, source.height * scale);
+    },
     lastSample: () => lastSample,
     renderElement: (id, opts) => bridge.renderElement(store.getState().theme, id, opts),
   },
@@ -1179,10 +1198,12 @@ for (const [id, target] of [['stage', 'canvas'], ['panel-media', 'media']]) {
 }
 
 /** Saves the theme; `true` once it is saved. */
-async function save(saveAs = false) {
+async function save(saveAs = false, copyName = null) {
   try {
-    const saved = await bridge.saveTheme(store.getState().theme, saveAs);
+    const theme = store.getState().theme;
+    const saved = await bridge.saveTheme(copyName ? { ...theme, name: copyName } : theme, saveAs);
     if (!saved) return false;
+    if (copyName) store.dispatch('setTheme', { patch: { name: copyName } });
     state.location = saved.location;
     state.savedAt = Date.now();
     store.markSaved();

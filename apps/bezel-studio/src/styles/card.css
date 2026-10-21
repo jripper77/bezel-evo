@@ -6,7 +6,7 @@
 .face-row { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 40px; padding: 5px 5px 5px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
 .face-row[data-editing="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .face-number { flex: none; min-width: 1.2em; color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-caps); text-align: right; }
-.face-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.face-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; white-space: normal; font-weight: 600; }
 .face-row .pill { flex: none; }
 .face-edit { flex: none; min-height: 28px; padding-inline: 10px; }
 .face-row .icon-button { flex: none; width: 28px; min-height: 28px; }
@@ -15,15 +15,6 @@
 .face-sub { color: var(--muted); font-size: var(--fs-small); line-height: 1.35; }
 .card-section[data-section="faces"] .section-head { justify-content: flex-start; }
 .face-add { min-height: 28px; margin-left: auto; padding-inline: 8px; }
-/* The one transition on a line (a .button-row): effect, duration, direction. */
-.card-transition-row { align-items: center; }
-.card-transition-row .field { flex: 1 1 0; min-width: 96px; margin: 0; }
-.card-transition-row .field > span { display: none; }
-.card-transition-row select { width: 100%; }
-.card-transition-row .fld { flex: 0 0 82px; gap: 4px; padding-inline: 8px; }
-.card-transition-row .fld-prefix:empty { display: none; }
-.card-transition-row .segmented { flex: none; }
-.card-transition-row .segmented button { padding-inline: 4px; }
 .face-editor { display: grid; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
 .face-editor .field { margin: 0; }
 .face-editor input { font-family: var(--font-mono); }
@@ -35,15 +26,6 @@
 .card-rotation-help { color: var(--muted); font-size: var(--fs-small); line-height: 1.5; }
 .card-rotation-help summary { cursor: pointer; }
 .card-rotation-help[open] summary { margin-bottom: 6px; }
-.card-effects { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.card-effect { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 4px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--muted); cursor: pointer; }
-.card-effect input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.card-effect:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
-.card-effect .effect-art { width: 100%; height: 32px; }
-.card-effect > span { max-width: 100%; overflow-wrap: anywhere; text-align: center; font-size: var(--fs-tiny); }
-.card-scale { display: flex; justify-content: space-between; margin-top: -8px; font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--muted); }
-.play-button { width: 100%; min-height: 36px; font-weight: 600; }
-.play-button svg { color: var(--accent-ink); }
 .trigger-rule { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
 .trigger-rule-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: var(--fs-caps); }
 .trigger-rule-head .danger { margin-left: auto; }
@@ -54,3 +36,18 @@
 .trigger-rule .fld { gap: 4px; padding-inline: 6px; }
 .trigger-rule .fld-prefix { font-size: var(--fs-tiny); }
 .trigger-add { width: 100%; border-style: dashed; }
+
+/* Keep the complete face name readable even beside a long translated action. */
+.face-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.face-row > .face-name { grid-column: 2; }
+.face-row .pill { grid-column: 2; grid-row: 2; justify-self: start; }
+.face-row .face-edit { grid-column: 3; grid-row: 1 / span 2; }
+.face-row .face-more { grid-column: 4; grid-row: 1 / span 2; }
+.shared-background { grid-template-columns: auto minmax(0, 1fr) auto; }
+.shared-background .list-card-text { min-width: 0; }
+.inspector-linked .card-section .option-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.card-section .option-tile { padding: 8px 4px; }
+.card-section .option-tile svg { width: 20px; height: 20px; }
+.inspector-linked .card-section .option-tile span { overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+
+.shared-background .list-card-text { display: grid; gap: 2px; }
