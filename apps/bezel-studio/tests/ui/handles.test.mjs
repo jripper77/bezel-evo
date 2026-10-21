@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { editedFill, scaledText, frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle } from '../../src/editor/handles.js';
+import { editedFill, scaledText, frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle, partPieces, textPartAt } from '../../src/editor/handles.js';
 import { createWidget } from '../../src/editor/widgets.js';
 import { centerOf, rotatePoint } from '../../src/editor/rotation.js';
 import { translator } from '../../src/i18n/index.js';
@@ -258,4 +258,37 @@ test('clock length handles follow real time, local rotation and shown hands; ori
   clock.kind.content.analog.secondHand = true; clock.kind.content.analog.sweep = true;
   const half = new Date(2026, 9, 21, 3, 0, 0, 500);
   assert.notEqual(propertyHandles(clock, { date: half })[0].y, propertyHandles(clock, { date: half, motion: false })[0].y);
+});
+
+test('a click picks the value part drawn under it, also on a rotated value', () => {
+  const value = made('value'); value.kind.content.prefix = 'cpu '; value.kind.style.casing = 'upper';
+  const { scope, pieces } = partPieces(value, { reading: { value: 38 }, quantity: 'percent' });
+  assert.equal(scope, 'value');
+  assert.deepEqual(pieces.map(p => [p.id, p.text]), [['prefix', 'CPU '], ['number', '38'], ['unit', '%'], ['suffix', '']]);
+  // Ten pixels a character: prefix 10–50, number 50–70, unit 70–80, from the left edge, mid-height.
+  const measure = text => text.length * 10;
+  const at = (x, y = 70, e = value) => textPartAt(e, pieces, { x, y }, measure);
+  assert.equal(at(30), 'prefix'); assert.equal(at(60), 'number'); assert.equal(at(75), 'unit');
+  assert.equal(at(150), null, 'past the text'); assert.equal(at(60, 21), null, 'above the line');
+  assert.equal(at(NaN), null);
+  const turned = { ...value, rotation: 90 }, c = centerOf(value.frame);
+  const p = rotatePoint({ x: 75, y: 70 }, c, 90);
+  assert.equal(at(p.x, p.y, turned), 'unit');
+  assert.equal(textPartAt(value, [{ text: '', id: 'prefix' }], { x: 30, y: 70 }, measure), null, 'nothing drawn');
+  assert.deepEqual(partPieces(value).pieces[1].text, '—', 'no reading yet');
+  assert.deepEqual(partPieces(value, { reading: { text: 'idle', value: 3 } }).pieces[1].text, 'IDLE');
+  const bare = { ...value, kind: { ...value.kind, content: { type: 'sensor', key: 'cpu' } } };
+  assert.deepEqual(partPieces(bare).pieces.map(p => p.text), ['', '—', '', ''], 'a value saved without prefix or suffix');
+});
+
+test('a digital clock offers its time parts at the current time; other kinds have none', () => {
+  const clock = made('clock');
+  const { scope, pieces } = partPieces(clock, { date: new Date(2026, 0, 1, 9, 5) });
+  assert.equal(scope, 'clock');
+  assert.deepEqual(pieces.map(p => [p.id, p.text]), [['hours', '09'], ['separators', ':'], ['minutes', '05']]);
+  // Centred, fifty pixels wide in a 200 px box from x = 10: 85–105–115–135.
+  const at = x => textPartAt(clock, pieces, { x, y: 70 }, text => text.length * 10);
+  assert.deepEqual([at(90), at(110), at(120)], ['hours', 'separators', 'minutes']);
+  assert.equal(partPieces({ ...clock, kind: { ...clock.kind, content: { ...clock.kind.content, analog: {} } } }), null);
+  for (const kind of ['text', 'ring', 'player']) assert.equal(partPieces(made(kind)), null);
 });

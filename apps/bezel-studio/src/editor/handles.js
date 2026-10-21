@@ -9,6 +9,10 @@ import { HAND_LENGTHS, analogOf, handAngles, withHandLength } from '../clock-for
 import { pathPatch } from '../inspector-edit.js';
 import { coverFrame as playerCover } from '../player-parts.js';
 import { IMAGE_ANCHORS } from '../media-inspector.js';
+import { fitText, partStyle } from '../text-layout.js';
+import { formatValue } from '../value-format.js';
+import { applyTextCase } from '../text-case.js';
+import { clockParts } from '../clock-format.js';
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const degrees = (p, center) => Math.atan2(p.x - center.x, center.y - p.y) * 180 / Math.PI;
@@ -195,4 +199,44 @@ export function editPropertyHandle(element, id, point, options = {}) {
 export function resetPropertyHandle(element, id) {
   return !element.locked && element.kind.type === 'graph' && ['scale-min', 'scale-max'].includes(id)
     ? { kind: { autoscale: true } } : null;
+}
+
+/**
+ * The styled parts of a value or a digital clock as drawn now: the sensor's
+ * last reading (its quantity formats it) or the clock at `date`. Null for
+ * any other element, which has no parts to pick.
+ */
+export function partPieces(element, { reading = null, quantity = null, date = new Date() } = {}) {
+  const k = element.kind, s = k.style;
+  if (k.type !== 'text') return null;
+  const piece = (text, id) => ({ text: applyTextCase(text, s.casing), part: id && partStyle(s, id), id });
+  if (k.content.type === 'sensor') {
+    const { number, unit } = formatValue(reading?.text ?? reading?.value, quantity, k.content.format);
+    return { scope: 'value', pieces: [piece(k.content.prefix ?? '', 'prefix'), piece(number, 'number'), piece(unit, 'unit'), piece(k.content.suffix ?? '', 'suffix')] };
+  }
+  if (k.content.type === 'clock' && !k.content.analog) {
+    return { scope: 'clock', pieces: clockParts(k.content.pattern, date, k.content.language, k.content.casing).map(({ part, text }) => piece(text, part)) };
+  }
+  return null;
+}
+
+/** The part under `point` (document pixels), laid out like the renderer; null off the text. */
+export function textPartAt(element, pieces, point, measure) {
+  if (![point.x, point.y].every(Number.isFinite)) return null;
+  const s = element.kind.style, f = element.frame;
+  const fit = fitText(pieces, s, f, measure, { tabular: s.tabularDigits !== false, motion: false });
+  if (!fit) return null;
+  const p = toLocal(f, appliedRotation(element), point);
+  let top = fit.top;
+  for (const [i, line] of fit.lines.entries()) {
+    if (p.y >= top && p.y <= top + line.height) {
+      let x = fit.starts[i][0];
+      for (const frag of line.frags) {
+        if (p.x >= x && p.x <= x + frag.width) return frag.id;
+        x += frag.width;
+      }
+    }
+    top += line.height;
+  }
+  return null;
 }

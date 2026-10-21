@@ -222,7 +222,8 @@ let textDue = null;
 const wantFrame = (ms) => { if (ms !== null) textDue = textDue === null ? ms : Math.min(textDue, ms); };
 
 const fontOf = (face) => `${face.italic ? 'italic ' : ''}${face.weight} ${face.size}px ${face.family}, sans-serif`;
-const canvasMeasure = (ctx) => (text, face) => { ctx.font = fontOf(face); return ctx.measureText(text).width; };
+/** Text advance in `ctx` for a piece's face; the canvas also hit-tests parts with it. */
+export const canvasMeasure = (ctx) => (text, face) => { ctx.font = fontOf(face); return ctx.measureText(text).width; };
 
 /**
  * The pieces of a value, a clock, the weather or a fixed text that

@@ -1,6 +1,7 @@
 import { appliedRotation, canRotate, centerOf, toLocal, rotatePoint, rotatedBounds, snapAngle, normalizeDegrees } from '../editor/rotation.js';
 import { canvasTarget, groupTarget, selectionRoots, isShown, withChildren, owners } from '../editor/cards.js';
-import { editedFill, frameHandles, scaledFrames, scaledText, propertyHandles, editPropertyHandle, resetPropertyHandle } from '../editor/handles.js';
+import { editedFill, frameHandles, scaledFrames, scaledText, propertyHandles, editPropertyHandle, resetPropertyHandle, textPartAt } from '../editor/handles.js';
+import { canvasMeasure } from '../demo-render.js';
 // The canvas: shows the rendered frame at a zoom level and handles direct
 // manipulation on a DOM overlay (selection, eight resize handles, snapping
 // guides, marquee). Everything is in canvas pixels until drawn. In framing
@@ -33,7 +34,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -451,8 +452,10 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       sel = [id];
       store.select(sel);
     }
+    // A plain click on the one selected value or clock may pick the part under it.
+    const part = !evt.shiftKey && !evt.ctrlKey && !evt.metaKey && state.selection.length === 1 && state.selection[0] === id ? id : null;
     const movable = selectionRoots(state.theme, sel).filter((e) => sel.includes(e.id) && !e.locked && (!e.cardMember || isShown(state.theme, e)));
-    press = { mode: 'move', ids: movable.map((e) => e.id), frames: movable.map((e) => ({ ...e.frame })), start, applied: { x: 0, y: 0 }, client: [evt.clientX, evt.clientY], started: false };
+    press = { mode: 'move', ids: movable.map((e) => e.id), frames: movable.map((e) => ({ ...e.frame })), start, applied: { x: 0, y: 0 }, part, client: [evt.clientX, evt.clientY], started: false };
   }
 
   function beginIfMoved(evt) {
@@ -561,6 +564,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     // Keep the handle DOM alive across two stationary clicks so the browser
     // can deliver dblclick to the same frame (capture also ends here).
     const redraw = press?.started || guides.length > 0 || marquee !== null;
+    const picked = press?.mode === 'move' && !press.started && press.part != null ? press : null;
     if (press?.started && press.mode !== 'marquee') store.endGesture();
     press = null;
     guides = [];
@@ -569,6 +573,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     onHandleEdit(null);
     overlay.classList.remove('grabbing');
     if (redraw) drawOverlay();
+    if (picked) pickTextPart(picked.part, picked.start);
   }
 
   /** The wheel in framing mode zooms the video around the pointer (Ctrl+wheel still zooms the view). */
@@ -669,6 +674,14 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
     const fv = framingView();
     if (fv) applyFraming(applyFramingKey(fv.framing, action, fv.view));
+  }
+
+  const partMeasure = canvasMeasure(new OffscreenCanvas(1, 1).getContext('2d'));
+  function pickTextPart(id, at) {
+    const element = theme().elements.find(e => e.id === id);
+    const parts = element && textParts(element);
+    const part = parts && textPartAt(element, parts.pieces, at, partMeasure);
+    if (part) onTextPart(element, parts.scope, part);
   }
 
   function applyFill(element, image) {

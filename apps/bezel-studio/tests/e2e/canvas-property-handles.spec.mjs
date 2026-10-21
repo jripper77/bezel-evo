@@ -126,3 +126,19 @@ test('the image anchor handle snaps between the nine positions by drag and keybo
   await page.locator('#undo').click(); await expect(anchor('center')).toHaveAttribute('aria-pressed', 'true');
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+test('a click on the prefix of the selected value picks that part in the inspector', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await clickAddWidget(page, t, 'value'); await openSection(page, 'data');
+  await page.locator('#inspector').getByRole('textbox', { name: t('inspector.prefix'), exact: true }).fill('CPU LOAD ');
+  await page.keyboard.press('Tab');
+  const part = name => page.locator('#inspector').getByRole('button', { name: t(`insp.valuePart.${name}`), exact: true });
+  const frame = await page.locator('#overlay .sel-box').boundingBox();
+  await page.mouse.click(frame.x + 6, frame.y + frame.height / 2);
+  await expect(part('prefix')).toHaveAttribute('aria-pressed', 'true');
+  await expect(part('number')).toHaveAttribute('aria-pressed', 'false');
+  await expect(part('prefix')).toBeInViewport();
+  await page.mouse.click(frame.x + frame.width + 40, frame.y + frame.height / 2);
+  await expect(page.locator('#overlay .sel-box')).toHaveCount(0);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

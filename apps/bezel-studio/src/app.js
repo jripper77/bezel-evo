@@ -148,6 +148,8 @@ const canvasView = createCanvasView({
   handleLocale: () => locale,
   handleMotion: () => motionAllowed(),
   onHandleEdit: result => inspector.highlightField(result?.field, result?.fieldParams),
+  textParts: element => inspector.partPieces(element),
+  onTextPart: (element, scope, part) => inspector.pickPart(element, scope, part),
   onFrameRequest: () => setFramingMode(true),
 });
 
