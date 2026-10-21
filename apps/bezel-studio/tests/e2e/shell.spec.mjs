@@ -76,9 +76,12 @@ test('the floating bars over the stage edit and zoom', async ({ page, t }) => {
 test('the status bar keeps its regions', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88&libre=partial');
-  const bar = page.getByRole('status').filter({ has: page.locator('#status-main') });
-  // Three chips in a fixed order (D-2026-10-20-studio-ux-v2-11): Sensors, Bezel, Screen.
-  for (const id of ['status-main', 'status-libre', 'status-libre-toggle', 'status-libre-dot', 'status-libre-label', 'status-memory-toggle', 'status-screen-toggle']) {
+  // The save state moved beside the theme's name (D-2026-10-20-studio-ux-v2-11).
+  await expect(page.locator('.topbar #status-main')).toHaveCount(1);
+  const bar = page.locator('footer.statusbar');
+  await expect(bar).toHaveAttribute('role', 'status');
+  // Left the selection; then three chips in a fixed order: Sensors, Bezel, Screen.
+  for (const id of ['status-selection', 'status-libre', 'status-libre-toggle', 'status-libre-dot', 'status-libre-label', 'status-memory-toggle', 'status-screen-toggle']) {
     await expect(bar.locator(`#${id}`)).toHaveCount(1);
   }
   // Restart actions belong to each restartable probe, outside the live region.

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FRAME_BUDGET_MS, RENDER_WINDOW_MS, bezelStatus, createRenderHistory, memoryStatus } from '../../src/memory-status.js';
-import { screenStatus } from '../../src/screen-status.js';
+import { activeProfile, screenStatus } from '../../src/screen-status.js';
 import { translator } from '../../src/i18n/index.js';
 import { createBridge } from '../../src/bridge.js';
 import { createDemoBackend } from '../../src/demo-backend.js';
@@ -100,4 +100,17 @@ In diretta`);
 permission denied`);
   assert.equal(screenStatus({ ...base, live: false }, t, { message: 'Riconnessione…', problem: true }).title, `${t('shell.screenChipIdle', { name: base.name })}
 Riconnessione…`);
+});
+
+test('the active profile comes from the engine, by name and mode, and is never invented', () => {
+  const t = translator('it');
+  const config = { profiles: [{ id: 'g', name: 'Gioco' }, { id: 'n', name: '' }] };
+  assert.deepEqual(activeProfile({ config, status: { automatic: true, active: { profile: 'g', reason: { kind: 'rules' } } } }, t),
+    { name: 'Gioco', mode: t('shell.profileAuto'), text: t('shell.profileActive', { name: 'Gioco', mode: t('shell.profileAuto') }) });
+  assert.equal(activeProfile({ config, status: { automatic: false, active: { profile: 'n' } } }, t).name, t('profiles.new'));
+  assert.equal(activeProfile({ config, status: { automatic: false, active: { profile: 'n' } } }, t).mode, t('shell.profileManual'));
+  assert.equal(activeProfile({ config, status: { automatic: true } }, t), null, 'the base themes');
+  assert.equal(activeProfile({ config }, t), null, 'no engine');
+  assert.equal(activeProfile({ config, status: { active: { profile: 'gone' } } }, t), null);
+  assert.equal(activeProfile(null, t), null);
 });

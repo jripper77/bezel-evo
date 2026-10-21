@@ -8,18 +8,25 @@
 .topbar > * { flex: none; }
 .topbar > .spacer { flex: 1 1 0; }
 .brand { display: flex; align-items: center; gap: 10px; height: 32px; padding-right: 12px; border-right: 1px solid var(--line); }
-.brand-label { display: grid; line-height: 1.15; font-family: var(--font-mono); }
-.brand-name { font-size: var(--fs-base); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-.brand-accent { font-weight: 400; color: var(--accent-ink); }
-.brand-version { font-size: var(--fs-meta); color: var(--dim); font-variant-numeric: tabular-nums; }
 
 /* Breadcrumb: Themes › the theme's name (editable) and "Unsaved". */
-.topbar > .crumbs { display: flex; flex: 0 1 auto; align-items: center; gap: 6px; min-width: 0; }
-.crumb-link { flex: none; padding: 2px 4px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
-.crumb-link:hover { color: var(--text); }
-.crumb-sep { color: var(--faint); }
-.theme-name { flex: 0 1 180px; min-width: 90px; }
-.theme-name input { width: 100%; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-weight: 600; }
+/* The theme's name, then whether it is saved and when it last was. */
+.theme-title { display: grid; flex: 0 1 auto; min-width: 0; gap: 0; }
+.theme-name { position: relative; display: flex; align-items: center; justify-self: start; min-width: 0; }
+.theme-name-edit { position: absolute; right: 6px; color: var(--dim); pointer-events: none; }
+.theme-name:has(input:focus) .theme-name-edit { display: none; }
+.save-state { display: flex; align-items: center; gap: 4px; margin: 0; padding: 0 8px; color: var(--muted); font-size: var(--fs-meta); white-space: nowrap; }
+.save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--signal-ok); }
+.save-state[data-dirty="true"] { color: var(--accent-ink); }
+.save-state[data-dirty="true"] .save-dot { background: var(--accent); }
+/* The statusbar's left: the selection, or what a gesture does. */
+.status-selection { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.status-selection strong { color: var(--text); font-weight: 600; }
+.status-selection .mono { color: var(--muted); }
+.status-selection > .ic { flex: none; color: var(--accent-ink); }
+.status-snap { color: var(--guide); }
+.status-hint { color: var(--dim); }
+.theme-name input { field-sizing: content; min-width: 90px; max-width: 260px; height: 26px; padding: 0 24px 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-weight: 600; }
 .theme-name input:hover, .theme-name input:focus { border-color: var(--border); background: var(--well); }
 
 /* The screen in use: name and mono size · port over a native select. */
@@ -29,6 +36,10 @@
 .screen-chip-name { min-width: 0; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .screen-chip-meta { flex: none; color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-small); }
 .screen-chip-meta:empty { display: none; }
+/* The active profile, after a divider (board MainNew). */
+.screen-chip-profile { display: flex; flex: none; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid var(--border-2); color: var(--accent-ink); font-weight: 500; }
+.screen-chip-profile[hidden] { display: none; }
+.screen-chip-profile small { color: var(--dim); font-family: var(--font-mono); font-size: var(--fs-meta); }
 .screen-chip > .ic { color: var(--muted); }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.awake { background: var(--ok); }
@@ -160,9 +171,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .status-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .memory-popover .panel-head { margin-bottom: 8px; }
 .memory-processes { margin: 10px 0 0; padding-left: 18px; line-height: 1.8; }
-.status-clock { color: var(--accent-ink); }
 .status-saved-at:not(:empty)::before { content: "· "; }
-.status-saved-at { margin-left: -4px; }
 .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow); max-width: 70ch; }
 
 /* ---------------------------------------------- storage manager (wide) -- */
@@ -196,7 +205,7 @@ body.resizing { cursor: col-resize; user-select: none; }
    size and the orientation labels go; the names stay for screen readers and
    in tooltips. */
 @media (max-width: 1280px) {
-  .brand-name, .screen-chip-meta, .save-button kbd { display: none; }
+  .screen-chip-meta, .save-button kbd { display: none; }
   .orientation-tools .segmented span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .orientation-tools .segmented button { padding: 0 9px; }
 }

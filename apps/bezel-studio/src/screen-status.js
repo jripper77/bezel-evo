@@ -33,3 +33,18 @@ export function screenStatus(screen, t, { message = '', problem = false } = {}) 
     live,
   };
 }
+
+/**
+ * The profile the engine has active now (bezel-runtime ProfileStatus, T-6),
+ * by name and whether the rules or the user chose it; null when the base
+ * themes show or the engine says nothing: the UI never invents one.
+ */
+export function activeProfile(overview, t) {
+  const status = overview?.status;
+  const id = status?.active?.profile;
+  const profile = id ? overview.config?.profiles?.find(p => p.id === id) : null;
+  if (!profile) return null;
+  const name = profile.name || t('profiles.new');
+  const mode = t(status.automatic ? 'shell.profileAuto' : 'shell.profileManual');
+  return { name, mode, text: t('shell.profileActive', { name, mode }) };
+}

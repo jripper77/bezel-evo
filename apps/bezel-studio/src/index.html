@@ -18,25 +18,30 @@
     <header class="topbar">
       <div class="brand">
         <img src="icon.svg" alt="" width="28" height="28" />
-        <span class="brand-label">
-          <span class="brand-name">Bezel <span class="brand-accent">Evo</span></span>
-          <span class="brand-version" id="app-version"></span>
-        </span>
       </div>
-      <nav class="crumbs" data-i18n-aria-label="shell.breadcrumb">
-        <button type="button" class="crumb-link" id="crumb-themes" data-i18n="library.themes"></button>
-        <svg class="crumb-sep" data-icon="chevronRight" width="14" height="14"></svg>
+      <!-- The theme's name and, under it, whether it is saved (D-2026-10-20-studio-ux-v2-11). -->
+      <div class="theme-title">
         <label class="theme-name">
           <span class="visually-hidden" data-i18n="top.themeName"></span>
           <input id="theme-name" type="text" spellcheck="false" data-i18n-aria-label="top.themeName" />
+          <svg class="theme-name-edit" data-icon="pencil" width="12" height="12"></svg>
         </label>
-        <span class="pill" data-tone="accent" id="unsaved-chip" hidden><span class="pill-dot" aria-hidden="true"></span><span data-i18n="shell.unsaved"></span></span>
-      </nav>
+        <p class="save-state" id="save-state" role="status" aria-live="polite">
+          <span class="save-dot" aria-hidden="true"></span>
+          <span id="status-main"></span>
+          <span class="status-saved-at" id="status-saved-at"></span>
+        </p>
+      </div>
       <div class="spacer"></div>
       <div class="screen-chip" id="screen-chip">
         <span class="dot" id="screen-dot" aria-hidden="true"></span>
         <span class="screen-chip-name" id="screen-chip-name" aria-hidden="true"></span>
         <span class="screen-chip-meta" id="screen-chip-meta" aria-hidden="true"></span>
+        <span class="screen-chip-profile" id="screen-chip-profile" hidden>
+          <svg data-icon="profile" width="13" height="13"></svg>
+          <span id="screen-chip-profile-name"></span>
+          <small id="screen-chip-profile-mode"></small>
+        </span>
         <svg data-icon="chevronDown" width="14" height="14"></svg>
         <select id="screen-select" data-i18n-aria-label="library.screen"></select>
       </div>
@@ -52,6 +57,9 @@
       <button type="button" class="text-button save-button" id="save" data-i18n-title="shell.saveHint">
         <span data-i18n="common.save"></span>
         <kbd aria-hidden="true" data-i18n="shell.saveKeys"></kbd>
+      </button>
+      <button type="button" class="icon-button quiet" id="more-menu" aria-haspopup="menu" aria-expanded="false" data-i18n-title="shell.more" data-i18n-aria-label="shell.more">
+        <svg data-icon="more" width="18" height="18"></svg>
       </button>
     </header>
 
@@ -283,9 +291,7 @@
     </main>
 
     <footer class="statusbar" role="status" aria-live="polite">
-      <svg class="status-clock" data-icon="history" width="14" height="14"></svg>
-      <span id="status-main"></span>
-      <span class="status-saved-at" id="status-saved-at"></span>
+      <span class="status-selection" id="status-selection"></span>
       <span class="spacer"></span>
       <span id="status-libre" hidden>
         <button type="button" id="status-libre-toggle" class="status-chip" aria-haspopup="dialog" aria-expanded="false" aria-controls="libre-popover">

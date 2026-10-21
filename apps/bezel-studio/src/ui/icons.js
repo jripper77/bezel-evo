@@ -73,6 +73,10 @@ export const ICONS = Object.freeze({
   themes: [rect(7, 3, 10, 18, 2), 'M3 7v10', 'M21 7v10'],
   media: [rect(3, 5, 18, 14, 2), circle(9, 10, 1.5), 'm21 16-5-5-8 8'],
   screen: [rect(7, 2, 10, 20, 2), 'M11 18h2'],
+  // The profile active on the screen (board MainNew).
+  profile: ['M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z'],
+  // The theme's name can be edited (board MainNew).
+  pencil: ['M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4z', 'm13.5 6.5 4 4'],
   // The Bezel chip: how fast it draws (board StatusBarNew).
   performance: ['M4 18a8 8 0 1 1 16 0', 'M12 18l4-6'],
   vertical: [rect(7.5, 3, 9, 18, 2)],

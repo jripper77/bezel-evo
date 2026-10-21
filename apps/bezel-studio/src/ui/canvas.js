@@ -39,7 +39,7 @@ const BAR_HALF_WIDTH = 120;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {}, onGesture = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -601,6 +601,8 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       const hits = marqueeSelect(theme().elements.filter(e => isShown(theme(), e)), marquee);
       store.select([...new Set([...press.base, ...hits.map(id => canvasTarget(theme(), id, editingCard))])]);
     }
+    // The statusbar follows a move, a resize or a turn (D-2026-10-20-studio-ux-v2-11).
+    if (['move', 'resize', 'rotate'].includes(press.mode)) onGesture({ mode: press.mode, guides });
     drawOverlay();
   }
 
@@ -611,6 +613,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     const picked = press?.mode === 'move' && !press.started && press.part != null ? press : null;
     if (press?.mode === 'property' && press.handle === 'trial-value') onTrialHold(null);
     if (press?.started && press.mode !== 'marquee') store.endGesture();
+    if (press?.started && ['move', 'resize', 'rotate'].includes(press.mode)) onGesture(null);
     press = null;
     guides = [];
     marquee = null;
