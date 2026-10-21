@@ -251,6 +251,7 @@ mod tests {
     #[test]
     fn weather_visits_all_eight_families_without_persisting_any_reading() {
         let w = Weather {
+            icon_color: None,
             city: "Local".into(),
             latitude: 45.,
             longitude: 9.,

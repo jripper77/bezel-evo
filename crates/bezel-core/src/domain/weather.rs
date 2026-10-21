@@ -35,6 +35,8 @@ pub struct Weather {
     pub show_icon: bool,
     /// Automatic icon appearance.
     pub icon_style: IconStyle,
+    /// Optional monochrome icon paint; absent follows text.
+    pub icon_color: Option<super::frame::Rgba>,
     /// Gap to text in pixels; None preserves the automatic legacy spacing.
     pub icon_gap: Option<f32>,
     /// Icon size in pixels; None follows the text size.
@@ -391,6 +393,7 @@ mod tests {
     #[test]
     fn unavailable_and_temperature_conversion() {
         let w = Weather {
+            icon_color: None,
             city: "Roma".into(),
             latitude: 41.9,
             longitude: 12.5,

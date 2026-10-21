@@ -368,6 +368,8 @@ mod tests {
                 BoxF::default(),
                 true,
                 ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     fade: None,
                     asset: a.clone(),
                     fit: Default::default(),

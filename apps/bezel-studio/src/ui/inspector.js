@@ -306,7 +306,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   function membershipForm(e, theme) {
-    if (['text', ...BOUND].includes(widgetOf(e))) {
+    if (!e.card && !e.isGroup) {
       const descendants = new Set(withChildren(theme, [e.id]));
       const parents = theme.elements.filter(parent => (parent.isGroup || parent.card) && !descendants.has(parent.id));
       const current = e.groupParent ?? e.cardMember?.parent;
@@ -503,7 +503,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     const key = e.isGroup || e.card ? null : boundKey(e);
     const subtitle = el('span', { class: 'inspector-sub' }, [
       key ? el('span', { text: sensors.catalog().find(sensor => sensor.key === key)?.label ?? key }) : t(`widget.${widget}`),
-      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` ? ${where}`,
+      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` \u00b7 ${where}`,
     ]);
     const head = objectHeader({ preview: preview(e), name, subtitle,
       live: el('span', { class: 'inspector-live', text: t('insp.live') }),
@@ -530,13 +530,13 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       specific.data?.find(group => group?.dataset.section === 'window')?.append(el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]));
     }
     const opacity = numberField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%' });
-    const linked = ['text', ...BOUND].includes(widgetOf(e));
+    const linked = !e.card && !e.isGroup;
     const motion = sensorMotionSection(e);
     if (linked && motion && (rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))) {
       motion.dataset.section = 'rotation-binding';
       layout.push(motion);
     }
-    const look = [visualizationFields(e), ...(specific.look ?? []).filter(group => {
+    const look = [visualizationFields(e), ...[...(specific.look ?? []), ...(specific.behavior ?? [])].filter(group => {
       if (['matrix','pixel'].includes(e.visualization?.style) && group?.dataset.section === 'segments') return false;
       return !(e.visualization?.style === 'matrix' && group?.dataset.section === 'corners');
     }), !linked && motion].filter(Boolean);
@@ -594,11 +594,11 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
         }),
       canRotate(theme, e) && el('div', { class: 'geometry-rotation bound-field' }, [
         prefixedField('', t('insp.rotation'), appliedRotation(e), rotation => store.dispatch('rotate', { id: e.id, rotation }), { step: 'any', unit: '°', iconName: 'rotate' }),
-        ['text', ...BOUND].includes(widget) && bindButton(t('insp.sensorMotion'), Boolean(e.sensorMotion), () => { rotationBindings.set(e.id, !(rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))); render(shown.assets); }),
+        !e.card && !e.isGroup && bindButton(t('insp.sensorMotion'), Boolean(e.sensorMotion), () => { rotationBindings.set(e.id, !(rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))); render(shown.assets); }),
       ]),
       el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
     ], { tool: iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }) });
-    const actions = section('actions', ['text', ...BOUND].includes(widget) ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
+    const actions = section('actions', !e.card && !e.isGroup ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
       e.isGroup && el('button', { type: 'button', class: 'text-button', text: t('group.ungroup'), onclick: () => store.dispatch('ungroup', { ids: [e.id] }) }),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('reorder', { id: e.id, index: theme.elements.length }) }, [t('inspector.front')]),
       iconButton(t('insp.oneForward'), ICONS.up, () => store.dispatch('reorder', { id: e.id, index: theme.elements.findIndex(item => item.id === e.id) + 1 })),
@@ -624,7 +624,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     sliding = false;
     const { theme, selection } = store.getState();
     const chosen = selection.map(id => theme.elements.find(e => e.id === id)).filter(Boolean);
-    root.classList.toggle('inspector-linked', chosen.length > 1 || chosen.length === 1 && ['text', 'value', 'ring', 'bar', 'needle', 'graph'].includes(widgetOf(chosen[0])));
+    root.classList.toggle('inspector-linked', chosen.length > 1 || chosen.length === 1 && !chosen[0].card && !chosen[0].isGroup);
     let nodes;
     if (chosen.length === 0) {
       trial.stop();

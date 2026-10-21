@@ -23,21 +23,21 @@ export function valueFormatFields(ctx, element, content, setContent) {
   ];
 }
 
-export function textStyleFields(ctx, element, { style = element.kind.style, setStyle = patch => ctx.update(element.id, { kind: { style: patch } }), parts = element.kind.content?.type === 'sensor', scope = 'value', tabular = true } = {}) {
+export function textStyleFields(ctx, element, { style = element.kind.style, setStyle = patch => ctx.update(element.id, { kind: { style: patch } }), parts = element.kind.content?.type === 'sensor', scope = 'value', tabular = true, partIds = VALUE_PARTS, partLabel = part => ctx.t(`insp.valuePart.${part}`), partsLabel = ctx.t('insp.valueParts') } = {}) {
   const { t } = ctx;
   const fields = ctx.fontFields(element, { style, setStyle, compact: true });
   if (parts) {
     if (!selected.has(ctx.store)) selected.set(ctx.store, new Map());
     const memory = selected.get(ctx.store), key = `${element.id}:${scope}`;
-    const current = memory.get(key) ?? 'number';
+    const current = partIds.includes(memory.get(key)) ? memory.get(key) : partIds.includes('number') ? 'number' : partIds[0];
     const editPart = part => {
       const value = style.parts?.[part] ?? {};
       const patch = change => setStyle(partStylePatch(style, part, change));
       const { texts, source } = ctx.pickers.font(ctx.sampleText(element));
       const font = fontPicker({ ...texts, family: t('insp.partFont'), face: t('insp.partFace') }, { family: value.font ?? style.font.family, weight: value.weight ?? style.font.weight, italic: style.font.italic, asset: value.font ? value.fontAsset ?? null : style.font.asset }, font => patch({ font: font.family, fontAsset: font.asset ?? null, weight: font.weight }), source, { faceSample: t('insp.faceSample'), fixedItalic: Boolean(style.font.italic) });
       const face = font.lastElementChild;
-      return el('div', { class: 'part-editor', role: 'group', 'aria-label': t('insp.partEditor', { part: t(`insp.valuePart.${part}`) }) }, [
-        el('div', { class: 'part-editor-head' }, [el('strong', { text: t(`insp.valuePart.${part}`) }), iconButton(t('insp.inheritPart'), ICONS.undo, () => patch(null))]),
+      return el('div', { class: 'part-editor', role: 'group', 'aria-label': t('insp.partEditor', { part: partLabel(part) }) }, [
+        el('div', { class: 'part-editor-head' }, [el('strong', { text: partLabel(part) }), iconButton(t('insp.inheritPart'), ICONS.undo, () => patch(null))]),
         font,
         fieldGrid([
           ctx.colorField(t('insp.partColor'), value.color ?? style.paint, color => patch({ color })),
@@ -47,7 +47,7 @@ export function textStyleFields(ctx, element, { style = element.kind.style, setS
         el('p', { class: 'hint', text: t('insp.partInheritanceHint') }),
       ]);
     };
-    fields.unshift(partsRow(t('insp.valueParts'), VALUE_PARTS.map(part => [part, t(`insp.valuePart.${part}`)]), current,
+    fields.unshift(partsRow(partsLabel, partIds.map(part => [part, partLabel(part)]), current,
       part => { memory.set(key, part); ctx.redraw(); }, editPart));
   }
   if (tabular) fields.push(toggleField(t('insp.tabularDigits'), style.tabularDigits !== false, tabularDigits => setStyle({ tabularDigits }), { iconName: 'fixed-digits' }));

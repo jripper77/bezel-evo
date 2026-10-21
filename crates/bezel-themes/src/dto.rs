@@ -1266,6 +1266,9 @@ pub enum ContentDto {
             skip_serializing_if = "Option::is_none"
         )]
         cover_corners: Option<[f32; 4]>,
+        /// Gradient restricted to the cover, absent preserves original pixels.
+        #[serde(default, rename = "coverFade", skip_serializing_if = "Option::is_none")]
+        cover_fade: Option<FadeDto>,
         #[serde(default, rename = "coverGap", skip_serializing_if = "Option::is_none")]
         cover_gap: Option<f32>,
         #[serde(default = "yes", rename = "showProgress")]
@@ -1317,6 +1320,9 @@ pub enum ContentDto {
         /// Outline (default) or filled condition icon.
         #[serde(default = "outline_icon", rename = "iconStyle")]
         icon_style: String,
+        /// Own monochrome icon color; absent follows the text paint.
+        #[serde(default, rename = "iconColor", skip_serializing_if = "Option::is_none")]
+        icon_color: Option<String>,
         /// Distance from icon to text, pixels; absent is automatic.
         #[serde(default, rename = "iconGap", skip_serializing_if = "Option::is_none")]
         icon_gap: Option<f32>,
@@ -1727,13 +1733,19 @@ pub enum KindDto {
         /// Content.
         content: ContentDto,
         /// Style.
-        style: TextStyleDto,
+        style: Box<TextStyleDto>,
     },
     /// Image.
     Image {
         /// Optional image opacity gradient.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         fade: Option<FadeDto>,
+        /// Uniform image radius, omitted at zero.
+        #[serde(default, skip_serializing_if = "is_zero_f32")]
+        radius: f32,
+        /// Independent image radii.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        corners: Option<[f32; 4]>,
         /// Asset.
         asset: String,
         /// Fit.
@@ -2442,6 +2454,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                     show_cover: p.show_cover,
                     cover_radius: p.cover_radius,
                     cover_corners: p.cover_corners,
+                    cover_fade: p.cover_fade.map(fade_dto),
                     cover_gap: p.cover_gap,
                     show_progress: p.show_progress,
                     show_source: p.show_source,
@@ -2466,6 +2479,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                     suffix: suffix.clone(),
                 },
                 TextContent::Weather(w) => ContentDto::Weather {
+                    icon_color: w.icon_color.map(to_hex),
                     city: w.city.clone(),
                     latitude: w.latitude,
                     longitude: w.longitude,
@@ -2518,7 +2532,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                     },
                 },
             },
-            style: style_dto(style),
+            style: Box::new(style_dto(style)),
         },
         ElementKind::Image {
             asset,
@@ -2526,8 +2540,12 @@ fn kind_dto(k: &ElementKind) -> KindDto {
             fade,
             anchor,
             playback,
+            radius,
+            corners,
         } => KindDto::Image {
             fade: fade.map(fade_dto),
+            radius: *radius,
+            corners: corners.filter(|r| r.iter().any(|v| *v > 0.)),
             asset: asset.0.clone(),
             fit: fit_dto(*fit),
             anchor: (*anchor != Anchor::Center).then(|| anchor_name(*anchor).to_string()),
@@ -2662,6 +2680,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                     show_cover,
                     cover_radius,
                     cover_corners,
+                    cover_fade,
                     cover_gap,
                     show_progress,
                     show_source,
@@ -2684,6 +2703,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                         return err("player text is too long");
                     }
                     TextContent::Player(bezel_core::domain::playback::Player {
+                        cover_fade: cover_fade.as_ref().map(parse_fade).transpose()?,
                         source: source.clone(),
                         show_cover: *show_cover,
                         cover_radius: *cover_radius,
@@ -2720,6 +2740,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                     fahrenheit,
                     show_icon,
                     icon_style,
+                    icon_color,
                     icon_gap,
                     icon_size,
                     icon_motion,
@@ -2734,6 +2755,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                         return err("invalid weather icon dimensions");
                     }
                     TextContent::Weather(bezel_core::domain::weather::Weather {
+                        icon_color: icon_color.as_deref().map(color).transpose()?,
                         city: city.clone(),
                         latitude: *latitude,
                         longitude: *longitude,
@@ -2792,6 +2814,8 @@ fn kind(k: &KindDto) -> R<ElementKind> {
             style: style(s)?,
         },
         KindDto::Image {
+            radius,
+            corners,
             asset,
             fit: f,
             fade,
@@ -2799,6 +2823,8 @@ fn kind(k: &KindDto) -> R<ElementKind> {
             once,
             speed,
         } => ElementKind::Image {
+            radius: image_radius(*radius)?,
+            corners: image_corners(*corners)?,
             fade: fade.as_ref().map(parse_fade).transpose()?,
             asset: AssetRef(asset.clone()),
             fit: fit(*f),
@@ -4114,5 +4140,106 @@ mod image_playback_tests {
             4.0
         );
         assert!(image(serde_json::json!({"anchor": "middle"})).is_err());
+    }
+}
+
+fn image_radius(radius: f32) -> R<f32> {
+    if radius.is_finite() && radius >= 0. {
+        Ok(radius)
+    } else {
+        err("invalid image radius")
+    }
+}
+fn image_corners(corners: Option<[f32; 4]>) -> R<Option<[f32; 4]>> {
+    if let Some(radii) = corners {
+        for radius in radii {
+            image_radius(radius)?;
+        }
+    }
+    Ok(corners.filter(|r| r.iter().any(|v| *v > 0.)))
+}
+
+#[cfg(test)]
+mod inspector_media_options_tests {
+    use super::*;
+    use serde_json::{Value, json};
+    fn round_trip(json: Value) -> R<Value> {
+        let dto: KindDto = serde_json::from_value(json).unwrap();
+        Ok(serde_json::to_value(kind_dto(&kind(&dto)?)).unwrap())
+    }
+    fn text(content: Value) -> Value {
+        json!({"type":"text", "content":content, "style":style_dto(&TextStyle::default())})
+    }
+    #[test]
+    fn cover_fade_is_optional_and_both_ramps_round_trip() {
+        let base = serde_json::to_value(kind_dto(&ElementKind::Text {
+            content: TextContent::Player(Default::default()),
+            style: TextStyle::default(),
+        }))
+        .unwrap();
+        assert!(base["content"].get("coverFade").is_none());
+        assert_eq!(round_trip(base.clone()).unwrap(), base);
+        for ramp in [
+            json!({"angle":35,"start":1,"end":0}),
+            json!({"radial":[0.3,0.6,0.8],"angle":0,"start":1,"end":0}),
+        ] {
+            let mut changed = base.clone();
+            changed["content"]["coverFade"] = ramp;
+            let saved = round_trip(changed).unwrap();
+            assert!(saved["content"].get("coverFade").is_some());
+            assert_eq!(round_trip(saved.clone()).unwrap(), saved);
+            let mut restored = saved;
+            restored["content"]
+                .as_object_mut()
+                .unwrap()
+                .remove("coverFade");
+            assert_eq!(round_trip(restored).unwrap(), base);
+        }
+    }
+    #[test]
+    fn own_weather_icon_color_is_optional_and_round_trips() {
+        let base = round_trip(text(
+            json!({"type":"weather","city":"Roma","latitude":41.9,"longitude":12.5}),
+        ))
+        .unwrap();
+        assert!(base["content"].get("iconColor").is_none());
+        assert_eq!(round_trip(base.clone()).unwrap(), base);
+        let mut changed = base.clone();
+        changed["content"]["iconColor"] = json!("#ff000080");
+        assert_eq!(
+            round_trip(changed).unwrap()["content"]["iconColor"],
+            "#ff000080"
+        );
+        let mut invalid = base;
+        invalid["content"]["iconColor"] = json!("red");
+        assert!(round_trip(invalid).is_err());
+    }
+    #[test]
+    fn image_radii_omit_zero_and_each_corner_round_trips() {
+        let base = json!({"type":"image","asset":"old.png","fit":"contain"});
+        assert_eq!(round_trip(base.clone()).unwrap(), base);
+        for extra in [json!({"radius":0}), json!({"corners":[0,0,0,0]})] {
+            let mut changed = base.clone();
+            changed
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            assert_eq!(round_trip(changed).unwrap(), base);
+        }
+        let mut changed = base.clone();
+        changed["radius"] = json!(12);
+        changed["corners"] = json!([3, 6, 9, 12]);
+        let saved = round_trip(changed).unwrap();
+        assert_eq!(saved["radius"], 12.);
+        assert_eq!(saved["corners"], json!([3., 6., 9., 12.]));
+        assert_eq!(round_trip(saved.clone()).unwrap(), saved);
+        for extra in [json!({"radius":-1}), json!({"corners":[0,-1,0,0]})] {
+            let mut changed = base.clone();
+            changed
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            assert!(round_trip(changed).is_err());
+        }
     }
 }

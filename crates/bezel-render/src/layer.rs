@@ -45,6 +45,49 @@ impl Layer<'_> {
         Some(mask)
     }
 
+    /// Clips premultiplied pixels to the same corner path used by shapes/covers.
+    pub fn clip_to(&mut self, path: &Path) {
+        if let Some(mask) = self.mask_of(path) {
+            for (pixel, alpha) in self
+                .pixmap
+                .data_mut()
+                .as_chunks_mut::<4>()
+                .0
+                .iter_mut()
+                .zip(mask.data())
+            {
+                for channel in pixel {
+                    *channel = ((u16::from(*channel) * u16::from(*alpha) + 127) / 255) as u8;
+                }
+            }
+        }
+    }
+
+    /// Applies a theme opacity ramp to this isolated layer, never other objects.
+    pub fn fade(
+        &mut self,
+        fade: bezel_core::domain::gradient::Fade,
+        frame: bezel_core::domain::theme::BoxF,
+    ) {
+        let ramp = fade.ramp();
+        let width = self.pixmap.width() as usize;
+        for (index, pixel) in self
+            .pixmap
+            .data_mut()
+            .as_chunks_mut::<4>()
+            .0
+            .iter_mut()
+            .enumerate()
+        {
+            let x = self.x as f32 + (index % width) as f32 + 0.5;
+            let y = self.y as f32 + (index / width) as f32 + 0.5;
+            let strength = ramp((x - frame.x) / frame.width, (y - frame.y) / frame.height);
+            for channel in pixel {
+                *channel = (f32::from(*channel) * strength).round() as u8;
+            }
+        }
+    }
+
     /// Fills a canvas-space rectangle through `mask`.
     pub fn fill_rect_masked(&mut self, rect: Rect, paint: &Paint<'_>, mask: &Mask) {
         let ts = self.transform();

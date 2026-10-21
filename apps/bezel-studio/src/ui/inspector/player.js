@@ -1,12 +1,12 @@
 import { describeSections } from './sections.js';
 // Existing player controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { dashedHint, fieldGrid, numberField, prefixedField, rangeField, propertySection as section, segmented, selectField, toggleField as switchRow, textField } from '../fields.js';
+import { dashedHint, fieldGrid, numberField, prefixedField, iconChoice, propertySection as section, segmented, selectField, toggleField as switchRow, textField } from '../fields.js';
 import { PLAYER_PARTS, PROGRESS_DEFAULTS, PROGRESS_PATTERNS, PROGRESS_SEGMENTS, PROGRESS_THICKNESS, TIME_FORMATS, TIME_PLACEMENTS, partPatch, partsOf, progressOf } from '../../player-parts.js';
 import { ART, PART_TILES, TIME_FORMAT_KEYS, TIME_PLACEMENT_KEYS, PATTERN_KEYS } from './art.js';
 
 export function panels(ctx) {
-  const { t, update, colorField, fontFields, coverCorners, appChipGroup, manualSource, optionTiles, choiceCard, customSource } = ctx;
+  const { t, update, colorField, fontFields, coverCorners, appChipGroup, manualSource, optionTiles, customSource } = ctx;
   function playerForm(e) {
     const c = e.kind.content;
     const s = e.kind.style;
@@ -19,30 +19,41 @@ export function panels(ctx) {
         el('div', { class: 'player-source' }, customSource || custom !== null ? [manualSource(e)] : []),
         el('p', { class: 'hint player-apps-hint', text: t(chips.length ? 'insp.appsHint' : 'insp.appsNone') }),
       ]),
-      section('stopped', t('insp.stopped'), [el('div', { class: 'choice-cards', role: 'radiogroup', 'aria-label': t('insp.stopped') }, [
-        choiceCard(`player-stopped-${e.id}`, Boolean(c.hideWhenStopped), t('insp.stoppedHide'), t('insp.stoppedHideNote'), () => set({ hideWhenStopped: true })),
-        choiceCard(`player-stopped-${e.id}`, !c.hideWhenStopped, t('insp.stoppedText'), t('insp.stoppedTextNote'), () => set({ hideWhenStopped: false }),
-          el('div', { class: 'choice-card-extra' }, [textField(t('player.empty'), c.emptyText ?? '', (emptyText) => set({ emptyText: emptyText.slice(0, 512) }))])),
-      ])]),
+      section('stopped', t('insp.stopped'), [
+        iconChoice(t('insp.stopped'), c.hideWhenStopped ? 'hide' : 'text', [['hide', t('insp.stoppedHide')], ['text', t('insp.stoppedText')]], value => set({ hideWhenStopped: value === 'hide' }), { wide: true }),
+        !c.hideWhenStopped && textField(t('player.empty'), c.emptyText ?? '', emptyText => set({ emptyText: emptyText.slice(0, 512) })),
+      ]),
       parts.time ? section('time', t('insp.partTime'), [
         selectField(t('insp.timeFormat'), c.timeFormat ?? 'elapsedTotal', TIME_FORMATS.map((f) => [f, t(TIME_FORMAT_KEYS[f])]), (timeFormat) => set({ timeFormat })),
       ]) : null,
       dashedHint([t('insp.playerHint')], { iconName: 'info' }),
     ];
     const tiles = PLAYER_PARTS.map((part) => ({ text: t(PART_TILES[part][0]), art: PART_TILES[part][1], pressed: parts[part], onClick: () => set(partPatch(c, part)) }));
+    const partTiles = optionTiles(t('insp.show'), tiles); partTiles.classList.add('player-part-tiles');
     const look = [
-      section('show', t('insp.show'), [optionTiles(t('insp.show'), tiles)]),
+      section('show', t('insp.show'), [partTiles]),
       parts.cover ? coverCorners(e) : null,
+      parts.cover ? section('cover-fade', t('insp.player.coverFade'), ctx.fadeFields(e, { value: c.coverFade, set: coverFade => set({ coverFade }) })) : null,
       parts.progress ? progressSection(e, parts) : null,
       section('spacing', t('insp.spacing'), [
         fieldGrid([
           prefixedField(t('insp.gap'), t('player.coverGap'), c.coverGap ?? s.size * 0.3, (v) => set({ coverGap: Math.max(0, v) }), { min: 0, step: 'any', unit: 'px', iconName: 'spacing' }),
-          prefixedField(t('insp.textSize'), t('inspector.size'), s.size, (v) => update(e.id, { kind: { style: { size: Math.max(4, v) } } }), { min: 4, max: 800, unit: 'px', iconName: 'textSize' }),
         ]),
         el('p', { class: 'hint', text: t('insp.gapHint') }),
       ]),
-      section('font', t('inspector.font'), fontFields(e, { size: false })),
+      section('font', t('inspector.font'), fontFields(e, { compact: true })),
     ];
+    const font = look.find(node => node?.dataset.section === 'font');
+    const body = font.querySelector('.property-section-body');
+    const alignment = body.querySelector(`[role="group"][aria-label="${CSS.escape(t('inspector.align'))}"]`)?.closest('.fld-grid');
+    if (alignment) look.find(node => node?.dataset.section === 'show').querySelector('.property-section-body').append(alignment);
+    const textPaint = body.querySelector(':scope > .color-field');
+    const colors = [textPaint];
+    if (parts.progress) {
+      const progress = progressOf(c), textColor = typeof s.paint === 'string' ? s.paint : PROGRESS_DEFAULTS.track;
+      colors.push(colorField(t('insp.player.progressFill'), progress.fill ?? textColor, fill => set({ progressStyle: { fill } })), colorField(t('insp.player.progressTrack'), progress.track, track => set({ progressStyle: { track } })));
+    }
+    look.push(section('color', t('inspector.color'), colors));
     return { data: data.filter(Boolean), look };
   }
 
@@ -55,12 +66,9 @@ export function panels(ctx) {
     const c = e.kind.content;
     const style = progressOf(c);
     const set = (patch) => update(e.id, { kind: { content: { progressStyle: patch } } });
-    const textColor = typeof e.kind.style.paint === 'string' ? e.kind.style.paint : PROGRESS_DEFAULTS.track;
     const pattern = (value) => ({ text: t(PATTERN_KEYS[value]), art: ART[value], pressed: style.pattern === value, onClick: () => style.pattern !== value && set({ pattern: value }) });
     return section('progress', t('insp.progressBar'), [
-      colorField(t('inspector.fill'), style.fill ?? textColor, (fill) => set({ fill })),
-      colorField(t('inspector.track'), style.track, (track) => set({ track })),
-      rangeField(t('insp.thickness'), style.thickness, (thickness) => set({ thickness }), { ...PROGRESS_THICKNESS, format: (v) => t('insp.px', { value: v }) }),
+      numberField(t('insp.thickness'), style.thickness, thickness => set({ thickness: Math.max(PROGRESS_THICKNESS.min, Math.min(PROGRESS_THICKNESS.max, thickness)) }), { ...PROGRESS_THICKNESS, unit: 'px' }),
       switchRow(t('inspector.roundCaps'), style.ends !== 'square', (on) => set({ ends: on ? 'round' : 'square' })),
       switchRow(t('insp.progressKnob'), style.knob, (knob) => set({ knob })),
       optionTiles(t('inspector.style'), PROGRESS_PATTERNS.map(pattern)),

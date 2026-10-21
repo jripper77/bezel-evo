@@ -447,6 +447,8 @@ pub(crate) fn images(r: &mut SkiaRenderer) {
     });
     let scene = Scene::empty().asset("q.png", quadrants);
     let img = |fit| ElementKind::Image {
+        radius: 0.,
+        corners: None,
         fade: None,
         asset: AssetRef("q.png".into()),
         fit,
@@ -486,6 +488,8 @@ pub(crate) fn images(r: &mut SkiaRenderer) {
         vec![element(
             BoxF::new(0.0, 0.0, 8.0, 8.0),
             ElementKind::Image {
+                radius: 0.,
+                corners: None,
                 fade: None,
                 asset: AssetRef("a.gif".into()),
                 fit: Fit::Fill,
@@ -1076,6 +1080,7 @@ fn weather_text_and_vector_icons_render_without_external_assets() {
     use bezel_core::domain::weather::Weather;
     let mut renderer = crate::testkit::renderer();
     let mut w = Weather {
+        icon_color: None,
         city: "Roma".into(),
         latitude: 41.9,
         longitude: 12.5,
@@ -1357,6 +1362,8 @@ fn radial_image_mask_keeps_assets_and_multiplies_pixels() {
         vec![element(
             BoxF::new(0., 0., 40., 40.),
             ElementKind::Image {
+                radius: 0.,
+                corners: None,
                 asset: asset.clone(),
                 fit: Fit::Fill,
                 anchor: Default::default(),
@@ -1468,6 +1475,7 @@ fn colored_weather_families_and_depth_have_distinct_vector_pixels() {
     let mut r = crate::testkit::renderer();
     for code in [0, 1, 3, 45, 61, 71, 95, 999] {
         let mut w = Weather {
+            icon_color: None,
             city: "Roma".into(),
             latitude: 41.9,
             longitude: 12.5,

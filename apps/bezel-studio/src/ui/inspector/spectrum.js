@@ -1,8 +1,11 @@
+import { gaugeFillFields } from './paint.js';
+import { ART } from './art.js';
+import { ICONS } from '../icons.js';
 import { describeSections } from './sections.js';
 // Existing spectrum controls, isolated from inspector navigation.
 import { SPECTRUM_STYLES, followedPlayer, spectrumOf, spectrumPatch } from '../../spectrum.js';
 import { el } from '../dom.js';
-import { numberField, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
+import { numberField, iconChoice, fieldGrid, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
 
 export function panels(ctx) {
   const { t, store, update, colorField, barCorners } = ctx;
@@ -14,10 +17,6 @@ export function panels(ctx) {
     const selected = followedPlayer(theme, c);
     const options = [['', t('spectrum.automatic')], ...players.map(item => [String(item.id), item.name])];
     if (c.player != null && !players.some(p => p.id === c.player)) options.push([String(c.player), t('spectrum.playerMissing')]);
-    const paint = e.kind.style.paint, gradient = typeof paint === 'object';
-    const start = gradient ? paint.stops?.[0]?.[1] ?? '#38bdf8ff' : paint;
-    const end = gradient ? paint.stops?.at(-1)?.[1] ?? '#f97316ff' : '#f97316ff';
-    const setPaint = (mode, a = start, b = end) => update(e.id, { kind: { style: { paint: mode === 'gradient' ? { angle: 90, stops: [[0,a],[1,b]] } : a } } });
     const STYLE_LABELS = { mirrored: 'spectrum.mirrored', bars: 'graph.bars', blocks: 'spectrum.blocks', line: 'graph.line', radial: 'fade.radial' };
     // Fields that do not apply to the chosen style are hidden, never disabled.
     const line = c.style === 'line';
@@ -41,12 +40,8 @@ export function panels(ctx) {
         numberField(t('spectrum.gain'), c.gain, gain => set({ gain }), { min: 0.1, max: 4, step: 0.1, unit: '×', iconName: 'gain' }),
         el('p', { class: 'hint', text: t('spectrum.gainHint') }),
       ])],
-      look: [section('spectrum-paint', t('inspector.color'), [
-        selectField(t('inspector.fill'), gradient ? 'gradient' : 'solid', [['solid', t('ring.solid')],['gradient',t('spectrum.gradient')]], mode => setPaint(mode)),
-        colorField(t('inspector.color'), start, v => setPaint(gradient ? 'gradient' : 'solid', v)),
-        gradient && colorField(t('ring.endColor'), end, v => setPaint('gradient', start, v)),
-      ]), section('spectrum-bars', t('graph.bars'), [
-        selectField(t('spectrum.style'), c.style, SPECTRUM_STYLES.map(v => [v, t(STYLE_LABELS[v])]), style => set({ style })),
+      look: [section('spectrum-paint', t('inspector.color'), gaugeFillFields(ctx, e, { path: ['kind', 'style', 'paint'] })), section('spectrum-bars', t('graph.bars'), [
+        ctx.optionTiles(t('spectrum.style'), SPECTRUM_STYLES.map(value => ({ text: t(STYLE_LABELS[value]), art: ART[value] ?? (value === 'radial' ? ICONS.ring : ART.bars), pressed: c.style === value, onClick: () => set({ style: value }) }))),
         !line && numberField(t('spectrum.thickness'), c.thickness, thickness => set({ thickness }), { min: 1, max: 256, unit: 'px', iconName: 'width' }),
         !line && numberField(t('spectrum.gap'), c.gap, gap => set({ gap }), { min: 0, max: 128, unit: 'px', iconName: 'spacing' }),
         c.style === 'blocks' && numberField(t('spectrum.block'), c.block, block => set({ block }), { min: 1, max: 64, unit: 'px', iconName: 'height' }),
@@ -56,8 +51,8 @@ export function panels(ctx) {
         c.style === 'radial' && numberField(t('spectrum.inner'), c.inner, inner => set({ inner }), { min: 0, max: 90 }),
         c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre })),
         !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks })),
-        segmented(t('card.tab.motion'), c.motion, ['smooth','balanced','snappy'].map(v => [v,t(`spectrum.${v}`)]), motion => set({ motion })),
       ]), !line && barCorners(e.id, c, set, e.frame)],
+      behavior: [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`)]), motion => set({ motion }), { wide: true })])],
     };
   }
   return spectrumForm(ctx.element, ctx.assets);

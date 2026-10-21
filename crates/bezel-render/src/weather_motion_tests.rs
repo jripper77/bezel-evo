@@ -12,6 +12,7 @@ use crate::testkit::{self, Scene};
 
 fn weather(motion: IconMotion, style: IconStyle) -> Weather {
     Weather {
+        icon_color: None,
         city: "Roma".into(),
         latitude: 41.9,
         longitude: 12.5,
@@ -155,4 +156,59 @@ fn the_3d_storm_flashes_with_the_lightning() {
         testkit::px(&flash, 2, 14).r > testkit::px(&dark, 2, 14).r,
         "the box lights up"
     );
+}
+
+#[test]
+fn monochrome_icons_keep_their_legacy_pixels_without_an_own_color() {
+    for (style, expected) in [
+        (IconStyle::Outline, 13710710557535332066),
+        (IconStyle::Filled, 14492384110744872271),
+    ] {
+        let weather = weather(IconMotion::Still, style);
+        let frame = testkit::render(
+            &mut testkit::renderer(),
+            &theme(weather.clone()),
+            &at(&weather, 3., 0),
+        );
+        let hash = frame
+            .as_rgba()
+            .iter()
+            .fold(0xcbf29ce484222325_u64, |hash, byte| {
+                (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+            });
+        assert_eq!(hash, expected, "{style:?}");
+    }
+}
+
+#[test]
+fn an_own_color_only_tints_monochrome_icons_and_never_the_text() {
+    let red = Rgba::opaque(255, 0, 0);
+    for style in [
+        IconStyle::Outline,
+        IconStyle::Filled,
+        IconStyle::Colored,
+        IconStyle::Dimensional,
+    ] {
+        let mut weather = weather(IconMotion::Still, style);
+        let scene = at(&weather, 3., 0);
+        let legacy = testkit::render(&mut testkit::renderer(), &theme(weather.clone()), &scene);
+        weather.icon_color = Some(red);
+        let colored = testkit::render(&mut testkit::renderer(), &theme(weather), &scene);
+        if matches!(style, IconStyle::Colored | IconStyle::Dimensional) {
+            assert_eq!(colored, legacy);
+            continue;
+        }
+        assert_ne!(colored, legacy);
+        assert!(
+            testkit::count(&colored, (0, 0, 98, 120), |p| p.r > 40
+                && p.g == 0
+                && p.b == 0)
+                > 30
+        );
+        for y in 0..120 {
+            for x in 100..120 {
+                assert_eq!(testkit::px(&colored, x, y), testkit::px(&legacy, x, y));
+            }
+        }
+    }
 }

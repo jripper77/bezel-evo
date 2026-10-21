@@ -16,6 +16,17 @@ import pickers, { PREFIXES as PICKERS } from './areas/pickers.js';
 // resolve to the same canonical text as static callers. Only the canonical
 // keys below have translations; this map contains no copies of prose.
 export const SHARED_LABELS = Object.freeze({
+  'insp.image.anchor.topLeft': 'prefs.debugCorner.top-left',
+  'insp.image.anchor.topRight': 'prefs.debugCorner.top-right',
+  'insp.image.anchor.bottomLeft': 'prefs.debugCorner.bottom-left',
+  'insp.image.anchor.bottomRight': 'prefs.debugCorner.bottom-right',
+
+  'insp.clock.ticks.none': 'fade.none',
+  'insp.clock.ticks': 'insp.needle.ticks',
+  'insp.clock.ticks.hours': 'insp.clockPart.hours',
+  'insp.clock.handShape.arrow': 'insp.needle.shape.arrow',
+  'insp.clock.marks': 'insp.needle.marks',
+
   'insp.needle.numbers.none': 'card.effect.none',
   'insp.needle.ticks.none': 'fade.none',
   'insp.needle.hand': 'widget.needle',

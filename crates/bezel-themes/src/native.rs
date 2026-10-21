@@ -339,6 +339,8 @@ mod tests {
                 el(
                     4,
                     ElementKind::Image {
+                        radius: 0.,
+                        corners: None,
                         fade: None,
                         asset: AssetRef("assets/logo.png".into()),
                         fit: Fit::Cover,
@@ -772,6 +774,7 @@ mod tests {
         use bezel_core::domain::weather::Weather;
         let (mut theme, _) = every_kind();
         let weather = Weather {
+            icon_color: None,
             city: "Roma".into(),
             latitude: 41.9028,
             longitude: 12.4964,
@@ -1004,6 +1007,8 @@ mod tests {
         theme.elements.push(el(
             99,
             ElementKind::Image {
+                radius: 0.,
+                corners: None,
                 fade: None,
                 asset: AssetRef(String::new()),
                 fit: Fit::Contain,

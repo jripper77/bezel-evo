@@ -39,7 +39,8 @@ object-rotation 01–08 (rotazione, maniglia di rotazione).
 ## Cosa esiste già (non rifarlo)
 - Colore per soglie: `crates/bezel-core/src/domain/value_color.rs`, `apps/bezel-studio/src/value-color.js`.
 - Transizioni del valore Salta/Fluida/Inerzia: `crates/bezel-core/src/domain/transition.rs`, `sensor_motion.rs`, `src/value-transition.js`, `src/sensor-motion.js`.
-- Trasparenza (fade) di immagini, forme e copertina: `FadeDto` in `crates/bezel-themes/src/dto.rs`, `src/shape-fade.js`.
+- Trasparenza (fade) di immagini e forme: `FadeDto` in `crates/bezel-themes/src/dto.rs`, `src/shape-fade.js`.
+- La trasparenza della sola copertina del Player non esisteva: aggiunta a T-7b con approvazione del 21 ottobre (D-20).
 - Immagine nelle forme con ripetizione: commit 0a17f1b, 4d713a3.
 - Stili icona meteo Contorno/Piena/A colori/3D statici: `crates/bezel-render/src/weather.rs`.
 - Anteprima isolata dell'oggetto: `render_element_preview` (`apps/bezel-studio/src-tauri/src/element_preview.rs`, `src/element-preview.js`).
@@ -64,3 +65,12 @@ Tray di Windows nuova (tavola TrayMenu, solo nel backup del canvas), protocolli 
 4. i18n en/pt-BR/it a parità; accessibilità (`expectAccessible`) chiaro e scuro; nessun colore fuori da `tokens.css`.
 5. Suite completa una volta alla verifica di fase (AGENTS.md): fmt, clippy, llvm-cov ≥ 80%, `npm test`.
 6. Prova a vista sull'8,8″ e sul 3,5″ (manuale, dell'utente): meteo animato, lancetta, orologio analogico, cifre fisse.
+
+
+## Chiarimento operativo del 21 ottobre
+
+Per le altre voci delle tavole che risultano mancanti dal modello, includerle
+nell'attività corrente: campi facoltativi omessi al valore predefinito, resa dei
+temi precedenti identica, test Rust e demo e annotazione nel SUMMARY. Chiedere
+solo per lavori grandi (nuova decodifica, permessi, protocolli dello schermo) o
+per contrasti con una decisione. Vedere D-2026-10-21-studio-ux-v2-20.

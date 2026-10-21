@@ -1295,17 +1295,14 @@ impl SkiaRenderer {
         | ElementKind::Image {
             fade: Some(fade), ..
         } = &element.kind
+            && let Some(pixmap) = PixmapMut::from_bytes(&mut scratch, w, h)
         {
-            let frame = element.frame;
-            let ramp = fade.ramp();
-            for (index, pixel) in scratch.as_chunks_mut::<4>().0.iter_mut().enumerate() {
-                let x = bounds.x() as f32 + (index % w as usize) as f32 + 0.5;
-                let y = bounds.y() as f32 + (index / w as usize) as f32 + 0.5;
-                let strength = ramp((x - frame.x) / frame.width, (y - frame.y) / frame.height);
-                for channel in pixel {
-                    *channel = (f32::from(*channel) * strength).round() as u8;
-                }
+            Layer {
+                pixmap,
+                x: bounds.x(),
+                y: bounds.y(),
             }
+            .fade(*fade, element.frame);
         }
         let opaque = cacheable && composite::is_opaque(&scratch);
         composite_layer(canvas, &scratch, bounds, opacity, opaque, element);
@@ -1438,23 +1435,11 @@ impl SkiaRenderer {
                             } else {
                                 None
                             };
-                            if let Some(path) = cover_path
-                                && let Some(mask) = layer.mask_of(&path)
-                            {
-                                for (pixel, alpha) in layer
-                                    .pixmap
-                                    .data_mut()
-                                    .as_chunks_mut::<4>()
-                                    .0
-                                    .iter_mut()
-                                    .zip(mask.data())
-                                {
-                                    for channel in pixel {
-                                        *channel = ((u16::from(*channel) * u16::from(*alpha) + 127)
-                                            / 255)
-                                            as u8;
-                                    }
-                                }
+                            if let Some(path) = cover_path {
+                                layer.clip_to(&path);
+                            }
+                            if let Some(fade) = p.cover_fade {
+                                layer.fade(fade, BoxF::new(area.x, area.y, side, side));
                             }
                             area.x += side + gap;
                             area.width = (area.width - side - gap).max(0.);
@@ -1543,6 +1528,8 @@ impl SkiaRenderer {
                 fit,
                 anchor,
                 playback,
+                radius,
+                corners,
                 ..
             } => {
                 self.draw_image(
@@ -1553,6 +1540,13 @@ impl SkiaRenderer {
                     assets,
                     context,
                 );
+                let radii = corners.unwrap_or([*radius; 4]);
+                if radii.iter().any(|r| *r > 0.)
+                    && let Some(path) =
+                        crate::path::rounded_corners(area.x, area.y, area.width, area.height, radii)
+                {
+                    layer.clip_to(&path);
+                }
                 if let Some(color) = color {
                     tint(layer, color);
                 }
@@ -1907,6 +1901,18 @@ impl SkiaRenderer {
         paint: &bezel_core::domain::theme::Paint,
         context: &RenderContext<'_>,
     ) {
+        let own = weather
+            .icon_color
+            .map(bezel_core::domain::theme::Paint::solid);
+        let paint = if matches!(
+            weather.icon_style,
+            bezel_core::domain::weather::IconStyle::Outline
+                | bezel_core::domain::weather::IconStyle::Filled
+        ) {
+            own.as_ref().unwrap_or(paint)
+        } else {
+            paint
+        };
         use bezel_core::domain::weather::{ICON_FADE, IconPose, family, pose};
         let step = weather.icon_motion.step().filter(|_| self.cards.motion);
         let Some(step) = step else {
@@ -2304,6 +2310,8 @@ mod tests {
                 autoscale: false,
             },
             ElementKind::Image {
+                radius: 0.,
+                corners: None,
                 asset: AssetRef("icon.svg".into()),
                 fit: Fit::Contain,
                 anchor: Default::default(),
@@ -2421,6 +2429,7 @@ mod tests {
                 suffix: "!".into(),
             },
             TextContent::Weather(bezel_core::domain::weather::Weather {
+                icon_color: None,
                 city: "Rome".into(),
                 latitude: 42.,
                 longitude: 12.,
@@ -2536,6 +2545,8 @@ mod tests {
             let e = element(
                 BoxF::new(10., 20., 100., 100.),
                 ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     asset: AssetRef(asset.into()),
                     fit: Fit::Contain,
                     anchor: Default::default(),
@@ -2943,6 +2954,8 @@ mod tests {
         // A GIF never reuses a face across animation times.
         theme.elements[1].card_member.as_mut().unwrap().face = Some(1);
         theme.elements[1].kind = ElementKind::Image {
+            radius: 0.,
+            corners: None,
             fade: None,
             asset: AssetRef("a.gif".into()),
             fit: Fit::Fill,

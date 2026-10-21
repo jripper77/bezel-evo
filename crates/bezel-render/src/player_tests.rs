@@ -455,3 +455,44 @@ fn a_lone_cover_fills_its_box() {
     testkit::assert_px(&frame, 100, 60, RED, 0);
     assert_eq!(testkit::px(&frame, 120, 60), Rgba::BLACK);
 }
+
+#[test]
+fn cover_fades_share_the_image_ramp_without_fading_text_or_progress() {
+    use bezel_core::domain::gradient::Fade;
+    let base = legacy(true, true, false);
+    let scene = playing();
+    let style = style(HAlign::Left, VAlign::Top);
+    let plain = testkit::render(
+        &mut testkit::renderer(),
+        &player_theme(base.clone(), style.clone()),
+        &scene,
+    );
+    for radial in [None, Some([0.5, 0.5, 0.5])] {
+        let player = Player {
+            cover_fade: Some(Fade {
+                radial,
+                angle: 0.,
+                start: 1.,
+                end: 0.,
+                midpoint: 0.5,
+            }),
+            ..base.clone()
+        };
+        let faded = testkit::render(
+            &mut testkit::renderer(),
+            &player_theme(player, style.clone()),
+            &scene,
+        );
+        assert_ne!(faded, plain);
+        for y in 0..120 {
+            for x in 114..240 {
+                assert_eq!(testkit::px(&faded, x, y), testkit::px(&plain, x, y));
+            }
+        }
+        if radial.is_none() {
+            assert!(testkit::px(&faded, 20, 50).r > testkit::px(&faded, 104, 50).r);
+        } else {
+            assert!(testkit::px(&faded, 62, 60).r > testkit::px(&faded, 12, 10).r);
+        }
+    }
+}

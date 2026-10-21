@@ -791,6 +791,8 @@ fn centered_image(name: &str, orientation: Orientation, asset: &str) -> (Theme, 
         visible: true,
         locked: false,
         kind: ElementKind::Image {
+            radius: 0.,
+            corners: None,
             fade: None,
             asset: AssetRef(asset.to_string()),
             fit: Fit::Fill,

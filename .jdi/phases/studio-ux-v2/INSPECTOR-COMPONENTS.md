@@ -66,3 +66,22 @@ la rimozione dei vecchi helper e delle chiavi orfane resta assegnata a T-10.
 
 Nessuna duplicazione dei primitivi: campioni, scelte, parti, intestazioni, menu,
 picker e programmazione delle anteprime usano le implementazioni condivise di T-0.
+
+
+## Estensioni condivise di T-7b
+
+- `textStyleFields`: `partIds`, `partLabel`, `partsLabel` e `scope` permettono di
+  riusare lo stesso editor per le parti dell'Orologio; nessun secondo editor.
+- `fadeFields`: valore e callback configurabili, riusato per la sola copertina.
+- `gaugeFillFields`: percorso del paint configurabile, riusato da Forma e Spettro
+  oltre a Barra/Anello; sostituzione atomica del paint con un solo Annulla.
+- `previewChoice`: slot `preview` facoltativo per le anteprime reali dei quattro
+  stili meteo, disegnate dalla stessa funzione canvas del demo.
+- `iconChoice`: accetta anche tracciati del catalogo oltre ai nomi; selettore
+  unico per le sette modalità di ripetizione. `numberField` e `prefixedField`
+  accettano un placeholder, utile al valore automatico dell'icona.
+- Nel renderer `Layer::clip_to` è il ritaglio condiviso fra Immagine e copertina;
+  `Layer::fade` è la rampa comune a Forma/Immagine/copertina. Stessa separazione
+  nel demo con `drawClippedMedia` e `applyCanvasFade`.
+
+Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.

@@ -33,6 +33,8 @@ pub struct Player {
     pub cover_corners: Option<[f32; 4]>,
     /// Cover to text spacing; None preserves font-relative spacing.
     pub cover_gap: Option<f32>,
+    /// Opacity gradient applied only to the cover.
+    pub cover_fade: Option<super::gradient::Fade>,
     /// Display timeline and progress bar.
     pub show_progress: bool,
     /// Display the application identifier.
@@ -64,6 +66,7 @@ impl Default for Player {
             cover_radius: 0.,
             cover_corners: None,
             cover_gap: None,
+            cover_fade: None,
             show_progress: true,
             show_source: false,
             hide_when_stopped: false,
