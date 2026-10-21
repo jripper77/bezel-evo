@@ -139,15 +139,30 @@ body.resizing { cursor: col-resize; user-select: none; }
 
 /* ------------------------------------------------------------ statusbar -- */
 .statusbar { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; background: var(--chrome); border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-compact); font-variant-numeric: tabular-nums; }
-.memory-popover { position: fixed; inset: auto; margin: 0; width: 340px; max-width: calc(100vw - 16px); }
+.memory-popover, .status-popover { position: fixed; inset: auto; margin: 0; width: 340px; max-width: calc(100vw - 16px); }
+/* Statusbar chips (D-11): figures of a fixed width, so the bar does not move as they change. */
+.status-figure { display: inline-block; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+.status-figure-wide { min-width: 8ch; }
+#status-libre-label { display: inline-block; min-width: 13ch; text-align: center; font-variant-numeric: tabular-nums; }
+/* A chip without a tone is off (grey): its dot shows it. */
+#status-screen-toggle:not([data-tone]) .pill-dot, #status-screen-toggle[data-tone=""] .pill-dot { background: var(--faint); }
+.status-popover:popover-open { display: grid; gap: 10px; }
+.status-popover .panel-head { margin-bottom: 0; }
+.render-spark { width: 100%; height: 40px; color: var(--accent); }
+.render-spark path { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.status-row { display: flex; justify-content: space-between; gap: 12px; margin: 0; }
+.status-total strong { color: var(--accent-ink); }
+.memory-processes { display: grid; gap: 4px; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line); list-style: none; }
+.memory-processes li { display: flex; justify-content: space-between; gap: 12px; }
+.status-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 0; }
+.status-rows dt { color: var(--muted); }
+.status-rows dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.status-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .memory-popover .panel-head { margin-bottom: 8px; }
 .memory-processes { margin: 10px 0 0; padding-left: 18px; line-height: 1.8; }
 .status-clock { color: var(--accent-ink); }
 .status-saved-at:not(:empty)::before { content: "· "; }
 .status-saved-at { margin-left: -4px; }
-.status-screen:has(#status-device:empty) { display: none; }
-.status-screen .pill-dot { display: none; }
-.status-screen[data-tone="ok"] .pill-dot { display: block; }
 .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow); max-width: 70ch; }
 
 /* ---------------------------------------------- storage manager (wide) -- */
@@ -202,16 +217,6 @@ body.resizing { cursor: col-resize; user-select: none; }
 }
 /* The middle button pans the view (ui/canvas.js). */
 #stage-scroll.panning, #stage-scroll.panning * { cursor: grabbing; }
-/* Chips whose numbers change every second keep a fixed width, so a value going
-   from one to two digits never shifts the rest of the status bar. */
-#status-memory, #status-libre-label, #status-fps { display: inline-block; text-align: center; font-variant-numeric: tabular-nums; }
-/* The render chip is a .pill (inline-flex, centred vertically): centre it horizontally too. */
-#status-render { justify-content: center; font-variant-numeric: tabular-nums; }
-/* Content-box: the width is the text alone ("Render 100 ms"), so padding and border never eat into it. */
-#status-render { box-sizing: content-box; min-width: 14ch; }
-#status-memory { min-width: 16ch; }
-#status-libre-label { min-width: 15ch; }
-#status-fps { min-width: 7ch; }
 
 /* Object rotation shares the resize handle palette and stays independently addressable. */
 .rotate-handle { position: absolute; width: 12px; height: 12px; padding: 0; margin: -6px 0 0 -6px; background: var(--handle); border: 1.5px solid var(--select); border-radius: 50%; pointer-events: auto; cursor: grab; }

@@ -95,7 +95,8 @@ export function createSensorStatus({ t, bridge, notify, fail, root, onOpenSensor
     const probes = probeRows(last.catalog, last.readings, last.error);
     const total = probeTotals(probes);
     document.getElementById('libre-popover-dot').dataset.state = state.state;
-    document.getElementById('libre-popover-title').textContent = t('sensorChip.probesTitle');
+    // "Sensors · 20 of 21 active" (board StatusBarNew).
+    document.getElementById('libre-popover-title').textContent = total.total ? t('sensorChip.activeTitle', { available: total.available, total: total.total }) : t('sensorChip.probesTitle');
     list.setAttribute('aria-label', t('sensorChip.probes'));
     const signature = JSON.stringify([probes, locale()]);
     if (list.dataset.signature !== signature) {
@@ -127,7 +128,6 @@ export function createSensorStatus({ t, bridge, notify, fail, root, onOpenSensor
   function paint() {
     const state = chip();
     wrap.hidden = false;
-    document.getElementById('status-sensors').textContent = '';
     toggle.dataset.tone = TONES[state.state];
     toggle.dataset.state = state.state;
     dot.dataset.state = state.state;

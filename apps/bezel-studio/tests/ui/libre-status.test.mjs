@@ -44,6 +44,13 @@ test('the sensors chip: green with the time, amber with the count, red, restarti
   assert.equal(sensorChip({ health: { state: 'error', failed: [] }, restarting: true }).state, 'restarting');
 });
 
+test('with counts the chip says how many sensors read of all, amber while some do not', () => {
+  assert.deepEqual(sensorChip({ health: null, counts: { available: 21, unavailable: 0, pending: 0 }, sampleMillis: 3.4 }), { state: 'ok', key: 'sensorChip.active', params: { available: 21, total: 21, ms: 3 }, quickRestart: false });
+  assert.deepEqual(sensorChip({ health: { state: 'partial', failed: ['PSU'] }, counts: { available: 20, unavailable: 1, pending: 0 } }), { state: 'partial', key: 'sensorChip.active', params: { available: 20, total: 21, ms: 0 }, quickRestart: false });
+  assert.equal(sensorChip({ health: { state: 'error', failed: ['PSU'] }, counts: { available: 0, unavailable: 3, pending: 0 } }).state, 'error');
+  assert.equal(sensorChip({ health: null, counts: { available: 0, unavailable: 0, pending: 4 } }).key, 'sensorChip.pending');
+});
+
 test('a row per hardware: sources, the best value and the Libre groups missing', () => {
   const all = [
     { key: 'cpu.usage', category: 'cpu', source: 'sysinfo', quantity: 'percent' },

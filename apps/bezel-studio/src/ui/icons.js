@@ -73,6 +73,8 @@ export const ICONS = Object.freeze({
   themes: [rect(7, 3, 10, 18, 2), 'M3 7v10', 'M21 7v10'],
   media: [rect(3, 5, 18, 14, 2), circle(9, 10, 1.5), 'm21 16-5-5-8 8'],
   screen: [rect(7, 2, 10, 20, 2), 'M11 18h2'],
+  // The Bezel chip: how fast it draws (board StatusBarNew).
+  performance: ['M4 18a8 8 0 1 1 16 0', 'M12 18l4-6'],
   vertical: [rect(7.5, 3, 9, 18, 2)],
   horizontal: [rect(3, 7.5, 18, 9, 2)],
   // New theme, vertical or horizontal (Themes).

@@ -15,7 +15,8 @@ test('the editor opens the demo theme', async ({ page, t, lang }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', lang);
   await expect(page.locator('#screen-select')).toContainText('Turing Smart Screen 8.8"');
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
-  await expect(page.locator('#status-render')).toContainText(prefixOf(t, 'status.render', ['ms']));
+  // The Bezel chip says the last render time (T-9b).
+  await expect(page.locator('#status-render')).toHaveText(/^\d+ ms$/);
   await expect(page.getByRole('heading', { name: t('inspector.theme') })).toBeVisible();
   const box = await page.locator('#canvas-box').boundingBox();
   expect(Math.round(box.height / box.width)).toBe(4);

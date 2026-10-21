@@ -28,6 +28,7 @@ import { shortcutFor } from './shortcuts.js';
 import { createRenderScheduler } from './render-scheduler.js';
 import { createPreviewAnimation } from './preview-animation.js';
 import { createTrialValues } from './ui/trial-values.js';
+import { createScreenStatus } from './ui/screen-status.js';
 import { errorText, sensorLabel } from './messages.js';
 import { backgroundFileDraft, backgroundOf, droppable, fileNameOf, videoFacts } from './editor/background.js';
 import { framingOf, framingPercents } from './editor/video-framing.js';
@@ -475,6 +476,11 @@ const animation = createPreviewAnimation({
   enabled: () => !document.hidden && (bridge.mode === 'tauri' || motionAllowed()),
 });
 
+// The statusbar's Bezel chip (render time and memory, D-2026-10-20-studio-ux-v2-11).
+// Memory is independent of hardware polling/errors and never sampled while
+// the document is hidden. The backend also caches reads from other callers.
+const memoryStatus = createMemoryStatus({ t, root: $('status-memory'), notify: (message) => toast(message) });
+
 // "Trial values" in the canvas toolbar: trial inputs instead of the sensors, never saved.
 const trialValues = createTrialValues({ after: $('grid-toggle'), t: (key) => t(key), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
 
@@ -495,11 +501,11 @@ async function drawPreview() {
       canvasView.drawFrame(frame);
       inspector.frameShown();
     }
-    $('status-render').textContent = t('status.render', { ms: Math.round(frame.millis) });
+    memoryStatus.rendered(frame.millis);
     animation.shown({ nextMs: frame.nextMs ?? null, elapsed: performance.now() - started });
   } catch (e) {
     animation.stop();
-    $('status-render').textContent = t('status.renderError', { message: errorText(t, e) });
+    memoryStatus.failed(t('status.renderError', { message: errorText(t, e) }));
   }
 }
 
@@ -654,9 +660,6 @@ async function sampleLoop() {
 // The sensors chip, the Libre dot, its popover and the restart (artboard SensorStatus).
 const sensorStatus = createSensorStatus({ t, bridge, notify: toast, fail, root: $('status-libre'), onOpenSensors: filters => library.openSensors(filters) });
 
-// Memory is independent of hardware polling/errors and never sampled while
-// the document is hidden. The backend also caches reads from other callers.
-const memoryStatus = createMemoryStatus({ t, root: $('status-memory') });
 async function memoryLoop() {
   if (!document.hidden) {
     try { memoryStatus.update(await bridge.memoryUsage()); }
@@ -688,7 +691,7 @@ function renderScreenSelect() {
   else if (state.reconnecting) device = t('restart.reconnecting', state.reconnecting);
   else if (current && state.live && state.liveVideo?.state === 'missing') device = t('status.liveVideoMissing');
   else if (current) device = state.live ? t('status.live') : t(`screen.state.${current.state}`);
-  $('status-device').textContent = device;
+  screenDevice = device;
   renderScreenPill();
   library.setScreens(state.screens, state.screen);
   screenPanel.render(state.screens, state.screen, state.live, state.brightness, state.desktopMode, { restarting: state.restarting, hung: state.hung });
@@ -706,10 +709,32 @@ function renderScreenChip(current) {
   $('screen-chip-meta').textContent = model ? t('shell.screenSize', { width: model.width, height: model.height, port: current.key }) : '';
 }
 
-/** The statusbar's screen pill: green with the live frame rate while live. */
+/**
+ * The statusbar's Screen chip (D-2026-10-20-studio-ux-v2-11): the screen and
+ * its frame rate, green while live, yellow when something needs a look.
+ */
+let screenDevice = '';
+const screenChip = createScreenStatus({
+  t, root: $('status-screen'),
+  onSettings: () => $('tab-screen').click(),
+  onLive: () => $('live').click(),
+});
 function renderScreenPill() {
-  $('status-screen').dataset.tone = state.live ? 'ok' : '';
-  $('status-fps').textContent = state.live && Number.isFinite(state.liveFps) ? t('shell.fps', { fps: Math.round(state.liveFps) }) : '';
+  const current = currentScreen();
+  const model = current?.models?.length === 1 ? current.models[0] : null;
+  const { theme } = store.getState();
+  const problem = Boolean(state.screenError || state.restarting || state.reconnecting || (state.live && state.liveVideo?.state === 'missing'));
+  screenChip.update(current ? {
+    name: model?.name ?? deviceLabel(current, t),
+    port: current.key,
+    size: model ? { width: model.width, height: model.height } : null,
+    turned: isTurned(theme.orientation),
+    live: state.live,
+    fps: state.liveFps,
+    problem,
+    theme: theme.name,
+    profile: null,
+  } : null, { message: screenDevice, problem });
 }
 
 /** The stage's "Connect your smart screen" while no screen can be used. */
@@ -1327,6 +1352,7 @@ function setLocale(next) {
   if (canvasView.framing()) $('overlay').setAttribute('aria-label', t('framing.surface'));
   sensorStatus.close();
   memoryStatus.retranslate();
+  renderScreenPill();
   trialValues.retranslate();
   applyIcons(document, ICONS);
   refreshChrome('select');
