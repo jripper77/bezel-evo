@@ -1,4 +1,4 @@
-# T-8 — punto verificato, attività ancora in corso
+# T-8 — punti di controllo (attività completata: vedi SUMMARY-T-8.md)
 
 21 ottobre 2026. Branch **ux2/t8**, worktree **F:/Dev/bezel-ux2-t8**, base
 `c66a247`. Non unire questo ramo finché non è completata l’intera acceptance T-8.
