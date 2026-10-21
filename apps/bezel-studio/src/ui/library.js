@@ -85,6 +85,7 @@ const CUT = '\u0001';
 export function createLibrary({ store, canvas, stage, t, pickers, locale = () => 'en', themeFilter = null, bridge, actions }) {
   const $ = (id) => document.getElementById(id);
   let catalog = [];
+  let catalogReady = false;
   let readings = {};
   let editing = null;
   // The hardware the Sensors panel shows (one category or all of them).
@@ -114,7 +115,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   }
 
   const duplicateTheme = (entry) => actions.duplicateTheme?.(entry.location, t('layers.copyOf', { name: entry.name }));
-  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme, bridge, catalog: () => catalog, readings: () => readings, screen: screenInUse, refresh: () => actions.refreshThemes(), onFacts: () => renderThemes(themes), onSensors: reportShown });
+  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme, bridge, catalog: () => catalogReady ? catalog : null, readings: () => readings, screen: screenInUse, refresh: () => actions.refreshThemes(), onFacts: () => renderThemes(themes), onSensors: reportShown });
   $('theme-gallery')?.addEventListener('click', () => gallery.show());
 
   // ---------------------------------------------------------------- tabs --
@@ -735,7 +736,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
           el('span', { class: 'badge' }, [icon(ICONS[axis], 14), t(`axis.${axis}`)]),
           th.bundled && el('span', { class: 'tag', text: t('themes.bundled') }),
           ...themeUses(th, gallery.overview()).filter(use => ['screen', 'profile'].includes(use.kind)).map(use => el('span', { class: 'badge', text: use.kind === 'screen' ? t('themesPanel.onScreen') : use.name })),
-          missingSensors(th, catalog).length > 0 && el('span', { class: 'badge theme-missing', text: t('themesPanel.missing') }),
+          missingSensors(th, catalogReady ? catalog : null).length > 0 && el('span', { class: 'badge theme-missing', text: t('themesPanel.missing') }),
         ]),
       ]),
       tools,
@@ -1024,6 +1025,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     renderWidgets,
     setCatalog(next) {
       catalog = next;
+      catalogReady = true;
       renderSensors();
       renderThemes(themes);
       libreShown = null;

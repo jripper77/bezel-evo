@@ -8,7 +8,7 @@ import { catalogKeys, missingSensors, themeUses } from '../gallery-model.js';
 import { themePreview } from '../theme-previews.js';
 import { errorText, sensorLabel } from '../messages.js';
 
-export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge, catalog = () => [], readings = () => ({}), screen = () => null, refresh, onFacts = () => {}, onSensors = () => {} }) {
+export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge, catalog = () => null, readings = () => ({}), screen = () => null, refresh, onFacts = () => {}, onSensors = () => {} }) {
   let selected = null, entries = [], moved = [], opener, busy = false, overview = null, timer, lastFacts;
   const head = el('div', { class: 'dialog-head themes-gallery-head' });
   const filters = el('div', { class: 'themes-gallery-filters' });
@@ -61,7 +61,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     detail.setAttribute('aria-label', t('themesPanel.details')); onSensors();
     for (const card of dialog.querySelectorAll('.theme-card')) card.setAttribute('aria-pressed', String(card.dataset.location === selected?.location));
     if (!selected) { detail.replaceChildren(el('p', { class: 'hint', text: t('themesPanel.selectTheme') })); return; }
-    const entry = selected, sensors = catalog(), missing = missingSensors(entry, sensors), uses = used(entry);
+    const entry = selected, sensors = catalog() ?? [], missing = missingSensors(entry, catalog()), uses = used(entry);
     const preview = screenThumb(entry.canvas); preview.classList.add('gallery-preview');
     void themePreview(bridge, entry).then(url => { if (url) preview.style.backgroundImage = `url("${url}")`; });
     const action = (text, fn, attrs = {}) => el('button', { type: 'button', class: 'text-button', text, disabled: busy, onclick: () => void run(fn), ...attrs });
