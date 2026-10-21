@@ -217,7 +217,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Primo passo:** misurare sull'8,8″ quanti fps regge un video in una zona piccola, media e grande dello schermo, ripartendo
   dai dati della prova del 18 ottobre (`docs/experiments/scene-streaming.md`); poi l'utente decide i limiti (dimensione
   massima, fps). Solo dopo: decodifica sul PC con la pipeline dello sfondo, ripetizione/una volta, velocità, muto, demo.
-- **Dipendenze:** T-5, T-7b · **Status:** pending
+- **Dipendenze:** T-5, T-7b · **Status:** deferred — rinviata a tempo indeterminato dall'utente (21 ottobre 2026); fuori dalla chiusura della fase, T-10 procede senza.
 
 ### Wave 3 — Integrazione
 
@@ -226,7 +226,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Acceptance:** componenti comuni promossi, chiavi i18n orfane e `inspector-tabs.js` tolti, galleria di fedeltà completa e approvata
   dall'utente, guida utente aggiornata (inspector, maniglie, profili, meteo animato), suite completa verde (AGENTS.md), elenco
   delle prove a vista per l'utente (DoD 6).
-- **Dipendenze:** tutte · **Status:** pending
+- **Dipendenze:** tutte tranne T-11 (rinviata) · **Status:** in_progress
 
 ## Ordine consigliato e parallelismo
 - Wave 1: T-0 (UI) in parallelo con T-1…T-6 (Rust + demo), fino a 4 agenti alla volta. T-0 è la più urgente perché sblocca la Wave 2.
