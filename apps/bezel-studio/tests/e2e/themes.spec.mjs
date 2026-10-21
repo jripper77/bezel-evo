@@ -15,6 +15,7 @@ async function openThemes(page, t, scenario = 'turing88') {
   await page.goto(`/index.html?demo=${scenario}`);
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   return {
     scope: page.getByRole('group', { name: t('themes.scopeLabel') }),
     axis: page.getByRole('group', { name: t('themes.axisLabel') }),
@@ -35,7 +36,7 @@ test('the gallery lists the themes for this screen, with thumbnails', async ({ p
   await expect(demo).toContainText(t('axis.vertical'));
   await expect(demo).toContainText(screenLabel({ canvas: { width: 480, height: 1920 }, diagonalHundredths: 880 }, lang));
   await expect(demo.locator('.thumb-screen')).toHaveAttribute('data-state', 'ready');
-  expect(await demo.locator('.thumb-screen').evaluate((e) => e.style.backgroundImage)).toContain('data:image/svg+xml');
+  expect(await demo.locator('.thumb-screen').evaluate((e) => e.style.backgroundImage)).toContain('data:image/png');
   await expect(page.locator('#theme-count')).toHaveText(t('themes.countSome', { shown: 1, total }));
   await expectAccessible(page);
 
@@ -67,6 +68,8 @@ test('the gallery lists the themes for this screen, with thumbnails', async ({ p
   await expect(page.getByRole('button', { name: t('themes.newVertical'), exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: t('themes.newHorizontal'), exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: t('themesPanel.fromPreset'), exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(cards(page).nth(0)).toBeFocused();
 
@@ -132,6 +135,7 @@ test('without a screen every theme is listed', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=empty');
   await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   const scope = page.getByRole('group', { name: t('themes.scopeLabel') });
   const forScreen = scope.getByRole('button', { name: t('themes.forScreen') });
   await expect(forScreen).toBeDisabled();
@@ -146,6 +150,7 @@ test('the square screen lists the round theme', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turzx');
   await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   const scope = page.getByRole('group', { name: t('themes.scopeLabel') });
   await expect(scope.getByRole('button', { name: t('themes.forScreen') })).toHaveAttribute('title', t('themes.forScreenHint', { name: 'Turing 2.1" Round (USB)' }));
   await expect(cards(page)).toHaveCount(1);
@@ -168,4 +173,57 @@ test('screen thumbnail primitives preserve portrait, landscape and square geomet
   }
   await expectAccessible(page);
   expect(errors).toEqual([]);
+});
+
+test('the full gallery uses real previews, usage facts and accessible menus inside its dialog', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await openThemes(page, t);
+  const original = await page.locator('#theme-name').inputValue();
+  await page.locator('#theme-gallery').click();
+  const dialog = page.locator('.themes-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('#theme-save-as')).not.toBeVisible();
+  await expect(dialog.locator('.gallery-preview')).toBeVisible();
+  await expect.poll(() => dialog.locator('.gallery-preview').evaluate(e => e.style.backgroundImage)).toContain('data:image/');
+  await expect(dialog.locator('.themes-gallery-detail')).toContainText(t('themesPanel.sensors'));
+  await expect(dialog.locator('.themes-gallery-detail')).toContainText(t('themesPanel.usedWhere'));
+  await expect(dialog.locator('.themes-gallery-detail').getByRole('button', { name: t('storage.deleteAction'), exact: true })).toBeDisabled();
+  const more = dialog.getByRole('button', { name: t('themesPanel.more', { name: 'Demo' }), exact: true });
+  await dialog.locator('.theme-item').first().hover(); await more.click();
+  const menu = dialog.getByRole('menu'); await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: t('common.duplicate'), exact: true })).toBeEnabled();
+  await page.keyboard.press('Escape'); await expect(menu).not.toBeVisible(); await expect(dialog).toBeVisible();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: t('dialog.close'), exact: true }).click();
+  await expect(dialog).not.toBeVisible(); await expect(page.locator('#theme-name')).toHaveValue(original);
+  expect(errors).toEqual([]);
+});
+
+test('gallery previews contain the saved theme pixels from the demo renderer', async ({page,t}) => {
+  const errors=watchErrors(page); await openThemes(page,t);
+  const same=await page.evaluate(async () => {
+    const {createDemoBackend}=await import('/demo-backend.js'), {renderApprox}=await import('/demo-render.js');
+    await document.fonts.ready;
+    const backend=createDemoBackend('turing88'), entry=(await backend.listThemes())[0];
+    const theme=await backend.openTheme(entry.location), url=await backend.themeThumbnail(entry.location);
+    const bitmap=await createImageBitmap(await (await fetch(url)).blob());
+    const canvas=new OffscreenCanvas(bitmap.width,bitmap.height), ctx=canvas.getContext('2d'); ctx.drawImage(bitmap,0,0);
+    const actual=ctx.getImageData(0,0,bitmap.width,bitmap.height).data;
+    const expected=renderApprox(theme,0,null,new Map(),Math.min(1,360/Math.max(theme.canvas.width,theme.canvas.height)),false);
+    return {width:bitmap.width,height:bitmap.height,expected:[expected.width,expected.height],equal:actual.length===expected.rgba.length && actual.every((v,i)=>v===expected.rgba[i])};
+  });
+  expect([same.width,same.height]).toEqual(same.expected); expect(Math.max(same.width,same.height)).toBeLessThanOrEqual(360); expect(same.equal).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('export selects the saved gallery theme without opening it in the editor', async ({page,t}) => {
+  const errors=watchErrors(page); await openThemes(page,t);
+  const before=await page.locator('#theme-name').inputValue();
+  await page.locator('#theme-gallery').click(); const dialog=page.locator('.themes-dialog');
+  await dialog.getByRole('group',{name:t('themes.scopeLabel'),exact:true}).getByRole('button',{name:t('collection.filter.all'),exact:true}).click();
+  const selected=dialog.locator('.theme-card').filter({hasText:'Midnight 5" horizontal'}); await selected.click();
+  await dialog.locator('.themes-gallery-detail').getByRole('button',{name:t('themesPanel.export'),exact:true}).click();
+  await expect(dialog.locator('.themes-gallery-message')).toHaveText(t('themesPanel.exported',{name:'Midnight 5" horizontal'}));
+  await expect(dialog).toBeVisible(); await expect(page.locator('#theme-name')).toHaveValue(before);
+  await expectAccessible(page); expect(errors).toEqual([]);
 });

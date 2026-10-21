@@ -223,6 +223,23 @@ impl EngineBridge {
         )?;
         Ok(reply["screens"].as_u64().map_or(0, |n| n as usize))
     }
+    pub fn try_themes(
+        &self,
+        themes: &std::collections::BTreeMap<String, String>,
+        profile: Option<String>,
+    ) -> Result<usize> {
+        let mut state = self.lock()?;
+        let (reply, _) = self.call(
+            &mut state,
+            "__profiles__",
+            RuntimeOp::TryThemes {
+                themes: themes.clone(),
+                profile,
+            },
+            &[],
+        )?;
+        Ok(reply["screens"].as_u64().map_or(0, |n| n as usize))
+    }
     /// What the profiles do now, as the engine sees them.
     pub fn profile_status(&self) -> Result<Option<bezel_runtime::profiles::Status>> {
         let mut state = self.lock()?;

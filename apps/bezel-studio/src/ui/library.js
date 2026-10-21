@@ -17,6 +17,9 @@ import { warningText } from '../messages.js';
 import { formatBytes, wireSubtabs } from './storage.js';
 import { SHOW_ALL, axisOf, countText, emptyState, filterThemes, rememberedFilter, screenCount, scopeIn, screenLabel, searchThemes, thumbnailKey } from '../theme-filter.js';
 import { createIconPicker } from './icon-picker.js';
+import { filtersToggle } from './filters-toggle.js';
+import { themePreview } from '../theme-previews.js';
+import { missingSensors, recentThemes, themeUses } from '../gallery-model.js';
 import { createThemesDialog } from './themes-dialog.js';
 import { layerGroups } from '../editor/layers.js';
 import { wireLayerDrag } from './layer-drag.js';
@@ -26,7 +29,7 @@ import { libreStatus } from '../libre-status.js';
 import { matchesSensor, probeOf, readingState } from '../sensor-probes.js';
 import { timeAgo } from '../relative-time.js';
 
-export { axisOf };
+export { axisOf, filtersToggle };
 
 const CATEGORY_ORDER = ['cpu', 'gpu', 'memory', 'disk', 'network', 'board', 'system'];
 
@@ -79,9 +82,10 @@ const CUT = '\u0001';
  * @param {{scope?: string|null, axis?: string}|null} [deps.themeFilter] the Themes tab's filter as remembered
  * @param {object|null} [deps.bridge] the backend, for what the panels read themselves
  */
-export function createLibrary({ store, canvas, stage, t, pickers, locale = () => 'en', themeFilter = null, actions }) {
+export function createLibrary({ store, canvas, stage, t, pickers, locale = () => 'en', themeFilter = null, bridge, actions }) {
   const $ = (id) => document.getElementById(id);
   let catalog = [];
+  let catalogReady = false;
   let readings = {};
   let editing = null;
   // The hardware the Sensors panel shows (one category or all of them).
@@ -111,8 +115,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   }
 
   const duplicateTheme = (entry) => actions.duplicateTheme?.(entry.location, t('layers.copyOf', { name: entry.name }));
-  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme });
-  $('theme-gallery').addEventListener('click', () => gallery.show());
+  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme, bridge, catalog: () => catalogReady ? catalog : null, readings: () => readings, screen: screenInUse, refresh: () => actions.refreshThemes(), onFacts: () => renderThemes(themes), onSensors: reportShown });
+  $('theme-gallery')?.addEventListener('click', () => gallery.show());
 
   // ---------------------------------------------------------------- tabs --
   const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
@@ -161,22 +165,6 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   // Whether Media's "In the theme" is open (at first it is), remembered.
   const mediaMemory = createSectionMemory({ key: 'bezel.mediaGroups', ids: ['theme'], open: ['theme'] });
   const widgetMemory = createSectionMemory({ key: 'bezel.widgetGroups', ids: WIDGET_GROUPS.map(g => g.id), open: WIDGET_GROUPS.map(g => g.id) });
-
-  /**
-   * The Filters button beside a panel's search (D-2026-10-20-studio-ux-v2-14):
-   * it shows and hides the panel's filter row `rowId`, folded at first.
-   */
-  function filtersToggle(searchId, rowId) {
-    const button = el('button', { type: 'button', class: 'icon-button filters-toggle', 'aria-controls': rowId, 'aria-expanded': 'false', onclick: () => show($(rowId).hidden) }, [icon(ICONS.filter, 18)]);
-    $(searchId).classList.add('search-with-filters');
-    $(searchId).append(button);
-    function show(open) {
-      $(rowId).hidden = !open;
-      button.setAttribute('aria-expanded', String(open));
-    }
-    show(false);
-    return { button, show };
-  }
 
   // ------------------------------------------------------------- widgets --
   function widgetTile(w) {
@@ -311,7 +299,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   let reported = null;
   function reportShown() {
     const open = !$('panel-sensors').hidden && document.visibilityState !== 'hidden';
-    const keys = catalogKeysInView(catalog, sensorSearch.value, open, ALL_CATEGORIES, { probe: sensorProbe });
+    const keys = gallery.wantedSensors() ?? catalogKeysInView(catalog, sensorSearch.value, open, ALL_CATEGORIES, { probe: sensorProbe });
     if (keys.join(' ') === reported) return;
     reported = keys.join(' ');
     actions.showSensors(keys);
@@ -410,6 +398,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     const wasError = sensorError;
     sensorError = false;
     readings = next;
+    gallery.sample();
     history.push(next, at);
     // A row that becomes readable or not changes its second line: draw the list again.
     const turned = wasError || [...document.querySelectorAll('.sensor-row[data-key]')].some(row => {
@@ -446,7 +435,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   statusSelect.dataset.sensorFilter = 'status';
   $('sensor-probe-filters').replaceChildren(probeField, statusField);
   // Probe and state live behind Filters beside the search; a dot says one is on.
-  const { button: filtersButton, show: showFilters } = filtersToggle('sensor-search-box', 'sensor-probe-filters');
+  const { button: filtersButton, show: showFilters } = filtersToggle($('sensor-search-box'), $('sensor-probe-filters'));
   let filterSignature = '';
   function renderProbeFilters() {
     const probes = [...new Set(catalog.map(sensor => probeOf(sensor, catalog)))].sort();
@@ -656,7 +645,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   layerTypeSelect.id = 'layer-type-filter';
   layerTypeField.htmlFor = layerTypeSelect.id;
   $('layer-type').replaceChildren(layerTypeField);
-  const { button: layerFilters } = filtersToggle('layer-search', 'layer-type');
+  const { button: layerFilters } = filtersToggle($('layer-search'), $('layer-type'));
   let layerTypesSignature = '';
   function renderLayerTypeFilter() {
     const options = [['all', t('layersPanel.allTypes')], ...[...WIDGETS, 'group'].map(type => [type, t(`widget.${type}`)])];
@@ -715,7 +704,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
       const entry = waiting.shift();
       const key = thumbnailKey(entry);
       if (thumbnails.has(key)) continue;
-      const url = await Promise.resolve(actions.themeThumbnail?.(entry.location)).catch(() => null);
+      const url = bridge ? await themePreview(bridge, entry) : await Promise.resolve(actions.themeThumbnail?.(entry.location)).catch(() => null);
       thumbnails.set(key, url ?? null);
       const screen = cardScreens.get(key);
       if (screen) paintThumbnail(screen, url ?? null);
@@ -737,6 +726,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     cardScreens.set(key, screen);
     const thumb = el('span', { class: 'thumb', dataset: { axis }, 'aria-hidden': 'true' }, [screen]);
     paintThumbnail(screen, thumbnails.has(key) ? thumbnails.get(key) : th.thumbnail);
+    const tools = gallery.tools(th);
     return el('li', { class: 'theme-item' }, [
       el('button', { type: 'button', class: 'theme-card', dataset: { location: th.location }, onclick: () => { if (!gallery.select(th)) actions.openTheme(th.location); } }, [
         thumb,
@@ -745,8 +735,11 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
         el('span', { class: 'card-meta' }, [
           el('span', { class: 'badge' }, [icon(ICONS[axis], 14), t(`axis.${axis}`)]),
           th.bundled && el('span', { class: 'tag', text: t('themes.bundled') }),
+          ...themeUses(th, gallery.overview()).filter(use => ['screen', 'profile'].includes(use.kind)).map(use => el('span', { class: 'badge', text: use.kind === 'screen' ? t('themesPanel.onScreen') : use.name })),
+          missingSensors(th, catalogReady ? catalog : null).length > 0 && el('span', { class: 'badge theme-missing', text: t('themesPanel.missing') }),
         ]),
       ]),
+      tools,
       el('button', {
         type: 'button', class: 'icon-button quiet theme-duplicate', title: t('common.duplicate'), 'aria-label': t('themesPanel.duplicateLabel', { name: th.name }),
         onclick: () => duplicateTheme(th),
@@ -769,6 +762,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
       size && el('span', { class: 'theme-new-size', text: size }),
       choice('vertical'),
       choice('horizontal'),
+      el('button', { type: 'button', class: 'text-button quiet', text: t('themesPanel.fromPreset'), onclick: event => gallery.presets(themes.filter(theme => theme.bundled), event.currentTarget) }),
     ]);
   }
 
@@ -814,7 +808,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     filteredFor = signature(screen);
     syncFilterButtons(screen);
     const filtered = filterThemes(list, filter, screen);
-    const shown = searchThemes(filtered, themeQuery);
+    const shown = recentThemes(searchThemes(filtered, themeQuery, catalog));
     $('theme-count').textContent = themeCountText(shown.length, list, screen);
     const grid = $('theme-grid');
     cardScreens.clear();
@@ -848,6 +842,11 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     button.addEventListener('click', () => chooseFilter({ axis: button.dataset.axis }));
   }
   mountSearch('theme-search', 'themesPanel.search', (q) => { themeQuery = q; renderThemes(themes); }, { id: 'theme-search-input' });
+  document.querySelector('.theme-filter').id = 'theme-filters';
+  const { button: themeFilters } = filtersToggle($('theme-search'), document.querySelector('.theme-filter'));
+  themeFilters.title = t('themesPanel.filters'); themeFilters.setAttribute('aria-label', t('themesPanel.filters'));
+  const recentLabel = el('span', { class: 'hint', text: t('themesPanel.recent') });
+  document.querySelector('.theme-filter').append(recentLabel);
 
   /** Lists what an import could not map exactly, until dismissed; `null` clears it. */
   function showImportReport(report) {
@@ -1026,7 +1025,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     renderWidgets,
     setCatalog(next) {
       catalog = next;
+      catalogReady = true;
       renderSensors();
+      renderThemes(themes);
       libreShown = null;
       renderLibre();
     },
@@ -1044,6 +1045,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     },
     renderLayers,
     renderThemes,
+    openThemes() { selectTab(tabs.find(tab => tab.dataset.tab === 'themes')); return gallery.show(); },
+    closeThemes: gallery.close,
     showImportReport,
     renderMedia,
     setAdding,
@@ -1056,6 +1059,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
         input.placeholder = t(placeholderKey);
       }
       gallery.retranslate();
+      recentLabel.textContent = t('themesPanel.recent');
+      themeFilters.title = t('themesPanel.filters'); themeFilters.setAttribute('aria-label', t('themesPanel.filters'));
       iconPicker.retranslate();
       renderWidgets();
       renderSensors();

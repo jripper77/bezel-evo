@@ -489,3 +489,17 @@ test('process capture consent uses an explicit local command, not a theme patch'
   await bridge.setAudioCapture(true);await bridge.setAudioCapture(false);
   assert.deepEqual(calls,[['set_audio_capture',{on:true}],['set_audio_capture',{on:false}]]);
 });
+
+
+test('thirty-second trials use a dedicated transient command', async () => {
+  const calls = [], bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => calls.push([command, args]) } } });
+  await bridge.tryThemes({ COM3: 'theme.bezeltheme' }, 'gaming');
+  await bridge.tryThemes({ COM3: 'theme.bezeltheme' });
+  assert.deepEqual(calls, [['try_themes', { themes: { COM3: 'theme.bezeltheme' }, profile: 'gaming' }], ['try_themes', { themes: { COM3: 'theme.bezeltheme' }, profile: null }]]);
+});
+
+test('library export sends only the selected saved theme and preserves cancellation', async () => {
+  const calls=[], bridge=createBridge({...page(),__TAURI__:{core:{invoke:async (command,args)=>{calls.push([command,args]);return null;}}}});
+  assert.equal(await bridge.exportTheme('selected.bezeltheme'),null);
+  assert.deepEqual(calls,[['export_theme',{location:'selected.bezeltheme'}]]);
+});

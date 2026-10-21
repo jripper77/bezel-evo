@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { addMedia, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 // The library panels (artboards Main's left panel, Sensors, Layers, Media, Themes).
@@ -17,8 +18,17 @@ const sensors = async (app) => {
 const themes = async (app) => { await app.tab('themes'); await app.click('#theme-gallery'); };
 export default {
   area: 'library',
+  mockDesigns: [{ root: fileURLToPath(new URL('../../../../../.jdi/phases/studio-ux-v2/design/boards/', import.meta.url)), artboards: ['ProfilesNew', 'ThemesNew'] }],
   artboards: ['Main', 'Sensors', 'Layers', 'Media', 'Themes'],
   states: [
+    { name: 'ux2-profiles', capture: '.profiles-dialog', run: async app => {
+      await app.tab('themes'); await app.click('#theme-profiles'); await app.click('#pf-add');
+      await app.page.locator('#pf-name').fill('Gaming');
+      await app.page.locator('.pf-add-types').getByRole('button', { name: translator('it')('profiles.foreground'), exact: true }).click();
+      await app.page.locator('.pf-rule input[type=text]').fill('game.exe');
+      await app.page.locator('.pf-save-status').getByText(translator('it')('profileRules.ui.save.saved'), {exact:true}).waitFor();
+    } },
+    { name: 'ux2-themes', capture: '.themes-dialog', run: async app => { await themes(app); await app.click('#theme-search .filters-toggle'); await app.click('#theme-scope [data-scope=all]'); } },
     { name: 'widgets', run: (app) => app.tab('widgets') },
     { name: 'sensors', run: sensors },
     { name: 'sensors-libre', query: '&libre=partial', run: sensors },
@@ -46,6 +56,6 @@ export default {
     { name: 'gif-search', run: async (app) => { await app.tab('media'); await app.click('#subtab-media-collection'); await app.click('#gif-search-open'); } },
     { name: 'themes-panel', run: (app) => app.tab('themes') },
     { name: 'themes', run: themes },
-    { name: 'themes-all', run: async (app) => { await themes(app); await app.click('#theme-scope [data-scope=all]'); } },
-  ].map(state => ({ ...state, capture: state.name.startsWith('themes') && state.name !== 'themes-panel' ? '.themes-dialog' : state.name === 'gif-search' ? '.gif-dialog' : '.sidebar' })),
+    { name: 'themes-all', run: async (app) => { await themes(app); await app.click('#theme-search .filters-toggle'); await app.click('#theme-scope [data-scope=all]'); } },
+  ].map(state => ({ ...state, capture: state.capture ?? (state.name.startsWith('themes') && state.name !== 'themes-panel' ? '.themes-dialog' : state.name === 'gif-search' ? '.gif-dialog' : '.sidebar') })),
 };

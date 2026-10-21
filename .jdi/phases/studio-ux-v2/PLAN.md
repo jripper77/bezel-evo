@@ -204,7 +204,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Files:** `src/ui/{profiles,themes-dialog}.js`, `src/{profiles-model,theme-filter}.js`, css, i18n, test
 - **Acceptance:** come le tavole; regole come frasi con parti cliccabili; ▶ attiva per 30 s (comando esistente di prova se c'è, altrimenti nuovo
   e annotato); galleria con anteprime reali (render piccolo in cache per tema), distintivi, sensori mancanti calcolati dal catalogo.
-- **Dipendenze:** T-0, T-6 · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0, T-6 · **Test:** G1–G9 · **Status:** completed — dialoghi con primitivi comuni, salvataggio automatico, stato runtime reale, prova di 30 s e galleria con PNG reali in cache, sensori/utilizzi e esportazione `.bezeltheme` (rettifica dell'utente a D-13). 69 test runtime, 232 Studio, 190 unitari UI, clippy/fmt verdi; e2e area 60 verdi e 4 rossi sulla vecchia asserzione dell'inspector già fallita sulla base. Confronto it chiaro/scuro registrato. Vedi `SUMMARY-T-9c.md`.
 
 #### T-9d: Temi predefiniti 1920×480
 - **Tavole:** ThemePixel, ThemeNebula, ThemePaper, ThemeNowPlaying

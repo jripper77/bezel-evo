@@ -236,6 +236,8 @@ test('Themes: the New theme card, the search, the screen thumbnail and Duplicate
   await page.goto('/index.html?demo=turing88');
   await tab(page, t, 'themes');
   const panel = page.locator('#panel-themes');
+  // The scope sits behind Filters since T-9c.
+  await panel.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   await panel.locator('#theme-scope [data-scope="all"]').click();
   const cards = panel.locator('#theme-grid .theme-card');
   const total = await cards.count();
@@ -323,6 +325,7 @@ test('the Themes dialog reuses its grid, selects before opening, duplicates and 
   expect(await dialog.locator('#theme-grid').evaluate((node, old) => node === old, original)).toBe(true);
   const search = dialog.getByRole('searchbox', { name: t('themesPanel.search'), exact: true });
   await expect(search).toBeFocused();
+  await dialog.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   await dialog.locator('#theme-scope [data-scope=all]').click();
   const cards = dialog.locator('.theme-card');
   const count = await cards.count();
@@ -330,7 +333,8 @@ test('the Themes dialog reuses its grid, selects before opening, duplicates and 
   const name = await chosen.locator('strong').textContent();
   await chosen.click();
   await expect(chosen).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('.themes-gallery-selection')).toHaveText(t('themesPanel.selected', { name }));
+  // The selection shows in the detail on the right (T-9c, board ThemesNew).
+  await expect(dialog.locator('.themes-gallery-detail')).toContainText(name);
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await expectAccessible(page);
   await dialog.getByRole('button', { name: t('common.duplicate'), exact: true }).click();
@@ -338,7 +342,9 @@ test('the Themes dialog reuses its grid, selects before opening, duplicates and 
   await expect(dialog.locator('#theme-grid')).toContainText(t('layers.copyOf', { name }));
   await search.fill('zzzz');
   await expect(cards).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: t('themesPanel.openEditor'), exact: true })).toBeDisabled();
+  // Nothing to open: the detail asks for a theme and offers no Open (T-9c).
+  await expect(dialog.locator('.themes-gallery-detail')).toHaveText(t('themesPanel.selectTheme'));
+  await expect(dialog.getByRole('button', { name: t('themesPanel.openEditor'), exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(launcher).toBeFocused();

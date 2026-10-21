@@ -430,6 +430,51 @@ pub async fn duplicate_theme(
     blocking(&state, move |b| b.duplicate_theme(&location, &name)).await
 }
 
+/// Exports the selected saved theme to a user-picked native package; cancellation writes nothing.
+#[tauri::command]
+pub async fn export_theme<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, Shared>,
+    location: String,
+) -> UiResult<Option<String>> {
+    let source = location.clone();
+    let name = blocking(&state, move |b| {
+        b.library
+            .entry(&ThemeLocation(source.clone()))
+            .map(|e| e.theme.name)
+            .ok_or_else(|| UiError::new(ErrorCode::NotInLibrary).arg("location", source))
+    })
+    .await?;
+    let chosen = app
+        .dialog()
+        .file()
+        .add_filter("Bezel", &[EXTENSION])
+        .set_file_name(format!("{name}.{EXTENSION}"))
+        .blocking_save_file();
+    let Some(chosen) = chosen else {
+        return Ok(None);
+    };
+    let target = ThemeLocation(
+        chosen
+            .into_path()
+            .map_err(UiError::system)?
+            .with_extension(EXTENSION)
+            .display()
+            .to_string(),
+    );
+    state.library.grant(&target);
+    blocking(&state, move |b| {
+        b.export_theme(&location, &target).map(Some)
+    })
+    .await
+}
+
+/// Removes an unused personal theme from the library.
+#[tauri::command]
+pub async fn delete_theme(state: State<'_, Shared>, location: String) -> UiResult<()> {
+    blocking(&state, move |b| b.delete_theme(&location)).await
+}
+
 /// The thumbnail of a library theme as a PNG `data:` URL, drawn off the
 /// session's lock when it is not kept yet; `None` when the theme cannot be
 /// drawn (the gallery shows its placeholder).
@@ -714,6 +759,16 @@ pub async fn save_profiles(
         menu.refresh_profiles(&app);
     }
     Ok(())
+}
+
+/// Show saved themes for thirty seconds without modifying the open editor document.
+#[tauri::command]
+pub async fn try_themes(
+    state: State<'_, Shared>,
+    themes: std::collections::BTreeMap<String, String>,
+    profile: Option<String>,
+) -> UiResult<usize> {
+    blocking(&state, move |backend| backend.try_themes(themes, profile)).await
 }
 
 /// Plays a profile transition once on the live screens, unsaved.

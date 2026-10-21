@@ -1,3 +1,4 @@
+import { themeSensorKeys } from './gallery-model.js';
 import { createProfileSelection } from './profile-selection.js';
 import { appliedRotation, rotatedBounds } from './editor/rotation.js';
 import { createSensorMotion, supportsSensorMotion } from './sensor-motion.js';
@@ -221,6 +222,21 @@ export function demoThumbnail(theme) {
   const parts = (theme.elements ?? []).filter((e) => isShown(theme, e) && e.frame).map(thumbnailPart).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="${background}"/>${parts}</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
+}
+
+/** Browser previews use the same canvas renderer as Studio, at the native cache's maximum side. */
+async function renderedThumbnail(theme) {
+  // Node's model tests have no canvas; keep their existing vector fallback.
+  if (typeof OffscreenCanvas === 'undefined') return demoThumbnail(theme);
+  await document.fonts.ready;
+  const scale = Math.min(1, 360 / Math.max(theme.canvas.width, theme.canvas.height));
+  const frame = renderApprox(theme, 0, null, new Map(), scale, false);
+  const canvas = new OffscreenCanvas(frame.width, frame.height);
+  canvas.getContext('2d').putImageData(new ImageData(frame.rgba, frame.width, frame.height), 0, 0);
+  const png = await canvas.convertToBlob({ type: 'image/png' });
+  const bytes = new Uint8Array(await png.arrayBuffer());
+  let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `data:image/png;base64,${btoa(binary)}`;
 }
 
 /** How long before the demo started its own theme was last changed, seconds. */
@@ -1138,6 +1154,8 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
  */
 export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   const profileSelection = createProfileSelection();
+  let themeTrial = null;
+  const themeExports = new Map();
   let profileConfig = { profiles: [], automatic: true, manual: null, defaultProfile: null };
   const systemText = DEMO_SYSTEM_TEXT;
   const cards = createCardMotion();
@@ -1204,6 +1222,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   ];
   /** A library theme as `listThemes` lists it. */
   const listed = (s) => ({
+    sensors: themeSensorKeys(s.theme), objects: s.theme.elements.length,
     name: s.theme.name, location: s.location, canvas: { ...s.theme.canvas }, orientation: s.theme.orientation, bundled: s.bundled, ...demoFits(s.theme), revision: String(s.revision), modifiedMs: s.modifiedMs,
   });
   // Which themes the Themes tab lists, as remembered.
@@ -1562,6 +1581,25 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       return Promise.resolve({ location });
     },
     listThemes: () => Promise.resolve(saved.map(listed)),
+    exportTheme: async location => {
+      const found = saved.find(entry => entry.location === location);
+      if (!found) throw Object.assign(new Error('not in theme library'), { code: 'notInLibrary', args: { location } });
+      const destination = hooks.chooseThemeExport ? await hooks.chooseThemeExport(listed(found)) : `demo://exports/${encodeURIComponent(found.theme.name)}.bezeltheme`;
+      if (destination == null) return null;
+      // Like saveTheme, the demo's filesystem is in memory; export the saved snapshot.
+      themeExports.set(destination, structuredClone(found.theme));
+      return destination;
+    },
+    exportedTheme: location => structuredClone(themeExports.get(location) ?? null),
+    deleteTheme: async location => {
+      const index = saved.findIndex(s => s.location === location);
+      if (index < 0 || saved[index].bundled) throw Object.assign(new Error('not in user library'), { code: 'notInLibrary', args: { location } });
+      const used = theme.name === saved[index].theme.name || [...screenDocuments.values()].some(doc => doc.theme.name === saved[index].theme.name)
+        || profileConfig.profiles.some(p => Object.values(p.themes).includes(location))
+        || Object.values(themeTrial?.themes ?? {}).includes(location);
+      if (used) throw Object.assign(new Error('theme still in use'), { code: 'invalidInput', args: { detail: 'theme still in use' } });
+      saved.splice(index, 1);
+    },
     /** Copies a library theme as a new user theme named `name`, like `duplicate_theme`. */
     duplicateTheme: (location, name) => {
       const found = saved.find((s) => s.location === location);
@@ -1579,7 +1617,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     themeThumbnail: (location) => {
       const found = saved.find((s) => s.location === location);
       if (!found) return Promise.reject(Object.assign(new Error(`${location} is not in the theme library; import it instead`), { code: 'notInLibrary', args: { location } }));
-      return Promise.resolve(found.drawable === false ? null : demoThumbnail(found.theme));
+      return Promise.resolve(found.drawable === false ? null : renderedThumbnail(found.theme));
     },
     openTheme: (location) => {
       const found = saved.find((s) => s.location === location);
@@ -1684,6 +1722,11 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const status = profileSelection.evaluate(profileConfig, { readings: sampleReadings(seconds), activity: DEMO_ACTIVITY,
         idleSeconds: DEMO_ACTIVITY.idleSeconds, locked: DEMO_ACTIVITY.locked }, seconds,
         { weekday: (date.getDay() + 6) % 7, hour: date.getHours(), minute: date.getMinutes() });
+      if (themeTrial && seconds >= themeTrial.until) themeTrial = null;
+      if (themeTrial) {
+        status.active = themeTrial.profile ? { profile: themeTrial.profile, reason: { kind: 'manual' } } : undefined;
+        status.preview = { themes: { ...themeTrial.themes }, profile: themeTrial.profile, remainingSeconds: Math.ceil(themeTrial.until - seconds) };
+      }
       return Promise.resolve({ status, config: structuredClone(profileConfig), displays: devices.screens.map((screen) => {
       const current = screen.key === selectedScreen ? theme : screenDocuments.get(screen.key)?.theme;
       const selected = saved.find((entry) => current && entry.theme.name === current.name)
@@ -1697,6 +1740,12 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     saveProfiles: (config) => { profileConfig = structuredClone(config); return Promise.resolve(); },
     // No screen to cover in the demo: the request is kept for the page to read,
     // and it answers as the backend would with each demo screen live.
+    tryThemes: (themes, profile = null) => {
+      if (profile && !profileConfig.profiles.some(p => p.id === profile)) return Promise.reject(Object.assign(new Error('unknown profile'), { code: 'invalidInput', args: { detail: 'unknown profile' } }));
+      const shown = Object.fromEntries(Object.entries(themes).filter(([key, path]) => isLiveScreen(key) && saved.some(entry => entry.location === path)));
+      if (Object.keys(shown).length) themeTrial = { themes: shown, profile, until: now() + 30 };
+      return Promise.resolve(Object.keys(shown).length);
+    },
     previewTransition: (transition, themes = {}) => {
       globalThis.demoTransitionPreviews = [...(globalThis.demoTransitionPreviews ?? []), structuredClone({ transition, themes })];
       return Promise.resolve(transition.effect === 'none' ? 0 : devices.screens.length);

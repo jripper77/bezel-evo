@@ -634,6 +634,30 @@ impl Backend {
         }
     }
 
+    /// A temporary thirty-second display trial; does not write the profile file.
+    pub fn try_themes(
+        &self,
+        themes: std::collections::BTreeMap<String, String>,
+        profile: Option<String>,
+    ) -> UiResult<usize> {
+        if let Some(id) = &profile {
+            let config =
+                bezel_runtime::profiles::ProfileFile::beside(self.settings.path()).load()?;
+            if !config.profiles.iter().any(|p| &p.id == id) {
+                return Err(UiError::new(ErrorCode::InvalidInput).arg("detail", "unknown profile"));
+            }
+        }
+        for location in themes.values() {
+            if !self.library.allows(&ThemeLocation(location.clone())) {
+                return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
+            }
+        }
+        match &self.engine {
+            Some(engine) => Ok(engine.try_themes(&themes, profile)?),
+            None => Ok(0),
+        }
+    }
+
     pub fn select_profile(&self, id: Option<&str>, automatic: bool) -> UiResult<()> {
         Ok(
             bezel_runtime::profiles::ProfileFile::beside(self.settings.path())
@@ -1345,6 +1369,73 @@ impl Backend {
             .ok_or_else(|| UiError::new(ErrorCode::ThemeFile).arg("detail", copy.0))
     }
 
+    /// Exports a saved theme and every referenced asset without opening it in Studio.
+    pub fn export_theme(&self, location: &str, target: &ThemeLocation) -> UiResult<String> {
+        let source = ThemeLocation(location.into());
+        if !self.library.allows(&source) {
+            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
+        }
+        if !self.library.allows(target) || self.library.is_bundled(target) {
+            return Err(UiError::new(ErrorCode::NotPicked).arg("location", &target.0));
+        }
+        if Path::new(&target.0)
+            .extension()
+            .is_none_or(|e| e != bezel_themes::native::EXTENSION)
+        {
+            return Err(
+                UiError::new(ErrorCode::InvalidInput).arg("detail", "export needs .bezeltheme")
+            );
+        }
+        let (theme, assets) = self.store.load(&source)?;
+        for asset in theme.assets() {
+            if !assets.contains_key(&asset) {
+                return Err(UiError::new(ErrorCode::ThemeFile)
+                    .arg("detail", format!("missing asset: {}", asset.0)));
+            }
+        }
+        self.store.save(target, &theme, &assets)?;
+        Ok(target.0.clone())
+    }
+
+    /// Removes an unused personal theme, after resolving it strictly inside the user library.
+    pub fn delete_theme(&self, location: &str) -> UiResult<()> {
+        let source = ThemeLocation(location.into());
+        if !self.library.is_user(&source) || self.library.entry(&source).is_none() {
+            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
+        }
+        let path = std::fs::canonicalize(location).map_err(UiError::system)?;
+        let root = std::fs::canonicalize(self.library.user_dir()).map_err(UiError::system)?;
+        if path == root || !path.starts_with(&root) {
+            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
+        }
+        let overview = self.profiles()?;
+        let used = overview
+            .config
+            .profiles
+            .iter()
+            .any(|p| p.themes.values().any(|v| v == location))
+            || overview
+                .displays
+                .iter()
+                .any(|d| d.theme.as_deref() == Some(location))
+            || overview
+                .status
+                .as_ref()
+                .and_then(|s| s.preview.as_ref())
+                .is_some_and(|p| p.themes.values().any(|v| v == location))
+            || self.studio().location() == Some(&source);
+        if used {
+            return Err(UiError::new(ErrorCode::InvalidInput).arg("detail", "theme still in use"));
+        }
+        if path.is_dir() {
+            std::fs::remove_dir_all(path).map_err(UiError::system)?;
+        } else {
+            std::fs::remove_file(path).map_err(UiError::system)?;
+        }
+        self.thumbnails.forget(&source);
+        Ok(())
+    }
+
     /// The thumbnail of a library theme as a PNG `data:` URL, drawn at
     /// `time` when it is not kept yet, outside the session's lock. `None`
     /// when the theme cannot be drawn: the gallery shows its placeholder.
@@ -1973,18 +2064,15 @@ mod tests {
         backend: Backend,
         connector: FakeConnector,
         root: PathBuf,
-    }
-
-    impl Drop for Fixture {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.root);
-        }
+        _temporary: tempfile::TempDir,
     }
 
     fn fixture(name: &str) -> Fixture {
-        let root =
-            std::env::temp_dir().join(format!("bezel-backend-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
+        let temporary = tempfile::Builder::new()
+            .prefix(&format!("bezel-backend-{name}-"))
+            .tempdir()
+            .unwrap();
+        let root = temporary.path().to_path_buf();
         let connector = FakeConnector::default();
         let theme = Theme::blank("Start", Size::new(480, 1920), Orientation::ReversePortrait);
         let studio = Studio::new(
@@ -2018,6 +2106,7 @@ mod tests {
             backend,
             connector,
             root,
+            _temporary: temporary,
         }
     }
 
@@ -2853,6 +2942,158 @@ mod tests {
         assert_eq!(empty.code(), "invalidInput");
         let missing = bundled_missing(&f);
         assert!(f.backend.duplicate_theme(&missing, "M").is_err());
+    }
+
+    #[test]
+    fn a_theme_trial_checks_locations_and_profile_ids_without_writing_config() {
+        let f = fixture("gallery-trial");
+        let config = f.backend.profiles().unwrap().config;
+        assert_eq!(f.backend.try_themes(Default::default(), None).unwrap(), 0);
+        assert!(
+            f.backend
+                .try_themes(Default::default(), Some("missing".into()))
+                .is_err()
+        );
+        let unknown =
+            std::collections::BTreeMap::from([("COM9".into(), "C:/outside.bezeltheme".into())]);
+        assert_eq!(
+            f.backend.try_themes(unknown, None).unwrap_err().code(),
+            "notInLibrary"
+        );
+        assert_eq!(f.backend.profiles().unwrap().config, config);
+    }
+
+    #[test]
+    fn gallery_delete_only_removes_unused_personal_themes_and_metadata_is_real() {
+        let f = fixture("gallery-delete");
+        let location = f.backend.library.new_location("Personal");
+        let theme = f.backend.studio().theme().clone();
+        FsThemeStore
+            .save(&location, &theme, &Default::default())
+            .unwrap();
+        let entry = f
+            .backend
+            .themes()
+            .into_iter()
+            .find(|e| e.location == location.0)
+            .unwrap();
+        assert_eq!(entry.objects, theme.elements.len());
+        assert_eq!(
+            entry.sensors,
+            theme
+                .sensor_keys()
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        );
+        let outside = f.root.join("outside.bezeltheme");
+        FsThemeStore
+            .save(
+                &ThemeLocation(outside.display().to_string()),
+                &theme,
+                &Default::default(),
+            )
+            .unwrap();
+        assert!(
+            f.backend
+                .delete_theme(&outside.display().to_string())
+                .is_err()
+        );
+        assert!(outside.exists());
+        assert!(
+            f.backend
+                .delete_theme(&f.backend.library.user_dir().display().to_string())
+                .is_err()
+        );
+        f.backend.open(&location.0).unwrap();
+        assert!(
+            f.backend.delete_theme(&location.0).is_err(),
+            "the open document is protected"
+        );
+        f.backend
+            .studio()
+            .set_theme(Theme::blank("Unsaved", theme.canvas, theme.orientation));
+        // Opening another saved document changes its location; set_theme alone deliberately does not.
+        let another = f.backend.library.new_location("Another");
+        FsThemeStore
+            .save(&another, &theme, &Default::default())
+            .unwrap();
+        f.backend.open(&another.0).unwrap();
+        f.backend.delete_theme(&location.0).unwrap();
+        assert!(!Path::new(&location.0).exists());
+        assert!(Path::new(&another.0).exists());
+    }
+
+    #[test]
+    fn exporting_the_selected_saved_theme_keeps_all_assets_and_the_open_document() {
+        use bezel_core::domain::theme::{AssetRef, Fit};
+        let f = fixture("theme-export");
+        let source = ThemeLocation(
+            f.backend
+                .library
+                .user_dir()
+                .join("Selected")
+                .display()
+                .to_string(),
+        );
+        let mut theme = f.backend.studio().theme().clone();
+        theme.name = "Selected saved theme".into();
+        let asset = AssetRef("assets/cover.png".into());
+        theme.background = Background::Image {
+            asset: asset.clone(),
+            fit: Fit::Contain,
+        };
+        let assets = std::collections::BTreeMap::from([(asset.clone(), vec![1, 2, 3, 4])]);
+        FsThemeStore.save(&source, &theme, &assets).unwrap();
+        let before = std::fs::read(Path::new(&source.0).join("theme.json")).unwrap();
+        let mut unsaved = f.backend.studio().theme().clone();
+        unsaved.name = "Unsaved Studio document".into();
+        f.backend.studio().set_theme(unsaved.clone());
+        let target = ThemeLocation(
+            f.root
+                .join("exports")
+                .join("selected.bezeltheme")
+                .display()
+                .to_string(),
+        );
+        assert_eq!(
+            f.backend
+                .export_theme(&source.0, &target)
+                .unwrap_err()
+                .code(),
+            "notPicked"
+        );
+        assert!(!Path::new(&target.0).exists());
+        f.backend.library.grant(&target);
+        assert_eq!(
+            f.backend.export_theme(&source.0, &target).unwrap(),
+            target.0
+        );
+        let (exported, exported_assets) = FsThemeStore.load(&target).unwrap();
+        assert_eq!(exported, theme);
+        assert_eq!(exported_assets, assets);
+        assert_eq!(*f.backend.studio().theme(), unsaved);
+        assert_eq!(f.backend.studio().location(), None);
+        assert_eq!(
+            std::fs::read(Path::new(&source.0).join("theme.json")).unwrap(),
+            before
+        );
+        let unknown = f.root.join("outside.bezeltheme");
+        assert_eq!(
+            f.backend
+                .export_theme(&unknown.display().to_string(), &target)
+                .unwrap_err()
+                .code(),
+            "notInLibrary"
+        );
+        std::fs::remove_file(Path::new(&source.0).join(&asset.0)).unwrap();
+        let missing = ThemeLocation(f.root.join("missing.bezeltheme").display().to_string());
+        f.backend.library.grant(&missing);
+        assert!(
+            f.backend.export_theme(&source.0, &missing).is_err(),
+            "no incomplete export if an asset is missing"
+        );
+        assert!(!Path::new(&missing.0).exists());
     }
 
     /// A location inside the bundled folder where no theme is.
