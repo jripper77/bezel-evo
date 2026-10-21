@@ -2046,6 +2046,7 @@ fn draw_graph(layer: &mut Layer<'_>, element: &Element, context: &RenderContext<
         0.
     };
     let spec = GraphSpec {
+        bar_width: element.visualization.as_ref().and_then(|v| v.bar_width),
         rounded: element.visualization.as_ref().is_some_and(|v| {
             v.rounded_bars
                 && matches!(

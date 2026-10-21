@@ -12,3 +12,17 @@ export function graphStylePatch(element, style) {
     ...visualization(graphSeriesOf(element) === 'mirrored' ? 'mirrored' : 'rounded', element.visualization ?? {}), roundedBars: style === 'rounded',
   } };
 }
+
+/** Legacy width depends on sample slots and gaps, never on lineWidth. */
+export function graphBarWidth(element) {
+  const pitch = element.frame.width / Math.max(1, element.kind.history);
+  if (element.visualization?.barWidth != null) return Math.min(pitch, element.visualization.barWidth);
+  const gap = Math.max(0, Math.min(element.visualization?.gap ?? (pitch >= 4 ? pitch * .2 : 0), pitch * .8));
+  return pitch - gap;
+}
+
+export function graphThicknessPatch(element, width) {
+  if (element.kind.style !== 'bars') return { kind: { lineWidth: Math.max(1, width) } };
+  const visual = element.visualization ?? graphStylePatch(element, 'bars').visualization;
+  return { visualization: { ...visual, barWidth: width == null ? null : Math.max(1, width) } };
+}

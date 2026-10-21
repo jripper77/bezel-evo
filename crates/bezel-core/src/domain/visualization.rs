@@ -19,6 +19,8 @@ pub enum VisualStyle {
 /// Settings shared by the optional visualization presets.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Visualization {
+    /// Explicit graph bar width; absent preserves historical slot/gap geometry.
+    pub bar_width: Option<f32>,
     /// Rounded bars in mirrored graphs. True preserves the original preset.
     pub rounded_bars: bool,
     /// Space between mirrored series, pixels (0..=32); legacy spacing is 2.
@@ -55,6 +57,7 @@ impl Visualization {
     /// Bounded defaults for a preset.
     pub fn new(style: VisualStyle) -> Self {
         Self {
+            bar_width: None,
             rounded_bars: true,
             series_gap: 2.,
             style,
@@ -71,7 +74,9 @@ impl Visualization {
 
     /// Reject malformed theme data before it reaches renderers.
     pub fn valid(&self) -> bool {
-        self.series_gap.is_finite()
+        self.bar_width
+            .is_none_or(|width| width.is_finite() && width > 0.)
+            && self.series_gap.is_finite()
             && (0. ..=32.).contains(&self.series_gap)
             && (1..=64).contains(&self.columns)
             && (1..=32).contains(&self.rows)

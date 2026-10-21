@@ -404,6 +404,9 @@ pub struct ElementDto {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct VisualizationDto {
+    /// Explicit graph bar width; absent retains the legacy spacing calculation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bar_width: Option<f32>,
     /// Rounded bars independently of the mirrored-series choice.
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     pub rounded_bars: bool,
@@ -435,6 +438,7 @@ pub struct VisualizationDto {
 impl Default for VisualizationDto {
     fn default() -> Self {
         Self {
+            bar_width: None,
             rounded_bars: true,
             series_gap: 2.,
             style: "matrix".into(),
@@ -460,6 +464,7 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
         _ => return err(format!("unknown visualization {:?}", d.style)),
     };
     let v = Visualization {
+        bar_width: d.bar_width,
         rounded_bars: d.rounded_bars,
         series_gap: d.series_gap,
         style,
@@ -480,6 +485,7 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
 fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> VisualizationDto {
     use bezel_core::domain::visualization::VisualStyle;
     VisualizationDto {
+        bar_width: v.bar_width,
         rounded_bars: v.rounded_bars,
         series_gap: v.series_gap,
         style: match v.style {
@@ -511,6 +517,35 @@ fn is_series_gap_default(value: &f32) -> bool {
 #[cfg(test)]
 mod graph_options_tests {
     use super::*;
+    #[test]
+    fn optional_bar_width_round_trips_without_changing_old_themes() {
+        let mut dto = VisualizationDto {
+            style: "rounded".into(),
+            ..Default::default()
+        };
+        let original = serde_json::to_value(&dto).unwrap();
+        assert!(original.get("barWidth").is_none());
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap(),
+            original
+        );
+        for width in [1., 4.5, 12., 1000.] {
+            dto.bar_width = Some(width);
+            let restored = visualization_dto(&visualization(&dto).unwrap());
+            assert_eq!(restored.bar_width, Some(width));
+            assert_eq!(serde_json::to_value(restored).unwrap()["barWidth"], width);
+        }
+        for width in [0., -1., f32::INFINITY, f32::NAN] {
+            dto.bar_width = Some(width);
+            assert!(visualization(&dto).is_err());
+        }
+        dto.bar_width = None;
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap(),
+            original
+        );
+    }
+
     #[test]
     fn mirrored_options_round_trip_and_defaults_add_no_fields() {
         let legacy: VisualizationDto =

@@ -49,7 +49,7 @@ export function drawVisualization(ctx, e, fraction, points, secondaryPoints) {
       const base=reverse?area.y:area.y+area.height;
       const coords=values.map((value,i)=>[area.x+area.width*i/(values.length-1),base+(reverse?1:-1)*value*area.height]);
       if(k.style==='bars') {
-        const pitch=area.width/values.length,gap=Math.min(v.gap,pitch*.8);
+        const pitch=area.width/values.length,gap=v.barWidth == null ? Math.min(v.gap,pitch*.8) : pitch-Math.max(0,Math.min(v.barWidth,pitch));
         const radius = v.roundedBars !== false ? (pitch-gap)/2 : 0;
         values.forEach((value,i)=>box(area.x+i*pitch+gap/2,reverse?base:base-value*area.height,pitch-gap,value*area.height,radius,color));
       } else {
