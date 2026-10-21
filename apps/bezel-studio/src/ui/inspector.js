@@ -711,7 +711,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       root.querySelectorAll('.canvas-field-active').forEach(node => node.classList.remove('canvas-field-active'));
       if (!key) return;
       const label = t(key, params);
-      const field = [...root.querySelectorAll('input')].find(input => input.getAttribute('aria-label') === label || input.labels?.[0]?.textContent.trim() === label);
+      // A number field, or a choice group such as the image anchor.
+      const field = [...root.querySelectorAll('input, [role="group"]')].find(input => input.getAttribute('aria-label') === label || input.labels?.[0]?.textContent.trim() === label);
       if (!field) return;
       const section = field.closest('.accordion-section');
       const toggle = section?.querySelector(':scope > .accordion-heading > button');

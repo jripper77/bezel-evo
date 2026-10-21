@@ -180,6 +180,21 @@ test('the player divider moves the text after the drawn cover and is absent when
   assert.deepEqual(propertyHandles(hidden), []);
 });
 
+test('the image anchor snaps to the nearest of the nine discrete positions, only when the image fills', () => {
+  const image = made('image');
+  assert.equal(propertyHandles(image).some(h => h.id === 'image-anchor'), false);
+  image.kind.fit = 'cover';
+  const anchor = propertyHandles(image).find(h => h.id === 'image-anchor');
+  near(anchor.x, 110); near(anchor.y, 70); assert.deepEqual(anchor.keyStep, { x: 100, y: 50 });
+  assert.deepEqual(edit(image, 'image-anchor', { x: 20, y: 25 }), { field: 'insp.image.anchor', fieldParams: undefined, unit: '%', patch: { kind: { anchor: 'topLeft' } }, value: [0, 0] });
+  assert.deepEqual(edit(image, 'image-anchor', { x: 900, y: 64 }).patch, { kind: { anchor: 'right' } });
+  assert.deepEqual(edit(image, 'image-anchor', { x: 104, y: 76 }).patch, { kind: { anchor: null } }, 'center is stored as absent');
+  image.kind.anchor = 'bottomRight';
+  const corner = propertyHandles(image).find(h => h.id === 'image-anchor');
+  near(corner.x, 210); near(corner.y, 120);
+  assert.deepEqual(edit(image, 'image-anchor', { x: corner.x - anchor.keyStep.x, y: corner.y }).value, [50, 100]);
+});
+
 test('inactive and stale handles cannot edit documents; every field has localized text', () => {
   const e = made('shape'); delete e.kind.radius;
   assert.equal(propertyHandles(e).length, 4);

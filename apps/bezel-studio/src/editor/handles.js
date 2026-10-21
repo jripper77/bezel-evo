@@ -8,6 +8,7 @@ import { spectrumOf } from '../spectrum.js';
 import { HAND_LENGTHS, analogOf, handAngles, withHandLength } from '../clock-format.js';
 import { pathPatch } from '../inspector-edit.js';
 import { coverFrame as playerCover } from '../player-parts.js';
+import { IMAGE_ANCHORS } from '../media-inspector.js';
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const degrees = (p, center) => Math.atan2(p.x - center.x, center.y - p.y) * 180 / Math.PI;
@@ -114,6 +115,17 @@ export function propertyHandles(element, { fraction = .5, coverFrame = null, dat
         return { patch: { kind: alt ? withCorner(corners, index, value) : withRadius(corners, value) }, value };
       });
     });
+  }
+  if (k.type === 'image' && k.fit === 'cover') {
+    // Nine discrete anchors, row by row: the drag snaps to the nearest one.
+    const at = index => [index % 3 / 2, Math.floor(index / 3) / 2];
+    const shares = at(Math.max(0, IMAGE_ANCHORS.indexOf(k.anchor ?? 'center')));
+    add('image-anchor', 'point', 'insp.image.anchor', '%', shares.map(v => v * 100), { x: f.x + f.width * shares[0], y: f.y + f.height * shares[1] }, p => {
+      const index = Math.round(clamp((p.y - f.y) / f.height, 0, 1) * 2) * 3 + Math.round(clamp((p.x - f.x) / f.width, 0, 1) * 2);
+      const anchor = IMAGE_ANCHORS[index];
+      return { patch: { kind: { anchor: anchor === 'center' ? null : anchor } }, value: at(index).map(v => v * 100) };
+    });
+    result.at(-1).keyStep = { x: f.width / 2, y: f.height / 2 };
   }
   if (k.type === 'bar') {
     const vertical = ['bottomToTop', 'topToBottom'].includes(k.direction), reverse = ['bottomToTop', 'rightToLeft'].includes(k.direction);

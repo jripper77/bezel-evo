@@ -321,9 +321,10 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
           onkeydown: evt => {
             if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
             evt.preventDefault(); evt.stopPropagation();
-            const step = evt.shiftKey ? 10 : 1;
             const current = propertyHandles(e, { motion: handleMotion() }).find(h => h.id === handle.id);
-            applyProperty(e, handle.id, { x: current.x + (evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0), y: current.y + (evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
+            // A discrete handle (the image anchor) moves one position per key.
+            const step = current.keyStep ?? { x: evt.shiftKey ? 10 : 1, y: evt.shiftKey ? 10 : 1 };
+            applyProperty(e, handle.id, { x: current.x + (evt.key === 'ArrowLeft' ? -step.x : evt.key === 'ArrowRight' ? step.x : 0), y: current.y + (evt.key === 'ArrowUp' ? -step.y : evt.key === 'ArrowDown' ? step.y : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
             drawOverlay(); overlay.querySelector(`[data-property-handle="${handle.id}"]`)?.focus();
           },
           onblur: () => { if (!press) clearHandleValue(); },

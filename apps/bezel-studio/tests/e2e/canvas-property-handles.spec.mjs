@@ -105,3 +105,24 @@ test('the player divider follows the drawn cover, opens its field and undoes onc
   await handle.focus(); await handle.press('Shift+ArrowLeft'); await expect(handle).toBeFocused();
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+test('the image anchor handle snaps between the nine positions by drag and keyboard', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await clickAddWidget(page, t, 'image'); await expect(property(page, 'image-anchor')).toHaveCount(0);
+  await openSection(page, 'shape');
+  await page.locator('#inspector').getByRole('button', { name: t('fit.cover'), exact: true }).click();
+  const anchor = name => page.locator('#inspector').getByRole('button', { name: t(`insp.image.anchor.${name}`), exact: true });
+  await expect(anchor('center')).toHaveAttribute('aria-pressed', 'true');
+  const handle = property(page, 'image-anchor'), frame = await page.locator('#overlay .sel-box').boundingBox();
+  const box = await handle.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(frame.x + 4, frame.y + 4, { steps: 6 });
+  await expect(page.locator('#inspector .canvas-field-active')).toHaveCount(1);
+  await page.mouse.up();
+  await expect(anchor('topLeft')).toHaveAttribute('aria-pressed', 'true');
+  await handle.focus(); await handle.press('ArrowRight'); await expect(handle).toBeFocused();
+  await expect(anchor('top')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#undo').click(); await expect(anchor('topLeft')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#undo').click(); await expect(anchor('center')).toHaveAttribute('aria-pressed', 'true');
+  await expectAccessible(page); expect(errors).toEqual([]);
+});
