@@ -132,7 +132,7 @@ export const backgroundChooser = (page, t) => themeInspector(page).getByRole('re
 export const backgroundSourceButton = (page, t, key) => backgroundChooser(page, t).locator('.bg-source-head').filter({ hasText: t(key) });
 
 /** The colour picker's button named `label` (D-2026-10-16-studio-redesign-fidelity-29) in `scope`; its `data-color` is the colour. */
-export const colorButton = (scope, label) => scope.getByRole('button', { name: label, exact: true });
+export const colorButton = (scope, label) => scope.getByRole('button', { name: label, exact: true }).and(scope.locator('.color-button'));
 
 /** The open colour panel. */
 export const colorPanel = (page) => page.locator('.picker-popover:has(.cp-area)');
@@ -157,4 +157,10 @@ export async function setColor(page, t, scope, label, hex) {
   await field.press('Enter');
   await page.keyboard.press('Escape');
   await expect(colorPanel(page)).toHaveCount(0);
+}
+
+/** Opens the menu of `file` in a Storage column (`region`) and returns its `action` item (storage.action.*). */
+export async function storageFileAction(page, t, region, file, action) {
+  await region.getByRole('button', { name: t('cardInsp.faceActions', { name: file }), exact: true }).click();
+  return page.getByRole('menuitem', { name: t(`storage.action.${action}`), exact: true });
 }

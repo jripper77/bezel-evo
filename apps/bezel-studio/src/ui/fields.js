@@ -872,7 +872,9 @@ function openColorPanel(button, label, start, onChange, { texts, source, alpha, 
   const pickStatus = el('p', { class: 'hint cp-pick-status', role: 'status', hidden: true });
   const eyedropper = pickScreenColor
     ? iconButton(texts.eyedropper, ICONS.eyedropper, async () => {
-      eyedropper.disabled = true;
+      // aria-disabled, not disabled: the button keeps the focus, so Escape still closes the popover.
+      if (eyedropper.getAttribute('aria-disabled') === 'true') return;
+      eyedropper.setAttribute('aria-disabled', 'true');
       pickStatus.hidden = false;
       pickStatus.textContent = texts.eyedropperHint;
       try {
@@ -886,7 +888,7 @@ function openColorPanel(button, label, start, onChange, { texts, source, alpha, 
         pickStatus.hidden = error?.name === 'AbortError';
         pickStatus.textContent = texts.eyedropperError;
       } finally {
-        eyedropper.disabled = false;
+        eyedropper.removeAttribute('aria-disabled');
       }
     }, { class: 'cp-eyedropper' })
     : null;
