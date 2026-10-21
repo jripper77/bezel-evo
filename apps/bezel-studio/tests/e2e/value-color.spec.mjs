@@ -1,4 +1,4 @@
-import { pickSensor, test, expect, watchErrors, expectAccessible, clickAddWidget, colorButton, setColor, openInspectorTab, toggleButton } from './helpers.mjs';
+import { pickSensor, test, expect, watchErrors, expectAccessible, clickAddWidget, colorButton, setColor, openInspectorTab, toggleButton, openSection } from './helpers.mjs';
 
 test('colour rules edit values and colours, reorder, remove and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -61,6 +61,7 @@ test('shapes choose a rule sensor; turning the rule off preserves fixed paint', 
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'shape');
+  await openSection(page, 'color');
   const section = page.locator('[data-section="value-color"]');
   const toggle = toggleButton(section, t('insp.colorByValue'));
   await toggle.click();

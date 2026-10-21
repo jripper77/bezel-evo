@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste, pickSensor, openInspectorTab, toggleButton, setToggle } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, pickSensor, openInspectorTab, toggleButton, setToggle, openSection } from './helpers.mjs';
 
 test('native visualization presets, scoped controls, second sensor and Undo',async({page,t},info)=>{
   const errors=watchErrors(page);
@@ -7,6 +7,7 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   const add=async kind=>{
     await page.getByRole('button',{name:t('library.addWidget',{name:t(`widget.${kind}`)}),exact:true}).click();
     await openInspectorTab(page, t, 'inspector.tab.look');
+    await openSection(page, 'layout');
   };
   const preset=name=>detail.locator('[data-section="visualization"]').getByRole('button',{name:t(`visual.${name}`),exact:true});
   await add('bar');await preset('matrix').click();
@@ -29,8 +30,9 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   await preset('dial').click();
   await setToggle(toggleButton(detail, t('visual.marker')), false);
   await detail.screenshot({path:info.outputPath('visualization-tiles.png')});
-  await add('graph');await preset('mirrored').click();
-  await openInspectorTab(page, t, 'inspector.tab.data');
+  // A graph's second series is its Data's "Two, mirrored" (D-18).
+  await add('graph');await openInspectorTab(page, t, 'inspector.tab.data');
+  await detail.getByRole('group',{name:t('insp.graphSeries'),exact:true}).getByRole('button',{name:t('insp.graphMirrored'),exact:true}).click();
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toBeVisible();
   await pickSensor(page,t,detail,'gpu.usage',t('visual.secondary'));
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toHaveAttribute('data-sensor-key','gpu.usage');

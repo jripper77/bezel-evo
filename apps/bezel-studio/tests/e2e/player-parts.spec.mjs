@@ -2,7 +2,7 @@
 // title, artist and time turn on and off like cover, progress and app
 // name, the fit measures only what shows, and the bar's look (colours,
 // thickness, ends, knob, pattern, where the times go) is set in Look.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor, toggleButton } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor, toggleButton, openSection } from './helpers.mjs';
 
 /** Whether the preview has a strong red pixel. */
 const hasRed = (preview) => preview.evaluate((canvas) => {
@@ -39,10 +39,12 @@ test('each part of the player turns on and off alone and the fit measures only w
   await expect(inspector.locator('[data-section="corners"]')).toHaveCount(0);
   const size = Number(await inspector.getByRole('spinbutton', { name: t('inspector.size'), exact: true }).inputValue());
   const height = inspector.getByRole('spinbutton', { name: t('inspector.height'), exact: true });
+  await openSection(page, 'layout');
   await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
   await expect(height).toHaveValue(String(Math.ceil(size * 1.2)));
   // The artist too: two lines.
   await part('insp.partArtist').click();
+  await openSection(page, 'layout');
   await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
   await expect(height).toHaveValue(String(2 * Math.ceil(size * 1.2)));
 
@@ -73,19 +75,20 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   const section = inspector.locator('[data-section="progress"]');
   await expect(section.getByRole('heading', { name: t('insp.progressBar'), exact: true })).toBeVisible();
 
-  // Fill colour: the preview turns red.
-  const name = await inspector.getByLabel(t('common.name'), { exact: true }).inputValue();
-  const preview = inspector.getByRole('img', { name: t('inspector.previewOf', { name }), exact: true });
-  await setColor(page, t, section, t('inspector.fill'), '#ff0000');
+  // Fill colour, in Color with the other paints: the canvas turns red (the
+  // inspector's own preview is a thumbnail too small to show a 4 px bar).
+  const preview = page.locator('#preview');
+  expect(await hasRed(preview)).toBe(false);
+  await setColor(page, t, inspector, t('insp.player.progressFill'), '#ff0000');
   await expect.poll(() => hasRed(preview)).toBe(true);
-  await expect(colorButton(section, t('inspector.track'))).toHaveAttribute('data-color', /^#646464/);
+  await expect(colorButton(inspector, t('insp.player.progressTrack'))).toHaveAttribute('data-color', /^#646464/);
 
   // Thickness by keyboard, ends and knob as switches.
-  const thickness = section.getByRole('slider', { name: t('insp.thickness'), exact: true });
+  const thickness = section.getByRole('spinbutton', { name: t('insp.thickness'), exact: true });
   await expect(thickness).toHaveValue('4');
   await thickness.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(section.getByRole('slider', { name: t('insp.thickness'), exact: true })).toHaveValue('5');
+  await page.keyboard.press('ArrowUp');
+  await expect(section.getByRole('spinbutton', { name: t('insp.thickness'), exact: true })).toHaveValue('5');
   const round = toggleButton(section, t('inspector.roundCaps'));
   await expect(round).toHaveAttribute('aria-pressed', 'true');
   await round.click({ force: true });
@@ -120,6 +123,7 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   // A bar with its times at the sides alone: the fit is one row tall.
   for (const key of ['insp.cover', 'insp.partTitle', 'insp.partArtist']) await part(key).click();
   const size = Number(await inspector.getByRole('spinbutton', { name: t('inspector.size'), exact: true }).inputValue());
+  await openSection(page, 'layout');
   await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
   await expect(inspector.getByRole('spinbutton', { name: t('inspector.height'), exact: true })).toHaveValue(String(Math.max(Math.ceil(size * 1.2), 11)));
   await part('insp.partTime').click();
