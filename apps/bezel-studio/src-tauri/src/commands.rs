@@ -218,9 +218,22 @@ pub async fn render_preview(
     motion: Option<bool>,
     card_rotation: Option<bool>,
     max: Option<u32>,
+    trial_ms: Option<u32>,
+    trial_hold: Option<bezel_runtime::wire::TrialHold>,
 ) -> UiResult<Response> {
     let motion = motion_of(motion);
     blocking(&state, move |b| {
+        if trial_ms.is_some() || trial_hold.is_some() {
+            return b
+                .render_trial(
+                    &theme,
+                    now(),
+                    motion,
+                    max,
+                    (trial_ms.unwrap_or(0), trial_hold),
+                )
+                .map(Response::new);
+        }
         b.render_canvas(
             &theme,
             now(),

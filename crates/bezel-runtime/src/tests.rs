@@ -1014,6 +1014,69 @@ fn a_wire_inspector_trial_never_changes_the_document_sample_or_live_frame() {
     assert!(f.seen.lock().unwrap().last().unwrap().history.len() < 60);
 }
 #[test]
+fn a_wire_canvas_trial_never_changes_the_document_sample_or_live_frame() {
+    let mut f = fixture();
+    f.engine.document(&f.key, 0, doc(), true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    let before = f.engine.scenes[&f.key].runtime.snapshot().clone();
+    let theme = f.engine.scenes[&f.key].runtime.theme().clone();
+    let sequence = f.engine.image(&f.key, 0, 64).unwrap().sequence;
+    let (value, pixels) = send(
+        &mut f.engine,
+        &f.key,
+        RuntimeOp::Trial {
+            max: 64,
+            motion: true,
+            ms: 1500,
+            hold: None,
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(value["nextMs"], 33);
+    assert!(!pixels.is_empty());
+    // The whole scene, its longest side reduced to `max`.
+    assert_eq!(
+        (value["width"].as_u64(), value["height"].as_u64()),
+        (Some(64), Some(16))
+    );
+    let seen = f.seen.lock().unwrap().last().unwrap().history.clone();
+    assert_eq!(seen.len(), 60);
+    assert_eq!(*f.engine.scenes[&f.key].runtime.snapshot(), before);
+    assert_eq!(*f.engine.scenes[&f.key].runtime.theme(), theme);
+    assert_eq!(f.engine.image(&f.key, 0, 64).unwrap().sequence, sequence);
+    send(
+        &mut f.engine,
+        &f.key,
+        RuntimeOp::Trial {
+            max: 64,
+            motion: false,
+            ms: 0,
+            hold: Some(wire::TrialHold {
+                element: 1,
+                fraction: 0.5,
+            }),
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(*f.engine.scenes[&f.key].runtime.snapshot(), before);
+    assert!(
+        send(
+            &mut f.engine,
+            "missing",
+            RuntimeOp::Trial {
+                max: 64,
+                motion: true,
+                ms: 0,
+                hold: None
+            },
+            &[]
+        )
+        .is_err()
+    );
+}
+#[test]
 fn untrusted_document_lengths_paths_dimensions_and_versions_are_rejected() {
     let mut f = fixture();
     let key = f.key.clone();

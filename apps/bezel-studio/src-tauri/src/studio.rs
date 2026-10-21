@@ -1550,6 +1550,37 @@ impl Studio {
         Ok((frame, change.map(|at| at.saturating_sub(clock))))
     }
 
+    /// The whole theme with the canvas's trial inputs
+    /// ([`bezel_runtime::inspector_trial::Trial::scene`]); the live sample,
+    /// its histories and the document are untouched.
+    pub fn canvas_trial(
+        &mut self,
+        time: LocalTime,
+        motion: Motion,
+        ms: u32,
+        hold: Option<bezel_runtime::inspector_trial::Hold>,
+    ) -> Result<Frame> {
+        self.element_renderer
+            .set_motion(matches!(motion, Motion::Allowed));
+        self.element_renderer.set_scene(3);
+        let trial = bezel_runtime::inspector_trial::Trial::scene(
+            self.runtime.theme(),
+            self.runtime.snapshot(),
+            self.runtime.histories(),
+            time,
+            ms,
+            hold,
+        );
+        let (frame, _) = self.runtime.preview_detached_sample(
+            &mut self.element_renderer,
+            &trial.theme,
+            trial.time,
+            trial.animation,
+            Some((&trial.snapshot, &trial.histories)),
+        )?;
+        Ok(frame)
+    }
+
     /// Pause card timers in preview and Live while a card's objects are edited.
     pub fn automatic_cards(&mut self, enabled: bool) {
         self.runtime.automatic_cards(enabled);

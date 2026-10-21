@@ -1115,6 +1115,49 @@ impl Backend {
         }
         self.render_cards(theme, time, now, motion, cards)
     }
+    /// The canvas with trial inputs instead of the sensors (the canvas's trial
+    /// values): at `ms` of the trial, or with `hold` one element's sensor held
+    /// at a share of its scale. Nothing reaches a screen or the document.
+    pub fn render_trial(
+        &self,
+        theme: &ThemeDto,
+        time: LocalTime,
+        motion: Motion,
+        max: Option<u32>,
+        (ms, hold): (u32, Option<bezel_runtime::wire::TrialHold>),
+    ) -> UiResult<Vec<u8>> {
+        let max = max.unwrap_or(2320).clamp(16, 2320);
+        if let Some(engine) = &self.engine {
+            self.studio().set_theme(theme_of(theme)?);
+            let key = self.sync_engine(false)?;
+            let (value, pixels) = engine.request(
+                &key,
+                bezel_runtime::wire::RuntimeOp::Trial {
+                    max,
+                    motion: motion == Motion::Allowed,
+                    ms,
+                    hold,
+                },
+            )?;
+            bezel_runtime::wire::frame(&value, pixels.clone())?;
+            return Ok(crate::engine::bytes(&value, pixels));
+        }
+        let theme = theme_of(theme)?;
+        let mut studio = self.studio();
+        studio.set_theme(theme);
+        let hold = hold.map(|h| bezel_runtime::inspector_trial::Hold {
+            element: ElementId(h.element),
+            fraction: h.fraction,
+        });
+        let frame = studio.canvas_trial(time, motion, ms, hold)?;
+        drop(studio);
+        Ok(frame_bytes(
+            &fit_within(frame, max),
+            Some(Duration::from_millis(
+                bezel_runtime::inspector_trial::FRAME_MS,
+            )),
+        ))
+    }
     pub fn render_cards(
         &self,
         theme: &ThemeDto,
@@ -2543,6 +2586,84 @@ mod tests {
         );
         assert_eq!(full, 92 * 10, "46 °C of 100 fills 46 % of the bar");
         assert!(tenth < full, "a wider range fills less: {tenth} < {full}");
+    }
+
+    #[test]
+    fn a_canvas_trial_sweeps_the_whole_scene_and_holds_one_bar_without_touching_it() {
+        use bezel_core::domain::theme::{
+            Binding, BoxF, Direction, Element, ElementId, ElementKind, Paint,
+        };
+        let f = fixture("canvas-trial");
+        f.backend.studio().sample().unwrap();
+        let fill = Rgba::opaque(0, 200, 0);
+        let bar = Element {
+            color_by_value: None,
+            visualization: None,
+            value_transition: None,
+            sensor_motion: None,
+            rotation: 0.0,
+            is_group: false,
+            group_parent: None,
+            card: None,
+            card_member: None,
+            id: ElementId(1),
+            name: "CPU".into(),
+            frame: BoxF::new(0.0, 0.0, 200.0, 10.0),
+            opacity: 1.0,
+            visible: true,
+            locked: false,
+            kind: ElementKind::Bar {
+                binding: Binding {
+                    key: SensorKey::new(bezel_core::domain::sensor::keys::CPU_TEMPERATURE).unwrap(),
+                    min: 0.0,
+                    max: 100.0,
+                },
+                direction: Direction::LeftToRight,
+                fill: Paint::solid(fill),
+                track: None,
+                radius: 0.0,
+                segments: None,
+            },
+        };
+        // A small canvas keeps the four renders light beside timing-sensitive tests.
+        let mut small = landscape(vec![bar]);
+        small.canvas = Size::new(240, 60);
+        let theme = ThemeDto::from(&small);
+        let trial = |ms, hold| {
+            let bytes = f
+                .backend
+                .render_trial(&theme, TIME, Motion::Reduced, Some(2320), (ms, hold))
+                .unwrap();
+            let width = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
+            let height = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
+            assert_eq!(&bytes[8..12], &33u32.to_le_bytes(), "the next trial frame");
+            Frame::from_rgba(Size::new(width, height), bytes[12..].to_vec()).unwrap()
+        };
+        let start = trial(0, None);
+        assert_eq!(start.size(), Size::new(240, 60), "the whole canvas");
+        assert_eq!(count(&start, fill), 0, "the sweep starts at the minimum");
+        assert_eq!(
+            count(&trial(1500, None), fill),
+            200 * 10,
+            "and reaches the maximum"
+        );
+        let held = trial(
+            0,
+            Some(bezel_runtime::wire::TrialHold {
+                element: 1,
+                fraction: 0.25,
+            }),
+        );
+        assert_eq!(count(&held, fill), 50 * 10, "a held bar shows its share");
+        // The live preview still shows the reading (46 °C of 100).
+        let live = f
+            .backend
+            .render(&theme, TIME, Instant::now(), Motion::Reduced)
+            .unwrap();
+        let width = u32::from_le_bytes(live[0..4].try_into().unwrap());
+        let height = u32::from_le_bytes(live[4..8].try_into().unwrap());
+        let live = Frame::from_rgba(Size::new(width, height), live[12..].to_vec()).unwrap();
+        assert_eq!(count(&live, fill), 92 * 10);
     }
 
     #[test]
