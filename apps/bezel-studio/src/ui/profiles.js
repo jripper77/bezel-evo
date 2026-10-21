@@ -50,7 +50,7 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
     if (now) {
       const reason = status?.active?.reason;
       const why = reason?.kind === 'rules' ? (reason.rules ?? []).map(i => active?.rules[i] && ruleSummary(t, active.rules[i])).filter(Boolean).join(' · ') : reason ? t(`profileRules.ui.reason.${reason.kind}`) : '';
-      now.textContent = !status ? t('profileRules.ui.statusUnknown') : [active?.name ?? t('profiles.currentThemes'), why].filter(Boolean).join(' · ');
+      now.textContent = !status ? t('profileRules.ui.statusUnknown') : [active?.name ?? t(status?.active ? 'profileRules.ui.statusUnknown' : 'profiles.currentThemes'), why].filter(Boolean).join(' · ');
     }
     for (const node of dialog.querySelectorAll('[data-profile-rule]')) {
       const index = Number(node.dataset.profileRule), profile = selectedProfile();
