@@ -1,5 +1,10 @@
 # Passaggio — Studio UX v2
 
+**T-8 in corso, non integrata** — riprendere `F:/Dev/bezel-ux2-t8`, branch
+`ux2/t8`, dal checkpoint `CHECKPOINT-T-8.md`. Motore puro al 100% e prime
+maniglie visibili; completare l’elenco pendente prima del merge. Non avviare
+T-9a né ricreare la worktree T-8. La base integrata rimane `c66a247`.
+
 21 ottobre 2026. T-0…T-7c completate; T-7c in `ux2/t7c`, con riepilogo
 in `SUMMARY-T-7c.md` e confronto visivo in `evidence/t7c/README.md`.
 

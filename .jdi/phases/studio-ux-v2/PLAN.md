@@ -181,7 +181,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Acceptance:** maniglie di ogni scheda della tavola (anello, lancetta, barra, forma, grafico, valore/testo, orologio analogico, immagine,
   player, card, spettro, più oggetti) con valore vicino al cursore e campo illuminato; barra mobile (sensore, ▶, duplica, ⋯); pulsante
   «valori di prova» nella barra degli strumenti; tastiera: frecce sulla maniglia attiva. `handles.js` 100% coperto.
-- **Dipendenze:** T-0 (illuminazione campo), T-3 (confini zona) · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0 (illuminazione campo), T-3 (confini zona) · **Test:** G1–G9 · **Status:** in_progress — checkpoint in `ux2/t8` (non integrato): motore puro al 100%, prime maniglie collegate con tastiera/Undo/campo evidenziato; 12 nuovi e2e distinti verificati. Restano barra mobile/prove, selezione multipla, parti/immagini/Card e lunghezze analogiche. Riprendere la worktree esistente; vedi `CHECKPOINT-T-8.md`.
 
 #### T-9a: Pannelli Widget, Sensori, Livelli, Media
 - **Decisioni:** 14 · **Tavole:** LibraryPanelsNew, MainNew (pannello sinistro)
