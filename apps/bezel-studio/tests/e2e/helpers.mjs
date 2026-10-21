@@ -123,6 +123,9 @@ export async function faceAction(page, t, face, action) {
 
 /** Theme background controls shared by the chooser and video regression specs. */
 export const themeInspector = (page) => page.locator('#inspector');
+/** The theme inspector's screen and size line ("Turing 8.8\" · 1920 × 480"), shown with nothing selected. */
+export const themeSize = (page) => page.locator('#inspector .theme-facts .mono');
+export const sizeText = ({ width, height }) => `${width} × ${height}`;
 export const backgroundCard = (page, t, key) => themeInspector(page).getByRole('group', { name: t(key), exact: true });
 export const changeBackgroundButton = (page, t) => themeInspector(page).getByRole('button', { name: t('insp.bgChange'), exact: true });
 export const backgroundChooser = (page, t) => themeInspector(page).getByRole('region', { name: t('insp.bgChooserTitle'), exact: true });

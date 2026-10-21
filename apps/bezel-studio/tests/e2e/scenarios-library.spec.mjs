@@ -2,7 +2,7 @@
 // and sensors drag onto the canvas, new themes take either axis, imports
 // list what had no equivalent, the sensor list tells the app what it shows,
 // and an animated GIF moves in the preview by itself.
-import { test, expect, watchErrors, expectAccessible, dragTo, literally, layers } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, dragTo, literally, layers, themeSize, sizeText } from './helpers.mjs';
 
 const addWidget = (t, widget) => t('library.addWidget', { name: t(`widget.${widget}`) });
 
@@ -54,12 +54,14 @@ test('new vertical and horizontal themes', async ({ page, t }) => {
   expect(box.width).toBeGreaterThan(box.height);
   await page.keyboard.press('Control+s');
   await expect(cards).toHaveCount(2);
-  await expect(cards.nth(1)).toContainText(t('axis.horizontal'));
-  await expect(cards.nth(1)).toContainText('1920×480');
+  // The gallery lists the newest first: the saved theme is found by its name.
+  const saved = cards.filter({ hasText: t('themes.untitled') });
+  await expect(saved).toContainText(t('axis.horizontal'));
+  await expect(saved).toContainText('1920×480');
 
   await page.getByRole('button', { name: t('themes.newVertical') }).click();
   await expect(topBar.getByRole('button', { name: t('axis.vertical'), exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#inspector')).toContainText(t('inspector.canvas', { width: 480, height: 1920 }));
+  await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText({ width: 480, height: 1920 })}$`));
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });

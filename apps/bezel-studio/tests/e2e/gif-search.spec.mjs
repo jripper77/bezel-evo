@@ -24,7 +24,7 @@
 // reduced. The dialog's live region and the collection's status line say,
 // word for word in the UI's language, the message of each step. No console
 // errors, no serious or critical accessibility violations.
-import { test, expect, watchErrors, expectAccessible, dragTo } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, dragTo, openSection, themeSize, sizeText } from './helpers.mjs';
 
 const root = (page) => page.locator('html');
 /** Where the demo writes each query its KLIPY is asked (the bridge's `onGifQuery`). */
@@ -584,6 +584,7 @@ const itemsOf = (panel, t) => panel.getByRole('list', { name: t('collection.list
 
 /** The selected element's center, from the inspector, is `at` (canvas pixels, give or take a pointer's step). */
 async function expectCenter(page, t, at) {
+  await openSection(page, 'layout');
   const inspector = page.locator('#inspector');
   const value = async (key) => Number(await inspector.getByRole('spinbutton', { name: t(key), exact: true }).inputValue());
   await expect(async () => {
@@ -753,7 +754,8 @@ test.describe('gif collection', () => {
       await star.getByRole('button', { name: t('collection.useBackground') }).click();
       await expect(status).toHaveText(t('collection.addedBackground', { name: 'Star' }));
       await page.keyboard.press('Escape');
-      await expect(inspector.getByText(t('inspector.canvas', canvas))).toBeVisible();
+      await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText(canvas)}$`));
+      await openSection(page, 'color');
       await expect(inspector.getByRole('group', { name: t('bg.video') })).toContainText(/star-\d+\.gif/);
       await expectAccessible(page);
     }
