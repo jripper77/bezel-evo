@@ -36,12 +36,12 @@
 /* -------------------------------------------------------------- sensors -- */
 .panel-rate:empty { display: none; }
 .panel-head .panel-rate { margin-left: auto; }
-/* The Filters button stands as tall as the search box beside it. */
-#sensor-search-box { display: flex; gap: 8px; align-items: stretch; }
-#sensor-search-box > :first-child { flex: 1; min-width: 0; }
-.sensor-filters-toggle { position: relative; flex: none; width: 36px; border: 1px solid var(--border); }
-.sensor-filters-toggle.filters-on::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-.sensor-probe-filters[hidden] { display: none; }
+/* A panel's Filters button stands as tall as the search box beside it; a dot says a filter is on. */
+.search-with-filters { display: flex; gap: 8px; align-items: stretch; }
+.search-with-filters > :first-child { flex: 1; min-width: 0; }
+.filters-toggle { position: relative; flex: none; width: 36px; border: 1px solid var(--border); }
+.filters-toggle.filters-on::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.sensor-probe-filters[hidden], #layer-type[hidden] { display: none; }
 /* Categories: the shared accordion, flush with the panel's edges. */
 .sensor-list { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 -16px; }
 .sensor-probe-filters .field { min-width: 0; }
@@ -134,8 +134,11 @@ button.layer-group-title { cursor: pointer; }
 .layer-selection { position: sticky; bottom: 12px; z-index: 2; display: grid; gap: 10px; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-3); box-shadow: var(--shadow); }
 .layer-selection-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .layer-selection-head .text-button { min-height: 26px; padding: 0 8px; font-size: var(--fs-compact); }
-.layer-selection-actions .text-button { min-height: 34px; font-weight: 600; }
-.layer-selection-actions kbd { background: transparent; color: var(--dim); font-size: var(--fs-meta); }
+.layer-selection-actions .text-button { min-width: 0; min-height: 34px; gap: 6px; padding: 0 6px; font-size: var(--fs-compact); font-weight: 500; }
+#layer-count { margin-left: auto; }
+/* Group, Make card and Align share one row, wrapping between buttons when narrow. */
+.layer-selection-actions { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 8px; background: var(--surface-2); }
+.layer-selection-actions > .text-button { flex: 1 1 auto; }
 
 /* --------------------------------------------------------------- themes -- */
 #panel-themes .panel-head { flex-wrap: wrap; }

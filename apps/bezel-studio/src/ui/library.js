@@ -7,6 +7,8 @@ import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
 import { accordionSection, chipButton, dashedHint, kindIcon, searchField, screenThumb, sectionTitle, selectField } from './fields.js';
 import { createSectionMemory } from '../inspector-sections.js';
+import { alignItems } from './object-menu.js';
+import { openMenuAt } from './menu.js';
 import { makeDraggable } from './dragdrop.js';
 import { defaultRange, widgetOf, WIDGETS } from '../editor/widgets.js';
 import { canGroup } from '../editor/cards.js';
@@ -157,6 +159,22 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   // Which sensor categories are open (the processor and graphics at first), remembered.
   const sensorMemory = createSectionMemory({ key: 'bezel.sensorGroups', ids: CATEGORY_ORDER, open: ['cpu', 'gpu'] });
   const widgetMemory = createSectionMemory({ key: 'bezel.widgetGroups', ids: WIDGET_GROUPS.map(g => g.id), open: WIDGET_GROUPS.map(g => g.id) });
+
+  /**
+   * The Filters button beside a panel's search (D-2026-10-20-studio-ux-v2-14):
+   * it shows and hides the panel's filter row `rowId`, folded at first.
+   */
+  function filtersToggle(searchId, rowId) {
+    const button = el('button', { type: 'button', class: 'icon-button filters-toggle', 'aria-controls': rowId, 'aria-expanded': 'false', onclick: () => show($(rowId).hidden) }, [icon(ICONS.filter, 18)]);
+    $(searchId).classList.add('search-with-filters');
+    $(searchId).append(button);
+    function show(open) {
+      $(rowId).hidden = !open;
+      button.setAttribute('aria-expanded', String(open));
+    }
+    show(false);
+    return { button, show };
+  }
 
   // ------------------------------------------------------------- widgets --
   function widgetTile(w) {
@@ -426,13 +444,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   statusSelect.dataset.sensorFilter = 'status';
   $('sensor-probe-filters').replaceChildren(probeField, statusField);
   // Probe and state live behind Filters beside the search; a dot says one is on.
-  const filtersButton = el('button', { type: 'button', class: 'icon-button sensor-filters-toggle', 'aria-controls': 'sensor-probe-filters', 'aria-expanded': 'false', onclick: () => showFilters($('sensor-probe-filters').hidden) }, [icon(ICONS.filter, 18)]);
-  $('sensor-search-box').append(filtersButton);
-  function showFilters(open) {
-    $('sensor-probe-filters').hidden = !open;
-    filtersButton.setAttribute('aria-expanded', String(open));
-  }
-  showFilters(false);
+  const { button: filtersButton, show: showFilters } = filtersToggle('sensor-search-box', 'sensor-probe-filters');
   let filterSignature = '';
   function renderProbeFilters() {
     const probes = [...new Set(catalog.map(sensor => probeOf(sensor, catalog)))].sort();
@@ -546,7 +558,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     return el('div', { class: 'layer-group-heading', dataset: { dropCard: card.id, dropFace: face === null ? 'base' : face } }, [
       icon(face === null ? ICONS.base : ICONS.face, 14),
       heading,
-      el('small', { class: 'layer-meta', text: face === null ? count : `${t('layersPanel.faceNumber', { number: face + 1 })} · ${count}` }),
+      // The base is always drawn; a face says how many objects it holds.
+      el('small', { class: 'layer-meta', text: face === null ? t('layersPanel.alwaysShown') : count, title: face === null ? count : t('layersPanel.faceNumber', { number: face + 1 }) }),
       active && el('span', { class: 'face-badge', title: t('layers.inViewHint'), text: t('layers.inView') }),
     ]);
   }
@@ -596,12 +609,16 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
         el('button', { type: 'button', class: 'text-button quiet', text: t('layersPanel.clear'), onclick: () => store.select([]) }),
       ]),
       el('div', { class: 'layer-selection-actions' }, [
-        el('button', { type: 'button', class: 'text-button', 'aria-label': t('layersPanel.groupLabel'), title: groupable ? null : t('group.scope'), disabled: !groupable, onclick: () => store.dispatch('groupSelection', { ids: selection }) }, [
-          el('span', { text: t('layersPanel.group') }),
-          el('kbd', { 'aria-hidden': 'true', text: t('layersPanel.groupKeys') }),
+        // The shortcut is in the title: three actions share one row (D-14).
+        el('button', { type: 'button', class: 'text-button', 'aria-label': t('layersPanel.groupLabel'), title: groupable ? `${t('layersPanel.groupLabel')} (${t('layersPanel.groupKeys')})` : t('group.scope'), 'aria-keyshortcuts': 'Control+G', disabled: !groupable, onclick: () => store.dispatch('groupSelection', { ids: selection }) }, [
+          icon(ICONS.group, 16), el('span', { text: t('layersPanel.group') }),
         ]),
         el('button', { type: 'button', class: 'text-button', 'aria-label': t('layersPanel.cardLabel'), disabled: !cardable, onclick: () => store.dispatch('cardFromSelection', { ids: selection }) }, [
-          el('span', { text: t('layersPanel.card') }),
+          icon(ICONS.card, 16), el('span', { text: t('layersPanel.card') }),
+        ]),
+        el('button', { type: 'button', class: 'text-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', disabled: chosen.every((e) => e.locked),
+          onclick: (evt) => openMenuAt(evt.currentTarget, { label: t('layersPanel.align'), items: alignItems({ store, t, ids: selection }) }) }, [
+          icon(ICONS.alignLeft, 16), el('span', { text: t('layersPanel.align') }),
         ]),
       ]),
     );
@@ -613,7 +630,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     renderSelectionBar();
     renderLayerTypeFilter();
     const nodes = filterLayers(layerGroups(els), layerQuery, (e) => t(`widget.${widgetOf(e)}`), layerType);
-    $('layer-front').replaceChildren(sectionTitle(t('layersPanel.front'), { count: els.length ? objectsText(countLayers(nodes)) : null }));
+    // How many objects, beside the title; the list reads from the topmost down.
+    $('layer-count').textContent = els.length ? objectsText(countLayers(nodes)) : '';
+    $('layer-list').setAttribute('aria-label', t('layersPanel.front'));
     if (els.length === 0) {
       list.replaceChildren(el('li', { class: 'empty-note', text: t('layers.empty') }));
       return;
@@ -627,11 +646,15 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   }
 
   mountSearch('layer-search', 'layersPanel.filter', (q) => { layerQuery = q; renderLayers(); }, { id: 'layer-filter' });
+  // The count joins the title; the hint closes the panel (D-14).
+  $('panel-layers').querySelector('.panel-head h2').after(el('span', { class: 'count', id: 'layer-count' }));
+  $('layer-selection').after(el('p', { class: 'hint panel-foot', id: 'layer-hint', 'data-i18n': 'layersPanel.hint', text: t('layersPanel.hint') }));
   const layerTypeField = selectField(t('layersPanel.type'), layerType, [], value => { layerType = value; renderLayers(); });
   const layerTypeSelect = layerTypeField.querySelector('select');
   layerTypeSelect.id = 'layer-type-filter';
   layerTypeField.htmlFor = layerTypeSelect.id;
   $('layer-type').replaceChildren(layerTypeField);
+  const { button: layerFilters } = filtersToggle('layer-search', 'layer-type');
   let layerTypesSignature = '';
   function renderLayerTypeFilter() {
     const options = [['all', t('layersPanel.allTypes')], ...[...WIDGETS, 'group'].map(type => [type, t(`widget.${type}`)])];
@@ -642,6 +665,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
       layerTypeSelect.replaceChildren(...options.map(([value, text]) => el('option', { value, text })));
     }
     layerTypeSelect.value = layerType;
+    layerFilters.title = t('layersPanel.filters');
+    layerFilters.setAttribute('aria-label', t('layersPanel.filters'));
+    layerFilters.classList.toggle('filters-on', layerType !== 'all');
   }
   $('layers-expand').addEventListener('click', () => { collapsedLayers.clear(); renderLayers(); });
   $('layers-collapse').addEventListener('click', () => {

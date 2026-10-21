@@ -122,8 +122,10 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   await tab(page, t, 'layers');
   const panel = page.locator('#panel-layers');
   await expect(layers(page)).toHaveCount(3);
-  await expect(panel.locator('#layer-front .section-title')).toHaveText(t('layersPanel.front'));
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.count', { count: 3 }));
+  // The count sits beside the title; the list says it reads from the topmost down.
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.count', { count: 3 }));
+  await expect(panel.locator('#layer-list')).toHaveAttribute('aria-label', t('layersPanel.front'));
+  await expect(panel.locator('#layer-hint')).toHaveText(t('layersPanel.hint'));
   // Every name fits at the default width: the tools never take its room.
   const labels = panel.locator('.layer-label');
   await expect(labels).toHaveText(['Background card', 'CPU', 'Clock']);
@@ -136,7 +138,7 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   const filter = panel.getByRole('searchbox', { name: t('layersPanel.filter'), exact: true });
   await filter.fill('cpu.usage');
   await expect(layers(page)).toHaveCount(1);
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.countOne'));
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.countOne'));
   await filter.fill('CLOCK');
   await expect(panel.locator('.layer-label')).toHaveText(['Clock']);
   await filter.fill('zzzz');
@@ -144,11 +146,16 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   await expect(panel).toContainText(t('layersPanel.noMatch'));
   await filter.fill('');
   await expect(layers(page)).toHaveCount(3);
+  // The object type sits behind Filters, with a dot while it filters.
+  const filters = panel.getByRole('button', { name: t('layersPanel.filters'), exact: true });
   const type = panel.getByRole('combobox', { name: t('layersPanel.type'), exact: true });
+  await expect(type).toBeHidden();
+  await filters.click();
   await expect(type).toHaveValue('all');
   await type.selectOption('clock');
+  await expect(filters).toHaveClass(/filters-on/);
   await expect(panel.locator('.layer-label')).toHaveText(['Clock']);
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.countOne'));
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.countOne'));
   await filter.fill('cpu.usage');
   await expect(layers(page)).toHaveCount(0);
   await expect(panel).toContainText(t('layersPanel.noMatch'));
@@ -177,7 +184,14 @@ test('two selected layers get the bar: Group (Ctrl G), Make card and Deselect', 
   await select();
   await expect(bar).toBeVisible();
   await expect(bar.locator('strong')).toHaveText(t('layersPanel.selected', { count: 2 }));
-  await expect(bar.locator('kbd')).toHaveText(t('layersPanel.groupKeys'));
+  await expect(bar.getByRole('button', { name: t('layersPanel.groupLabel'), exact: true })).toHaveAttribute('aria-keyshortcuts', 'Control+G');
+  // Align offers the six alignments; distributing needs three objects.
+  await bar.getByRole('button', { name: t('layersPanel.align'), exact: true }).click();
+  const menu = page.getByRole('menu', { name: t('layersPanel.align') });
+  await expect(menu.getByRole('menuitem')).toHaveCount(8);
+  await expect(menu.getByRole('menuitem', { name: t('align.distributeX'), exact: true })).toBeDisabled();
+  await menu.getByRole('menuitem', { name: t('align.left'), exact: true }).click();
+  await page.locator('#undo').click();
   await expectAccessible(page);
 
   await bar.getByRole('button', { name: t('layersPanel.groupLabel'), exact: true }).click();
@@ -192,6 +206,7 @@ test('two selected layers get the bar: Group (Ctrl G), Make card and Deselect', 
   await expect(group.locator('.layer-children')).toBeVisible();
   await filter.fill('');
   await expect(group.locator('.layer-children')).toBeHidden();
+  await page.getByRole('button', { name: t('layersPanel.filters'), exact: true }).click();
   const type = page.getByRole('combobox', { name: t('layersPanel.type'), exact: true });
   await type.selectOption('ring');
   await expect(group.locator('.layer-children')).toBeVisible();

@@ -40,7 +40,7 @@ test('failed count opens the filtered library and still detects recovery', async
   const panel = page.locator('#panel-sensors');
   await expect(panel).toBeVisible();
   // A filtered opening shows its filters beside the search.
-  await expect(panel.locator('.sensor-filters-toggle')).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel.locator('.filters-toggle')).toHaveAttribute('aria-expanded', 'true');
   await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toHaveValue('LibreHardwareMonitor');
   await expect(panel.getByRole('combobox', { name: t('sensorsPanel.status'), exact: true })).toHaveValue('unavailable');
   await expect(panel.locator('.sensor-row')).toHaveCount(1);
@@ -73,7 +73,7 @@ test('probe, state, category and search combine and generic open resets filters'
   await popup.getByRole('button', { name: t('sensorStatus.openSensors'), exact: true }).click();
   await expect(panel.getByRole('searchbox')).toHaveValue('');
   // An unfiltered opening folds the filters away, both reset.
-  await expect(panel.locator('.sensor-filters-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.locator('.filters-toggle')).toHaveAttribute('aria-expanded', 'false');
   await expect(panel.locator('select[data-sensor-filter="probe"]')).toHaveValue('all');
   await expect(panel.locator('select[data-sensor-filter="status"]')).toHaveValue('all');
   await expect(rows).toHaveCount(23);
