@@ -101,6 +101,12 @@ pub struct AnalogClock {
     pub minute_hand: bool,
     /// The second hand shows.
     pub second_hand: bool,
+    /// Hour hand length as a multiple of its original length (1: unchanged).
+    pub hour_length: f32,
+    /// Minute hand length as a multiple of its original length.
+    pub minute_length: f32,
+    /// Second hand length as a multiple of its original length; tail unchanged.
+    pub second_length: f32,
     /// Shape of the hands.
     pub hand_shape: HandShape,
     /// Width of the dial's outline, pixels (0: none).
@@ -129,6 +135,9 @@ impl Default for AnalogClock {
             hour_hand: true,
             minute_hand: true,
             second_hand: true,
+            hour_length: 1.0,
+            minute_length: 1.0,
+            second_length: 1.0,
             hand_shape: HandShape::Rounded,
             border: 2.0,
             face: Rgba::opaque(0x0b, 0x0d, 0x0f),

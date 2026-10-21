@@ -1,6 +1,6 @@
 import { describeSections } from './sections.js';
 import { applyTextCase } from '../../text-case.js';
-import { CLOCK_PATTERNS, analogOf, formatClock } from '../../clock-format.js';
+import { CLOCK_PATTERNS, withHandLength, analogOf, formatClock } from '../../clock-format.js';
 import { CLOCK_PARTS } from '../../text-layout.js';
 import { textStyleFields } from './text.js';
 import { el } from '../dom.js';
@@ -23,6 +23,9 @@ export function panels(ctx) {
     look.push(section('clock-dial', t('insp.clock.dial'), [
       choice('ticks', ['none', 'hours', 'minutes']), choice('numbers', ['none', 'quarters', 'all', 'roman']),
       optionTiles(t('insp.clock.hands'), ['hour', 'minute', 'second'].map(hand => ({ text: t(`insp.clockPart.${hand}s`), art: ICONS.clock, pressed: dial[`${hand}Hand`], onClick: () => setDial({ [`${hand}Hand`]: !dial[`${hand}Hand`] }) }))),
+      ...['hour', 'minute', 'second'].filter(hand => dial[`${hand}Hand`]).map(hand => numberField(t(`insp.clock.${hand}Length`), Math.round(dial[`${hand}Length`] * 100), value => {
+        ctx.store.dispatch('setKind', { id: e.id, kind: { ...e.kind, content: { ...c, analog: withHandLength(c.analog, hand, value / 100) } } });
+      }, { min: 10, max: 200, unit: '%' })),
       choice('handShape', ['thin', 'rounded', 'arrow']),
       numberField(t('insp.outline'), dial.border, border => setDial({ border: Math.max(0, Math.min(64, border)) }), { min: 0, max: 64, unit: 'px' }),
     ]));

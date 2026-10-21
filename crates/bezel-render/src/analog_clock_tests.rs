@@ -169,3 +169,68 @@ fn marks_numbers_date_outline_and_hand_shapes_draw() {
     assert!(thin < rounded, "thin is thinner: {thin} {rounded}");
     assert_ne!(arrow, rounded, "an arrowhead");
 }
+
+#[test]
+fn legacy_hand_length_pixels_are_stable() {
+    let mut renderer = testkit::renderer();
+    for (shape, expected) in [
+        (HandShape::Thin, 5866446313607721224),
+        (HandShape::Rounded, 4581605130595532614),
+        (HandShape::Arrow, 619349141455207611),
+    ] {
+        let frame = testkit::render(
+            &mut renderer,
+            &theme(AnalogClock {
+                hand_shape: shape,
+                ..clock()
+            }),
+            &at(3, 0, 30, 0),
+        );
+        let hash = frame
+            .as_rgba()
+            .iter()
+            .fold(0xcbf29ce484222325_u64, |hash, byte| {
+                (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+            });
+        assert_eq!(hash, expected, "legacy {shape:?} pixels changed");
+    }
+}
+
+#[test]
+fn each_hand_length_changes_only_its_tip_and_preserves_the_second_tail() {
+    let mut renderer = testkit::renderer();
+    let scene = at(3, 0, 30, 0);
+    let original = testkit::render(&mut renderer, &theme(clock()), &scene);
+    for (change, beyond, inside, untouched) in [
+        (0, (168, 128), (144, 128), (128, 68)),
+        (1, (128, 68), (128, 100), (158, 128)),
+        (2, (128, 198), (128, 160), (158, 128)),
+    ] {
+        let mut c = clock();
+        match change {
+            0 => c.hour_length = 0.5,
+            1 => c.minute_length = 0.5,
+            _ => c.second_length = 0.5,
+        }
+        let shorter = testkit::render(&mut renderer, &theme(c), &scene);
+        testkit::assert_px(&shorter, beyond.0, beyond.1, FACE, 8);
+        testkit::assert_px(
+            &shorter,
+            inside.0,
+            inside.1,
+            [HOUR, MINUTE, SECOND][change],
+            8,
+        );
+        assert_eq!(
+            testkit::px(&shorter, untouched.0, untouched.1),
+            testkit::px(&original, untouched.0, untouched.1)
+        );
+        if change == 2 {
+            // The second hand points down; its unchanged tail crosses the minute hand.
+            assert_eq!(
+                testkit::px(&shorter, 128, 110),
+                testkit::px(&original, 128, 110)
+            );
+        }
+    }
+}

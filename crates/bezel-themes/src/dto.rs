@@ -1394,6 +1394,15 @@ pub struct AnalogDto {
     /// The second hand shows (absent: yes).
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     pub second_hand: bool,
+    /// Hour hand length relative to the original (absent: 1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hour_length: Option<f32>,
+    /// Minute hand length relative to the original (absent: 1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minute_length: Option<f32>,
+    /// Second hand length relative to the original (absent: 1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub second_length: Option<f32>,
     /// `thin`, `rounded` (absent) or `arrow`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hand_shape: Option<String>,
@@ -1448,6 +1457,9 @@ fn analog_dto(a: &AnalogClock) -> Box<AnalogDto> {
         hour_hand: a.hour_hand,
         minute_hand: a.minute_hand,
         second_hand: a.second_hand,
+        hour_length: (a.hour_length != 1.0).then_some(a.hour_length),
+        minute_length: (a.minute_length != 1.0).then_some(a.minute_length),
+        second_length: (a.second_length != 1.0).then_some(a.second_length),
         hand_shape: name(
             a.hand_shape != d.hand_shape,
             match a.hand_shape {
@@ -1476,6 +1488,12 @@ fn analog_dto(a: &AnalogClock) -> Box<AnalogDto> {
 
 fn analog(dto: &AnalogDto) -> R<AnalogClock> {
     let d = AnalogClock::default();
+    let length = |value: Option<f32>| {
+        value
+            .filter(|n| n.is_finite())
+            .unwrap_or(1.0)
+            .clamp(0.1, 2.0)
+    };
     let paint = |v: &Option<String>, default: Rgba| v.as_deref().map_or(Ok(default), color);
     Ok(AnalogClock {
         ticks: match dto.ticks.as_deref() {
@@ -1496,6 +1514,9 @@ fn analog(dto: &AnalogDto) -> R<AnalogClock> {
         hour_hand: dto.hour_hand,
         minute_hand: dto.minute_hand,
         second_hand: dto.second_hand,
+        hour_length: length(dto.hour_length),
+        minute_length: length(dto.minute_length),
+        second_length: length(dto.second_length),
         hand_shape: match dto.hand_shape.as_deref() {
             None => d.hand_shape,
             Some("thin") => HandShape::Thin,
@@ -3620,6 +3641,43 @@ mod analog_clock_tests {
         );
         let (content, _) = clock(serde_json::json!({"border": 1000.0}));
         assert!(matches!(content, TextContent::Clock { analog: Some(a), .. } if a.border == 64.0));
+    }
+
+    #[test]
+    fn hand_lengths_round_trip_and_omit_original_lengths() {
+        let (_, legacy) = clock(serde_json::json!({}));
+        for field in ["hourLength", "minuteLength", "secondLength"] {
+            let (_, written) = clock(serde_json::json!({ field: 0.5 }));
+            assert_eq!(written["analog"][field], 0.5);
+            let (_, again) = clock(written["analog"].clone());
+            assert_eq!(again, written);
+            for original in [
+                serde_json::json!({}),
+                serde_json::json!({ field: 1.0 }),
+                serde_json::json!({ field: null }),
+            ] {
+                let (_, written) = clock(original);
+                assert_eq!(written, legacy, "{field}: original lengths stay absent");
+            }
+            for (value, expected) in [(0.0, 0.1), (3.0, 2.0)] {
+                let (_, written) = clock(serde_json::json!({ field: value }));
+                assert!((written["analog"][field].as_f64().unwrap() - expected).abs() < 1e-6);
+            }
+        }
+        let default = AnalogDto::default();
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let dto = AnalogDto {
+                hour_length: Some(value),
+                minute_length: Some(value),
+                second_length: Some(value),
+                ..default.clone()
+            };
+            let clock = analog(&dto).unwrap();
+            assert_eq!(
+                (clock.hour_length, clock.minute_length, clock.second_length),
+                (1.0, 1.0, 1.0)
+            );
+        }
     }
 
     #[test]

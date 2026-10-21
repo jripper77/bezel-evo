@@ -5,6 +5,7 @@ import { appliedRotation, canRotate, centerOf, normalizeDegrees, rotatePoint, to
 import { cornerValue, radiiOf, withCorner, withRadius } from '../corner-radii.js';
 import { fitGauge, lookOf, share } from '../needle-look.js';
 import { spectrumOf } from '../spectrum.js';
+import { HAND_LENGTHS, analogOf, handAngles, withHandLength } from '../clock-format.js';
 import { pathPatch } from '../inspector-edit.js';
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
@@ -52,7 +53,7 @@ export function scaledText(element, frame) {
 }
 
 /** Handles for properties already supported by the theme format. */
-export function propertyHandles(element, { fraction = .5, coverFrame = null } = {}) {
+export function propertyHandles(element, { fraction = .5, coverFrame = null, date = new Date(), motion = true } = {}) {
   if (element.locked || element.isGroup) return [];
   const f = element.frame, k = element.kind, center = centerOf(f), angle = appliedRotation(element);
   const result = [];
@@ -129,6 +130,17 @@ export function propertyHandles(element, { fraction = .5, coverFrame = null } = 
   }
   if (k.type === 'text' && ['static', 'sensor', 'clock'].includes(k.content.type) && !k.content.analog) {
     property('text-size', 'measure', 'inspector.size', 'px', k.style.size, { x: f.x + f.width + 12, y: f.y + f.height + 12 }, ['kind', 'style', 'size'], p => clamp(Math.round(k.style.size * distance(p, { x: f.x, y: f.y }) / Math.max(1, Math.hypot(f.width + 12, f.height + 12))), 4, 800));
+  }
+  if (k.type === 'text' && k.content.type === 'clock' && k.content.analog) {
+    const dial = analogOf(k.content.analog), angles = handAngles(dial, date, motion), unit = Math.min(f.width, f.height) / 64;
+    for (const hand of Object.keys(HAND_LENGTHS)) {
+      if (!dial[`${hand}Hand`]) continue;
+      const length = HAND_LENGTHS[hand] * unit;
+      add(`clock-${hand}-length`, 'measure', `insp.clock.${hand}Length`, '%', dial[`${hand}Length`] * 100, atAngle(center, length * dial[`${hand}Length`], angles[hand]), p => {
+        const value = clamp(Math.round(distance(p, center) / Math.max(.001, length) * 100), 10, 200);
+        return { value, kind: { ...k, content: { ...k.content, analog: withHandLength(k.content.analog, hand, value / 100) } } };
+      });
+    }
   }
   if (k.type === 'text' && k.content.type === 'spectrum') {
     const s = spectrumOf(k.content);

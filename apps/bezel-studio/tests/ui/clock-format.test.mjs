@@ -61,3 +61,25 @@ test('an analog dial: defaults, hands, frames, numbers and date like the backend
   assert.equal(dialDate({ date: 'day' }, at(1, 0, 0), 'it'), '20');
   assert.equal(dialDate({ date: 'dayMonth' }, at(1, 0, 0), 'it'), '20 ott');
 });
+
+
+test('hand length settings normalize like native and original lengths stay absent', async () => {
+  const { analogOf, withHandLength } = await import('../../src/clock-format.js');
+  for (const hand of ['hour', 'minute', 'second']) {
+    const key = `${hand}Length`;
+    assert.equal(analogOf({})[key], 1);
+    const source = { sweep: true };
+    const changed = withHandLength(source, hand, .5);
+    assert.deepEqual(changed, { sweep: true, [key]: .5 }); assert.deepEqual(source, { sweep: true });
+    assert.deepEqual(withHandLength(changed, hand, 1), source);
+    assert.deepEqual(withHandLength(undefined, hand, 1), {});
+    for (const value of [null, undefined, NaN, Infinity]) {
+      assert.equal(analogOf({ [key]: value })[key], 1);
+      assert.deepEqual(withHandLength(changed, hand, value), source);
+    }
+    assert.equal(analogOf({ [key]: 0 })[key], .1);
+    assert.equal(analogOf({ [key]: 3 })[key], 2);
+    assert.equal(withHandLength({}, hand, 0)[key], .1);
+    assert.equal(withHandLength({}, hand, 3)[key], 2);
+  }
+});

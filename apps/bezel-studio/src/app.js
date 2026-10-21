@@ -146,6 +146,7 @@ const canvasView = createCanvasView({
   rotationLabel: () => t('insp.rotateHandle'),
   handleLabel: (key, params) => t(key, params),
   handleLocale: () => locale,
+  handleMotion: () => motionAllowed(),
   onHandleEdit: result => inspector.highlightField(result?.field, result?.fieldParams),
   onFrameRequest: () => setFramingMode(true),
 });

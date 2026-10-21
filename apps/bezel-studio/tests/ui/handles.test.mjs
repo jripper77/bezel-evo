@@ -134,7 +134,7 @@ test('text sizing and spectrum counts use their existing property ranges', () =>
     assert.equal(edit(e, h.id, { x: 100000, y: 100000 }).value, 800);
   }
   const clock = made('clock'); clock.kind.content.analog = {};
-  assert.deepEqual(propertyHandles(clock), []);
+  assert.deepEqual(propertyHandles(clock).map(h => h.id), ['clock-hour-length', 'clock-minute-length', 'clock-second-length']);
   const spectrum = made('spectrum');
   assert.equal(edit(spectrum, 'bands', { x: 1000, y: 70 }).value, 64);
   assert.equal(edit(spectrum, 'bands', { x: -1000, y: 70 }).value, 8);
@@ -198,4 +198,31 @@ test('shape image edits keep the source unchanged and share inspector limits', (
   assert.deepEqual(editedFill({}), { offsetX: 0, offsetY: 0, scale: 1 });
   assert.equal(editedFill(image, { scale: .001 }).scale, .05);
   assert.equal(editedFill(image, { scale: 100 }).scale, 10);
+});
+
+
+test('clock length handles follow real time, local rotation and shown hands; original lengths disappear', () => {
+  const clock = made('clock'); clock.kind.content.analog = {};
+  clock.frame = { x: 0, y: 0, width: 256, height: 256 };
+  const date = new Date(2026, 9, 21, 3, 0, 0);
+  const handles = propertyHandles(clock, { date });
+  const hour = handles.find(h => h.id === 'clock-hour-length');
+  near(hour.x, 128 + 11.7 * 4); near(hour.y, 128);
+  near(handles[1].x, 128); near(handles[1].y, 128 - 20.9 * 4);
+  const next = edit(clock, hour.id, { x: 128 + 11.7 * 2, y: 128 }, { date });
+  assert.equal(next.value, 50); assert.equal(next.kind.content.analog.hourLength, .5);
+  const original = { ...clock, kind: { ...next.kind } };
+  assert.deepEqual(edit(original, hour.id, hour, { date }).kind.content.analog, {});
+  assert.equal(edit(clock, hour.id, { x: 10000, y: 0 }, { date }).value, 200);
+  assert.equal(edit(clock, hour.id, { x: 128, y: 128 }, { date }).value, 10);
+  clock.rotation = 90;
+  const rotated = propertyHandles(clock, { date }).find(h => h.id === hour.id);
+  near(rotated.x, 128); near(rotated.y, 128 + 11.7 * 4);
+  clock.kind.content.analog.minuteHand = false;
+  assert.equal(propertyHandles(clock).length, 2);
+  clock.kind.content.analog.hourHand = false; clock.kind.content.analog.secondHand = false;
+  assert.deepEqual(propertyHandles(clock), []);
+  clock.kind.content.analog.secondHand = true; clock.kind.content.analog.sweep = true;
+  const half = new Date(2026, 9, 21, 3, 0, 0, 500);
+  assert.notEqual(propertyHandles(clock, { date: half })[0].y, propertyHandles(clock, { date: half, motion: false })[0].y);
 });

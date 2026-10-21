@@ -14,7 +14,7 @@ import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
 import { fadeLine } from './shape-fade.js';
 import { weatherFamily, weatherText } from './weather-format.js';
-import { analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
+import { HAND_LENGTHS, analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
 import { REST, amplitudeOf, iconPose, iconStep } from './weather-motion.js';
@@ -326,7 +326,7 @@ function drawDial(ctx, e, t, motion, trial) {
   const day = dialDate(a, date, k.content.language);
   if (day) { ctx.font = font(5 * unit); ctx.fillText(day, cx, cy + 9 * unit); }
   const angles = handAngles(a, date, motion);
-  const hands = [[a.hourHand, 11.7, 3.5, 0, angles.hour, a.hourColor], [a.minuteHand, 20.9, 2.5, 0, angles.minute, a.minuteColor], [a.secondHand, 23, 1.2, 6, angles.second, a.secondColor]];
+  const hands = [[a.hourHand, HAND_LENGTHS.hour * a.hourLength, 3.5, 0, angles.hour, a.hourColor], [a.minuteHand, HAND_LENGTHS.minute * a.minuteLength, 2.5, 0, angles.minute, a.minuteColor], [a.secondHand, HAND_LENGTHS.second * a.secondLength, 1.2, 6, angles.second, a.secondColor]];
   for (const [shown, length, width, tail, angle, colour] of hands) {
     if (!shown) continue;
     const tip = at(length, angle), w = width * unit * (a.handShape === 'thin' ? 0.6 : a.handShape === 'arrow' ? 0.8 : 1);

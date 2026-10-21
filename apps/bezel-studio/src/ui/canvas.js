@@ -33,7 +33,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, onHandleEdit = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -70,9 +70,10 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   };
 
   function applyProperty(element, id, position, options = {}) {
-    const next = editPropertyHandle(element, id, position, options);
-    if (!next?.patch) return;
-    store.dispatch('patchElements', { patches: [{ id: element.id, patch: next.patch }] });
+    const next = editPropertyHandle(element, id, position, { motion: handleMotion(), ...options });
+    if (!next?.patch && !next?.kind) return;
+    if (next.kind) store.dispatch('setKind', { id: element.id, kind: next.kind });
+    else store.dispatch('patchElements', { patches: [{ id: element.id, patch: next.patch }] });
     handleReadout = { position, text: handleText(next.value, next.unit) };
     onHandleEdit(next);
   }
@@ -178,6 +179,19 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       small.getContext('2d').putImageData(pixels, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
+    }
+    updateClockTips();
+  }
+
+  /** Only clock tip positions follow a new frame; keep native button focus alive. */
+  function updateClockTips() {
+    const selected = selection();
+    if (selected.length !== 1) return;
+    const element = theme().elements.find(e => e.id === selected[0]);
+    if (element?.kind?.content?.type !== 'clock' || !element.kind.content.analog) return;
+    for (const handle of propertyHandles(element, { motion: handleMotion() })) {
+      const node = overlay.querySelector(`[data-property-handle="${handle.id}"]`);
+      if (node) Object.assign(node.style, { left: px(handle.x), top: px(handle.y) });
     }
   }
 
@@ -300,7 +314,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
     if (chosen.length === 1 && editable && !fill) {
       const e = chosen[0];
-      for (const handle of propertyHandles(e).filter(handle => handle.id !== 'trial-value')) {
+      for (const handle of propertyHandles(e, { motion: handleMotion() }).filter(handle => handle.id !== 'trial-value')) {
         const title = handleLabel(handle.field, handle.fieldParams);
         nodes.push(el('button', { type: 'button', class: `property-handle ${handle.symbol}`, dataset: { propertyHandle: handle.id },
           title, 'aria-label': title, style: { left: px(handle.x), top: px(handle.y) },
@@ -308,7 +322,8 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
             if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
             evt.preventDefault(); evt.stopPropagation();
             const step = evt.shiftKey ? 10 : 1;
-            applyProperty(e, handle.id, { x: handle.x + (evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0), y: handle.y + (evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
+            const current = propertyHandles(e, { motion: handleMotion() }).find(h => h.id === handle.id);
+            applyProperty(e, handle.id, { x: current.x + (evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0), y: current.y + (evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
             drawOverlay(); overlay.querySelector(`[data-property-handle="${handle.id}"]`)?.focus();
           },
           onblur: () => { if (!press) clearHandleValue(); },
