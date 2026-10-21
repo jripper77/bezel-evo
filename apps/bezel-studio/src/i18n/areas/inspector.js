@@ -282,7 +282,7 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
-    'insp.graphRounded': 'Arredondadas',
+    'insp.graphRounded': 'Arredond.',
     'insp.graphAutoWidth': 'Largura automática das barras',
     'insp.fixedState': 'Fixo',
     'insp.faceSample': 'Aa',
@@ -557,7 +557,7 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
-    'insp.graphRounded': 'Arrotondate',
+    'insp.graphRounded': 'Arrotond.',
     'insp.graphAutoWidth': 'Larghezza automatica delle barre',
     'insp.fixedState': 'Fisso',
     'insp.faceSample': 'Aa',
