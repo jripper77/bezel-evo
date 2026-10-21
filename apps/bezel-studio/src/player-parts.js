@@ -210,6 +210,22 @@ export function coverShare(content, shown, size) {
   return alone ? { fraction: 1, gap: 0 } : { fraction: COVER_SHARE, gap: Math.max(0, content.coverGap ?? size * 0.3) };
 }
 
+/** A timed session: the parts that show while something plays, without its words. */
+const TIMED_MEDIA = Object.freeze({ title: '', artist: '', source: '', position: 0, duration: 1 });
+
+/**
+ * The cover's square in `frame`, at its top left, and the gap after it
+ * (bezel-render TextFurniture::layout). The editor has no live session, so
+ * `media` defaults to a timed one. Null without a cover.
+ */
+export function coverFrame(frame, content, size, media = TIMED_MEDIA) {
+  if (content.showCover === false) return null;
+  const { fraction, gap } = coverShare(content, playerText(content, media), size);
+  const room = Math.min(gap, Math.max(0, frame.width));
+  const side = Math.max(0, Math.min(frame.height, frame.width * fraction, frame.width - room));
+  return { x: frame.x, y: frame.y, width: side, height: side, gap: room, alone: fraction === 1 };
+}
+
 /**
  * Natural size of a playing player: its visible parts. `text` is the
  * measured text block (`{width, height}`, null when empty), `metrics` the

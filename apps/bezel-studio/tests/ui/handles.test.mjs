@@ -154,12 +154,30 @@ test('linear and radial fades preserve untouched parameters and use the supplied
   assert.deepEqual(out.value, [25, 25]);
   near(edit(e, 'fade-radius', { x: 160, y: 70 }).value, 25);
   const player = made('player'); player.kind.content.coverFade = e.kind.fade;
-  assert.deepEqual(propertyHandles(player), []);
+  assert.deepEqual(propertyHandles(player).map(h => h.id), ['cover-gap', 'fade-center', 'fade-radius']);
+  // Without supplied bounds the fade follows the drawn cover: 40% of 200 px wide, top left.
+  const centre = propertyHandles(player).find(h => h.id === 'fade-center');
+  near(centre.x, 50); near(centre.y, 60);
   const coverFrame = { x: 10, y: 20, width: 40, height: 40 };
   near(edit(player, 'fade-radius', { x: 50, y: 40 }, { coverFrame }).value, 50);
   assert.ok(edit(player, 'fade-center', { x: 30, y: 40 }, { coverFrame }).patch.kind.content.coverFade);
   player.kind.content.coverFade = { angle: 0, start: 1, end: 0 };
   near(edit(player, 'fade-direction', { x: 50, y: 40 }, { coverFrame }).value, 0);
+});
+
+test('the player divider moves the text after the drawn cover and is absent when the cover is alone or off', () => {
+  const player = made('player');
+  const gap = player.kind.style.size * .3;
+  const divider = propertyHandles(player).find(h => h.id === 'cover-gap');
+  near(divider.x, 10 + 80 + gap); near(divider.y, 60);
+  assert.equal(edit(player, 'cover-gap', divider).value, Math.round(gap));
+  assert.deepEqual(edit(player, 'cover-gap', { x: 110, y: 60 }).patch, { kind: { content: { coverGap: 20 } } });
+  assert.equal(edit(player, 'cover-gap', { x: 0, y: 60 }).value, 0);
+  assert.equal(edit(player, 'cover-gap', { x: 900, y: 60 }).value, 200);
+  const alone = { ...player, kind: { ...player.kind, content: { ...player.kind.content, showTitle: false, showArtist: false, showTime: false, showProgress: false } } };
+  assert.equal(propertyHandles(alone).some(h => h.id === 'cover-gap'), false);
+  const hidden = { ...player, kind: { ...player.kind, content: { ...player.kind.content, showCover: false, coverFade: { angle: 0, start: 1, end: 0 } } } };
+  assert.deepEqual(propertyHandles(hidden), []);
 });
 
 test('inactive and stale handles cannot edit documents; every field has localized text', () => {

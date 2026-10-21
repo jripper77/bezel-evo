@@ -83,3 +83,25 @@ test('double click edits multiline static text, Escape cancels and acceptance is
   await enter(); await expect(editor).toHaveCount(0); await expect(text).toHaveValue('Commit on blur');
   expect(errors).toEqual([]);
 });
+
+test('the player divider follows the drawn cover, opens its field and undoes once', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await clickAddWidget(page, t, 'player');
+  const handle = property(page, 'cover-gap'); const box = await handle.boundingBox();
+  const frame = await page.locator('#overlay .sel-box').boundingBox();
+  // The divider sits after the cover square (as tall as the player, at most 40% of it), mid-height.
+  expect(box.x + box.width / 2).toBeGreaterThan(frame.x + Math.min(frame.height, frame.width * .4));
+  expect(Math.abs(box.y + box.height / 2 - (frame.y + Math.min(frame.height, frame.width * .4) / 2))).toBeLessThan(2);
+  const gap = field(page, t, 'player.coverGap');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2, { steps: 5 });
+  await expect(page.locator('#inspector .canvas-field-active')).toHaveCount(1);
+  await expect(gap).toBeVisible();
+  await page.mouse.up();
+  const after = Number(await gap.inputValue());
+  // One Undo for the whole drag back to the narrower default gap; Redo restores the drag.
+  await page.locator('#undo').click(); await expect.poll(async () => Number(await gap.inputValue())).toBeLessThan(after);
+  await page.locator('#redo').click(); await expect(gap).toHaveValue(String(after));
+  await handle.focus(); await handle.press('Shift+ArrowLeft'); await expect(handle).toBeFocused();
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

@@ -7,6 +7,7 @@ import { fitGauge, lookOf, share } from '../needle-look.js';
 import { spectrumOf } from '../spectrum.js';
 import { HAND_LENGTHS, analogOf, handAngles, withHandLength } from '../clock-format.js';
 import { pathPatch } from '../inspector-edit.js';
+import { coverFrame as playerCover } from '../player-parts.js';
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const degrees = (p, center) => Math.atan2(p.x - center.x, center.y - p.y) * 180 / Math.PI;
@@ -148,8 +149,13 @@ export function propertyHandles(element, { fraction = .5, coverFrame = null, dat
     property('bar-gap', 'point', 'spectrum.gap', 'px', s.gap, { x: f.x + s.thickness + s.gap, y: f.y + f.height }, ['kind', 'content', 'gap'], p => clamp(p.x - f.x - s.thickness, 0, 128));
   }
   const cover = k.type === 'text' && k.content.type === 'player';
+  const coverBox = cover ? coverFrame ?? playerCover(f, k.content, k.style.size) : null;
+  if (coverBox && !coverBox.alone) {
+    const side = coverBox.width;
+    property('cover-gap', 'point', 'player.coverGap', 'px', coverBox.gap, { x: f.x + side + coverBox.gap, y: f.y + side / 2 }, ['kind', 'content', 'coverGap'], p => clamp(Math.round(p.x - f.x - side), 0, f.width));
+  }
   const fade = cover ? k.content.coverFade : k.fade;
-  const fadeFrame = cover ? coverFrame : f;
+  const fadeFrame = cover ? coverBox : f;
   if (fade && fadeFrame) {
     const path = cover ? ['kind', 'content', 'coverFade'] : ['kind', 'fade'];
     const ff = fadeFrame, fc = centerOf(ff);
