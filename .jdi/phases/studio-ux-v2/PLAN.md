@@ -189,7 +189,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   `src/styles/library.css`, `src/i18n/areas/library.js`, test dell'area
 - **Acceptance:** come le tavole; nessun nome tagliato nelle righe Sensori alle larghezze 240/272/360 (test `scrollWidth ≤ clientWidth`);
   «in uso: …» calcolato dai riferimenti reali del tema (stesso controllo del cestino esistente).
-- **Dipendenze:** T-0 · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0 · **Test:** G1–G9 · **Status:** completed — Widget a quattro gruppi, Sensori a categorie con righe su due livelli (nomi interi a 240/272/360 px), Livelli con Filtri e Allinea, Media con «in uso» dai riferimenti reali e cestino solo sui non usati. 108 e2e d'area verdi, unitari verdi (salvo `video-framing`, già rotto sulla base). Evidenze `evidence/t9a/`; vedi `SUMMARY-T-9a.md`.
 
 #### T-9b: Barra in alto e barra di stato
 - **Decisioni:** 11 · **Tavole:** MainNew (barra in alto), StatusBarNew
