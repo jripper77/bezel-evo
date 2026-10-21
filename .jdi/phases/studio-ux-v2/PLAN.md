@@ -165,7 +165,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Acceptance:** come le tavole, con orologio digitale/analogico (T-1, T-2), animazione meteo (T-4), immagine e GIF (T-5;
   voci di riproduzione solo per le GIF finché non c'è T-11, D-2026-10-21-studio-ux-v2-16),
   forma con immagine ripetuta (esistente), copertina del player con trasparenza (esistente).
-- **Dipendenze:** T-0, T-1, T-2, T-4, T-5 · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0, T-1, T-2, T-4, T-5 · **Test:** G1–G9 · **Status:** completed — sei inspector collegati, Orologio digitale/analogico, animazioni meteo, GIF e ancoraggi; estensioni D-20 per copertina, icona meteo e angoli immagini. Test Rust/clippy/fmt, 83 unitari UI, 76 e2e e confronto it chiaro/scuro verdi. Vedi `SUMMARY-T-7b.md`; codice `725d0ee`, `26c0267`, `4329376`, `04e483a`, evidenze `1ccb661`.
 
 #### T-7c: Inspector di Card e Tema; pannelli Schermo
 - **Tavole:** CardInspectorOpen, ThemeInspectorOpen, ScreenPanelsOpen
