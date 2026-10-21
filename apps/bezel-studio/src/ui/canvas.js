@@ -30,7 +30,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, onHandleEdit = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, onHandleEdit = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -48,8 +48,12 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   let hoverId = null;
   let press = null;
   let handleReadout = null;
-  const handleNumber = new Intl.NumberFormat(navigator.language, { maximumFractionDigits: 2 });
-  const handleText = (value, unit) => `${(Array.isArray(value) ? value : [value]).map(number => handleNumber.format(number)).join(' · ')}${unit ? ` ${unit}` : ''}`;
+  const handleFormats = new Map();
+  const handleText = (value, unit) => {
+    const locale = handleLocale();
+    if (!handleFormats.has(locale)) handleFormats.set(locale, new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }));
+    return `${(Array.isArray(value) ? value : [value]).map(number => handleFormats.get(locale).format(number)).join(' · ')}${unit ? ` ${unit}` : ''}`;
+  };
   const showHandleValue = (position, value, unit, field) => {
     handleReadout = { position, text: handleText(value, unit) };
     onHandleEdit({ field });
