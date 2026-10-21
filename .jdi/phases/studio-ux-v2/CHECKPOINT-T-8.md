@@ -79,6 +79,56 @@ Non creare un’altra worktree T-8 alla ripresa: proseguire questa.
   `editor/snap.js`, e non muta i riquadri; nessun calcolo delle distanze se non
   ci sono guide attive. Primitivi riusati, nessuna duplicazione.
 
+## Ripresa di Claude (21 ottobre, dopo `0f90ef6`)
+
+ChatGPT si è fermata al limite di utilizzo; Claude prosegue nella stessa
+worktree e sullo stesso ramo. Quattro commit, uno per voce:
+
+- `a17aa9e` **Copertina Player.** `coverFrame` puro in `player-parts.js`, stessa
+  regola di `TextFurniture::layout` (quadrato in alto a sinistra, lato =
+  min(altezza, 40% larghezza, larghezza − distanza); da sola riempie il riquadro).
+  L'editor non ha una sessione dal vivo: si assume una sessione con durata,
+  quindi titolo/avanzamento come configurati. Le maniglie della sfumatura
+  copertina stanno sul quadrato vero; nuovo **divisore** (punto) per
+  `coverGap`, assente con copertina da sola o spenta.
+- `f528318` **Ancoraggio Immagine.** Modello rimasto discreto (9 posizioni,
+  `center` = assente). La maniglia scatta alla posizione più vicina; con le
+  frecce si sposta di una posizione (`keyStep`). Solo con Riempi (`cover`).
+  `highlightField` ora trova anche i gruppi di scelta (`role="group"`).
+- `965b2a8` **Parti del testo.** Un clic semplice sul Valore o sull'Orologio
+  digitale già selezionato sceglie la parte sotto il cursore nella riga
+  «Parti» dell'inspector. Pezzi dalla lettura reale dell'ultimo campione
+  (`formatValue` con la quantità del catalogo) o dall'ora attuale; geometria
+  con lo stesso `fitText` del renderer demo e la misura canvas esportata
+  (`canvasMeasure`). Nessun valore d'esempio nel prodotto. `layoutText` porta
+  ora l'`id` della parte su ogni frammento. Un'apertura di sezione che ridisegna
+  il modulo non perde più il campo da evidenziare.
+- `2eec51b` **Barra mobile.** Sopra la selezione, oltre la maniglia di
+  rotazione: sensore collegato (apre il selettore dell'inspector), ▶ Prova (la
+  prova staccata dell'inspector, non salva nulla; disattivato con movimento
+  ridotto), Duplica (comando esistente, un Undo) e ⋯ (stesse voci del menu
+  contestuale, `objectMenu.openAt`). Nascosta durante un gesto; con più oggetti
+  solo Duplica e ⋯.
+
+Verifiche: unitari mirati verdi (handles, player-parts, text-layout, i18n,
+static-guards e affini: 82 + 73), `handles.js` di nuovo **100%
+righe/rami/funzioni**. E2E delle sei spec canvas insieme: **88 verdi**
+(`target/logs/t8/e2e-claude-bar.log`), nuova `canvas-object-bar.spec.mjs`.
+Spec vicine `editing-017`, `object-rotation`, `canvas-wheel-zoom`: 24 verdi,
+28 fallimenti tutti preesistenti — i 20 già annotati più i due casi
+`editing-017` (campi X e «Individuali» in sezioni chiuse), che falliscono
+uguali sulla base `c66a247` (`F:/Dev/bezel/target/logs/t8-baseline/editing-017.log`).
+Evidenze it chiaro/scuro in `evidence/t8-bar/` (barra, divisore, parte).
+
+Da annotare per T-10: in italiano il prefisso «distanza» del campo Distanza
+del Player (T-7b) restringe l'input fino a nascondere il numero (il valore c'è).
+
+Resta aperto: pulsante **«Valori di prova»** nella barra del canvas
+(«Mostra valori di prova invece dei sensori»). Il runtime ha la prova solo per
+l'anteprima isolata dell'inspector (`inspect_trial`); per tutta la scena serve
+una funzione nuova del runtime: decisione chiesta all'utente. La maniglia
+«valore di prova» della Barra dipende da questa scelta.
+
 ## Verifiche del nuovo passo
 
 - **139 unitari UI mirati verdi**: handles, clock-format, demo-render-analog,

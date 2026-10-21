@@ -84,6 +84,24 @@ export default {
       await app.page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); await app.page.mouse.down();
       await app.page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2 + 100 * zoom, { steps: 4 });
     } },
+    { name: 'ux2-object-bar', capture: '.workspace', run: async app => {
+      await app.add('ring');
+      await app.page.locator('#overlay [data-object-bar="duplicate"]').hover();
+    } },
+    { name: 'ux2-player-cover', capture: '.workspace', run: async app => {
+      await app.add('player');
+      const handle = await app.page.locator('#overlay [data-property-handle="cover-gap"]').boundingBox();
+      await app.page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2); await app.page.mouse.down();
+      await app.page.mouse.move(handle.x + handle.width / 2 + 12, handle.y + handle.height / 2, { steps: 4 });
+    } },
+    { name: 'ux2-value-part', capture: '.workspace', run: async app => {
+      const t = translator('it'), inspector = app.page.locator('#inspector');
+      await app.add('value'); await openSection(app.page, 'data');
+      await inspector.getByRole('textbox', { name: t('inspector.prefix'), exact: true }).fill('CPU ');
+      await app.page.keyboard.press('Tab');
+      const frame = await app.page.locator('#overlay .sel-box').boundingBox();
+      await app.page.mouse.click(frame.x + 6, frame.y + frame.height / 2);
+    } },
     { name: 'main', run: async () => {} },
     { name: 'logo', capture: '.brand', run: async () => {} },
     // An edit: "Unsaved" in the breadcrumb and the statusbar.
