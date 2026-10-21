@@ -1,0 +1,98 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-needle",
+    "file": "dark/app/shell/ux2-handles-needle.png",
+    "detail": "dark/app/shell/ux2-handles-needle-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-needle",
+    "file": "light/app/shell/ux2-handles-needle.png",
+    "detail": "light/app/shell/ux2-handles-needle-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-image",
+    "file": "dark/app/shell/ux2-handles-image.png",
+    "detail": "dark/app/shell/ux2-handles-image-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-image",
+    "file": "light/app/shell/ux2-handles-image.png",
+    "detail": "light/app/shell/ux2-handles-image-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-spectrum",
+    "file": "dark/app/shell/ux2-handles-spectrum.png",
+    "detail": "dark/app/shell/ux2-handles-spectrum-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-spectrum",
+    "file": "light/app/shell/ux2-handles-spectrum.png",
+    "detail": "light/app/shell/ux2-handles-spectrum-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-trial-values",
+    "file": "dark/app/shell/ux2-trial-values.png",
+    "detail": "dark/app/shell/ux2-trial-values-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-trial-values",
+    "file": "light/app/shell/ux2-trial-values.png",
+    "detail": "light/app/shell/ux2-trial-values-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-bar",
+    "file": "dark/app/shell/ux2-handles-bar.png",
+    "detail": "dark/app/shell/ux2-handles-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-bar",
+    "file": "light/app/shell/ux2-handles-bar.png",
+    "detail": "light/app/shell/ux2-handles-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-graph",
+    "file": "dark/app/shell/ux2-handles-graph.png",
+    "detail": "dark/app/shell/ux2-handles-graph-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-graph",
+    "file": "light/app/shell/ux2-handles-graph.png",
+    "detail": "light/app/shell/ux2-handles-graph-detail.png"
+  }
+]

@@ -102,6 +102,40 @@ export default {
       const frame = await app.page.locator('#overlay .sel-box').boundingBox();
       await app.page.mouse.click(frame.x + 6, frame.y + frame.height / 2);
     } },
+    { name: 'ux2-handles-needle', capture: '.workspace', run: async app => {
+      await app.add('needle'); await openSection(app.page, 'shape');
+      await app.page.locator('#overlay [data-property-handle="needle-length"]').focus();
+      await app.page.keyboard.press('Shift+ArrowUp');
+    } },
+    { name: 'ux2-handles-bar', capture: '.workspace', run: async app => {
+      await app.add('bar');
+      const handle = await app.page.locator('#overlay [data-property-handle="trial-value"]').boundingBox();
+      await app.page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2); await app.page.mouse.down();
+      await app.page.mouse.move(handle.x + handle.width / 2 + 40, handle.y + handle.height / 2, { steps: 4 });
+    } },
+    { name: 'ux2-handles-graph', capture: '.workspace', run: async app => {
+      await app.add('graph'); await openSection(app.page, 'data');
+      await app.page.locator('#overlay [data-property-handle="scale-max"]').focus();
+      await app.page.keyboard.press('Shift+ArrowUp');
+    } },
+    { name: 'ux2-handles-image', capture: '.workspace', run: async app => {
+      const t = translator('it');
+      await app.add('image'); await openSection(app.page, 'shape');
+      await app.page.locator('#inspector').getByRole('button', { name: t('fit.cover'), exact: true }).click();
+      await app.page.locator('#overlay [data-property-handle="image-anchor"]').focus();
+      await app.page.keyboard.press('ArrowRight');
+    } },
+    { name: 'ux2-handles-spectrum', capture: '.workspace', run: async app => {
+      await app.add('spectrum');
+      await app.page.locator('#overlay [data-property-handle="bands"]').focus();
+      await app.page.keyboard.press('Shift+ArrowRight');
+    } },
+    { name: 'ux2-trial-values', capture: '.workspace', run: async app => {
+      const t = translator('it');
+      await app.add('ring');
+      await app.page.getByRole('button', { name: t('shell.trialValues'), exact: true }).click();
+      await app.page.waitForTimeout(1500);
+    } },
     { name: 'main', run: async () => {} },
     { name: 'logo', capture: '.brand', run: async () => {} },
     // An edit: "Unsaved" in the breadcrumb and the statusbar.
