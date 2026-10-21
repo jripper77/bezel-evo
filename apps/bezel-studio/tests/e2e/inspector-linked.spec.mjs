@@ -132,8 +132,8 @@ test('graph series and rounded bars combine, retaining the lower sensor across s
   await inspector.getByRole('button', { name: t('insp.graphMirrored'), exact: true }).click();
   await expect(inspector.getByRole('combobox', { name: t('visual.secondary'), exact: true })).toBeVisible();
   await openSection(page, 'shape');
-  await inspector.getByRole('button', { name: t('visual.rounded'), exact: true }).click();
-  await expect(inspector.getByRole('button', { name: t('visual.rounded'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await inspector.getByRole('button', { name: t('insp.graphRounded'), exact: true }).click();
+  await expect(inspector.getByRole('button', { name: t('insp.graphRounded'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(inspector.getByRole('button', { name: t('insp.graphMirrored'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await change(number(page, t, 'insp.thickness'), 3);
   await expect(number(page, t, 'insp.thickness')).toHaveValue('3');

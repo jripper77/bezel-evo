@@ -257,7 +257,7 @@
 .inspector-linked .number-field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .inspector-linked .number-control { width: 100%; }
 .inspector-linked .option-tiles { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }
-.inspector-linked .option-tile span { white-space: normal; overflow-wrap: anywhere; text-align: center; line-height: 1.25; }
+.inspector-linked .option-tile span { white-space: normal; overflow-wrap: normal; text-align: center; line-height: 1.25; }
 .inspector-linked .field textarea { min-height: 72px; resize: vertical; }
 .inspector-linked .field-choice button { min-width: 0; padding-inline: 7px; }
 .inspector-linked .part-editor { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--surface-2); }

@@ -91,7 +91,7 @@ export function panels(ctx) {
     const fillAlpha = typeof k.fill === 'string' ? splitColor(k.fill).alpha : 25;
     const look = [
       section('style', t('inspector.style'), [
-        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars')), style('rounded', t('visual.rounded'))]),
+        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars')), style('rounded', t('insp.graphRounded'))]),
         el('div', { class: 'fld-grid' }, [numberField(t('insp.thickness'), k.style === 'bars' ? Math.round(graphBarWidth(e) * 100) / 100 : k.lineWidth, width => update(e.id, graphThicknessPatch(e, width)), { min: 1, step: 0.5, unit: 'px' }), k.style === 'bars' && e.visualization?.barWidth != null && iconButton(t('insp.graphAutoWidth'), ICONS.undo, () => update(e.id, graphThicknessPatch(e, null)))]),
         graphSeriesOf(e) === 'mirrored' && numberField(t('insp.graphSeriesGap'), e.visualization.seriesGap ?? 2, seriesGap => update(e.id, { visualization: { seriesGap: Math.min(32, Math.max(0, seriesGap)) } }), { min: 0, max: 32, unit: 'px' }),
         e.visualization && e.visualization.barWidth == null && ['rounded', 'bars'].includes(graphStyleOf(e)) && numberField(t('visual.gap'), e.visualization.gap, gap => update(e.id, { visualization: { gap: Math.max(0, Math.min(32, gap)) } }), { min: 0, max: 32, unit: 'px' }),
