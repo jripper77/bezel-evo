@@ -38,7 +38,7 @@ test('copy and paste objects with keyboard, object menu and grouped Undo', async
   await (await objectMenu(page)).getByRole('menuitem', { name: t('menu.copy'), exact: true }).click();
   await (await objectMenu(page)).getByRole('menuitem', { name: t('menu.paste'), exact: true }).click();
   await expect(layers).toHaveCount(10);
-  await expect(page.locator('.sel-box')).toHaveCount(5);
+  await expect(page.locator('.sel-box:not(.selection-union)')).toHaveCount(5);
   await page.locator('#undo').click();
   await expect(layers).toHaveCount(5);
   // Ordinary text editing must never paste editor objects.

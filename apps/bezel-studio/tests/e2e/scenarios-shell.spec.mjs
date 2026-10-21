@@ -266,7 +266,7 @@ test('switch between vertical and horizontal', async ({ page, t }) => {
   const wide = await page.locator('#canvas-box').boundingBox();
   expect(wide.width).toBeGreaterThan(wide.height);
   await page.keyboard.press('Control+a');
-  await expect(page.locator('.sel-box')).toHaveCount(3);
+  await expect(page.locator('.sel-box:not(.selection-union)')).toHaveCount(3);
   await expectInside(page, '.sel-box', '#canvas-box');
   await page.keyboard.press('Escape');
   await expect(page.locator('#status-main')).toHaveText(t('status.unsaved'));

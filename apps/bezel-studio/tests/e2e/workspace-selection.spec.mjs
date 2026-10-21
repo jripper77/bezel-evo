@@ -1,4 +1,6 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection, literally } from './helpers.mjs';
+// The inspector's subtitle starts with the selected object's kind.
+const kind = (page, t, widget) => expect(page.locator('#inspector .inspector-sub')).toHaveText(new RegExp(`^${literally(t(widget)).source} ·`));
 async function setup(page, t) {
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
@@ -7,6 +9,7 @@ async function setup(page, t) {
   await expect(page.locator('.sel-box')).toHaveCount(0);
 }
 async function field(page, t, key, value) {
+  await openSection(page, 'layout');
   const input = page.locator('#inspector').getByRole('spinbutton', { name: t(`inspector.${key}`), exact: true });
   await input.fill(String(value)); await input.press('Tab');
 }
@@ -28,8 +31,9 @@ test('marquee starts outside the canvas, stays selected on release and exposes c
   const errors = watchErrors(page); await setup(page, t);
   await shape(page, t, 40, 120); await shape(page, t, 170, 120);
   await drag(page, await point(page, -20, 100), await point(page, 270, 210));
-  await expect(page.locator('.sel-box')).toHaveCount(2);
+  await expect(page.locator('.sel-box:not(.selection-union)')).toHaveCount(2);
   await expect(page.locator('.marquee')).toHaveCount(0);
+  await openSection(page, 'layout');
   const group = page.locator('#inspector').getByRole('button', { name: t('card.group'), exact: true });
   await expect(group).toBeVisible(); await group.click();
   await page.locator('#tab-layers').click();
@@ -67,26 +71,28 @@ test('ordinary groups select by canvas, transform together and expose individual
   const errors = watchErrors(page); await setup(page, t);
   await shape(page, t, 40, 120); await shape(page, t, 170, 120);
   await drag(page, await point(page, -20, 100), await point(page, 270, 210));
+  await openSection(page, 'layout');
   await page.locator('#inspector').getByRole('button', { name: t('group.create'), exact: true }).click();
-  await expect(page.locator('#inspector h2')).toHaveText(t('widget.group'));
+  await kind(page, t, 'widget.group');
   await page.locator('#tab-layers').click();
   await expect(page.locator('[data-group-id] > .layer-children .layer-row')).toHaveCount(2);
   await expect(page.locator('.layer-group-heading')).toHaveCount(0);
   // Empty work space clears the selection; clicking a member picks its group.
   const space = await point(page, -20, 90); await page.mouse.click(space.x, space.y);
   const member = await point(page, 60, 140); await page.mouse.click(member.x, member.y);
-  await expect(page.locator('#inspector h2')).toHaveText(t('widget.group'));
+  await kind(page, t, 'widget.group');
   await page.locator('#grid-toggle').focus(); await page.keyboard.press('ArrowRight');
+  await openSection(page, 'layout');
   await expect(page.locator('#inspector').getByRole('spinbutton', { name: t('inspector.x'), exact: true })).toHaveValue('41');
   await field(page, t, 'width', 420);
   // Members are independently editable via the tree.
   await page.locator('[data-group-id] > .layer-children .layer-name').last().click();
-  await expect(page.locator('#inspector h2')).toHaveText(t('common.shape'));
+  await kind(page, t, 'common.shape');
   await expect(page.locator('#inspector').getByRole('spinbutton', { name: t('inspector.width'), exact: true })).toHaveValue('160');
   await page.locator('[data-group-id] > .layer-list:not(.layer-children) > .layer-row .layer-name').click();
   await page.locator('#grid-toggle').focus(); await page.keyboard.press('Control+Shift+g');
   await expect(page.locator('[data-group-id]')).toHaveCount(0);
-  await expect(page.locator('.sel-box')).toHaveCount(2);
+  await expect(page.locator('.sel-box:not(.selection-union)')).toHaveCount(2);
   await page.locator('#undo').click(); await expect(page.locator('[data-group-id]')).toHaveCount(1);
   await expectAccessible(page); expect(errors).toEqual([]);
 });
