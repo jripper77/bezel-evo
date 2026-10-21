@@ -67,7 +67,9 @@ test('probe, state, category and search filters compose and recovered sensors le
 
 test('status chip counts actual failed sensors and only offers quick restart for stopped Libre', () => {
   const counts = probeTotals(probeRows(catalog, readings));
-  assert.deepEqual(sensorChip({ counts }).params, { count: 1 });
+  // The chip says how many read of all (T-9b): 3 of 5, one of them failed.
+  assert.deepEqual(sensorChip({ counts }).params, { available: 3, total: 5, ms: 0 });
+  assert.equal(counts.unavailable, 1);
   assert.equal(sensorChip({ counts }).state, 'partial');
   assert.equal(sensorChip({ counts, health: { state: 'error' } }).quickRestart, true);
   assert.equal(sensorChip({ counts: probeTotals(probeRows(catalog, null)) }).state, 'pending');

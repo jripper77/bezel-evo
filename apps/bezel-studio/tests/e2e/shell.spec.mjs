@@ -76,8 +76,12 @@ test('the floating bars over the stage edit and zoom', async ({ page, t }) => {
 test('the status bar keeps its regions', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88&libre=partial');
-  const bar = page.getByRole('status').filter({ has: page.locator('#status-main') });
-  for (const id of ['status-main', 'status-device', 'status-libre', 'status-libre-toggle', 'status-libre-dot', 'status-libre-label']) {
+  // The save state moved beside the theme's name (D-2026-10-20-studio-ux-v2-11).
+  await expect(page.locator('.topbar #status-main')).toHaveCount(1);
+  const bar = page.locator('footer.statusbar');
+  await expect(bar).toHaveAttribute('role', 'status');
+  // Left the selection; then three chips in a fixed order: Sensors, Bezel, Screen.
+  for (const id of ['status-selection', 'status-libre', 'status-libre-toggle', 'status-libre-dot', 'status-libre-label', 'status-memory-toggle', 'status-screen-toggle']) {
     await expect(bar.locator(`#${id}`)).toHaveCount(1);
   }
   // Restart actions belong to each restartable probe, outside the live region.
@@ -86,7 +90,10 @@ test('the status bar keeps its regions', async ({ page }) => {
   await expect(page.locator('#libre-popover .probe-row[data-probe="LibreHardwareMonitor"] .probe-restart')).toHaveCount(1);
   await page.locator('#status-libre-toggle').click();
   await expect(page.locator('#status-libre-toggle')).toHaveAttribute('aria-controls', 'libre-popover');
-  await expect(page.locator('#status-device')).not.toBeEmpty();
+  const order = await bar.locator('#status-libre-toggle, #status-memory-toggle, #status-screen-toggle').evaluateAll(nodes => nodes.map(n => n.id));
+  expect(order).toEqual(['status-libre-toggle', 'status-memory-toggle', 'status-screen-toggle']);
+  // What the screen is doing, in words, is in the Screen chip's dialog.
+  await expect(page.locator('#screen-popover #status-device')).not.toBeEmpty();
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });

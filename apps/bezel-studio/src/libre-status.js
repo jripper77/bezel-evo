@@ -49,9 +49,11 @@ export function sensorChip({ health, counts = null, error = null, restarting = f
   if (restarting) return { state: 'restarting', key: 'sensorChip.restarting', params: {}, quickRestart: false };
   if (counts && !error) {
     const quickRestart = health?.state === 'error';
-    if (counts.unavailable) return { state: counts.available || counts.pending ? 'partial' : 'error', key: counts.unavailable === 1 ? 'sensorChip.missingOne' : 'sensorChip.missingMany', params: { count: counts.unavailable }, quickRestart };
+    // Readable of all, at a fixed place (D-2026-10-20-studio-ux-v2-11): "sensors 20/21".
+    const active = { available: counts.available, total: counts.available + counts.unavailable + counts.pending, ms: Math.round(sampleMillis ?? 0) };
+    if (counts.unavailable) return { state: counts.available || counts.pending ? 'partial' : 'error', key: 'sensorChip.active', params: active, quickRestart };
     if (!counts.available) return { state: 'pending', key: 'sensorChip.pending', params: {}, quickRestart: false };
-    return { state: 'ok', key: 'sensorChip.ok', params: { ms: Math.round(sampleMillis ?? 0) }, quickRestart: false };
+    return { state: 'ok', key: 'sensorChip.active', params: active, quickRestart: false };
   }
   if (error || health?.state === 'error') return { state: 'error', key: 'sensorChip.stopped', params: {}, quickRestart: Boolean(health) };
   if (health?.state === 'partial') {

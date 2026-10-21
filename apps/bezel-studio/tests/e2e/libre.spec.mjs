@@ -2,7 +2,8 @@
 
 const openStatus = async (page, t) => {
   await page.locator('#status-libre-toggle').click();
-  const popup = page.getByRole('dialog', { name: t('sensorChip.probesTitle') });
+  // Titled with how many sensors read (T-9b, board StatusBarNew): found by its id.
+  const popup = page.locator('#libre-popover');
   await expect(popup).toBeVisible();
   return popup;
 };
@@ -10,8 +11,10 @@ const openStatus = async (page, t) => {
 test('compact status shows probes and counts without hardware details', async ({ page, t }, info) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88&libre=partial');
-  await expect(page.locator('#status-libre-label')).toHaveText(t('sensorChip.missingOne', { count: 1 }));
+  await expect(page.locator('#status-libre-label')).toHaveText(t('sensorChip.active', { available: 22, total: 23 }));
+  await expect(page.locator('#status-libre-toggle')).toHaveAttribute('data-tone', 'warn');
   const popup = await openStatus(page, t);
+  await expect(popup.locator('#libre-popover-title')).toHaveText(t('sensorChip.activeTitle', { available: 22, total: 23 }));
   await expect(popup.getByRole('listitem')).toHaveCount(2);
   const libre = popup.locator('.probe-row[data-probe="LibreHardwareMonitor"]');
   await expect(libre).toHaveAttribute('data-state', 'partial');
@@ -90,7 +93,7 @@ test('restart, dismissal and other probes work without Libre', async ({ page, t 
   await restart.click();
   await expect(page.locator('#status-libre-label')).toHaveText(t('sensorChip.restarting'));
   await expect(restart).toBeDisabled();
-  await expect(page.locator('#status-libre-label')).toHaveText(/\d+ ms/);
+  await expect(page.locator('#status-libre-label')).toHaveText(/\d+\/\d+/);
   await expect(restart).toBeEnabled();
   await expectAccessible(page);
   await page.locator('#status-main').click();

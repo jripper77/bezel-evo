@@ -197,7 +197,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   `src/styles/shell.css`, `src/i18n/areas/shell.js`, test
 - **Acceptance:** tre chip con i casi della tavola e i tre riquadri; selezione/trascinamento a sinistra; salvataggio accanto al nome del tema;
   profilo attivo nel chip dello schermo (da T-6, finché manca: nascosto); versione nel menu ⋯.
-- **Dipendenze:** T-0; T-6 per il profilo · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0; T-6 per il profilo · **Test:** G1–G9 · **Status:** completed — tre chip Sensori/Bezel/Schermo con i loro riquadri, selezione e trascinamento a sinistra, salvataggio accanto al nome, ⋯ con la versione, profilo attivo nel chip dello schermo. Unitari e e2e d'area verdi salvo i preesistenti; evidenze `evidence/t9b/`; vedi `SUMMARY-T-9b.md`.
 
 #### T-9c: Dialogo Profili e Galleria temi
 - **Decisioni:** 12, 13 · **Tavole:** ProfilesNew, ThemesNew

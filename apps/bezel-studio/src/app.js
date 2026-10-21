@@ -28,6 +28,11 @@ import { shortcutFor } from './shortcuts.js';
 import { createRenderScheduler } from './render-scheduler.js';
 import { createPreviewAnimation } from './preview-animation.js';
 import { createTrialValues } from './ui/trial-values.js';
+import { createScreenStatus } from './ui/screen-status.js';
+import { activeProfile } from './screen-status.js';
+import { selectionStatus } from './status-selection.js';
+import { widgetOf } from './editor/widgets.js';
+import { openMenuAt } from './ui/menu.js';
 import { errorText, sensorLabel } from './messages.js';
 import { backgroundFileDraft, backgroundOf, droppable, fileNameOf, videoFacts } from './editor/background.js';
 import { framingOf, framingPercents } from './editor/video-framing.js';
@@ -114,7 +119,6 @@ function fail(e) {
 // ------------------------------------------------------------ store ----
 const session = await bridge.session().catch(() => null);
 const appVersion = session?.version ?? 'dev';
-$('app-version').textContent = t('app.version',{version:appVersion});
 document.title = t('app.title',{version:appVersion});
 // Without a session: a blank theme for the 8.8", horizontal like the backend's
 // default for bar-shaped screens.
@@ -155,6 +159,7 @@ const canvasView = createCanvasView({
   onBarTry: () => inspector.tryElement(),
   onBarMenu: (button, onClose) => objectMenu.openAt(button, onClose),
   onTrialHold: hold => trialValues.hold(hold),
+  onGesture: gesture => { canvasGesture = gesture; renderSelectionStatus(); },
   onFrameRequest: () => setFramingMode(true),
 });
 
@@ -464,6 +469,24 @@ async function refreshAuto() {
   canvasView.drawOverlay();
 }
 
+// The statusbar's left (D-2026-10-20-studio-ux-v2-11): the selection and its
+// box; while a gesture runs, what it does, its snap and a useful key.
+let canvasGesture = null;
+const statusNumber = (n) => new Intl.NumberFormat(locale).format(n);
+function renderSelectionStatus() {
+  const { theme, selection } = store.getState();
+  const s = selectionStatus({ elements: theme.elements, selection, gesture: canvasGesture }, t, statusNumber);
+  const kind = s.element ? (s.element.isGroup ? 'group' : widgetOf(s.element)) : null;
+  $('status-selection').dataset.empty = String(s.empty);
+  $('status-selection').replaceChildren(...[
+    s.empty ? null : icon(canvasGesture ? ICONS.drag : ICONS[kind] ?? ICONS.shape, 14),
+    el(s.empty ? 'span' : 'strong', { text: s.title }),
+    ...s.figures.map((text) => el('span', { class: 'mono', text })),
+    s.snap ? el('span', { class: 'status-snap', text: s.snap }) : null,
+    s.hint ? el('span', { class: 'status-hint', text: s.hint }) : null,
+  ].filter(Boolean));
+}
+
 // ----------------------------------------------------------- render ----
 // Animated GIFs and a video background move in the preview at their own
 // pace (T-7.11, D-2026-10-01-video-background-framing-5), at most 15 frames
@@ -474,6 +497,11 @@ const animation = createPreviewAnimation({
   // Native images are readonly snapshots of the screen; polling does not render.
   enabled: () => !document.hidden && (bridge.mode === 'tauri' || motionAllowed()),
 });
+
+// The statusbar's Bezel chip (render time and memory, D-2026-10-20-studio-ux-v2-11).
+// Memory is independent of hardware polling/errors and never sampled while
+// the document is hidden. The backend also caches reads from other callers.
+const memoryStatus = createMemoryStatus({ t, root: $('status-memory'), notify: (message) => toast(message) });
 
 // "Trial values" in the canvas toolbar: trial inputs instead of the sensors, never saved.
 const trialValues = createTrialValues({ after: $('grid-toggle'), t: (key) => t(key), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
@@ -495,11 +523,11 @@ async function drawPreview() {
       canvasView.drawFrame(frame);
       inspector.frameShown();
     }
-    $('status-render').textContent = t('status.render', { ms: Math.round(frame.millis) });
+    memoryStatus.rendered(frame.millis);
     animation.shown({ nextMs: frame.nextMs ?? null, elapsed: performance.now() - started });
   } catch (e) {
     animation.stop();
-    $('status-render').textContent = t('status.renderError', { message: errorText(t, e) });
+    memoryStatus.failed(t('status.renderError', { message: errorText(t, e) }));
   }
 }
 
@@ -559,8 +587,9 @@ function refreshChrome(reason) {
   $('redo').disabled = !store.canRedo();
   if (reason === 'copy') return;
   if (document.activeElement !== $('theme-name')) $('theme-name').value = theme.name;
-  $('unsaved-chip').hidden = !store.isDirty();
+  $('save-state').dataset.dirty = String(store.isDirty());
   $('status-main').textContent = store.isDirty() ? t('status.unsaved') : t('status.saved');
+  renderSelectionStatus();
   renderSavedAt();
   renderLegend(theme);
   canvasView.setCanvasSize(theme.canvas);
@@ -654,9 +683,6 @@ async function sampleLoop() {
 // The sensors chip, the Libre dot, its popover and the restart (artboard SensorStatus).
 const sensorStatus = createSensorStatus({ t, bridge, notify: toast, fail, root: $('status-libre'), onOpenSensors: filters => library.openSensors(filters) });
 
-// Memory is independent of hardware polling/errors and never sampled while
-// the document is hidden. The backend also caches reads from other callers.
-const memoryStatus = createMemoryStatus({ t, root: $('status-memory') });
 async function memoryLoop() {
   if (!document.hidden) {
     try { memoryStatus.update(await bridge.memoryUsage()); }
@@ -688,7 +714,7 @@ function renderScreenSelect() {
   else if (state.reconnecting) device = t('restart.reconnecting', state.reconnecting);
   else if (current && state.live && state.liveVideo?.state === 'missing') device = t('status.liveVideoMissing');
   else if (current) device = state.live ? t('status.live') : t(`screen.state.${current.state}`);
-  $('status-device').textContent = device;
+  screenDevice = device;
   renderScreenPill();
   library.setScreens(state.screens, state.screen);
   screenPanel.render(state.screens, state.screen, state.live, state.brightness, state.desktopMode, { restarting: state.restarting, hung: state.hung });
@@ -706,10 +732,53 @@ function renderScreenChip(current) {
   $('screen-chip-meta').textContent = model ? t('shell.screenSize', { width: model.width, height: model.height, port: current.key }) : '';
 }
 
-/** The statusbar's screen pill: green with the live frame rate while live. */
+/**
+ * The statusbar's Screen chip (D-2026-10-20-studio-ux-v2-11): the screen and
+ * its frame rate, green while live, yellow when something needs a look.
+ */
+let screenDevice = '';
+// The profile the engine has active now (T-6), refreshed every 5 s while visible.
+let profileOverview = null;
+let shownProfile = null;
+function renderProfileChip() {
+  shownProfile = activeProfile(profileOverview, t);
+  $('screen-chip-profile').hidden = !shownProfile;
+  $('screen-chip-profile-name').textContent = shownProfile?.name ?? '';
+  $('screen-chip-profile-mode').textContent = shownProfile?.mode ?? '';
+  $('screen-chip').title = [$('screen-select').title, shownProfile?.text].filter(Boolean).join('\n');
+}
+async function profileLoop() {
+  if (!document.hidden) {
+    try {
+      const next = await bridge.profiles();
+      if (JSON.stringify(next?.status) !== JSON.stringify(profileOverview?.status)) { profileOverview = next; renderScreenPill(); }
+      else profileOverview = next;
+    } catch { /* No engine: nothing is invented. */ }
+  }
+  setTimeout(profileLoop, 5000);
+}
+const screenChip = createScreenStatus({
+  t, root: $('status-screen'),
+  onSettings: () => $('tab-screen').click(),
+  onLive: () => $('live').click(),
+});
 function renderScreenPill() {
-  $('status-screen').dataset.tone = state.live ? 'ok' : '';
-  $('status-fps').textContent = state.live && Number.isFinite(state.liveFps) ? t('shell.fps', { fps: Math.round(state.liveFps) }) : '';
+  const current = currentScreen();
+  const model = current?.models?.length === 1 ? current.models[0] : null;
+  const { theme } = store.getState();
+  const problem = Boolean(state.screenError || state.restarting || state.reconnecting || (state.live && state.liveVideo?.state === 'missing'));
+  screenChip.update(current ? {
+    name: model?.name ?? deviceLabel(current, t),
+    port: current.key,
+    size: model ? { width: model.width, height: model.height } : null,
+    turned: isTurned(theme.orientation),
+    live: state.live,
+    fps: state.liveFps,
+    problem,
+    theme: theme.name,
+    profile: shownProfile?.text ?? null,
+  } : null, { message: screenDevice, problem });
+  renderProfileChip();
 }
 
 /** The stage's "Connect your smart screen" while no screen can be used. */
@@ -1263,10 +1332,11 @@ function showGrid(on) {
 }
 showGrid((() => { try { return localStorage.getItem(GRID_KEY) === '1'; } catch { return false; } })());
 $('grid-toggle').addEventListener('click', () => showGrid($('grid-toggle').getAttribute('aria-pressed') !== 'true'));
-$('crumb-themes').addEventListener('click', () => {
-  library.selectTab('themes');
-  $('tab-themes').focus();
-});
+// ⋯: the preferences and which Bezel this is (D-2026-10-20-studio-ux-v2-11).
+$('more-menu').addEventListener('click', (evt) => openMenuAt(evt.currentTarget, { label: t('shell.more'), items: [
+  { label: t('prefs.title'), run: () => preferences.open() },
+  { label: t('app.version', { version: appVersion }), run: () => {}, disabled: true },
+] }));
 // The side panels' widths (D-...-fidelity-7): separators to drag or key, remembered.
 wirePanelResizers({ workspace, storage: window.localStorage });
 // Vertical | Horizontal keep the 180° turn; the turn keeps the axis.
@@ -1327,6 +1397,7 @@ function setLocale(next) {
   if (canvasView.framing()) $('overlay').setAttribute('aria-label', t('framing.surface'));
   sensorStatus.close();
   memoryStatus.retranslate();
+  renderScreenPill();
   trialValues.retranslate();
   applyIcons(document, ICONS);
   refreshChrome('select');
@@ -1358,6 +1429,7 @@ void pickers.load();
 inspector.render(state.assets);
 sampleLoop();
 memoryLoop();
+profileLoop();
 scheduleTick();
 setInterval(refreshScreens, 5000);
 await openRequestedProfiles();

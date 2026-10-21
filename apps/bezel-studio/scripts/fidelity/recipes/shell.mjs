@@ -136,6 +136,15 @@ export default {
       await app.page.getByRole('button', { name: t('shell.trialValues'), exact: true }).click();
       await app.page.waitForTimeout(1500);
     } },
+    { name: 'ux2-status-drag', capture: '.app, body', run: async app => {
+      await app.add('ring');
+      const frame = await app.page.locator('#overlay .sel-box').boundingBox();
+      await app.page.mouse.move(frame.x + frame.width / 2, frame.y + frame.height / 2); await app.page.mouse.down();
+      await app.page.mouse.move(frame.x + frame.width / 2 + 20, frame.y + frame.height / 2 + 30, { steps: 5 });
+    } },
+    { name: 'ux2-status-sensors', run: async app => { await app.page.locator('#status-libre-toggle').click(); } },
+    { name: 'ux2-status-bezel', run: async app => { await app.page.locator('#status-memory-toggle').click(); } },
+    { name: 'ux2-status-screen', run: async app => { await app.page.locator('#status-screen-toggle').click(); } },
     { name: 'main', run: async () => {} },
     { name: 'logo', capture: '.brand', run: async () => {} },
     // An edit: "Unsaved" in the breadcrumb and the statusbar.
