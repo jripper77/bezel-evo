@@ -1,0 +1,66 @@
+[
+  {
+    "slug": "pixel-wide",
+    "board": "ThemePixel",
+    "scheme": "dark",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "nebula-wide",
+    "board": "ThemeNebula",
+    "scheme": "dark",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "paper-wide",
+    "board": "ThemePaper",
+    "scheme": "dark",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "now-playing-wide",
+    "board": "ThemeNowPlaying",
+    "scheme": "dark",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "pixel-wide",
+    "board": "ThemePixel",
+    "scheme": "light",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "nebula-wide",
+    "board": "ThemeNebula",
+    "scheme": "light",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "paper-wide",
+    "board": "ThemePaper",
+    "scheme": "light",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  },
+  {
+    "slug": "now-playing-wide",
+    "board": "ThemeNowPlaying",
+    "scheme": "light",
+    "locale": "it",
+    "fontsAvailable": true,
+    "svgComposedByRunner": true
+  }
+]

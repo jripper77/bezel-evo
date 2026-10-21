@@ -1,0 +1,8 @@
+# Idee per una fase futura — dati mostrati nelle tavole dei temi
+
+Decisione dell’utente del 21 ottobre 2026, durante T-9d: queste idee **non fanno parte di studio-ux-v2**. I quattro temi usano i widget e i dati già disponibili; nessuna nuova sorgente in questa attività.
+
+- **Previsioni meteo orarie.** Possibile sorgente: le serie `hourly` di Open-Meteo, già usato per il meteo attuale, con coordinate della città salvata. Da progettare: intervallo di aggiornamento e cache, fuso orario e cambio dell’ora, buchi e scadenza dei dati, condizioni e temperature per ogni ora; widget nativo e resa demo coerenti. Non disegnare una curva di previsione con valori inventati.
+- **Cache RAM.** Possibile sorgente Windows: `GetPerformanceInfo` (`PERFORMANCE_INFORMATION.SystemCache`, in pagine), verificando prima il significato rispetto alla cache desiderata e alle liste standby. Definire quali quantità si vogliono mostrare; non chiamare «cache» la memoria disponibile. Nessun nuovo contatore introdotto in T-9d.
+- **Variazioni degli indici.** Possibile sorgente: cronologia già campionata dal motore (`Histories`) per lo stesso sensore. Definire confronto temporale, unità (punti percentuali o variazione relativa), segno, finestra, warm-up e disponibilità; niente frecce o delta statici nei temi.
+- **Avanzamento della giornata.** Possibile sorgente: orologio locale di Windows già letto dal motore (`LocalTime`). Da definire: semantica della giornata e gestione dell’ora legale, eventuale conto alla rovescia, settimana/numero del giorno e vincolo a un widget. In T-9d Pixel mostra il volume reale nella stessa fascia; non presenta il volume come tempo trascorso.
