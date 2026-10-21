@@ -1,6 +1,6 @@
 import { appliedRotation, canRotate, centerOf, rotatePoint, rotatedBounds, snapAngle, normalizeDegrees } from '../editor/rotation.js';
-import { groupTarget, selectionRoots, isShown, withChildren } from '../editor/cards.js';
-import { propertyHandles, editPropertyHandle, resetPropertyHandle } from '../editor/handles.js';
+import { groupTarget, selectionRoots, isShown, withChildren, owners } from '../editor/cards.js';
+import { frameHandles, scaledFrames, propertyHandles, editPropertyHandle, resetPropertyHandle } from '../editor/handles.js';
 // The canvas: shows the rendered frame at a zoom level and handles direct
 // manipulation on a DOM overlay (selection, eight resize handles, snapping
 // guides, marquee). Everything is in canvas pixels until drawn. In framing
@@ -9,7 +9,7 @@ import { propertyHandles, editPropertyHandle, resetPropertyHandle } from '../edi
 // around the pointer, keys nudge, zoom, reset and leave; each drag or wheel
 // burst is one undo step, and no element can be selected meanwhile.
 import { el } from './dom.js';
-import { HANDLES, boxFromPoints, handlePoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
+import { boxFromPoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
 import { snapEdge, snapMove } from '../editor/snap.js';
 import { applyFramingKey, createBurst, framingKey, framingOf, panned, pictureBox, reframed, resolvedRotation, wheelPixels, wheelZoom, zoomedAt } from '../editor/video-framing.js';
 
@@ -232,28 +232,31 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     for (const e of chosen) {
       nodes.push(el('div', { class: `sel-box${e.locked ? ' locked' : ''}`, style: { ...boxStyle(e.frame), transform: `rotate(${appliedRotation(e)}deg)` }, role: 'img', 'aria-label': describe(e.name) }));
     }
-    if (chosen.length === 1 && !chosen[0].locked) {
-      const e = chosen[0], angle = appliedRotation(e), center = centerOf(e.frame);
-      const pts = Object.fromEntries(Object.entries(handlePoints(e.frame)).map(([h, [x, y]]) => {
-        const p = rotatePoint({ x, y }, center, angle); return [h, [p.x, p.y]];
+    const roots = selectionRoots(t, chosen.map(e => e.id));
+    const editable = chosen.length > 0 && chosen.every(e => !owners(t, e).some(owner => owner.locked));
+    const common = editable ? frameHandles(roots, zoom) : [];
+    const commonFrame = unionBox(roots.map(e => e.frame));
+    const angle = roots.length === 1 ? appliedRotation(roots[0]) : 0;
+    if (chosen.length > 1) nodes.push(el('div', { class: 'sel-box selection-union', style: boxStyle(commonFrame) }));
+    for (const handle of common.filter(handle => handle.symbol === 'size')) {
+      const h = handle.id;
+      nodes.push(el('button', { type: 'button', class: 'handle', 'aria-label': handleLabel(`shell.handle.resize.${h}`), dataset: { h }, style: { left: px(handle.x), top: px(handle.y), transform: `rotate(${angle}deg)` },
+        onkeydown: evt => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
+          evt.preventDefault(); evt.stopPropagation();
+          const step = evt.shiftKey ? 10 : 1;
+          const dx = evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0;
+          const dy = evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0;
+          const frame = resize(commonFrame, h, dx, dy, roots.length > 1, angle);
+          applyFrames(roots, commonFrame, frame, angle);
+          showHandleValue(handle, [frame.width, frame.height], 'px', h.includes('e') || h.includes('w') ? 'inspector.width' : 'inspector.height');
+          drawOverlay(); overlay.querySelector(`[data-h="${h}"]`)?.focus();
+        },
+        onblur: () => { if (!press) clearHandleValue(); },
       }));
-      for (const h of HANDLES) {
-        nodes.push(el('button', { type: 'button', class: 'handle', 'aria-label': handleLabel(`shell.handle.resize.${h}`), dataset: { h }, style: { left: px(pts[h][0]), top: px(pts[h][1]), transform: `rotate(${angle}deg)` },
-          onkeydown: evt => {
-            if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
-            evt.preventDefault(); evt.stopPropagation();
-            const step = evt.shiftKey ? 10 : 1;
-            const dx = evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0;
-            const dy = evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0;
-            const frame = resize(e.frame, h, dx, dy, false, angle);
-            store.dispatch('setFrame', { id: e.id, frame, precise: !!angle });
-            showHandleValue({ x: pts[h][0], y: pts[h][1] }, [frame.width, frame.height], 'px', h.includes('e') || h.includes('w') ? 'inspector.width' : 'inspector.height');
-            drawOverlay();
-            overlay.querySelector(`[data-h="${h}"]`)?.focus();
-          },
-          onblur: () => { if (!press) clearHandleValue(); },
-        }));
-      }
+    }
+    if (chosen.length === 1 && editable) {
+      const e = chosen[0];
       for (const handle of propertyHandles(e).filter(handle => handle.id !== 'trial-value')) {
         const title = handleLabel(handle.field, handle.fieldParams);
         nodes.push(el('button', { type: 'button', class: `property-handle ${handle.symbol}`, dataset: { propertyHandle: handle.id },
@@ -268,22 +271,22 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
           onblur: () => { if (!press) clearHandleValue(); },
         }));
       }
-      if (canRotate(t, e)) {
-        const p = rotatePoint({ x: center.x, y: e.frame.y - 24 / zoom }, center, angle);
-        nodes.push(el('button', { type: 'button', class: 'rotate-handle', dataset: { rotate: e.id }, title: rotationLabel(), 'aria-label': rotationLabel(),
-          style: { left: px(p.x), top: px(p.y), transform: `rotate(${angle}deg)` },
-          onkeydown: evt => {
-            if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(evt.key)) return;
-            evt.preventDefault(); evt.stopPropagation();
-            const delta = ['ArrowLeft', 'ArrowDown'].includes(evt.key) ? -1 : 1;
-            const rotation = evt.key === 'Home' ? 0 : angle + delta * (evt.shiftKey ? 15 : 1);
-            store.dispatch('rotate', { id: e.id, rotation });
-            showHandleValue(p, normalizeDegrees(rotation), '°', 'insp.rotation'); drawOverlay();
-            overlay.querySelector('[data-rotate]')?.focus();
-          },
-          onblur: () => { if (!press) clearHandleValue(); },
-        }));
-      }
+    }
+    const rotationHandle = common.find(handle => handle.symbol === 'rotation');
+    if (rotationHandle && chosen.every(e => canRotate(t, e))) {
+      nodes.push(el('button', { type: 'button', class: 'rotate-handle', dataset: { rotate: 'selection' }, title: rotationLabel(), 'aria-label': rotationLabel(),
+        style: { left: px(rotationHandle.x), top: px(rotationHandle.y), transform: `rotate(${angle}deg)` },
+        onkeydown: evt => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(evt.key)) return;
+          evt.preventDefault(); evt.stopPropagation();
+          const delta = ['ArrowLeft', 'ArrowDown'].includes(evt.key) ? -1 : 1;
+          const rotation = evt.key === 'Home' ? 0 : appliedRotation(chosen[0]) + delta * (evt.shiftKey ? 15 : 1);
+          store.dispatch('rotateSelection', { ids: chosen.map(e => e.id), rotation });
+          showHandleValue(rotationHandle, normalizeDegrees(rotation), '\u00b0', 'insp.rotation'); drawOverlay();
+          overlay.querySelector('[data-rotate]')?.focus();
+        },
+        onblur: () => { if (!press) clearHandleValue(); },
+      }));
     }
     for (const g of guides) {
       nodes.push(el('div', { class: `guide ${g.axis}`, style: g.axis === 'x' ? { left: px(g.position) } : { top: px(g.position) } }));
@@ -340,18 +343,19 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       press = { mode: 'property', element: structuredClone(element), handle: property, client: [evt.clientX, evt.clientY], started: false };
       return;
     }
-    if (evt.target?.dataset?.rotate && state.selection.length === 1) {
-      const e = state.theme.elements.find(x => x.id === state.selection[0]);
-      if (!canRotate(state.theme, e) || e.locked) return;
-      const center = centerOf(e.frame);
-      press = { mode: 'rotate', id: e.id, center, angle: appliedRotation(e),
+    const chosen = state.theme.elements.filter(e => state.selection.includes(e.id));
+    const editable = chosen.length > 0 && chosen.every(e => !owners(state.theme, e).some(owner => owner.locked));
+    const roots = selectionRoots(state.theme, state.selection);
+    if (evt.target?.dataset?.rotate && editable && chosen.every(e => canRotate(state.theme, e))) {
+      const center = centerOf(unionBox(roots.map(e => e.frame)));
+      press = { mode: 'rotate', ids: chosen.map(e => e.id), center, angle: appliedRotation(chosen[0]),
         pointerAngle: Math.atan2(start.y - center.y, start.x - center.x) * 180 / Math.PI,
         client: [evt.clientX, evt.clientY], started: false };
       return;
     }
-    if (handle && state.selection.length === 1) {
-      const e = state.theme.elements.find((x) => x.id === state.selection[0]);
-      press = { mode: 'resize', id: e.id, rotation: appliedRotation(e), handle, frame: { ...e.frame }, start, client: [evt.clientX, evt.clientY], started: false };
+    if (handle && editable) {
+      press = { mode: 'resize', elements: structuredClone(roots), rotation: roots.length === 1 ? appliedRotation(roots[0]) : 0,
+        handle, frame: unionBox(roots.map(e => e.frame)), start, client: [evt.clientX, evt.clientY], started: false };
       return;
     }
     let id = hitTest(state.theme.elements.filter(e => isShown(state.theme, e)), start.x, start.y);
@@ -398,11 +402,16 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
   }
 
+  function applyFrames(elements, from, to, rotation) {
+    if (elements.length === 1) store.dispatch('setFrame', { id: elements[0].id, frame: to, precise: !!rotation });
+    else store.dispatch('patchElements', { patches: scaledFrames(elements, from, to) });
+  }
+
   function onResize(evt, p) {
-    let next = resize(press.frame, press.handle, p.x - press.start.x, p.y - press.start.y, evt.shiftKey, press.rotation);
+    let next = resize(press.frame, press.handle, p.x - press.start.x, p.y - press.start.y, evt.shiftKey || press.elements.length > 1, press.rotation);
     guides = [];
-    if (!evt.altKey && !press.rotation) {
-      const others = othersThan([press.id]);
+    if (!evt.altKey && !press.rotation && !(press.elements.length > 1 && press.handle.length === 2)) {
+      const others = othersThan(press.elements.map(e => e.id));
       const h = press.handle;
       const snapX = (edge) => snapEdge(edge, 'x', size, others);
       const snapY = (edge) => snapEdge(edge, 'y', size, others);
@@ -425,7 +434,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
         if (s.guide !== null) guides.push({ axis: 'y', position: s.guide });
       }
     }
-    store.dispatch('setFrame', { id: press.id, frame: next, precise: !!press.rotation });
+    applyFrames(press.elements, press.frame, next, press.rotation);
     showHandleValue(p, [next.width, next.height], 'px', press.handle.includes('e') || press.handle.includes('w') ? 'inspector.width' : 'inspector.height');
   }
 
@@ -447,7 +456,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     else if (press.mode === 'rotate') {
       const pointerAngle = Math.atan2(p.y - press.center.y, p.x - press.center.x) * 180 / Math.PI;
       const angle = normalizeDegrees(press.angle + pointerAngle - press.pointerAngle);
-      store.dispatch('rotate', { id: press.id, rotation: evt.shiftKey ? snapAngle(angle, 15) : angle });
+      store.dispatch('rotateSelection', { ids: press.ids, rotation: evt.shiftKey ? snapAngle(angle, 15) : angle });
       showHandleValue(p, evt.shiftKey ? snapAngle(angle, 15) : angle, '°', 'insp.rotation');
     }
     else {
