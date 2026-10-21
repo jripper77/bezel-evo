@@ -106,3 +106,5 @@ la larghezza effettiva, oltre all’assenza di taglio del nome.
   suite completa e copertura una sola volta. Nessun nuovo protocollo o permesso.
 
 Prossima attività: **T-8**, in nuova worktree dal nuovo HEAD integrato.
+
+Nota operativa dopo il merge iniziale `cae092f`: il controllo automatico ha rifiutato sia la pulizia ricorsiva sia la successiva operazione limitata di pulizia/spostamento, con il solo motivo «blocked by policy». Gli intermedi PNG in `target/scratch/t7c/boards/` e gli artefatti Playwright in `apps/bezel-studio/test-results/` restano nella worktree; non sono stati eliminati né spostati. I log testuali e le prove finali restano nei percorsi documentati sopra. Nessun effetto sul codice integrato, su `dist/` o sui dati utente.
