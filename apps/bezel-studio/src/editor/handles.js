@@ -38,6 +38,14 @@ export function scaledFrames(elements, from, to) {
   } } }));
 }
 
+/** Ctrl-resize scales typography while leaving its frame unchanged. */
+export function scaledText(element, frame) {
+  const k = element.kind;
+  if (k.type !== 'text' || !['static', 'sensor', 'clock'].includes(k.content.type) || k.content.analog) return null;
+  const size = clamp(Math.round(k.style.size * Math.hypot(frame.width, frame.height) / Math.max(1, Math.hypot(element.frame.width, element.frame.height))), 4, 800);
+  return { kind: { style: { size } } };
+}
+
 /** Handles for properties already supported by the theme format. */
 export function propertyHandles(element, { fraction = .5, coverFrame = null } = {}) {
   if (element.locked || element.isGroup) return [];

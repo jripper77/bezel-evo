@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle } from '../../src/editor/handles.js';
+import { scaledText, frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle } from '../../src/editor/handles.js';
 import { createWidget } from '../../src/editor/widgets.js';
 import { centerOf, rotatePoint } from '../../src/editor/rotation.js';
 import { translator } from '../../src/i18n/index.js';
@@ -173,4 +173,19 @@ test('inactive and stale handles cannot edit documents; every field has localize
   for (const fixture of fixtures) for (const handle of propertyHandles(fixture)) for (const locale of ['en', 'it', 'pt-BR']) {
     assert.notEqual(translator(locale)(handle.field, handle.fieldParams), handle.field);
   }
+});
+
+
+test('Ctrl resize scales only eligible typography and clamps its size', () => {
+  for (const type of ['text', 'value', 'clock']) {
+    const e = made(type), original = structuredClone(e);
+    assert.deepEqual(scaledText(e, { width: 400, height: 200 }), { kind: { style: { size: e.kind.style.size * 2 } } });
+    assert.deepEqual(e, original);
+    assert.equal(scaledText(e, { width: 0, height: 0 }).kind.style.size, 4);
+    assert.equal(scaledText(e, { width: 100000, height: 100000 }).kind.style.size, 800);
+  }
+  assert.equal(scaledText(made('shape'), {}), null);
+  assert.equal(scaledText(made('player'), {}), null);
+  const analog = made('clock'); analog.kind.content.analog = {};
+  assert.equal(scaledText(analog, {}), null);
 });
