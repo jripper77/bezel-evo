@@ -1,0 +1,1697 @@
+{
+  "schema": 1,
+  "name": "Nebula",
+  "canvas": {
+    "width": 1920,
+    "height": 480
+  },
+  "orientation": "landscape",
+  "refreshSeconds": 1,
+  "background": {
+    "type": "color",
+    "color": "#04050Bff"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "name": "Nebula glass panels and ambient light",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 480
+      },
+      "kind": {
+        "type": "image",
+        "asset": "assets/architecture.svg",
+        "fit": "fill"
+      },
+      "locked": true
+    },
+    {
+      "id": 2,
+      "name": "Date",
+      "frame": {
+        "x": 34,
+        "y": 36,
+        "width": 342,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%A %e %B",
+          "casing": "upper"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 500
+          },
+          "size": 14,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Clock",
+      "frame": {
+        "x": 34,
+        "y": 61,
+        "width": 222,
+        "height": 94
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%H:%M"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 96,
+          "paint": "#EEF0FAff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": -4,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Seconds",
+      "frame": {
+        "x": 257,
+        "y": 107,
+        "width": 55,
+        "height": 42
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%S"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 30,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Current weather",
+      "frame": {
+        "x": 52,
+        "y": 190,
+        "width": 312,
+        "height": 64
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "weather",
+          "city": "Milano",
+          "latitude": 45.4642,
+          "longitude": 9.19,
+          "showIcon": true,
+          "iconStyle": "outline",
+          "iconColor": "#A5B4FCff",
+          "iconSize": 40,
+          "iconGap": 14,
+          "iconMotion": "gentle"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#A5B4FCff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "CPU weather footer label",
+      "frame": {
+        "x": 48,
+        "y": 270,
+        "width": 59,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CPU"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "CPU weather footer value",
+      "frame": {
+        "x": 48,
+        "y": 294,
+        "width": 59,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "GPU weather footer label",
+      "frame": {
+        "x": 112,
+        "y": 270,
+        "width": 59,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "GPU"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "GPU weather footer value",
+      "frame": {
+        "x": 112,
+        "y": 294,
+        "width": 59,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "RAM weather footer label",
+      "frame": {
+        "x": 176,
+        "y": 270,
+        "width": 59,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "RAM"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "RAM weather footer value",
+      "frame": {
+        "x": 176,
+        "y": 294,
+        "width": 59,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "↓ weather footer label",
+      "frame": {
+        "x": 240,
+        "y": 270,
+        "width": 59,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "↓"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "↓ weather footer value",
+      "frame": {
+        "x": 240,
+        "y": 294,
+        "width": 59,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.down",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "↑ weather footer label",
+      "frame": {
+        "x": 304,
+        "y": 270,
+        "width": 59,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "↑"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "↑ weather footer value",
+      "frame": {
+        "x": 304,
+        "y": 294,
+        "width": 59,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.up",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "CPU dial",
+      "frame": {
+        "x": 422,
+        "y": 145,
+        "width": 176,
+        "height": 176
+      },
+      "kind": {
+        "type": "ring",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "fill": {
+          "scale": "arc",
+          "start": "#38BDF8ff",
+          "end": "#7C5CFFff",
+          "transition": 75
+        },
+        "track": "#141930ff",
+        "thickness": 10,
+        "startAngle": -135,
+        "sweep": 270,
+        "clockwise": true,
+        "roundCaps": true
+      },
+      "visualization": {
+        "style": "dial",
+        "ticks": 41,
+        "radius": 4,
+        "marker": true
+      }
+    },
+    {
+      "id": 17,
+      "name": "CPU load",
+      "frame": {
+        "x": 446,
+        "y": 197,
+        "width": 128,
+        "height": 62
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 52,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "sizePercent": 42,
+              "color": "#7C82A6ff"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 18,
+      "name": "CPU caption",
+      "frame": {
+        "x": 460,
+        "y": 257,
+        "width": 100,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CPU"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "name": "CPU model",
+      "frame": {
+        "x": 609,
+        "y": 149,
+        "width": 174,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.name",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 500
+          },
+          "size": 16,
+          "paint": "#C9CDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "CPU history",
+      "frame": {
+        "x": 609,
+        "y": 181,
+        "width": 174,
+        "height": 46
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "history": 60,
+        "intervalSeconds": 1,
+        "style": "area",
+        "color": "#7C5CFFff",
+        "lineWidth": 1.5,
+        "autoscale": false,
+        "fill": {
+          "angle": 90,
+          "stops": [
+            [
+              0,
+              "#7C5CFF60"
+            ],
+            [
+              1,
+              "#7C5CFF00"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": 21,
+      "name": "CPU Temperatura",
+      "frame": {
+        "x": 609,
+        "y": 237,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Temperatura"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "CPU cpu.temperature",
+      "frame": {
+        "x": 685,
+        "y": 237,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "name": "CPU Frequenza",
+      "frame": {
+        "x": 609,
+        "y": 270,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Frequenza"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "name": "CPU cpu.frequency",
+      "frame": {
+        "x": 685,
+        "y": 270,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.frequency",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "name": "CPU Potenza",
+      "frame": {
+        "x": 609,
+        "y": 303,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Potenza"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "name": "CPU cpu.power",
+      "frame": {
+        "x": 685,
+        "y": 303,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.power",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "name": "GPU dial",
+      "frame": {
+        "x": 838,
+        "y": 145,
+        "width": 176,
+        "height": 176
+      },
+      "kind": {
+        "type": "ring",
+        "binding": {
+          "key": "gpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "fill": {
+          "scale": "arc",
+          "start": "#A78BFAff",
+          "end": "#F472B6ff",
+          "transition": 75
+        },
+        "track": "#141930ff",
+        "thickness": 10,
+        "startAngle": -135,
+        "sweep": 270,
+        "clockwise": true,
+        "roundCaps": true
+      },
+      "visualization": {
+        "style": "dial",
+        "ticks": 41,
+        "radius": 4,
+        "marker": true
+      }
+    },
+    {
+      "id": 28,
+      "name": "GPU load",
+      "frame": {
+        "x": 862,
+        "y": 197,
+        "width": 128,
+        "height": 62
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 52,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "sizePercent": 42,
+              "color": "#7C82A6ff"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 29,
+      "name": "GPU caption",
+      "frame": {
+        "x": 876,
+        "y": 257,
+        "width": 100,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "GPU"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "GPU model",
+      "frame": {
+        "x": 1025,
+        "y": 149,
+        "width": 174,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.name",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 500
+          },
+          "size": 16,
+          "paint": "#C9CDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 31,
+      "name": "GPU history",
+      "frame": {
+        "x": 1025,
+        "y": 181,
+        "width": 174,
+        "height": 46
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "gpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "history": 60,
+        "intervalSeconds": 1,
+        "style": "area",
+        "color": "#F472B6ff",
+        "lineWidth": 1.5,
+        "autoscale": false,
+        "fill": {
+          "angle": 90,
+          "stops": [
+            [
+              0,
+              "#F472B660"
+            ],
+            [
+              1,
+              "#F472B600"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "GPU Temperatura",
+      "frame": {
+        "x": 1025,
+        "y": 237,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Temperatura"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 33,
+      "name": "GPU gpu.temperature",
+      "frame": {
+        "x": 1101,
+        "y": 237,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 34,
+      "name": "GPU VRAM",
+      "frame": {
+        "x": 1025,
+        "y": 270,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "VRAM"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 35,
+      "name": "GPU gpu.memory.used",
+      "frame": {
+        "x": 1101,
+        "y": 270,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.memory.used",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 36,
+      "name": "GPU Potenza",
+      "frame": {
+        "x": 1025,
+        "y": 303,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Potenza"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 37,
+      "name": "GPU gpu.power",
+      "frame": {
+        "x": 1101,
+        "y": 303,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.power",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 38,
+      "name": "RAM dial",
+      "frame": {
+        "x": 1254,
+        "y": 145,
+        "width": 176,
+        "height": 176
+      },
+      "kind": {
+        "type": "ring",
+        "binding": {
+          "key": "memory.percent",
+          "min": 0,
+          "max": 100
+        },
+        "fill": {
+          "scale": "arc",
+          "start": "#22D3EEff",
+          "end": "#2DD4BFff",
+          "transition": 75
+        },
+        "track": "#141930ff",
+        "thickness": 10,
+        "startAngle": -135,
+        "sweep": 270,
+        "clockwise": true,
+        "roundCaps": true
+      },
+      "visualization": {
+        "style": "dial",
+        "ticks": 41,
+        "radius": 4,
+        "marker": true
+      }
+    },
+    {
+      "id": 39,
+      "name": "RAM load",
+      "frame": {
+        "x": 1278,
+        "y": 197,
+        "width": 128,
+        "height": 62
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 52,
+          "paint": "#EEF0FAff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "sizePercent": 42,
+              "color": "#7C82A6ff"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 40,
+      "name": "RAM caption",
+      "frame": {
+        "x": 1292,
+        "y": 257,
+        "width": 100,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "RAM"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#7C82A6ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 41,
+      "name": "RAM model",
+      "frame": {
+        "x": 1441,
+        "y": 149,
+        "width": 174,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.total",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 500
+          },
+          "size": 16,
+          "paint": "#C9CDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 42,
+      "name": "RAM history",
+      "frame": {
+        "x": 1441,
+        "y": 181,
+        "width": 174,
+        "height": 46
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "memory.percent",
+          "min": 0,
+          "max": 100
+        },
+        "history": 60,
+        "intervalSeconds": 1,
+        "style": "area",
+        "color": "#2DD4BFff",
+        "lineWidth": 1.5,
+        "autoscale": false,
+        "fill": {
+          "angle": 90,
+          "stops": [
+            [
+              0,
+              "#2DD4BF60"
+            ],
+            [
+              1,
+              "#2DD4BF00"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": 43,
+      "name": "RAM In uso",
+      "frame": {
+        "x": 1441,
+        "y": 237,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "In uso"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 44,
+      "name": "RAM memory.used",
+      "frame": {
+        "x": 1517,
+        "y": 237,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.used",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 45,
+      "name": "RAM Disponibile",
+      "frame": {
+        "x": 1441,
+        "y": 270,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Disponibile"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 46,
+      "name": "RAM memory.available.percent",
+      "frame": {
+        "x": 1517,
+        "y": 270,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.available.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 47,
+      "name": "RAM Totale",
+      "frame": {
+        "x": 1441,
+        "y": 303,
+        "width": 98,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Totale"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 48,
+      "name": "RAM memory.total",
+      "frame": {
+        "x": 1517,
+        "y": 303,
+        "width": 98,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.total",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#EEF0FAff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 49,
+      "name": "Network caption",
+      "frame": {
+        "x": 1673,
+        "y": 48,
+        "width": 190,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "RETE"
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 14,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 50,
+      "name": "Download",
+      "frame": {
+        "x": 1673,
+        "y": 77,
+        "width": 196,
+        "height": 44
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.down",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 600
+          },
+          "size": 34,
+          "paint": "#EEF0FAff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "Space Grotesk",
+              "sizePercent": 40,
+              "color": "#7C82A6ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 51,
+      "name": "Upload",
+      "frame": {
+        "x": 1673,
+        "y": 125,
+        "width": 196,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.up",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Space Grotesk",
+            "weight": 400
+          },
+          "size": 20,
+          "paint": "#7C82A6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 52,
+      "name": "Network mirrored history",
+      "frame": {
+        "x": 1673,
+        "y": 285,
+        "width": 198,
+        "height": 104
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "net.down",
+          "min": 0,
+          "max": 20971520
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "area",
+        "color": "#22D3EEff",
+        "lineWidth": 1.5,
+        "autoscale": false,
+        "fill": {
+          "angle": 90,
+          "stops": [
+            [
+              0,
+              "#22D3EE60"
+            ],
+            [
+              1,
+              "#22D3EE00"
+            ]
+          ]
+        }
+      },
+      "visualization": {
+        "style": "mirrored",
+        "secondary": {
+          "key": "net.up",
+          "min": 0,
+          "max": 20971520
+        },
+        "secondaryColor": "#F472B6ff",
+        "seriesGap": 0
+      }
+    }
+  ]
+}

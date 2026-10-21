@@ -46,20 +46,9 @@ fn families(theme: &Theme) -> BTreeSet<String> {
 /// Every sensor the visible elements read.
 fn sensor_keys(theme: &Theme) -> BTreeSet<String> {
     theme
-        .elements
+        .sensor_keys()
         .iter()
-        .filter(|e| e.visible)
-        .filter_map(|e| match &e.kind {
-            ElementKind::Text {
-                content: TextContent::Sensor { key, .. },
-                ..
-            } => Some(key.as_str().to_string()),
-            ElementKind::Bar { binding, .. }
-            | ElementKind::Ring { binding, .. }
-            | ElementKind::Needle { binding, .. }
-            | ElementKind::Graph { binding, .. } => Some(binding.key.as_str().to_string()),
-            _ => None,
-        })
+        .map(|k| k.as_str().to_string())
         .collect()
 }
 
@@ -125,7 +114,16 @@ fn every_bundled_theme_renders_cleanly() {
             assert!(assets.contains_key(&asset), "{name}: {} missing", asset.0);
         }
         for key in sensor_keys(&theme) {
-            assert!(offered.contains(&key), "{name}: {key} is not a demo sensor");
+            let weather_key = theme.elements.iter().any(|e| {
+                matches!(&e.kind, ElementKind::Text { content: TextContent::Weather(w), .. }
+                    if w.keys().iter().any(|k| k.as_str() == key))
+            });
+            assert!(
+                offered.contains(&key)
+                    || weather_key
+                    || matches!(key.as_str(), "media.sessions" | "activity.processes"),
+                "{name}: {key} is not a demo or configured weather sensor"
+            );
         }
         let fonts = families(&theme);
         assert!(
@@ -145,4 +143,134 @@ fn every_bundled_theme_renders_cleanly() {
         }
     }
     assert!(count >= 6, "{count} bundled themes");
+}
+
+/// Exercise the new templates with measured values, local weather, music/cover,
+/// and missing inputs. Optional pictures use exactly these labelled test fixtures.
+#[test]
+fn studio_ux_v2_templates_render_live_and_unavailable_inputs() {
+    use bezel_core::domain::playback::MediaSession;
+    use bezel_core::domain::sensor::{Reading, Snapshot};
+    use std::io::Cursor;
+    let mut cover = Cursor::new(Vec::new());
+    image::RgbaImage::from_pixel(320, 320, image::Rgba([124, 92, 255, 255]))
+        .write_to(&mut cover, image::ImageFormat::Png)
+        .expect("test album cover");
+    for name in [
+        "pixel-wide",
+        "nebula-wide",
+        "paper-wide",
+        "now-playing-wide",
+    ] {
+        let (theme, assets) = load(&support::themes_dir().join(name));
+        assert_eq!(
+            (theme.canvas.width, theme.canvas.height),
+            (1920, 480),
+            "{name}"
+        );
+        let ids: BTreeSet<_> = theme.elements.iter().map(|e| e.id).collect();
+        assert_eq!(
+            ids.len(),
+            theme.elements.len(),
+            "{name}: unique editable objects"
+        );
+        for e in &theme.elements {
+            assert!(
+                e.frame.x >= 0.
+                    && e.frame.y >= 0.
+                    && e.frame.x + e.frame.width <= 1920.
+                    && e.frame.y + e.frame.height <= 480.,
+                "{name}: {} outside canvas",
+                e.name
+            );
+        }
+        let mut source = support::busy_sensors(60);
+        let catalog = source.catalog().expect("catalog");
+        let mut measured = Vec::new();
+        for _ in 0..60 {
+            let mut snapshot = source.sample().expect("sample");
+            for e in &theme.elements {
+                if let ElementKind::Text {
+                    content: TextContent::Weather(w),
+                    ..
+                } = &e.kind
+                {
+                    let [temperature, condition] = w.keys();
+                    snapshot.insert(temperature, Reading::Value(18.));
+                    snapshot.insert(condition, Reading::Value(3.));
+                }
+            }
+            // A measured FFT fixture, not the theme's synthetic-preview switch.
+            for e in &theme.elements {
+                if let ElementKind::Text {
+                    content: TextContent::Spectrum(config),
+                    ..
+                } = &e.kind
+                {
+                    use bezel_core::domain::spectrum::{AudioState, SpectrumFrame};
+                    snapshot.spectra.insert(
+                        e.id,
+                        SpectrumFrame {
+                            state: AudioState::Live,
+                            levels: (0..config.bands)
+                                .map(|i| (f32::from(i) * 0.43).sin().abs() * 0.85)
+                                .collect(),
+                            peaks: Vec::new(),
+                        },
+                    );
+                }
+            }
+            snapshot.media.push(MediaSession {
+                source: "Fixture player".into(),
+                title: "A live session".into(),
+                artist: "Fixture artist".into(),
+                playing: true,
+                position: 72.,
+                duration: 225.,
+                cover: cover.get_ref().clone(),
+            });
+            measured.push(snapshot);
+        }
+        let mut sensors = FakeSensors::new(catalog, measured);
+        let mut runtime = ThemeRuntime::new(theme.clone(), assets.clone(), Language::Italian);
+        let mut renderer = support::renderer();
+        let mut frame = None;
+        let pictures = std::env::var_os("BEZEL_UX2_THEME_PREVIEWS").map(PathBuf::from);
+        for _ in 0..if pictures.is_some() { 60 } else { 2 } {
+            frame = Some(
+                runtime
+                    .frame(&mut sensors, &mut renderer, support::TIME)
+                    .expect("measured frame"),
+            );
+        }
+        let live = frame.expect("live frame");
+        assert!(
+            renderer.problems().is_empty(),
+            "{name}: {:?}",
+            renderer.problems()
+        );
+        let mut missing_runtime = ThemeRuntime::new(theme, assets, Language::Italian);
+        let mut missing = FakeSensors::new(Vec::new(), vec![Snapshot::default()]);
+        let unavailable = missing_runtime
+            .frame(&mut missing, &mut renderer, support::TIME)
+            .expect("unavailable frame");
+        assert!(
+            renderer.problems().is_empty(),
+            "{name}: {:?}",
+            renderer.problems()
+        );
+        assert_ne!(
+            live.as_rgba(),
+            unavailable.as_rgba(),
+            "{name}: reacts to real inputs"
+        );
+        if let Some(dir) = pictures {
+            std::fs::create_dir_all(&dir).expect("preview directory");
+            save_png(&live, &dir.join(format!("{name}.it.png")));
+            save_png(
+                &unavailable,
+                &dir.join(format!("{name}.unavailable.it.png")),
+            );
+        }
+    }
 }

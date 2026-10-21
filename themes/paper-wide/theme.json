@@ -1,0 +1,1211 @@
+{
+  "schema": 1,
+  "name": "Paper",
+  "canvas": {
+    "width": 1920,
+    "height": 480
+  },
+  "orientation": "landscape",
+  "refreshSeconds": 1,
+  "background": {
+    "type": "color",
+    "color": "#EEE8DCff"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "name": "Paper editorial rules",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 480
+      },
+      "kind": {
+        "type": "image",
+        "asset": "assets/architecture.svg",
+        "fit": "fill"
+      },
+      "locked": true
+    },
+    {
+      "id": 2,
+      "name": "Masthead",
+      "frame": {
+        "x": 48,
+        "y": 23,
+        "width": 90,
+        "height": 39
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Bezel"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 600
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Edition",
+      "frame": {
+        "x": 120,
+        "y": 23,
+        "width": 500,
+        "height": 39
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "· edizione della sera"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 300,
+            "italic": true
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Edition date",
+      "frame": {
+        "x": 1320,
+        "y": 36,
+        "width": 426,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%A %e %B %Y",
+          "casing": "upper"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#6F685Cff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Location",
+      "frame": {
+        "x": 1768,
+        "y": 36,
+        "width": 104,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "MILANO"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#B83A12ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "L'ORA",
+      "frame": {
+        "x": 48,
+        "y": 98,
+        "width": 460,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "L'ORA"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 600
+          },
+          "size": 13,
+          "paint": "#B83A12ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 3,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "IL TEMPO",
+      "frame": {
+        "x": 589,
+        "y": 98,
+        "width": 560,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "IL TEMPO"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 600
+          },
+          "size": 13,
+          "paint": "#B83A12ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 3,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "INDICI DI SISTEMA",
+      "frame": {
+        "x": 1230,
+        "y": 98,
+        "width": 642,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "INDICI DI SISTEMA"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 600
+          },
+          "size": 13,
+          "paint": "#B83A12ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 3,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Clock",
+      "frame": {
+        "x": 48,
+        "y": 117,
+        "width": 460,
+        "height": 140
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%H:%M"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 300
+          },
+          "size": 152,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": -5,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Full date",
+      "frame": {
+        "x": 48,
+        "y": 269,
+        "width": 460,
+        "height": 64
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%A %e %B %Y"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 300,
+            "italic": true
+          },
+          "size": 22,
+          "paint": "#6F685Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Current temperature",
+      "frame": {
+        "x": 589,
+        "y": 125,
+        "width": 100,
+        "height": 96
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "weather.45.464200:9.190000.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": false
+          },
+          "suffix": "°"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 300
+          },
+          "size": 76,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "Instrument Sans",
+              "sizePercent": 40,
+              "color": "#6F685Cff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Current weather",
+      "frame": {
+        "x": 695,
+        "y": 145,
+        "width": 454,
+        "height": 84
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "weather",
+          "city": "Milano",
+          "latitude": 45.4642,
+          "longitude": 9.19,
+          "showIcon": false,
+          "iconStyle": "outline",
+          "iconColor": "#1B1915ff",
+          "iconSize": 40,
+          "iconGap": 14,
+          "iconMotion": "gentle"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 22,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Thermal history caption",
+      "frame": {
+        "x": 589,
+        "y": 239,
+        "width": 560,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Temperatura CPU · ultimo minuto"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 16,
+          "paint": "#6F685Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Thermal history",
+      "frame": {
+        "x": 589,
+        "y": 274,
+        "width": 560,
+        "height": 61
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "cpu.temperature",
+          "min": 0,
+          "max": 100
+        },
+        "history": 60,
+        "intervalSeconds": 1,
+        "style": "line",
+        "color": "#1B1915ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      }
+    },
+    {
+      "id": 15,
+      "name": "History baseline",
+      "frame": {
+        "x": 589,
+        "y": 335,
+        "width": 560,
+        "height": 1
+      },
+      "kind": {
+        "type": "shape",
+        "shape": "rect",
+        "fill": "#C9C0AFff",
+        "radius": 0,
+        "strokeWidth": 0
+      }
+    },
+    {
+      "id": 16,
+      "name": "CPU thermal reading",
+      "frame": {
+        "x": 589,
+        "y": 340,
+        "width": 130,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "History duration",
+      "frame": {
+        "x": 1000,
+        "y": 340,
+        "width": 149,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "60 s"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#6F685Cff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "name": "Processore caption",
+      "frame": {
+        "x": 1230,
+        "y": 131,
+        "width": 120,
+        "height": 37
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Processore"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 500
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "name": "Processore history",
+      "frame": {
+        "x": 1366,
+        "y": 135,
+        "width": 120,
+        "height": 28
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "line",
+        "color": "#1B1915ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      }
+    },
+    {
+      "id": 20,
+      "name": "Processore reading",
+      "frame": {
+        "x": 1500,
+        "y": 131,
+        "width": 280,
+        "height": 40
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "name": "Scheda video caption",
+      "frame": {
+        "x": 1230,
+        "y": 190,
+        "width": 120,
+        "height": 37
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Scheda video"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 500
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "Scheda video history",
+      "frame": {
+        "x": 1366,
+        "y": 194,
+        "width": 120,
+        "height": 28
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "gpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "line",
+        "color": "#1B1915ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      }
+    },
+    {
+      "id": 23,
+      "name": "Scheda video reading",
+      "frame": {
+        "x": 1500,
+        "y": 190,
+        "width": 280,
+        "height": 40
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "name": "Memoria caption",
+      "frame": {
+        "x": 1230,
+        "y": 249,
+        "width": 120,
+        "height": 37
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Memoria"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 500
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "name": "Memoria history",
+      "frame": {
+        "x": 1366,
+        "y": 253,
+        "width": 120,
+        "height": 28
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "memory.percent",
+          "min": 0,
+          "max": 100
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "line",
+        "color": "#1B1915ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      }
+    },
+    {
+      "id": 26,
+      "name": "Memoria reading",
+      "frame": {
+        "x": 1500,
+        "y": 249,
+        "width": 280,
+        "height": 40
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "name": "Rete caption",
+      "frame": {
+        "x": 1230,
+        "y": 308,
+        "width": 120,
+        "height": 37
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "Rete"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 500
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 28,
+      "name": "Rete history",
+      "frame": {
+        "x": 1366,
+        "y": 312,
+        "width": 120,
+        "height": 28
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "net.down",
+          "min": 0,
+          "max": 20971520
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "line",
+        "color": "#1B1915ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      }
+    },
+    {
+      "id": 29,
+      "name": "Rete reading",
+      "frame": {
+        "x": 1500,
+        "y": 308,
+        "width": 280,
+        "height": 40
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.down",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400
+          },
+          "size": 30,
+          "paint": "#1B1915ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "CPU temperature",
+      "frame": {
+        "x": 1788,
+        "y": 136,
+        "width": 84,
+        "height": 26
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B83A12ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 31,
+      "name": "GPU temperature",
+      "frame": {
+        "x": 1788,
+        "y": 195,
+        "width": 84,
+        "height": 26
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B83A12ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "Available memory",
+      "frame": {
+        "x": 1788,
+        "y": 254,
+        "width": 84,
+        "height": 26
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.available.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B83A12ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 33,
+      "name": "Upload",
+      "frame": {
+        "x": 1788,
+        "y": 313,
+        "width": 84,
+        "height": 26
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.up",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B83A12ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 34,
+      "name": "Media caption",
+      "frame": {
+        "x": 48,
+        "y": 436,
+        "width": 136,
+        "height": 25
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "ORA IN ONDA"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 600
+          },
+          "size": 13,
+          "paint": "#B83A12ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 35,
+      "name": "Current track",
+      "frame": {
+        "x": 185,
+        "y": 434,
+        "width": 350,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": true,
+          "showArtist": false,
+          "showTime": false,
+          "showSource": false,
+          "emptyText": "In attesa di musica"
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400,
+            "italic": true
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 36,
+      "name": "Current artist",
+      "frame": {
+        "x": 550,
+        "y": 434,
+        "width": 215,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": false,
+          "showArtist": true,
+          "showTime": false,
+          "showSource": false
+        },
+        "style": {
+          "font": {
+            "family": "Fraunces 144pt",
+            "weight": 400,
+            "italic": true
+          },
+          "size": 18,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 37,
+      "name": "Disk read",
+      "frame": {
+        "x": 938,
+        "y": 436,
+        "width": 150,
+        "height": 25
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "disk.read",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 38,
+      "name": "Disk read caption",
+      "frame": {
+        "x": 794,
+        "y": 436,
+        "width": 140,
+        "height": 25
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "LETTURA DISCO"
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 10,
+          "paint": "#6F685Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 39,
+      "name": "GPU temperature footer",
+      "frame": {
+        "x": 1120,
+        "y": 436,
+        "width": 180,
+        "height": 25
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 40,
+      "name": "CPU fan",
+      "frame": {
+        "x": 1330,
+        "y": 436,
+        "width": 230,
+        "height": 25
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.fan",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Instrument Sans",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#1B1915ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    }
+  ]
+}

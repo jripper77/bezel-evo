@@ -1,0 +1,629 @@
+{
+  "schema": 1,
+  "name": "Now Playing",
+  "canvas": {
+    "width": 1920,
+    "height": 480
+  },
+  "orientation": "landscape",
+  "refreshSeconds": 1,
+  "background": {
+    "type": "color",
+    "color": "#0C070Eff"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "name": "Vinyl and standby artwork",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 480
+      },
+      "kind": {
+        "type": "image",
+        "asset": "assets/architecture.svg",
+        "fit": "fill"
+      },
+      "locked": true
+    },
+    {
+      "id": 2,
+      "name": "Session source",
+      "frame": {
+        "x": 501,
+        "y": 97,
+        "width": 128,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": false,
+          "showSource": true,
+          "emptyText": "Musica"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 500
+          },
+          "size": 15,
+          "paint": "#FBF4F7ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Audio source label",
+      "frame": {
+        "x": 660,
+        "y": 97,
+        "width": 87,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "AUDIO"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 500
+          },
+          "size": 13,
+          "paint": "#E9DCE4ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Remaining time",
+      "frame": {
+        "x": 778,
+        "y": 97,
+        "width": 120,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": true,
+          "showSource": false,
+          "timeFormat": "remaining"
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#FBF4F7ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Track title",
+      "frame": {
+        "x": 490,
+        "y": 141,
+        "width": 1050,
+        "height": 74
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": true,
+          "showArtist": false,
+          "showTime": false,
+          "showSource": false,
+          "emptyText": "In attesa di musica"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 800
+          },
+          "size": 62,
+          "paint": "#FBF4F7ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Artist",
+      "frame": {
+        "x": 490,
+        "y": 216,
+        "width": 1050,
+        "height": 43
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": false,
+          "showTitle": false,
+          "showArtist": true,
+          "showTime": false,
+          "showSource": false
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 500
+          },
+          "size": 26,
+          "paint": "#E2D2DCff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Album cover",
+      "frame": {
+        "x": 40,
+        "y": 80,
+        "width": 320,
+        "height": 320
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": true,
+          "showProgress": false,
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": false,
+          "showSource": false,
+          "coverRadius": 20,
+          "emptyText": ""
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 24,
+          "paint": "#FBF4F7ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "System audio spectrum",
+      "frame": {
+        "x": 490,
+        "y": 278,
+        "width": 1050,
+        "height": 74
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "spectrum",
+          "bands": 64,
+          "low": 20,
+          "high": 16000,
+          "audio": "system",
+          "style": "mirrored",
+          "centre": true,
+          "demo": false,
+          "thickness": 7,
+          "gap": 3,
+          "corners": [
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 20,
+          "paint": "#F472B6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Playback timeline",
+      "frame": {
+        "x": 490,
+        "y": 359,
+        "width": 1050,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "showCover": false,
+          "showProgress": true,
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": true,
+          "showSource": false,
+          "progressStyle": {
+            "fill": "#F472B6ff",
+            "track": "#FFFFFF18",
+            "thickness": 3,
+            "times": "sides"
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#A8959Fff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Clock",
+      "frame": {
+        "x": 1605,
+        "y": 107,
+        "width": 250,
+        "height": 75
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%H:%M"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 700
+          },
+          "size": 76,
+          "paint": "#FBF4F7ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": -3,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Date",
+      "frame": {
+        "x": 1605,
+        "y": 186,
+        "width": 250,
+        "height": 30
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%A %e %B"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#B8A7B2ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "CPU caption",
+      "frame": {
+        "x": 1605,
+        "y": 239,
+        "width": 52,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CPU"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B8A7B2ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "CPU reading",
+      "frame": {
+        "x": 1690,
+        "y": 239,
+        "width": 165,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#FBF4F7ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "CPU meter",
+      "frame": {
+        "x": 1605,
+        "y": 268,
+        "width": 250,
+        "height": 4
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#F472B6ff",
+        "track": "#FFFFFF14",
+        "radius": 2
+      }
+    },
+    {
+      "id": 15,
+      "name": "GPU caption",
+      "frame": {
+        "x": 1605,
+        "y": 291,
+        "width": 52,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "GPU"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B8A7B2ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "GPU reading",
+      "frame": {
+        "x": 1690,
+        "y": 291,
+        "width": 165,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#FBF4F7ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "GPU meter",
+      "frame": {
+        "x": 1605,
+        "y": 320,
+        "width": 250,
+        "height": 4
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "gpu.temperature",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#F472B6ff",
+        "track": "#FFFFFF14",
+        "radius": 2
+      }
+    },
+    {
+      "id": 18,
+      "name": "RAM caption",
+      "frame": {
+        "x": 1605,
+        "y": 343,
+        "width": 52,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "RAM"
+        },
+        "style": {
+          "font": {
+            "family": "Bricolage Grotesque 96pt",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#B8A7B2ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "name": "RAM reading",
+      "frame": {
+        "x": 1690,
+        "y": 343,
+        "width": 165,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.used",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "JetBrains Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#FBF4F7ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "RAM meter",
+      "frame": {
+        "x": 1605,
+        "y": 372,
+        "width": 250,
+        "height": 4
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "memory.percent",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#F472B6ff",
+        "track": "#FFFFFF14",
+        "radius": 2
+      }
+    }
+  ]
+}

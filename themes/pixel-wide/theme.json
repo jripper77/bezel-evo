@@ -1,0 +1,1603 @@
+{
+  "schema": 1,
+  "name": "Pixel",
+  "canvas": {
+    "width": 1920,
+    "height": 480
+  },
+  "orientation": "landscape",
+  "refreshSeconds": 1,
+  "background": {
+    "type": "color",
+    "color": "#000000ff"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "name": "Pixel panels and dot texture",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 480
+      },
+      "kind": {
+        "type": "image",
+        "asset": "assets/architecture.svg",
+        "fit": "fill"
+      },
+      "locked": true
+    },
+    {
+      "id": 2,
+      "name": "Brand",
+      "frame": {
+        "x": 78,
+        "y": 51,
+        "width": 200,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "BEZEL EVO"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2.4,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Clock",
+      "frame": {
+        "x": 52,
+        "y": 94,
+        "width": 390,
+        "height": 130
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%H:%M"
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 136,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Seconds",
+      "frame": {
+        "x": 455,
+        "y": 106,
+        "width": 50,
+        "height": 46
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%S"
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 40,
+          "paint": "#FF9248ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Weekday",
+      "frame": {
+        "x": 53,
+        "y": 237,
+        "width": 145,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%A",
+          "casing": "upper"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Date",
+      "frame": {
+        "x": 205,
+        "y": 237,
+        "width": 205,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "clock",
+          "pattern": "%d.%m.%Y",
+          "casing": "upper"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 17,
+          "paint": "#8A857Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "CPU heading",
+      "frame": {
+        "x": 571,
+        "y": 51,
+        "width": 40,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CPU"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "CPU model",
+      "frame": {
+        "x": 615,
+        "y": 51,
+        "width": 280,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.name",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 14,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "CPU load",
+      "frame": {
+        "x": 571,
+        "y": 100,
+        "width": 160,
+        "height": 104
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 78,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "IBM Plex Mono",
+              "sizePercent": 40,
+              "color": "#5E5A53ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "CPU block matrix",
+      "frame": {
+        "x": 816,
+        "y": 94,
+        "width": 108,
+        "height": 108
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#FF9248ff",
+        "track": "#202020ff",
+        "radius": 2
+      },
+      "visualization": {
+        "style": "matrix",
+        "columns": 4,
+        "rows": 4,
+        "gap": 5,
+        "radius": 4
+      }
+    },
+    {
+      "id": 11,
+      "name": "CPU history",
+      "frame": {
+        "x": 571,
+        "y": 225,
+        "width": 350,
+        "height": 67
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "cpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "history": 60,
+        "intervalSeconds": 1,
+        "style": "bars",
+        "color": "#8A857Cff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      },
+      "visualization": {
+        "style": "rounded",
+        "gap": 2,
+        "radius": 2,
+        "barWidth": 4
+      }
+    },
+    {
+      "id": 12,
+      "name": "GPU heading",
+      "frame": {
+        "x": 987,
+        "y": 51,
+        "width": 40,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "GPU"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "GPU model",
+      "frame": {
+        "x": 1032,
+        "y": 51,
+        "width": 210,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.name",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 14,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "GPU pixel arc",
+      "frame": {
+        "x": 1006,
+        "y": 116,
+        "width": 232,
+        "height": 232
+      },
+      "kind": {
+        "type": "ring",
+        "binding": {
+          "key": "gpu.usage",
+          "min": 0,
+          "max": 100
+        },
+        "fill": "#FF9248ff",
+        "track": "#1C1C1Cff",
+        "thickness": 10,
+        "startAngle": -90,
+        "sweep": 180,
+        "clockwise": true,
+        "roundCaps": true
+      },
+      "visualization": {
+        "style": "pixel",
+        "ticks": 25,
+        "radius": 0
+      }
+    },
+    {
+      "id": 15,
+      "name": "GPU load",
+      "frame": {
+        "x": 1050,
+        "y": 154,
+        "width": 148,
+        "height": 82
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.usage",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 72,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "IBM Plex Mono",
+              "sizePercent": 40,
+              "color": "#5E5A53ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "GPU load caption",
+      "frame": {
+        "x": 1062,
+        "y": 231,
+        "width": 120,
+        "height": 21
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CARICO"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "center",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "TEMP caption",
+      "frame": {
+        "x": 571,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "TEMP"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "name": "TEMP reading",
+      "frame": {
+        "x": 571,
+        "y": 402,
+        "width": 110,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "name": "CLOCK caption",
+      "frame": {
+        "x": 688,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "CLOCK"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "CLOCK reading",
+      "frame": {
+        "x": 688,
+        "y": 402,
+        "width": 110,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.frequency",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "name": "POWER caption",
+      "frame": {
+        "x": 805,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "POWER"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "POWER reading",
+      "frame": {
+        "x": 805,
+        "y": 402,
+        "width": 110,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "cpu.power",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "name": "TEMP caption",
+      "frame": {
+        "x": 987,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "TEMP"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "name": "TEMP reading",
+      "frame": {
+        "x": 987,
+        "y": 402,
+        "width": 84,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.temperature",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "name": "VRAM caption",
+      "frame": {
+        "x": 1077,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "VRAM"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "name": "VRAM reading",
+      "frame": {
+        "x": 1077,
+        "y": 402,
+        "width": 84,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.memory.used",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "name": "W caption",
+      "frame": {
+        "x": 1167,
+        "y": 381,
+        "width": 100,
+        "height": 20
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "W"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.6,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 28,
+      "name": "W reading",
+      "frame": {
+        "x": 1167,
+        "y": 402,
+        "width": 84,
+        "height": 28
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "gpu.power",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 29,
+      "name": "Memory heading",
+      "frame": {
+        "x": 1323,
+        "y": 51,
+        "width": 45,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "RAM"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "Memory total",
+      "frame": {
+        "x": 1371,
+        "y": 51,
+        "width": 220,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.total",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 14,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 31,
+      "name": "Memory usage",
+      "frame": {
+        "x": 1323,
+        "y": 86,
+        "width": 210,
+        "height": 90
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.percent",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 78,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "IBM Plex Mono",
+              "sizePercent": 40,
+              "color": "#5E5A53ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "Memory block matrix",
+      "frame": {
+        "x": 1321,
+        "y": 189,
+        "width": 274,
+        "height": 104
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "memory.percent",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#FF9248ff",
+        "track": "#222220ff",
+        "radius": 2
+      },
+      "visualization": {
+        "style": "matrix",
+        "columns": 16,
+        "rows": 6,
+        "gap": 3,
+        "radius": 2
+      }
+    },
+    {
+      "id": 33,
+      "name": "Memory legend",
+      "frame": {
+        "x": 1323,
+        "y": 390,
+        "width": 9,
+        "height": 9
+      },
+      "kind": {
+        "type": "shape",
+        "shape": "rect",
+        "fill": "#FF9248ff",
+        "radius": 2,
+        "strokeWidth": 0
+      }
+    },
+    {
+      "id": 34,
+      "name": "Memory in uso",
+      "frame": {
+        "x": 1339,
+        "y": 383,
+        "width": 115,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "in uso"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 35,
+      "name": "Memory memory.used",
+      "frame": {
+        "x": 1440,
+        "y": 383,
+        "width": 154,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.used",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 36,
+      "name": "Memory legend",
+      "frame": {
+        "x": 1323,
+        "y": 416,
+        "width": 9,
+        "height": 9
+      },
+      "kind": {
+        "type": "shape",
+        "shape": "rect",
+        "fill": "#8A857Cff",
+        "radius": 2,
+        "strokeWidth": 0
+      }
+    },
+    {
+      "id": 37,
+      "name": "Memory libera",
+      "frame": {
+        "x": 1339,
+        "y": 409,
+        "width": 115,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "libera"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#8A857Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 38,
+      "name": "Memory memory.available.percent",
+      "frame": {
+        "x": 1440,
+        "y": 409,
+        "width": 154,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "memory.available.percent",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 15,
+          "paint": "#8A857Cff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 39,
+      "name": "Network heading",
+      "frame": {
+        "x": 1659,
+        "y": 51,
+        "width": 200,
+        "height": 22
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "NET"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600
+          },
+          "size": 15,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 40,
+      "name": "Download",
+      "frame": {
+        "x": 1678,
+        "y": 83,
+        "width": 194,
+        "height": 64
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.down",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 54,
+          "paint": "#F2EDE6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "IBM Plex Mono",
+              "sizePercent": 40,
+              "color": "#5E5A53ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 41,
+      "name": "Upload",
+      "frame": {
+        "x": 1678,
+        "y": 142,
+        "width": 194,
+        "height": 42
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "net.up",
+          "format": {
+            "decimals": 1,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900
+          },
+          "size": 32,
+          "paint": "#8A857Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink",
+          "parts": {
+            "unit": {
+              "font": "IBM Plex Mono",
+              "sizePercent": 40,
+              "color": "#5E5A53ff",
+              "weight": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 42,
+      "name": "Download direction",
+      "frame": {
+        "x": 1657,
+        "y": 111,
+        "width": 18,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "↓"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#FF9248ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 43,
+      "name": "Upload direction",
+      "frame": {
+        "x": 1657,
+        "y": 151,
+        "width": 18,
+        "height": 23
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "↑"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 18,
+          "paint": "#8A857Cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 44,
+      "name": "Network mirrored history",
+      "frame": {
+        "x": 1659,
+        "y": 203,
+        "width": 208,
+        "height": 88
+      },
+      "kind": {
+        "type": "graph",
+        "binding": {
+          "key": "net.down",
+          "min": 0,
+          "max": 20971520
+        },
+        "history": 24,
+        "intervalSeconds": 1,
+        "style": "bars",
+        "color": "#FF9248ff",
+        "lineWidth": 1.5,
+        "autoscale": false
+      },
+      "visualization": {
+        "style": "mirrored",
+        "secondary": {
+          "key": "net.up",
+          "min": 0,
+          "max": 20971520
+        },
+        "secondaryColor": "#8A857Cff",
+        "gap": 3,
+        "radius": 2,
+        "barWidth": 6
+      }
+    },
+    {
+      "id": 45,
+      "name": "Volume caption",
+      "frame": {
+        "x": 53,
+        "y": 362,
+        "width": 180,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "VOLUME"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 46,
+      "name": "Volume",
+      "frame": {
+        "x": 430,
+        "y": 362,
+        "width": 74,
+        "height": 24
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "sensor",
+          "key": "system.volume",
+          "format": {
+            "decimals": 0,
+            "showUnit": true
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 13,
+          "paint": "#F2EDE6ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 47,
+      "name": "Output volume blocks",
+      "frame": {
+        "x": 53,
+        "y": 390,
+        "width": 452,
+        "height": 14
+      },
+      "kind": {
+        "type": "bar",
+        "binding": {
+          "key": "system.volume",
+          "min": 0,
+          "max": 100
+        },
+        "direction": "leftToRight",
+        "fill": "#D8D2C8ff",
+        "track": "#202020ff",
+        "radius": 2,
+        "segments": {
+          "count": 24,
+          "gap": 5
+        }
+      }
+    },
+    {
+      "id": 48,
+      "name": "Volume scale 0",
+      "frame": {
+        "x": 53,
+        "y": 413,
+        "width": 36,
+        "height": 17
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "0"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 11,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 49,
+      "name": "Volume scale 25",
+      "frame": {
+        "x": 157,
+        "y": 413,
+        "width": 36,
+        "height": 17
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "25"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 11,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 50,
+      "name": "Volume scale 50",
+      "frame": {
+        "x": 261,
+        "y": 413,
+        "width": 36,
+        "height": 17
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "50"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 11,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 51,
+      "name": "Volume scale 75",
+      "frame": {
+        "x": 365,
+        "y": 413,
+        "width": 36,
+        "height": 17
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "75"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 11,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 52,
+      "name": "Volume scale 100",
+      "frame": {
+        "x": 469,
+        "y": 413,
+        "width": 36,
+        "height": 17
+      },
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "100"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400
+          },
+          "size": 11,
+          "paint": "#5E5A53ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0,
+          "overflow": "shrink"
+        }
+      }
+    }
+  ]
+}
