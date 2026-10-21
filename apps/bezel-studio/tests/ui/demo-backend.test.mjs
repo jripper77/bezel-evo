@@ -29,7 +29,7 @@ test('the catalog and samples cover every demo sensor', async () => {
   const demo = createDemoBackend('turing88', fixed);
   const catalog = await demo.catalog();
   assert.equal(catalog.filter((entry) => entry.quantity !== 'text').length, DEMO_SENSORS.length);
-  assert.deepEqual(catalog.filter((entry) => entry.quantity === 'text').map((entry) => entry.key), ['system.hostname', 'system.os', 'system.audio.device']);
+  assert.deepEqual(catalog.filter((entry) => entry.quantity === 'text').map((entry) => entry.key), ['cpu.name', 'gpu.name', 'system.hostname', 'system.os', 'system.audio.device']);
   const { readings } = await demo.sample();
   for (const entry of catalog) assert.equal(typeof readings[entry.key].display, 'string', entry.key);
   assert.ok(readings['gpu.1.fan'].unavailable);
