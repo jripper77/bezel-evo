@@ -7,9 +7,10 @@
 // local copies. The jobs themselves run in `storage.js`.
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
+import { openMenuAt } from './menu.js';
 import { errorText } from '../messages.js';
 import { openVideoPreview } from './video-preview.js';
-import { searchField } from './fields.js';
+import { iconButton, searchField } from './fields.js';
 import {
   CACHE_LIMITS, KIND_FILTERS, ORIGIN_FILTERS, SORTS, actionsFor, baseName, cleanupGroups, emptySelection, findingText, formatBytes,
   formatExactBytes, formatLimit, formatSent, hasCopy, isBezel, keyAction, otherMedium, placeText, planRefusalText, precheckedPaths,
@@ -127,6 +128,7 @@ export function createManagerView({ t, locale, bridge, host }) {
       'aria-selected': 'false',
       title: details(file),
       dataset: { path: file.path },
+      style: { gridRow: String(index + 1) },
     }, [
       thumbnail(file),
       el('span', { class: 'file-main' }, [
@@ -321,6 +323,7 @@ export function createManagerView({ t, locale, bridge, host }) {
       'aria-multiselectable': 'true',
       'aria-label': t('storage.list.label', { medium: t(`storage.medium.${medium}`) }),
       dataset: { focus: `list-${medium}` },
+      style: { gridRow: `1 / span ${shown.length}` },
     }, shown.map((file, i) => option(medium, file, i)));
     listbox.addEventListener('keydown', (evt) => onKey(medium, evt));
     listbox.addEventListener('focus', () => {
@@ -328,7 +331,22 @@ export function createManagerView({ t, locale, bridge, host }) {
     });
     wirePointer(medium, listbox);
     column.listbox = listbox;
-    return listbox;
+    // Menu buttons are siblings of the listbox: options never contain nested
+    // interactive controls. Grid rows align each button with its actual file.
+    const menus = shown.map((file, index) => {
+      const label = t('cardInsp.faceActions', { name: file.name });
+      const button = iconButton(label, ICONS.more, () => {
+        select(medium, { type: 'click', id: file.path });
+        const can = allowed(medium);
+        openMenuAt(button, { label, items: ACTIONS.filter(name => name !== 'boot' || host.features().boot).map(name => ({
+          label: actionLabel(name, medium),
+          disabled: host.busy() || (name === 'preview' ? file.kind !== 'video' : !can[name].enabled),
+          run: () => run(name, medium),
+        })) });
+      }, { class: 'quiet file-menu', 'aria-haspopup': 'menu', 'aria-expanded': 'false', style: { gridRow: String(index + 1) } });
+      return button;
+    });
+    return el('div', { class: 'file-listing' }, [listbox, ...menus]);
   }
 
   /** Draws `medium`'s list again (sort, filter or data changed); the list keeps the focus. */
@@ -400,9 +418,14 @@ export function createManagerView({ t, locale, bridge, host }) {
     search.querySelector('input').dataset.focus = 'filter-text';
     return el('div', { class: 'manager-filters', role: 'group', 'aria-label': t('storage.filter.label') }, [
       search,
-      select('kind', KIND_FILTERS, filter.kind, (v) => { filter.kind = v; refresh(); }),
-      select('origin', ORIGIN_FILTERS, filter.origin, (v) => { filter.origin = v; refresh(); }),
-      select('sort', SORTS, sort, (v) => { sort = v; refresh(); }),
+      el('details', { class: 'manager-filter-details' }, [
+        el('summary', { 'aria-label': t('storagePanel.filters'), title: t('storagePanel.filters') }, [icon(ICONS.sliders, 16)]),
+        el('div', { class: 'manager-filter-options' }, [
+          select('kind', KIND_FILTERS, filter.kind, (v) => { filter.kind = v; refresh(); }),
+          select('origin', ORIGIN_FILTERS, filter.origin, (v) => { filter.origin = v; refresh(); }),
+          select('sort', SORTS, sort, (v) => { sort = v; refresh(); }),
+        ]),
+      ]),
     ]);
   }
 

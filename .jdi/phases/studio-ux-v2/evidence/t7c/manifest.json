@@ -1,0 +1,82 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-card",
+    "file": "dark/app/inspector/ux2-card.png",
+    "detail": "dark/app/inspector/ux2-card-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-theme-closed",
+    "file": "dark/app/inspector/ux2-theme-closed.png",
+    "detail": "dark/app/inspector/ux2-theme-closed-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-theme-open",
+    "file": "dark/app/inspector/ux2-theme-open.png",
+    "detail": "dark/app/inspector/ux2-theme-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "screen",
+    "state": "ux2-settings",
+    "file": "dark/app/screen/ux2-settings.png",
+    "detail": "dark/app/screen/ux2-settings-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "screen",
+    "state": "ux2-storage",
+    "file": "dark/app/screen/ux2-storage.png",
+    "detail": "dark/app/screen/ux2-storage-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-card",
+    "file": "light/app/inspector/ux2-card.png",
+    "detail": "light/app/inspector/ux2-card-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-theme-closed",
+    "file": "light/app/inspector/ux2-theme-closed.png",
+    "detail": "light/app/inspector/ux2-theme-closed-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-theme-open",
+    "file": "light/app/inspector/ux2-theme-open.png",
+    "detail": "light/app/inspector/ux2-theme-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "screen",
+    "state": "ux2-settings",
+    "file": "light/app/screen/ux2-settings.png",
+    "detail": "light/app/screen/ux2-settings-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "screen",
+    "state": "ux2-storage",
+    "file": "light/app/screen/ux2-storage.png",
+    "detail": "light/app/screen/ux2-storage-detail.png"
+  }
+]

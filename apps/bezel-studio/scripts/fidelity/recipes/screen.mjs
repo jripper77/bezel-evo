@@ -13,7 +13,7 @@ const settings = async (app) => {
   await app.tab('screen');
   await widen(app);
   await app.page.locator('label.live-toggle').click();
-  await app.page.locator('#screen-panel input[type=checkbox]').check();
+  await app.page.locator('#screen-panel').getByRole('button', { name: await app.page.locator('#screen-panel .toggle-title').textContent(), exact: true }).click();
   await app.click('.standby-radio[data-choice=off]');
   await app.click('.standby-dialog .dialog-actions .primary-button');
   await app.page.locator('#toast').waitFor({ state: 'hidden' });
@@ -28,6 +28,18 @@ export default {
   area: 'screen',
   artboards: ['Screen', 'Storage', 'SensorStatus'],
   states: [
+    ...['settings', 'storage'].map(state => ({ name: `ux2-${state}`, capture: '#panel-screen', run: async app => {
+      await app.page.evaluate(() => localStorage.setItem('bezel.panelWidths', JSON.stringify({ library: 360, inspector: 320 })));
+      await app.page.reload();
+      await app.tab('screen');
+      if (state === 'storage') {
+        await app.click('#subtab-storage');
+        await app.page.locator('#storage-panel [data-inspector-section="storage-maintenance"]').waitFor();
+      }
+      await app.page.setViewportSize({ width: 1280, height: 2000 });
+      await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+      await app.page.locator('#panel-screen').evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+    } })),
     { name: 'settings', run: settings },
     { name: 'settings-advanced', run: async (app) => { await settings(app); await app.page.locator('.screen-tail').scrollIntoViewIfNeeded(); } },
     { name: 'storage', run: storage },

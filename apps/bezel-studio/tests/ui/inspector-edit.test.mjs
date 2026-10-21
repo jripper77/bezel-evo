@@ -45,3 +45,32 @@ test('different paint paths and bulk geometry are one undo step, respecting lock
   store.dispatch('patchElements', { patches: [{ id: 4, patch: { kind: { color: '#abcdef88' } } }], respectLocks: false });
   assert.equal(store.getState().theme.elements[3].kind.color, '#abcdef88', 'explicit inspector property edits keep the existing lock semantics');
 });
+
+test('rotation is common only when every selected object can rotate', () => {
+  const objects = [made('ring', 1), made('bar', 2)];
+  const original = structuredClone(objects);
+  assert.equal(commonSelection(objects).rotation, 0);
+  assert.equal(commonSelection([objects[0], { ...objects[1], rotation: 30 }]).rotation, MIXED);
+  const excluded = [made('card', 3), { ...made('shape', 3), isGroup: true }, { ...made('ring', 3), groupParent: 9 }, { ...made('ring', 3), cardMember: { parent: 9, face: 0 } }, { ...made('shape', 3), kind: { type: 'shape', videoWindow: true } }];
+  for (const object of excluded) assert.equal(commonSelection([...objects, object]).rotation, null);
+  assert.equal(commonSelection([]).rotation, null);
+  assert.deepEqual(objects, original);
+});
+
+test('bulk rotation normalizes angles, respects locks, omits zero and undoes once', () => {
+  const elements = [made('ring', 1), made('bar', 2), { ...made('needle', 3), locked: true }];
+  const store = createStore({ ...DEMO_THEME, elements });
+  const original = structuredClone(store.getState().theme);
+  store.dispatch('rotateSelection', { ids: [1, 2, 3], rotation: 390 });
+  assert.deepEqual(store.getState().theme.elements.map(e => e.rotation ?? 0), [30, 30, 0]);
+  store.undo(); assert.deepEqual(store.getState().theme, original);
+  store.redo();
+  store.dispatch('rotateSelection', { ids: [1, 2], rotation: 360 });
+  assert.ok(store.getState().theme.elements.every(e => !Object.hasOwn(e, 'rotation')));
+  const withCard = createStore({ ...DEMO_THEME, elements: [...elements, made('card', 4)] });
+  const before = structuredClone(withCard.getState().theme);
+  withCard.dispatch('rotateSelection', { ids: [1, 4], rotation: 30 });
+  assert.deepEqual(withCard.getState().theme, before);
+  withCard.dispatch('rotateSelection', { ids: [999], rotation: 30 });
+  assert.deepEqual(withCard.getState().theme, before);
+});

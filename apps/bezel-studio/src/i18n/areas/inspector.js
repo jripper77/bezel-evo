@@ -7,6 +7,13 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    "insp.theme.actions": "Theme actions",
+    "insp.theme.turn": "Rotate by 180°",
+    "insp.theme.selectHint": "Select an object on the canvas or in Layers to see its properties here.",
+    "insp.theme.every": "every {seconds} s",
+    "insp.theme.readEvery": "Read sensors and redraw every",
+    "insp.theme.refreshHint": "Charts and animations stay fluid: this value only sets how often new readings arrive.",
+
     'insp.weather.iconSize': 'Icon size',
     "insp.image.anchor.top": "Top",
     "insp.image.anchor.left": "Left",
@@ -338,6 +345,13 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    "insp.theme.actions": "Ações do tema",
+    "insp.theme.turn": "Girar 180°",
+    "insp.theme.selectHint": "Selecione um objeto na tela ou em Camadas para ver suas propriedades aqui.",
+    "insp.theme.every": "a cada {seconds} s",
+    "insp.theme.readEvery": "Ler sensores e redesenhar a cada",
+    "insp.theme.refreshHint": "Gráficos e animações continuam fluidos: este valor define apenas a frequência das novas leituras.",
+
     'insp.weather.iconSize': 'Tamanho do ícone',
     "insp.image.anchor.top": "Superior",
     "insp.image.anchor.left": "Esquerda",
@@ -669,6 +683,13 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    "insp.theme.actions": "Azioni sul tema",
+    "insp.theme.turn": "Ruota di 180°",
+    "insp.theme.selectHint": "Seleziona un oggetto nel canvas o in Livelli per vederne le proprietà qui.",
+    "insp.theme.every": "ogni {seconds} s",
+    "insp.theme.readEvery": "Leggi i sensori e ridisegna ogni",
+    "insp.theme.refreshHint": "Grafici e animazioni restano fluidi: questo valore decide solo ogni quanto arrivano letture nuove.",
+
     'insp.weather.iconSize': 'Dimensione icona',
     "insp.image.anchor.top": "In alto",
     "insp.image.anchor.left": "A sinistra",

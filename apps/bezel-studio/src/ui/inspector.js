@@ -5,7 +5,7 @@ import { objectMenuItems } from './object-menu.js';
 import { openMenuAt } from './menu.js';
 import { createCommonFields } from './inspector/common.js';
 import { sections as multiSections, header as multiHeader } from './inspector/multi.js';
-import { panel as themePanel, sections as themeSections } from './inspector/theme.js';
+import { panel as themePanel, header as themeHeader, orientationField as themeOrientation, sections as themeSections } from './inspector/theme.js';
 import { sections as clockPanels } from './inspector/clock.js';
 import { sections as weatherPanels } from './inspector/weather.js';
 import { sections as valuePanels } from './inspector/value.js';
@@ -155,6 +155,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   // What the form was last drawn with: a video background is drawn again
   // when the screen, live mode, its video or ffmpeg change.
   let shown = { assets: [], signature: '' };
+  let themePreview = null;
   const common = createCommonFields({ t, store, update, root, sensors, host, pickers, colorField, video, barCornerModes, sourceState, shownValue, optionTiles, redraw: () => render(shown.assets) });
   const { sourceCard, appChipGroup, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, timingOf, button } = common;
 
@@ -306,9 +307,10 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   function membershipForm(e, theme) {
-    if (!e.card && !e.isGroup) {
+    if (!e.isGroup) {
       const descendants = new Set(withChildren(theme, [e.id]));
-      const parents = theme.elements.filter(parent => (parent.isGroup || parent.card) && !descendants.has(parent.id));
+      const parents = theme.elements.filter(parent => (parent.isGroup || parent.card) && !descendants.has(parent.id)
+        && (!e.card || !parent.card && !parent.cardMember));
       const current = e.groupParent ?? e.cardMember?.parent;
       const card = parents.find(parent => parent.id === current && parent.card);
       return [selectField(t('inspector.membership'), current == null ? '' : String(current), [['', t('layers.rootDrop')], ...parents.map(parent => [String(parent.id), parent.name])], value => {
@@ -502,8 +504,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     });
     const key = e.isGroup || e.card ? null : boundKey(e);
     const subtitle = el('span', { class: 'inspector-sub' }, [
-      key ? el('span', { text: sensors.catalog().find(sensor => sensor.key === key)?.label ?? key }) : t(`widget.${widget}`),
-      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` \u00b7 ${where}`,
+      e.card ? t('cardInsp.facePosition', { number: e.card.activeFace + 1, total: e.card.faces.length }) : key ? el('span', { text: sensors.catalog().find(sensor => sensor.key === key)?.label ?? key }) : t(`widget.${widget}`),
+      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` \u00b7 ${e.card ? e.card.faces[e.card.activeFace] : where}`,
     ]);
     const head = objectHeader({ preview: preview(e), name, subtitle,
       live: el('span', { class: 'inspector-live', text: t('insp.live') }),
@@ -598,7 +600,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       ]),
       el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
     ], { tool: iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }) });
-    const actions = section('actions', !e.card && !e.isGroup ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
+    const actions = section('actions', !e.isGroup ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
       e.isGroup && el('button', { type: 'button', class: 'text-button', text: t('group.ungroup'), onclick: () => store.dispatch('ungroup', { ids: [e.id] }) }),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('reorder', { id: e.id, index: theme.elements.length }) }, [t('inspector.front')]),
       iconButton(t('insp.oneForward'), ICONS.up, () => store.dispatch('reorder', { id: e.id, index: theme.elements.findIndex(item => item.id === e.id) + 1 })),
@@ -624,13 +626,14 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     sliding = false;
     const { theme, selection } = store.getState();
     const chosen = selection.map(id => theme.elements.find(e => e.id === id)).filter(Boolean);
-    root.classList.toggle('inspector-linked', chosen.length > 1 || chosen.length === 1 && !chosen[0].card && !chosen[0].isGroup);
+    root.classList.toggle('inspector-linked', chosen.length !== 1 || !chosen[0].isGroup);
+    root.classList.toggle('inspector-theme', chosen.length === 0);
     let nodes;
     if (chosen.length === 0) {
       trial.stop();
       shownElement = null;
-      const context = { theme, assets, t, store, background, minRefresh, video };
-      nodes = background.isOpen() ? themePanel(context) : [el('h2', { text: t('inspector.theme') }), ...sectioned('theme', themeSections(context), null)];
+      const context = { theme, assets, t, store, background, minRefresh, video, host };
+      nodes = background.isOpen() ? themePanel(context) : [themeHeader(context), themeOrientation(context), ...sectioned('theme', themeSections(context), null), el('p', { class: 'hint theme-selection-hint', text: t('insp.theme.selectHint') })];
     } else {
       if (chosen.length > 1) trial.stop();
       background.dismiss();
@@ -671,6 +674,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     if (!kept && inside) counterpart(root)?.focus({ preventScroll: true });
     root.scrollTop = scrollTop;
     requestPreview();
+    themePreview = root.querySelector('.theme-preview');
+    if (themePreview) host.drawThemePreview?.(themePreview);
     refreshLive();
     shown = { assets, signature: videoSignature() };
   }
@@ -694,6 +699,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
 
   /** A new frame is on the canvas: the preview is rendered again and the live values follow. */
   function frameShown() {
+    if (themePreview) host.drawThemePreview?.(themePreview);
     // Canvas animations need not render a static selected object again.
     // Isolated animations follow their own nextMs; new samples still apply.
     if (host.lastSample() !== seenSample) requestPreview();

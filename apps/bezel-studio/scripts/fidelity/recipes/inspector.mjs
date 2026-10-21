@@ -47,6 +47,26 @@ export default {
   }],
   artboards: ['Main', 'GraphData', 'GraphLook', 'PlayerData', 'PlayerLook'],
   states: [
+    { name: 'ux2-card', capture: '#inspector', run: async app => {
+      await standalone(app, 'card');
+      await app.page.setViewportSize({ width: 1280, height: 3000 });
+      await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+      await inspector(app).getByRole('button', { name: t('card.addFace'), exact: true }).click();
+      await openSection(app.page, 'behavior');
+      await inspector(app).getByRole('group', { name: t('card.effect'), exact: true }).getByRole('button', { name: t('card.effect.slide'), exact: true }).click();
+      await inspector(app).getByRole('button', { name: t('cardInsp.addTimed'), exact: true }).click();
+      for (const section of await inspector(app).locator(':scope > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));
+      await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+    } },
+    ...['open', 'closed'].map(state => ({ name: `ux2-theme-${state}`, capture: '#inspector', run: async app => {
+      await standalone(app);
+      await inspector(app).getByRole('button', { name: t('axis.horizontal'), exact: true }).click();
+      for (const section of await inspector(app).locator(':scope > [data-inspector-section]').all()) {
+        const button = section.locator(':scope > .accordion-heading > button');
+        if ((await button.getAttribute('aria-expanded') === 'true') !== (state === 'open')) await button.click();
+      }
+      await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+    } })),
     ...['clock', 'analog', 'weather', 'player', 'spectrum', 'shape', 'image', 'gif'].map(kind => ({ name: `ux2-media-${kind}`, capture: '#inspector', run: async app => {
       if (kind === 'gif') { const url = new URL(app.page.url()); url.searchParams.set('demo', 'gif'); await app.page.goto(url.href); }
       await standalone(app, ['image', 'shape', 'gif'].includes(kind) ? null : kind === 'analog' ? 'clock' : kind);

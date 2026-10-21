@@ -2,6 +2,7 @@
 // written merely by opening a panel.
 import { boundKey } from './editor/widgets.js';
 import { VALUE_PARTS, CLOCK_PARTS } from './text-layout.js';
+import { appliedRotation, canRotate } from './editor/rotation.js';
 
 export function partStylePatch(style, part, patch) {
   if (![...VALUE_PARTS, ...CLOCK_PARTS].includes(part)) return {};
@@ -28,6 +29,7 @@ export function commonSelection(elements) {
   const paths = elements.map(paintPath);
   return {
     frame: Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, commonValue(elements.map(e => e.frame[key]))])),
+    rotation: elements.length > 0 && elements.every(e => canRotate(null, e)) ? commonValue(elements.map(appliedRotation)) : null,
     opacity: commonValue(elements.map(e => e.opacity ?? 1)),
     sensor: elements.length > 0 && elements.every(e => boundKey(e)) ? commonValue(elements.map(boundKey)) : null,
     paint: elements.length > 0 && paths.every(Boolean) ? commonValue(elements.map((e, i) => atPath(e, paths[i]))) : null,

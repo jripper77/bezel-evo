@@ -15,7 +15,7 @@
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
 import { createConfirm } from './storage.js';
-import { sectionTitle } from './fields.js';
+import { accordionSection, sectionTitle } from './fields.js';
 import { errorText } from '../messages.js';
 import { formatBytes, planRefusalText } from '../storage-manager.js';
 import {
@@ -106,6 +106,7 @@ function createPopovers() {
  * @param {() => void} [deps.storageChanged] the album changed what the screen stores
  */
 export function createStandbyPanel({ root, t, locale, bridge, notify, context, storageChanged = () => {} }) {
+  let expanded = true;
   const view = { key: null, signature: '', shown: false, status: 'idle', data: null, error: null, busy: false, problem: null };
   // Which answer about the screen shown is the newest: a reading or a write.
   const answers = createAnswers();
@@ -180,7 +181,7 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
       title: option.enabled ? null : say(detail), dataset: { choice, focus: `radio-${choice}` },
       onclick: () => void choose(choice), onkeydown: (evt) => moveFocus(evt, choice),
     }, [
-      el('span', { class: 'standby-mark', 'aria-hidden': 'true' }),
+      icon(ICONS[({ keep: 'screen', off: 'power', album: 'image', video: 'film' })[choice]], 18),
       el('span', { id: nameId, class: 'standby-label', text: label }),
       el('span', { id: detailId, class: `standby-detail${option.enabled ? '' : ' reason'}`, text: say(detail) }),
     ]);
@@ -234,7 +235,12 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
     }
     if (!offered(view.data)) return [el('p', { class: 'hint', text: t('standby.unsupported') })];
     const parts = [el('div', { class: 'standby-options', role: 'radiogroup', 'aria-labelledby': 'standby-title', 'aria-busy': String(view.busy) }, CHOICES.map(optionRow))];
-    parts.push(planB(), el('button', {
+    parts.push(el('div', { class: 'standby-current' }, [
+      el('strong', { text: t(`standby.choice.${view.data.choice}`) }),
+      el('p', { class: 'hint', text: say(currentDetail(view.data, view.data.choice) ?? { key: `screenPanel.standby.${view.data.choice}`, params: {} }) }),
+      planB(),
+      ...CHOICES.filter(choice => !optionOf(view.data, choice).enabled).map(choice => el('p', { class: 'hint', text: `${t(`standby.choice.${choice}`)}: ${t(`standby.reason.${optionOf(view.data, choice).reason}`)}` })),
+    ]), el('button', {
       type: 'button', class: 'primary-button', text: t('standby.write'), disabled: view.busy,
       dataset: { focus: 'write-standby' }, onclick: () => void choose(view.data.choice, { reapply: true }),
     }));
@@ -257,7 +263,12 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
     const focus = focusedKey();
     popovers.close();
     root.setAttribute('aria-busy', String(view.status === 'loading' || view.busy));
-    root.replaceChildren(...head(current), ...bodyParts());
+    const headings = head(current);
+    const disclosure = accordionSection({ id: 'standby', title: t('standby.summary.atShutdown'), icon: 'screen', expanded,
+      onToggle: () => { expanded = !expanded; disclosure.setExpanded(expanded); },
+      render: body => body.append(...headings, ...bodyParts()),
+    });
+    root.replaceChildren(disclosure.element);
     if (focus) root.querySelector(`[data-focus="${focus}"]`)?.focus();
   }
 

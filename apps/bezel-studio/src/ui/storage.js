@@ -9,9 +9,10 @@
 // are drawn by `manager.js`.
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
+import { openMenuAt } from './menu.js';
 import { errorText } from '../messages.js';
 import { GLYPHS, createManagerView } from './manager.js';
-import { chipButton, kindIcon, sectionTitle } from './fields.js';
+import { accordionSection, chipButton, kindIcon, sectionTitle } from './fields.js';
 import { BAR_KINDS, PLACES, bootFile, breakdown, mediaShown, placeCounts } from '../storage-breakdown.js';
 import {
   KINDS, MEDIA, baseName, formatBytes, formatMiB, haltText, mismatchText, planRefusalText, refusalText, reportLines, storageFeatures,
@@ -140,7 +141,15 @@ export function createConfirm(t, { refocus = () => {} } = {}) {
  * @param {(screen: string, overview: object) => void} [deps.onOverview] shares the fresh storage listing with the inspector
  * @param {(key: string) => void} [deps.restart] restarts a screen that stopped responding
  */
-export function createStoragePanel({ root, t, locale, bridge, notify, context, restart = () => {}, useBackground = () => {}, onOverview = () => {} }) {
+export function createStoragePanel({ root, t, locale, bridge, notify, context, restart = () => {}, useBackground = () => {}, onOverview = () => {}, expand = () => {} }) {
+  const disclosures = new Map();
+  function group(id, title, name, nodes) {
+    const control = accordionSection({ id, title, icon: name, expanded: disclosures.get(id) !== false,
+      onToggle: () => { const open = disclosures.get(id) === false; disclosures.set(id, open); control.setExpanded(open); },
+      render: body => body.append(...nodes.filter(Boolean)),
+    });
+    return control.element;
+  }
   const view = {
     key: null,
     shown: false,
@@ -700,6 +709,11 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
       view.place = place;
       renderBody();
     }, { dataset: { focus: `place-${place}` } })));
+    const sendButton = el('button', { type: 'button', class: 'primary-button storage-send', disabled: busy(), 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: () => openMenuAt(sendButton, {
+      label: t('storagePanel.sendFile'), items: MEDIA.map(medium => ({ label: t(`storage.medium.${medium}`), disabled: !view.data?.[medium === 'internal' ? 'internal' : 'card'], run: () => choose(medium) })),
+    }) }, [icon(ICONS.upload, 16), t('storagePanel.sendFile')]);
+    const filters = manager.filterBar();
+    filters.append(sendButton);
     return el('div', { class: 'storage-files-head' }, [
       el('div', { class: 'storage-files-title' }, [
         sectionTitle(t('storagePanel.files'), { id: 'storage-files-title' }),
@@ -709,7 +723,7 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
         ]),
       ]),
       chips,
-      manager.filterBar(),
+      filters,
     ]);
   }
 
@@ -719,6 +733,7 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     const cached = view.data?.cache?.bytes;
     const cacheLabel = Number.isFinite(cached) ? t('storagePanel.cacheButton', { size: bytes(cached) }) : t('storage.cache.open');
     return el('div', { class: 'storage-foot' }, [
+      el('button', { type: 'button', class: 'text-button', dataset: { focus: 'tool-expand' }, onclick: expand }, [icon(ICONS.expand ?? ICONS.frame, 16), t('storagePanel.expand')]),
       el('button', { type: 'button', class: 'text-button', disabled: busy() || !features.remove, title: cleanupReason, dataset: { focus: 'tool-cleanup' }, onclick: () => manager.cleanup() }, [
         icon(GLYPHS.sweep, 16), el('span', { text: t('storage.cleanup.open') }),
       ]),
@@ -763,14 +778,13 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     const slot = bootSlot(features);
     const media = mediaShown(view.place, MEDIA);
     body.replaceChildren(
-      summary(),
-      ...hints,
-      ...(slot ? [slot] : []),
-      el('section', { class: 'storage-files', 'aria-labelledby': 'storage-files-title' }, [
+      group('storage-space', t('storagePanel.space'), 'database', [summary(), ...hints]),
+      ...(slot ? [group('storage-boot', t('storage.bootTitle'), 'power', [slot])] : []),
+      group('storage-files', t('storagePanel.files'), 'box', [el('section', { class: 'storage-files', 'aria-labelledby': 'storage-files-title' }, [
         filesHead(),
         el('div', { class: `manager-columns${media.length === 1 ? ' single' : ''}` }, media.map((m) => manager.column(m))),
-      ]),
-      foot(features),
+      ])]),
+      group('storage-maintenance', t('storagePanel.maintenance'), 'sliders', [foot(features)]),
     );
     refocus();
   }

@@ -2,6 +2,7 @@
 export const PREFIXES = Object.freeze(['cardInsp.']);
 export default {
   en: {
+    "cardInsp.facePosition": "Face {number} of {total}",
     'cardInsp.add': 'Add', 'cardInsp.edit': 'Edit',
     'cardInsp.editShared': 'Edit the shared background',
     'cardInsp.editHint': 'Edit shows that face on the canvas; its name and objects appear below.',
@@ -33,6 +34,7 @@ export default {
     'cardInsp.mixed': 'Different return faces', 'cardInsp.appHint': 'Choose a running app or type its name. An empty media app matches any media session.',
   },
   'pt-BR': {
+    "cardInsp.facePosition": "Face {number} de {total}",
     'cardInsp.add': 'Adicionar', 'cardInsp.edit': 'Editar',
     'cardInsp.editShared': 'Editar o fundo comum',
     'cardInsp.editHint': 'Editar mostra essa face na tela; o nome e os objetos dela aparecem abaixo.',
@@ -64,6 +66,7 @@ export default {
     'cardInsp.mixed': 'Faces de retorno diferentes', 'cardInsp.appHint': 'Escolha um app aberto ou escreva seu nome. App vazio em mídia corresponde a qualquer sessão.',
   },
   it: {
+    "cardInsp.facePosition": "Faccia {number} di {total}",
     'cardInsp.add': 'Aggiungi', 'cardInsp.edit': 'Modifica',
     'cardInsp.editShared': 'Modifica lo sfondo comune',
     'cardInsp.editHint': 'Modifica mostra quella faccia nel canvas; il nome e gli oggetti compaiono qui sotto.',

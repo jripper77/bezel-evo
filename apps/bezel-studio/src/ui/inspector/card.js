@@ -3,7 +3,7 @@ import { describeSections } from './sections.js';
 // Card content only: the inspector owns header, sections, geometry and preview.
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, rangeField, segmented, selectField, sentence as sentenceOfParts, toggleField as switchRow, textField } from '../fields.js';
+import { dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, iconChoice, numberField, previewChoice, selectField, sentence as sentenceOfParts, toggleField as switchRow, textField } from '../fields.js';
 import { SEPARATOR, openMenuAt } from '../menu.js';
 import { widgetOf } from '../../editor/widgets.js';
 import { selectionRoots } from '../../editor/cards.js';
@@ -29,7 +29,7 @@ const members = (ctx, face) => {
 };
 
 /** "Edit": shows that part of the Card (on the canvas, its objects below); pressed while it is the one edited. */
-const editButton = (ctx, label, pressed, onclick) => el('button', { type: 'button', class: 'text-button face-edit', 'aria-label': label, title: label, 'aria-pressed': String(pressed), onclick }, [ctx.t('cardInsp.edit')]);
+const editButton = (ctx, label, pressed, onclick) => iconButton(label, ICONS.rename, onclick, { class: 'quiet face-edit', 'aria-pressed': String(pressed) });
 
 /**
  * The faces as a numbered list (D-24): name, "in view", Edit and a ⋮ menu
@@ -74,8 +74,8 @@ function faceList(ctx, base, views) {
     onclick: () => { views.delete(e.id); store.dispatch('addCardFace', { id: e.id, name: t('card.faceName', { number: c.faces.length + 1 }) }); focusLater(`${row(c.faces.length)} .face-edit`); } }, [icon(ICONS.plus, 16), t('cardInsp.add')]);
   return cardSection(ctx, 'faces', t('card.tab.faces'), [
     el('div', { class: 'face-list', dataset: { cardId: String(e.id) } }, [
-      el('ol', { class: 'face-rows', 'aria-label': t('card.tab.faces') }, c.faces.map(faceRow)),
       shared,
+      el('ol', { class: 'face-rows', 'aria-label': t('card.tab.faces') }, c.faces.map(faceRow)),
     ]),
     el('p', { class: 'hint', text: t('cardInsp.editHint') }),
   ], c.faces.length, add);
@@ -103,7 +103,7 @@ function facesForm(ctx) {
     move.querySelector('select').setAttribute('aria-label', t('cardInsp.moveObject', { name: item.name }));
     return el('div', { class: 'face-object' }, [card, move]);
   });
-  return [faceList(ctx, base, views), transitionSection(ctx, 'compact'), editor,
+  return [faceList(ctx, base, views), editor,
     cardSection(ctx, 'objects', t('cardInsp.objectsIn', { face: name }), rows.length ? rows : [el('p', { class: 'hint', text: t('cardInsp.emptyFace') })], objects.length), dashedHint([t('cardInsp.dropHint')])];
 }
 
@@ -113,62 +113,29 @@ const DIRECTIONS = Object.freeze([['left', 'arrowLeft'], ['right', 'arrowRight']
 const directed = settings => ['slide', 'flip'].includes(settings?.effect);
 
 /** The direction as four arrow buttons (named for assistive tech). */
-function directionControl(t, settings, set) {
-  const group = segmented(t('common.direction'), settings.direction, DIRECTIONS.map(([value]) => [value, t(`card.direction.${value}`)]), direction => set({ direction }), { bare: true });
-  Array.from(group.children).forEach((button, i) => { button.setAttribute('aria-label', button.textContent); button.title = button.textContent; button.replaceChildren(icon(ICONS[DIRECTIONS[i][1]], 18)); });
-  return group;
+function directionControl(t, transition, set) {
+  return iconChoice(t('common.direction'), transition.direction ?? 'up', DIRECTIONS.map(([value, name]) => [value, t(`card.direction.${value}`), name]), direction => set({ direction }), { iconOnly: true, wide: true });
 }
 
-/** The effect as picture cards (Motion tab). */
-function effectCards(ctx, settings, set) {
-  const { element: e, t } = ctx;
-  return el('div', { class: 'card-effects', role: 'radiogroup', 'aria-label': t('card.effect') }, Object.keys(EFFECT_ART).map(value => {
-    const label = el('label', { class: 'card-effect', dataset: { checked: String((settings?.effect ?? 'none') === value) } });
-    const input = el('input', { type: 'radio', name: `card-effect-${e.id}`, checked: (settings?.effect ?? 'none') === value, 'aria-label': t(`card.effect.${value}`) });
-    input.addEventListener('change', () => input.checked && set(withCardEffect(settings, value)));
-    const art = icon(EFFECT_ART[value], 44); art.classList.add('effect-art');
-    label.append(input, art, el('span', { text: t(`card.effect.${value}`) })); return label;
-  }));
-}
-
-/** The effect, duration and direction on one line (Faces tab). */
-function compactControls(ctx, settings, set) {
-  const { t } = ctx;
+/** Every face change uses the same transition; edit it once in Behavior. */
+function transitionSection(ctx) {
+  const { element: e, t, update } = ctx;
+  const settings = e.card.transition ?? null;
+  const set = patch => update(e.id, { card: { transition: patch } });
   const transition = settings?.effect && settings.effect !== 'none' ? settings : null;
-  const effect = selectField(t('card.effect'), settings?.effect ?? 'none', Object.keys(EFFECT_ART).map(value => [value, t(`card.effect.${value}`)]), value => set(withCardEffect(settings, value)));
-  effect.querySelector('select').setAttribute('aria-label', t('card.effect'));
-  return el('div', { class: 'button-row card-transition-row' }, [effect,
-    transition && prefixedField('', t('card.duration'), transition.durationMs, durationMs => set({ durationMs: cardDuration(durationMs) }), { ...CARD_DURATION, unit: 'ms' }),
+  return cardSection(ctx, 'animation', t('cardInsp.transitionTitle'), [
+    previewChoice(t('card.effect'), Object.keys(EFFECT_ART).map(effect => ({
+      text: t(`card.effect.${effect}`), art: EFFECT_ART[effect] ?? EFFECT_ART.none,
+      pressed: (settings?.effect ?? 'none') === effect,
+      onClick: () => set(withCardEffect(settings, effect)),
+    }))),
+    transition && numberField(t('card.duration'), transition.durationMs, durationMs => set({ durationMs: cardDuration(durationMs) }), { ...CARD_DURATION, unit: 'ms', iconName: 'clock' }),
     directed(transition) && directionControl(t, transition, set),
+    transition && switchRow(t('cardInsp.animateShared'), transition.includeBase, includeBase => set({ includeBase })),
   ]);
 }
 
-/**
- * The Card's one transition (D-24): every face change uses it. `compact`
- * (Faces tab) puts it on one line; `full` (Motion tab) shows the effects as
- * pictures, the duration as a slider and the shared background switch.
- */
-function transitionSection(ctx, layout) {
-  const { element: e, t, store, update } = ctx, c = e.card;
-  const settings = c.transition ?? null;
-  const set = patch => update(e.id, { card: { transition: patch } });
-  const transition = settings?.effect && settings.effect !== 'none' ? settings : null;
-  const play = el('button', { type: 'button', class: 'text-button play-button', disabled: c.faces.length < 2, onclick: () => store.dispatch('cardFace', { id: e.id, face: (c.activeFace + 1) % c.faces.length }) }, [icon(ICONS.play, 16), t('card.animateNext')]);
-  const nodes = layout === 'compact' ? [compactControls(ctx, settings, set), play] : [
-    el('p', { class: 'hint', text: t('cardInsp.transitionHint') }),
-    effectCards(ctx, settings, set),
-    transition && rangeField(t('card.duration'), transition.durationMs, durationMs => set({ durationMs }), { ...CARD_DURATION, format: value => `${value} ms`, compact: true }),
-    transition && el('div', { class: 'card-scale' }, [el('span', { text: t('cardInsp.fast') }), el('span', { text: t('cardInsp.slow') })]),
-    directed(transition) && directionControl(t, transition, set),
-    transition && switchRow(t('cardInsp.animateShared'), transition.includeBase, includeBase => set({ includeBase })),
-    play, dashedHint([t('card.animationHelp')], { iconName: 'info' }),
-  ];
-  return cardSection(ctx, layout === 'compact' ? 'transition' : 'animation', t('cardInsp.transitionTitle'), nodes);
-}
-
-function motionForm(ctx) {
-  return [transitionSection(ctx, 'full')];
-}
+function motionForm(ctx) { return [transitionSection(ctx)]; }
 
 function triggerForm(ctx) {
   const { element: e, t, store, update } = ctx, c = e.card;
@@ -249,5 +216,9 @@ export function renderCardPanel(tab, ctx) {
 }
 
 export function sections(ctx) {
-  return describeSections(ctx, { ...ctx.completePanels(shapePanels(ctx)), ...Object.fromEntries(CARD_TABS.map(tab => [tab, renderCardPanel(tab, ctx)])) });
+  const panels = ctx.completePanels(shapePanels(ctx));
+  const descriptors = describeSections(ctx, { ...panels, faces: facesForm(ctx), behavior: [...motionForm(ctx), ...triggerForm(ctx)] });
+  // Faces precede the common appearance controls in the Card artboard.
+  const order = ['layout', 'faces', 'shape', 'color', 'behavior'];
+  return descriptors.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 }

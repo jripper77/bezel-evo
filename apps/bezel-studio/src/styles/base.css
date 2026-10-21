@@ -147,7 +147,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 /* A labelled field (label above): `numberField()`, `textField()`, `selectField()`. */
 .field { display: grid; gap: 4px; margin-bottom: 8px; }
 /* A value/control row, also used by a Card's object-and-destination row. */
-.number-control, .face-object { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.number-control, .face-object, .theme-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .number-control input { min-width: 0; }
 .field-label { display: flex; align-items: center; gap: 6px; }
 .field-label .ic, .fld > .ic { flex: none; color: var(--dim); }
@@ -220,7 +220,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .cp-section .section-head .text-button { min-height: 24px; padding: 2px 6px; font-size: var(--fs-compact); }
 .cp-section .section-head .text-button:first-of-type { margin-left: auto; }
 .cp-section .hint { margin: 0; font-size: var(--fs-small); color: var(--muted); line-height: 1.45; }
-.swatch-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatch-grid, #storage-panel .manager-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .swatch-button { display: inline-flex; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer; }
 .swatch-button .swatch { width: 24px; height: 24px; border-radius: 6px; }
 .swatch-button[aria-pressed="true"] .swatch { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -381,7 +381,7 @@ button.pill:hover { border-color: var(--accent); }
 .property-section { margin-top: 22px; }
 .property-section .section-head { margin: 0 0 10px; }
 .property-section .section-head .segmented { margin-left: auto; }
-.property-section-body, .trigger-list, .storage-files, .bg-sources { display: flex; flex-direction: column; gap: 10px; }
+.property-section-body, .trigger-list, .storage-files, .bg-sources, #storage-panel .storage-files-head { display: flex; flex-direction: column; gap: 10px; }
 .property-section-body > .field, .property-section-body > .slider-field, .property-section-body > .check { margin: 0; }
 .property-section-body h4 { margin: 4px 0 0; font-size: var(--fs-caps); color: var(--muted); }
 .property-section-body .actions { margin-top: 0; }
