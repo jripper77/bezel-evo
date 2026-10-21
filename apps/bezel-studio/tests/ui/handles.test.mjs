@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scaledText, frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle } from '../../src/editor/handles.js';
+import { editedFill, scaledText, frameHandles, propertyHandles, editPropertyHandle, scaledFrames, resetPropertyHandle } from '../../src/editor/handles.js';
 import { createWidget } from '../../src/editor/widgets.js';
 import { centerOf, rotatePoint } from '../../src/editor/rotation.js';
 import { translator } from '../../src/i18n/index.js';
@@ -188,4 +188,14 @@ test('Ctrl resize scales only eligible typography and clamps its size', () => {
   assert.equal(scaledText(made('player'), {}), null);
   const analog = made('clock'); analog.kind.content.analog = {};
   assert.equal(scaledText(analog, {}), null);
+});
+
+
+test('shape image edits keep the source unchanged and share inspector limits', () => {
+  const image = { asset: 'image.png', scale: 2, offsetX: 5, offsetY: -10 }, original = structuredClone(image);
+  assert.deepEqual(editedFill(image, { dx: 3.7, dy: -2.3, scale: 1.5 }), { offsetX: 9, offsetY: -12, scale: 3 });
+  assert.deepEqual(image, original);
+  assert.deepEqual(editedFill({}), { offsetX: 0, offsetY: 0, scale: 1 });
+  assert.equal(editedFill(image, { scale: .001 }).scale, .05);
+  assert.equal(editedFill(image, { scale: 100 }).scale, 10);
 });

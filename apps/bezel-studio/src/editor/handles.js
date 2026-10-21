@@ -38,6 +38,11 @@ export function scaledFrames(elements, from, to) {
   } } }));
 }
 
+/** A natural-size shape image moves in local pixels and scales from its origin. */
+export function editedFill(image, { dx = 0, dy = 0, scale = 1 } = {}) {
+  return { offsetX: Math.round((image.offsetX ?? 0) + dx), offsetY: Math.round((image.offsetY ?? 0) + dy), scale: clamp((image.scale ?? 1) * scale, .05, 10) };
+}
+
 /** Ctrl-resize scales typography while leaving its frame unchanged. */
 export function scaledText(element, frame) {
   const k = element.kind;

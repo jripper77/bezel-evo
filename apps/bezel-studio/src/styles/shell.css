@@ -221,5 +221,5 @@ body.resizing { cursor: col-resize; user-select: none; }
 /* Inline text entry keeps the native multiline editor and document geometry. */
 .canvas-text-editor { position: absolute; z-index: 4; margin: 0; padding: 0; min-height: 0; min-width: 0; resize: none; border: 2px solid var(--select); border-radius: 0; background: var(--chrome); color: var(--text); }
 
-.canvas-card-faces { position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; max-width: min(600px, 80vw); overflow-x: auto; padding: 3px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--chrome); }
+.canvas-card-faces, .canvas-edit-tools { position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; max-width: min(600px, 80vw); overflow-x: auto; padding: 3px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--chrome); }
 .canvas-card-faces .segmented { flex: 0 0 auto; }

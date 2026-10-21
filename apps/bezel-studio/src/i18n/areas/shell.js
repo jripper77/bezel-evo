@@ -7,6 +7,10 @@ export const PREFIXES = Object.freeze(['shell.']);
 
 export default {
   en: {
+    'shell.editShapeImage': 'Shape image',
+    'shell.imageEditHint': 'Drag to move · Wheel or +/− to scale · Escape to finish',
+    'shell.finishImage': 'Finish editing the shape image',
+
     'shell.exitCard': 'Finish editing this Card (Escape)',
     'shell.textEditHint': 'Ctrl+Enter to apply · Escape to cancel',
     "shell.handle.resize.nw": "Resize top left",
@@ -46,6 +50,10 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   'pt-BR': {
+    'shell.editShapeImage': 'Imagem da forma',
+    'shell.imageEditHint': 'Arraste para mover · Roda ou +/− para ampliar · Esc para concluir',
+    'shell.finishImage': 'Concluir edição da imagem da forma',
+
     'shell.exitCard': 'Concluir edição deste Card (Esc)',
     'shell.textEditHint': 'Ctrl+Enter para aplicar · Esc para cancelar',
     "shell.handle.resize.nw": "Redimensionar canto superior esquerdo",
@@ -85,6 +93,10 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   it: {
+    'shell.editShapeImage': 'Immagine della forma',
+    'shell.imageEditHint': 'Trascina per spostare · Rotella o +/− per scalare · Esc per terminare',
+    'shell.finishImage': 'Termina modifica dell’immagine della forma',
+
     'shell.exitCard': 'Termina modifica della Card (Esc)',
     'shell.textEditHint': 'Ctrl+Invio per applicare · Esc per annullare',
     "shell.handle.resize.nw": "Ridimensiona in alto a sinistra",
