@@ -25,6 +25,8 @@ export function demoValue(base, swing, t, seed) {
 }
 
 /** Native demo reading, or null for an unknown/unavailable sensor. */
+export const DEMO_SYSTEM_TEXT = Object.freeze({ 'system.hostname': 'bezel-demo-workstation', 'system.os': 'Windows 11', 'system.audio.device': 'Demo headphones' });
+
 export function demoSensorValue(key, t) {
   const index = DEMO_SENSORS.findIndex(row => row[0] === key);
   if (index < 0) return null;

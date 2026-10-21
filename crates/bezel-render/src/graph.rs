@@ -13,6 +13,8 @@ use crate::path::{positive, rect};
 /// How a graph looks and scales.
 #[derive(Clone, Copy)]
 pub(crate) struct GraphSpec<'a> {
+    /// Explicit graph bar width, centered in each sample slot.
+    pub bar_width: Option<f32>,
     /// Rounded bar geometry.
     pub rounded: bool,
     /// Explicit bar gap, or original proportional spacing.
@@ -220,9 +222,13 @@ fn draw_bars(
     let slots = usize::from(spec.history).max(1);
     let slot = area.width / slots as f32;
     let gap = spec
-        .gap
-        .unwrap_or(if slot >= 4.0 { slot * 0.2 } else { 0.0 })
-        .clamp(0., slot * 0.8);
+        .bar_width
+        .map(|width| slot - width.clamp(0., slot))
+        .unwrap_or_else(|| {
+            spec.gap
+                .unwrap_or(if slot >= 4.0 { slot * 0.2 } else { 0.0 })
+                .clamp(0., slot * 0.8)
+        });
     let right = area.x + area.width;
     let bottom = area.y + area.height;
     let mut pb = PathBuilder::new();
@@ -282,6 +288,7 @@ mod tests {
 
     fn spec(autoscale: bool) -> GraphSpec<'static> {
         GraphSpec {
+            bar_width: None,
             rounded: false,
             gap: None,
             reverse: false,
@@ -295,6 +302,59 @@ mod tests {
             min: 0.0,
             max: 100.0,
         }
+    }
+
+    fn bars_pixels_with_width(bar_width: Option<f32>) -> tiny_skia::Pixmap {
+        let mut pixels = tiny_skia::Pixmap::new(100, 80).unwrap();
+        let mut layer = Layer {
+            pixmap: pixels.as_mut(),
+            x: 0,
+            y: 0,
+        };
+        let spec = GraphSpec {
+            bar_width,
+            style: GraphStyle::Bars,
+            ..spec(false)
+        };
+        draw(
+            &mut layer,
+            BoxF::new(0., 0., 100., 80.),
+            &[Some(100.), Some(50.), None, Some(75.)],
+            &spec,
+        );
+        pixels
+    }
+
+    #[test]
+    fn explicit_bar_width_changes_exact_pixel_runs_and_stays_centered() {
+        for width in [3, 11] {
+            let pixels = bars_pixels_with_width(Some(width as f32));
+            let row: Vec<u32> = (0..100)
+                .filter(|x| pixels.pixel(*x, 60).unwrap().alpha() == 255)
+                .collect();
+            // Samples 0, 1 and 3 reach this row; each has exactly the requested width.
+            let expected: Vec<u32> = [0, 1, 3]
+                .into_iter()
+                .flat_map(|slot| {
+                    let left = slot * 25 + (25 - width) / 2;
+                    left..left + width
+                })
+                .collect();
+            assert_eq!(row, expected);
+        }
+    }
+
+    #[test]
+    fn legacy_bar_pixels_are_unchanged() {
+        let pixels = bars_pixels_with_width(None);
+        let checksum = pixels
+            .data()
+            .iter()
+            .fold(0xcbf29ce484222325_u64, |hash, byte| {
+                (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+            });
+        // Captured from the pre-barWidth renderer (defd7b6); all RGBA bytes.
+        assert_eq!(checksum, 1239134809160493365);
     }
 
     #[test]

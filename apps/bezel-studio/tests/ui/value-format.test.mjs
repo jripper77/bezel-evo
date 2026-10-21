@@ -1,0 +1,23 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { formatValue } from '../../src/value-format.js';
+test('native value parts keep formatting options and separate the unit', () => {
+  assert.deepEqual(formatValue(42.4, 'percent'), { number:'42',unit:'%' });
+  assert.deepEqual(formatValue(42.4, 'percent', { decimals:2,showUnit:false }), { number:'42.40',unit:'' });
+  assert.deepEqual(formatValue(25, 'celsius', { fahrenheit:true }), { number:'77',unit:'°F' });
+  assert.deepEqual(formatValue(4720, 'megahertz'), { number:'4.72',unit:' GHz' });
+  assert.deepEqual(formatValue(800, 'megahertz'), { number:'800',unit:' MHz' });
+  assert.deepEqual(formatValue(3000000, 'bytesPerSecond', { decimalBytes:true }), { number:'3.0',unit:' MB/s' });
+  assert.deepEqual(formatValue(2048, 'bytes'), { number:'2.0',unit:' KiB' });
+  assert.deepEqual(formatValue(-1, 'bytes'), { number:'0',unit:' B' });
+  assert.deepEqual(formatValue(93784, 'seconds'), { number:'1d 02:03',unit:'' });
+  assert.deepEqual(formatValue(3661, 'seconds'), { number:'01:01',unit:'' });
+  assert.deepEqual(formatValue('my-pc', 'text'), { number:'my-pc',unit:'' });
+  assert.deepEqual(formatValue(null, 'percent'), { number:'—',unit:'' });
+  assert.deepEqual(formatValue(NaN, 'percent'), { number:'—',unit:'' });
+  assert.deepEqual(formatValue(5, 'number'), { number:'5.0',unit:'' });
+  assert.deepEqual(formatValue(1000, 'rpm'), { number:'1000',unit:' RPM' });
+  assert.deepEqual(formatValue(1.2, 'volts'), { number:'1.20',unit:' V' });
+  assert.deepEqual(formatValue(2.4, 'amperes'), { number:'2.40',unit:' A' });
+  assert.deepEqual(formatValue(12, 'watts'), { number:'12',unit:' W' });
+});

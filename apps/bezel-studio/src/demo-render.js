@@ -1,8 +1,11 @@
+import { gaugeBlocks, barSpan } from './gauge-layout.js';
+import { drawTextShadow } from './text-shadow.js';
 import { appliedRotation, centerOf } from './editor/rotation.js';
 import { drawVisualization } from './demo-visualization.js';
 import { applyTextCase } from './text-case.js';
 import { boundKey } from './editor/widgets.js';
-import { demoSensorValue } from './demo-sensors.js';
+import { demoSensorValue, DEMO_SENSORS, DEMO_SYSTEM_TEXT } from './demo-sensors.js';
+import { formatValue } from './value-format.js';
 import { demoColorValue, withValueColor } from './value-color.js';
 import { demoSpectrum, spectrumOf } from './spectrum.js';
 import { translator } from './i18n/index.js';
@@ -33,6 +36,13 @@ function paint(p) {
   if (typeof p === 'string') return color(p);
   if (p && p.stops) return color(p.stops[0]?.[1]);
   return 'transparent';
+}
+
+function canvasPaint(ctx, value, frame) {
+  if (!value?.stops) return paint(value);
+  const gradient = ctx.createLinearGradient(...fadeLine(frame, value.angle ?? 0));
+  for (const [at, hex] of [...value.stops].sort((a, b) => a[0] - b[0])) gradient.addColorStop(Math.max(0, Math.min(1, at)), color(hex));
+  return gradient;
 }
 
 /** How long each frame of the demo's animated GIFs (every `*.gif` image) lasts, ms. */
@@ -226,9 +236,11 @@ function textPieces(e, text, t, value, refresh, motion, trial) {
   if (k.content.type === 'sensor') {
     const key = boundKey(e);
     const roll = key && !trial ? demoRoll(e, (at) => demoSensorValue(key, at), t, refresh, motion) : null;
-    const number = roll ? String(Math.round(roll.to)) : Number.isFinite(value) ? String(Math.round(value * 100)) : '—';
-    const wheels = roll ? rollWheels(roll, 0, [...number].filter((ch) => ch >= '0' && ch <= '9').length) : null;
-    return [piece(k.content.prefix ?? '', 'prefix'), piece(number, 'number', { wheels }), piece(k.content.format?.showUnit === false ? '' : '%', 'unit'), piece(k.content.suffix ?? '', 'suffix')];
+    const formatted = formatValue(DEMO_SYSTEM_TEXT[key] ?? (roll ? roll.to : value * 100), DEMO_SENSORS.find(row => row[0] === key)?.[3], k.content.format);
+    const { number, unit } = formatted;
+    const decimals = number.split('.')[1]?.length ?? 0;
+    const wheels = roll ? rollWheels(roll, decimals, [...number].filter((ch) => ch >= '0' && ch <= '9').length) : null;
+    return [piece(k.content.prefix ?? '', 'prefix'), piece(number, 'number', { wheels }), piece(unit, 'unit'), piece(k.content.suffix ?? '', 'suffix')];
   }
   if (k.content.type === 'clock') {
     const ms = t * 1000;
@@ -338,7 +350,7 @@ function drawDial(ctx, e, t, motion, trial) {
  * arc, zones or gradient, ticks, numbers, peak mark, hand, cap and the
  * value under the pivot.
  */
-function drawNeedleLook(ctx, e, frac, t, refresh, motion) {
+function drawNeedleLook(ctx, e, frac, t, refresh, motion, trial = null) {
   const k = e.kind, look = lookOf(k.look), b = k.binding ?? { min: 0, max: 100 }, f = e.frame;
   const g = fitGauge(f, k.pivot ?? [0.5, 0.5], k.startAngle ?? 0, k.sweep ?? 0, look.arcWidth / 2 + 1);
   if (!(g.radius > 0)) return;
@@ -416,7 +428,8 @@ function drawNeedleLook(ctx, e, frac, t, refresh, motion) {
     const s = look.center.style ?? {}, sz = Math.max(1, s.size ?? 24), half = Math.max(g.radius, sz * 2);
     const box = { x: px - half, y: py + capR + sz * 0.2, width: half * 2, height: sz * 1.3 };
     const text = { ...e, frame: box, kind: { type: 'text', content: { type: 'sensor', key: key ?? b.key, format: look.center.format, prefix: look.center.prefix ?? '', suffix: look.center.suffix ?? '' }, style: s } };
-    drawText(ctx, text, t, frac, false, null, refresh, motion);
+    const raw = trial ? value : easedDemoValue(e, at => demoSensorValue(key, at), t, refresh, motion);
+    drawText(ctx, text, t, Number.isFinite(raw) ? raw / 100 : NaN, false, trial, refresh, motion);
   }
 }
 
@@ -449,7 +462,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     const m = blockMetrics(k.content, DEMO_MEDIA, shown, timeLabel(ctx, s), s.size);
     return fitPlayer(k.content, shown, block, m, e.frame, s.size);
   }
-  const pieces = laidInPieces(k);
+  const pieces = laidInPieces(k) || k.content.type === 'static';
   const tabular = s.tabularDigits !== false && k.content.type !== 'static';
   if (measure && pieces) {
     const size = measureText(textPieces(e, text, t, value, refresh, false, trial), s, canvasMeasure(ctx), { tabular });
@@ -478,16 +491,23 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     if(k.content.showCover !== false){const {side,gap}=textFurniture(k).layout(f);ctx.save();ctx.beginPath();ctx.roundRect(f.x,f.y,side,side,k.content.coverCorners ?? k.content.coverRadius ?? 0);ctx.clip();ctx.fillStyle='#334155';ctx.fillRect(f.x,f.y,side,side);ctx.fillStyle=paint(s.paint);ctx.fillText('\u266b',f.x+side*.3,f.y+side*.3);ctx.restore();f={...f,x:f.x+side+gap,width:f.width-side-gap};}
     f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
-  if (pieces) { drawPieces(ctx, s, f, textPieces(e, text, t, value, refresh, motion, trial), t, motion, tabular); return; }
-  ctx.fillStyle=paint(s.paint);
-  const x = s.align === 'center' ? f.x + f.width / 2 : s.align === 'right' ? f.x + f.width : f.x;
-  const y = s.valign === 'top' ? f.y : s.valign === 'bottom' ? f.y + f.height : f.y + f.height / 2;
-  if (['weather','player'].includes(k.content.type)) {
-    const lines = text.split('\n'); const lineHeight = Math.ceil(s.size * 1.2);
-    const top = s.valign === 'top' ? f.y : s.valign === 'bottom' ? f.y + f.height - lines.length * lineHeight : f.y + (f.height - lines.length * lineHeight) / 2;
-    ctx.textBaseline = 'top';
-    lines.forEach((line, i) => ctx.fillText(line, x, top + i * lineHeight, f.width));
-  } else ctx.fillText(text, x, y, f.width);
+  const drawGlyphs = (target, style) => {
+    target.font = `${style.font?.italic ? 'italic ' : ''}${style.font?.weight ?? 400} ${style.size}px ${style.font?.family ?? 'sans-serif'}, sans-serif`;
+    target.textAlign = style.align === 'center' ? 'center' : style.align === 'right' ? 'right' : 'left';
+    target.textBaseline = style.valign === 'top' ? 'top' : style.valign === 'bottom' ? 'bottom' : 'middle';
+    if (pieces) { drawPieces(target, style, f, textPieces({ ...e, kind: { ...k, style } }, text, t, value, refresh, motion, trial), t, motion, tabular); return; }
+    target.fillStyle = paint(style.paint);
+    const x = style.align === 'center' ? f.x + f.width / 2 : style.align === 'right' ? f.x + f.width : f.x;
+    const y = style.valign === 'top' ? f.y : style.valign === 'bottom' ? f.y + f.height : f.y + f.height / 2;
+    if (['weather', 'player'].includes(k.content.type)) {
+      const lines = text.split('\n'), lineHeight = Math.ceil(style.size * 1.2);
+      const top = style.valign === 'top' ? f.y : style.valign === 'bottom' ? f.y + f.height - lines.length * lineHeight : f.y + (f.height - lines.length * lineHeight) / 2;
+      target.textBaseline = 'top';
+      lines.forEach((line, i) => target.fillText(line, x, top + i * lineHeight, f.width));
+    } else target.fillText(text, x, y, f.width);
+  };
+  drawTextShadow(ctx, s, f, drawGlyphs);
+  drawGlyphs(ctx, s);
 }
 
 function drawSpectrum(ctx, e, seconds) {
@@ -620,28 +640,37 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
       if (k.stroke && k.strokeWidth > 0) { ctx.strokeStyle = color(k.stroke); ctx.lineWidth = k.strokeWidth; ctx.stroke(); }
       break;
     case 'bar': {
-      ctx.fillStyle = paint(k.track);
-      ctx.fillRect(f.x, f.y, f.width, f.height);
-      ctx.fillStyle = paint(k.fill);
-      const vertical = k.direction === 'bottomToTop' || k.direction === 'topToBottom';
-      if (vertical) ctx.fillRect(f.x, f.y + f.height * (1 - frac), f.width, f.height * frac);
-      else ctx.fillRect(f.x, f.y, f.width * frac, f.height);
+      const length = ['bottomToTop', 'topToBottom'].includes(k.direction) ? f.height : f.width;
+      ctx.beginPath();
+      for (const [a, b] of gaugeBlocks(length, k.segments)) {
+        const box = barSpan(f, k.direction, a, b);
+        ctx.roundRect(box.x, box.y, box.width, box.height, Math.min(Math.max(0, k.radius ?? 0), box.width / 2, box.height / 2));
+      }
+      ctx.fillStyle = canvasPaint(ctx, k.track, f); ctx.fill();
+      ctx.save(); ctx.clip();
+      ctx.fillStyle = canvasPaint(ctx, k.fill, f);
+      const filled = barSpan(f, k.direction, 0, Number.isFinite(frac) ? Math.max(0, Math.min(1, frac)) * length : 0);
+      ctx.fillRect(filled.x, filled.y, filled.width, filled.height);
+      ctx.restore();
       break;
     }
     case 'ring': {
-      const r = Math.min(f.width, f.height) / 2 - k.thickness / 2;
+      const thickness = Math.min(k.thickness, Math.min(f.width, f.height) / 2);
+      const r = Math.min(f.width, f.height) / 2 - thickness / 2;
       if (r <= 0) break;
       const cx = f.x + f.width / 2;
       const cy = f.y + f.height / 2;
       const start = ((k.startAngle - 90) * Math.PI) / 180;
       const direction = k.clockwise === false ? -1 : 1;
-      const sweep = (k.sweep * Math.PI) / 180;
+      const sweep = (Math.max(0, Math.min(360, k.sweep)) * Math.PI) / 180;
+      const pieces = gaugeBlocks(sweep, k.segments ? { ...k.segments, gap: k.segments.gap * Math.PI / 180 } : null, k.sweep >= 360);
+      const arcs = limit => { for (const [a, b] of pieces) { if (a >= limit) break; ctx.moveTo(cx + Math.cos(start + direction * a) * r, cy + Math.sin(start + direction * a) * r); ctx.arc(cx, cy, r, start + direction * a, start + direction * Math.min(b, limit), direction < 0); } };
       const value = k.testFull ? 1 : frac;
-      ctx.lineWidth = k.thickness;
+      ctx.lineWidth = thickness;
       ctx.lineCap = k.roundCaps ? 'round' : 'butt';
       ctx.strokeStyle = paint(k.track);
       ctx.beginPath();
-      ctx.arc(cx, cy, r, start, start + direction * sweep, direction < 0);
+      arcs(sweep);
       ctx.stroke();
       if (k.fill?.scale === 'arc') {
         const p = k.fill;
@@ -659,16 +688,16 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
         }
         for (const [position, hex] of stops) gradient.addColorStop(position, color(hex));
         ctx.strokeStyle = gradient;
-      } else ctx.strokeStyle = paint(k.fill);
+      } else ctx.strokeStyle = canvasPaint(ctx, k.fill, f);
       if (value > 0) {
         ctx.beginPath();
-        ctx.arc(cx, cy, r, start, start + direction * sweep * value, direction < 0);
+        arcs(sweep * value);
         ctx.stroke();
       }
       break;
     }
     case 'needle': {
-      if (k.look) { drawNeedleLook(ctx, e, frac, t, refresh, motion); break; }
+      if (k.look) { drawNeedleLook(ctx, e, frac, t, refresh, motion, trial); break; }
       const px = f.x + f.width * (k.pivot?.[0] ?? 0.5);
       const py = f.y + f.height * (k.pivot?.[1] ?? 0.5);
       const angle = (((k.startAngle + k.sweep * frac) - 90) * Math.PI) / 180;

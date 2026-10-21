@@ -351,6 +351,8 @@ pub enum VAlign {
 /// How text looks.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextStyle {
+    /// Optional centred glow behind the glyphs, clipped to the text layer.
+    pub shadow: Option<TextShadow>,
     /// Non-destructive letter case for every text source.
     pub casing: super::text_case::TextCase,
     /// Face.
@@ -380,6 +382,7 @@ pub struct TextStyle {
 impl Default for TextStyle {
     fn default() -> Self {
         Self {
+            shadow: None,
             casing: super::text_case::TextCase::Normal,
             font: FontSpec::default(),
             size: 24.0,
@@ -392,6 +395,15 @@ impl Default for TextStyle {
             parts: TextParts::default(),
         }
     }
+}
+
+/// A text shadow without an offset, as in the static-text inspector.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TextShadow {
+    /// Shadow colour, including its opacity.
+    pub color: Rgba,
+    /// Radius in pixels of a separable box blur, from 0 to 64.
+    pub blur: u8,
 }
 
 /// What a line wider than its box does.
@@ -1098,7 +1110,7 @@ impl Theme {
                 keys.extend(
                     e.visualization
                         .as_ref()
-                        .and_then(|v| v.secondary.as_ref())
+                        .and_then(|v| v.active_secondary())
                         .map(|b| b.key.clone()),
                 );
             }
@@ -1184,7 +1196,7 @@ impl Theme {
                     ..
                 } => {
                     let mut series = vec![SeriesId::graph(&binding.key, *interval_seconds)];
-                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.secondary.as_ref()) {
+                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.active_secondary()) {
                         series.push(SeriesId::graph(&b.key, *interval_seconds));
                     }
                     series
@@ -1203,7 +1215,7 @@ impl Theme {
                     binding, history, ..
                 } => {
                     let mut lengths = vec![(binding.key.clone(), usize::from(*history))];
-                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.secondary.as_ref()) {
+                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.active_secondary()) {
                         lengths.push((b.key.clone(), usize::from(*history)));
                     }
                     lengths

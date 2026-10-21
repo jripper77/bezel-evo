@@ -16,6 +16,11 @@ import pickers, { PREFIXES as PICKERS } from './areas/pickers.js';
 // resolve to the same canonical text as static callers. Only the canonical
 // keys below have translations; this map contains no copies of prose.
 export const SHARED_LABELS = Object.freeze({
+  'insp.needle.numbers.none': 'card.effect.none',
+  'insp.needle.ticks.none': 'fade.none',
+  'insp.needle.hand': 'widget.needle',
+  'insp.needle.cap.ring': 'widget.ring',
+  'insp.needle.track.gradient': 'insp.gradient',
   "framing.rotation": "common.rotation",
   "insp.rotation": "common.rotation",
   "storage.kindOne.image": "common.image",

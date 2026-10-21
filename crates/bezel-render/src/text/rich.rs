@@ -548,6 +548,14 @@ impl TextEngine {
             }
             top += line.height;
         }
+        if let Some(shadow) = job.style.shadow {
+            shadow::draw(
+                layer,
+                paints.iter().map(|(_, c)| c.data.clone()),
+                &color_glyphs,
+                shadow,
+            );
+        }
         for (paint, coverage) in paints {
             let Some((l, t, r, b)) = coverage.ink else {
                 continue;

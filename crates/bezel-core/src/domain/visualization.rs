@@ -19,6 +19,12 @@ pub enum VisualStyle {
 /// Settings shared by the optional visualization presets.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Visualization {
+    /// Explicit graph bar width; absent preserves historical slot/gap geometry.
+    pub bar_width: Option<f32>,
+    /// Rounded bars in mirrored graphs. True preserves the original preset.
+    pub rounded_bars: bool,
+    /// Space between mirrored series, pixels (0..=32); legacy spacing is 2.
+    pub series_gap: f32,
     /// Active preset; only applicable to its corresponding widget kind.
     pub style: VisualStyle,
     /// Matrix columns, 1..=64.
@@ -40,9 +46,20 @@ pub struct Visualization {
 }
 
 impl Visualization {
+    /// Only an active mirrored graph samples and retains the lower history.
+    /// Keeping its settings while switching to one series does not poll it.
+    pub fn active_secondary(&self) -> Option<&Binding> {
+        (self.style == VisualStyle::Mirrored)
+            .then_some(self.secondary.as_ref())
+            .flatten()
+    }
+
     /// Bounded defaults for a preset.
     pub fn new(style: VisualStyle) -> Self {
         Self {
+            bar_width: None,
+            rounded_bars: true,
+            series_gap: 2.,
             style,
             columns: 16,
             rows: 6,
@@ -57,7 +74,11 @@ impl Visualization {
 
     /// Reject malformed theme data before it reaches renderers.
     pub fn valid(&self) -> bool {
-        (1..=64).contains(&self.columns)
+        self.bar_width
+            .is_none_or(|width| width.is_finite() && width > 0.)
+            && self.series_gap.is_finite()
+            && (0. ..=32.).contains(&self.series_gap)
+            && (1..=64).contains(&self.columns)
             && (1..=32).contains(&self.rows)
             && self.gap.is_finite()
             && (0. ..=32.).contains(&self.gap)

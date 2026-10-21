@@ -1,11 +1,12 @@
 import { describeSections } from './sections.js';
+import { graphSeriesOf, graphStyleOf, graphSeriesPatch, graphStylePatch, graphBarWidth, graphThicknessPatch } from '../../graph-inspector.js';
 // Existing graph controls, isolated from inspector navigation.
-import { visualization } from '../../visualization.js';
 import { el, svgEl as node } from '../dom.js';
-import { chipButton, dashedHint, numberField, rangeField, propertySection as section, segmented, selectField, sentence } from '../fields.js';
+import { chipButton, dashedHint, numberField, iconButton, iconChoice, rangeField, propertySection as section, segmented, selectField, sentence } from '../fields.js';
 import { joinColor, splitColor } from '../../color-math.js';
 import { sentenceParts } from '../../sentence.js';
 import { DURATION_UNITS, INTERVAL_UNITS, TIME_UNITS, graphRuler, graphSentence, graphTimingPatch, graphWindowRange, quickDurations } from '../../inspector-tabs.js';
+import { ICONS } from '../icons.js';
 import { ART } from './art.js';
 
 export function panels(ctx) {
@@ -74,6 +75,7 @@ export function panels(ctx) {
     const k = e.kind;
     // Data (artboard GraphData): what it plots, its vertical scale and how far back it looks.
     const data = [
+      section('series', t('insp.graphSeries'), [iconChoice(t('insp.graphSeries'), graphSeriesOf(e), [['single', t('insp.graphSingle')], ['mirrored', t('insp.graphMirrored')]], series => update(e.id, graphSeriesPatch(e, series)), { wide: true })]),
       sourceSection(e, k.binding.key, (key) => ({ kind: { binding: { key } } }), { range: false }),
       section('scale', t('insp.scale'), [
         segmented(t('insp.scale'), k.autoscale ? 'auto' : 'fixed', [['auto', t('insp.automatic')], ['fixed', t('insp.fixed')]], (v) => update(e.id, { kind: { autoscale: v === 'auto' } }), { bare: true }),
@@ -84,13 +86,15 @@ export function panels(ctx) {
       dashedHint([t('insp.historyHint')], { iconName: 'info' }),
     ];
     // Look (artboard GraphLook): the style, the color, the fill of an area and the line.
-    const style = (value, text) => ({ text, art: ART[value], pressed: k.style === value, onClick: () => k.style !== value && update(e.id, { kind: { style: value }, ...(e.visualization?.style === 'rounded' && value !== 'bars' ? { visualization:null } : {}) }) });
+    const style = (value, text) => ({ text, art: ART[value === 'rounded' ? 'bars' : value], pressed: graphStyleOf(e) === value, onClick: () => graphStyleOf(e) !== value && update(e.id, graphStylePatch(e, value)) });
     const { rgb } = splitColor(k.color);
     const fillAlpha = typeof k.fill === 'string' ? splitColor(k.fill).alpha : 25;
     const look = [
       section('style', t('inspector.style'), [
-        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars'))]),
-        rangeField(t('inspector.lineWidth'), k.lineWidth, (v) => update(e.id, { kind: { lineWidth: Math.max(1, v) } }), { min: 1, max: Math.max(12, k.lineWidth), step: 0.5, format: (v) => t('insp.px', { value: v }) }),
+        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars')), style('rounded', t('insp.graphRounded'))]),
+        el('div', { class: 'fld-grid' }, [numberField(t('insp.thickness'), k.style === 'bars' ? Math.round(graphBarWidth(e) * 100) / 100 : k.lineWidth, width => update(e.id, graphThicknessPatch(e, width)), { min: 1, step: 0.5, unit: 'px' }), k.style === 'bars' && e.visualization?.barWidth != null && iconButton(t('insp.graphAutoWidth'), ICONS.undo, () => update(e.id, graphThicknessPatch(e, null)))]),
+        graphSeriesOf(e) === 'mirrored' && numberField(t('insp.graphSeriesGap'), e.visualization.seriesGap ?? 2, seriesGap => update(e.id, { visualization: { seriesGap: Math.min(32, Math.max(0, seriesGap)) } }), { min: 0, max: 32, unit: 'px' }),
+        e.visualization && e.visualization.barWidth == null && ['rounded', 'bars'].includes(graphStyleOf(e)) && numberField(t('visual.gap'), e.visualization.gap, gap => update(e.id, { visualization: { gap: Math.max(0, Math.min(32, gap)) } }), { min: 0, max: 32, unit: 'px' }),
       ]),
       section('color', t('inspector.color'), [colorField(t('inspector.color'), k.color, (v) => update(e.id, { kind: { color: v } }))]),
       k.style === 'area' ? section('fill', t('inspector.fill'), [

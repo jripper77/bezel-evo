@@ -48,3 +48,21 @@ La memoria pura ha copertura 100% di righe, rami e funzioni. Guardrail CSS/SVG e
 
 Nessuna duplicazione. Le specifiche dei nuovi campi dei widget restano assegnate a T-7a/b/c;
 la rimozione dei vecchi helper e delle chiavi orfane resta assegnata a T-10.
+
+
+## Estensioni condivise di T-7a
+
+- `numberField` e `prefixedField`: opzione `nullable`, campo vuoto restituisce `null`;
+  l'adozione dell'input conserva anche parser, passo e placeholder aggiornati.
+- `textField`: opzione `multiline`, con textarea nativa e lo stesso contratto change.
+- `fontPicker`: campioni delle facce con `faceSample`, tramite `iconChoice`, e filtro
+  `fixedItalic` per le parti che ereditano il corsivo. Oltre sei facce resta il select.
+- `inspector/text.js`: parti, formato del valore, overflow e ombra riusabili anche
+  per il centro della Lancetta e da T-7b per l'Orologio.
+- `inspector/paint.js`: editor comune dei riempimenti di Barra e Anello, con sostituzione
+  atomica dell'unione colore/sfumatura e un solo Annulla.
+- `inspector-edit.js`: proprietà comuni e patch pure; `patchElements` applica percorsi
+  diversi in un solo comando, conservando trasformazioni delle Card e blocchi.
+
+Nessuna duplicazione dei primitivi: campioni, scelte, parti, intestazioni, menu,
+picker e programmazione delle anteprime usano le implementazioni condivise di T-0.

@@ -1,0 +1,114 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-value",
+    "file": "dark/app/inspector/ux2-linked-value.png",
+    "detail": "dark/app/inspector/ux2-linked-value-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-text",
+    "file": "dark/app/inspector/ux2-linked-text.png",
+    "detail": "dark/app/inspector/ux2-linked-text-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-bar",
+    "file": "dark/app/inspector/ux2-linked-bar.png",
+    "detail": "dark/app/inspector/ux2-linked-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-needle",
+    "file": "dark/app/inspector/ux2-linked-needle.png",
+    "detail": "dark/app/inspector/ux2-linked-needle-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-graph",
+    "file": "dark/app/inspector/ux2-linked-graph.png",
+    "detail": "dark/app/inspector/ux2-linked-graph-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-multi",
+    "file": "dark/app/inspector/ux2-linked-multi.png",
+    "detail": "dark/app/inspector/ux2-linked-multi-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-ring-open",
+    "file": "dark/app/inspector/ux2-ring-open.png",
+    "detail": "dark/app/inspector/ux2-ring-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-value",
+    "file": "light/app/inspector/ux2-linked-value.png",
+    "detail": "light/app/inspector/ux2-linked-value-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-text",
+    "file": "light/app/inspector/ux2-linked-text.png",
+    "detail": "light/app/inspector/ux2-linked-text-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-bar",
+    "file": "light/app/inspector/ux2-linked-bar.png",
+    "detail": "light/app/inspector/ux2-linked-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-needle",
+    "file": "light/app/inspector/ux2-linked-needle.png",
+    "detail": "light/app/inspector/ux2-linked-needle-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-graph",
+    "file": "light/app/inspector/ux2-linked-graph.png",
+    "detail": "light/app/inspector/ux2-linked-graph-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-multi",
+    "file": "light/app/inspector/ux2-linked-multi.png",
+    "detail": "light/app/inspector/ux2-linked-multi-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-ring-open",
+    "file": "light/app/inspector/ux2-ring-open.png",
+    "detail": "light/app/inspector/ux2-ring-open-detail.png"
+  }
+]

@@ -157,7 +157,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Files:** `src/ui/inspector/{value,ring,bar,needle,graph,multi}.js`, `src/styles/inspector.css`, `src/i18n/areas/inspector.js`, test unitari e e2e dell'area
 - **Acceptance:** sezioni e campi esattamente come le tavole, incluse le funzioni di T-1 e T-3 (parti del valore, cifre fisse, soglie,
   Conta/Rullo, Media su; zone, tacche, cappuccio, segno del massimo); selezione multipla con soli campi comuni e «misto».
-- **Dipendenze:** T-0, T-1, T-3 · **Test:** G1–G9 · **Status:** pending
+- **Dipendenze:** T-0, T-1, T-3 · **Test:** G1–G9 · **Status:** completed — inspector Valore/Testo, Anello, Barra, Lancetta, Grafico e selezione multipla collegati; ombra, serie/arrotondamento indipendenti e larghezza barre facoltativa approvati (D-17/18/19). Test mirati Rust/UI/e2e e confronto it chiaro/scuro verdi; vedi `SUMMARY-T-7a.md`. Ultimo commit di codice `d17c62c`; verifica pixel `411d356`, evidenze `521555a`.
 
 #### T-7b: Inspector di Orologio, Meteo, Player, Spettro, Forma, Immagine
 - **Decisioni:** 01–07, 09 · **Tavole:** ClockInspectorOpen, WeatherInspectorOpen, PlayerInspectorOpen, SpectrumInspectorOpen, ShapeInspectorOpen, ImageInspectorOpen

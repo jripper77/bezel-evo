@@ -92,3 +92,6 @@ mod text_case_tests;
 mod text_parts_tests;
 #[cfg(test)]
 mod weather_motion_tests;
+
+#[cfg(test)]
+mod graph_width_tests;

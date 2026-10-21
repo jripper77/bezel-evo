@@ -237,6 +237,19 @@ export const commands = {
     return { theme: mapElements(theme, [id], (e) => merge(e, patch)) };
   },
 
+  /** Different property paths in one selection edit, with one undo step. */
+  patchElements(theme, { patches, respectLocks = true }) {
+    let next = theme;
+    for (const { id, patch } of patches) {
+      const element = next.elements.find(e => e.id === id);
+      if (!element || respectLocks && owners(next, element).some(e => e.locked)) continue;
+      const { frame, ...rest } = patch;
+      if (frame) next = commands.setFrame(next, { id, frame }).theme;
+      next = commands.update(next, { id, patch: rest }).theme;
+    }
+    return { theme: next };
+  },
+
   /** Replaces an element's kind (e.g. show a sensor as a ring instead of text). */
   setKind(theme, { id, kind }) {
     return { theme: mapElements(theme, [id], (e) => ({ ...e, kind: clone(kind), ...(e.visualization ? { visualization: null } : {}) })) };

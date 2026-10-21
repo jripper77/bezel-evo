@@ -16,7 +16,7 @@ use bezel_core::domain::theme::{
     Anchor, AssetRef, Background, Baseline, Binding, BoxF, Cap, Direction, Element, ElementId,
     ElementKind, Fit, FontSpec, GraphStyle, HAlign, ImageRepeat, PALETTE_MAX, Paint, PartStyle,
     Playback, SWATCH_NAME_MAX, Segments, ShapeImage, ShapeKind, Swatch, TextContent, TextOverflow,
-    TextPart, TextParts, TextStyle, Theme, VAlign,
+    TextPart, TextParts, TextShadow, TextStyle, Theme, VAlign,
 };
 use bezel_core::domain::transition::{
     MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
@@ -404,6 +404,18 @@ pub struct ElementDto {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct VisualizationDto {
+    /// Explicit graph bar width; absent retains the legacy spacing calculation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bar_width: Option<f32>,
+    /// Rounded bars independently of the mirrored-series choice.
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub rounded_bars: bool,
+    /// Distance between mirrored series; absent keeps the original two pixels.
+    #[serde(
+        default = "series_gap_default",
+        skip_serializing_if = "is_series_gap_default"
+    )]
+    pub series_gap: f32,
     /// matrix, pixel, dial, rounded or mirrored.
     pub style: String,
     /// Matrix columns.
@@ -426,6 +438,9 @@ pub struct VisualizationDto {
 impl Default for VisualizationDto {
     fn default() -> Self {
         Self {
+            bar_width: None,
+            rounded_bars: true,
+            series_gap: 2.,
             style: "matrix".into(),
             columns: 16,
             rows: 6,
@@ -449,6 +464,9 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
         _ => return err(format!("unknown visualization {:?}", d.style)),
     };
     let v = Visualization {
+        bar_width: d.bar_width,
+        rounded_bars: d.rounded_bars,
+        series_gap: d.series_gap,
         style,
         columns: d.columns,
         rows: d.rows,
@@ -467,6 +485,9 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
 fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> VisualizationDto {
     use bezel_core::domain::visualization::VisualStyle;
     VisualizationDto {
+        bar_width: v.bar_width,
+        rounded_bars: v.rounded_bars,
+        series_gap: v.series_gap,
         style: match v.style {
             VisualStyle::Matrix => "matrix",
             VisualStyle::Pixel => "pixel",
@@ -483,6 +504,76 @@ fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> Vi
         marker: v.marker,
         secondary: v.secondary.as_ref().map(binding_dto),
         secondary_color: to_hex(v.secondary_color),
+    }
+}
+
+fn series_gap_default() -> f32 {
+    2.
+}
+fn is_series_gap_default(value: &f32) -> bool {
+    *value == 2.
+}
+
+#[cfg(test)]
+mod graph_options_tests {
+    use super::*;
+    #[test]
+    fn optional_bar_width_round_trips_without_changing_old_themes() {
+        let mut dto = VisualizationDto {
+            style: "rounded".into(),
+            ..Default::default()
+        };
+        let original = serde_json::to_value(&dto).unwrap();
+        assert!(original.get("barWidth").is_none());
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap(),
+            original
+        );
+        for width in [1., 4.5, 12., 1000.] {
+            dto.bar_width = Some(width);
+            let restored = visualization_dto(&visualization(&dto).unwrap());
+            assert_eq!(restored.bar_width, Some(width));
+            assert_eq!(serde_json::to_value(restored).unwrap()["barWidth"], width);
+        }
+        for width in [0., -1., f32::INFINITY, f32::NAN] {
+            dto.bar_width = Some(width);
+            assert!(visualization(&dto).is_err());
+        }
+        dto.bar_width = None;
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap(),
+            original
+        );
+    }
+
+    #[test]
+    fn mirrored_options_round_trip_and_defaults_add_no_fields() {
+        let legacy: VisualizationDto =
+            serde_json::from_value(serde_json::json!({"style":"mirrored"})).unwrap();
+        let original = serde_json::to_value(&legacy).unwrap();
+        let native = visualization(&legacy).unwrap();
+        assert!(native.rounded_bars);
+        assert_eq!(native.series_gap, 2.);
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&native)).unwrap(),
+            original
+        );
+        for gap in [0., 12., 32.] {
+            let mut dto = legacy.clone();
+            dto.rounded_bars = false;
+            dto.series_gap = gap;
+            let written =
+                serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap();
+            assert_eq!(written["roundedBars"], false);
+            assert_eq!(written["seriesGap"], gap);
+        }
+        assert!(original.get("roundedBars").is_none());
+        assert!(original.get("seriesGap").is_none());
+        for gap in [-1., 33., f32::NAN] {
+            let mut dto = legacy.clone();
+            dto.series_gap = gap;
+            assert!(visualization(&dto).is_err());
+        }
     }
 }
 
@@ -1445,6 +1536,9 @@ pub struct FontDto {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextStyleDto {
+    /// Centred shadow; absent leaves existing themes unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shadow: Option<TextShadowDto>,
     /// Non-destructive case; absent preserves the source.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub casing: Option<String>,
@@ -1470,6 +1564,16 @@ pub struct TextStyleDto {
     /// Parts with a style of their own (D-2026-10-20-studio-ux-v2-06).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parts: Option<Box<PartsDto>>,
+}
+
+/// Shadow controls of the static-text inspector.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TextShadowDto {
+    /// RGBA colour, including opacity.
+    pub color: String,
+    /// Box blur radius, in pixels (0..=64).
+    pub blur: u8,
 }
 
 /// The parts of a value or a digital clock with a style of their own;
@@ -2026,6 +2130,10 @@ fn format(f: FormatDto) -> DisplayFormat {
 
 fn style_dto(s: &TextStyle) -> TextStyleDto {
     TextStyleDto {
+        shadow: s.shadow.map(|s| TextShadowDto {
+            color: to_hex(s.color),
+            blur: s.blur,
+        }),
         casing: match s.casing {
             bezel_core::domain::text_case::TextCase::Normal => None,
             bezel_core::domain::text_case::TextCase::Upper => Some("upper".into()),
@@ -2069,6 +2177,19 @@ fn style_dto(s: &TextStyle) -> TextStyleDto {
 
 fn style(s: &TextStyleDto) -> R<TextStyle> {
     Ok(TextStyle {
+        shadow: s
+            .shadow
+            .as_ref()
+            .map(|s| {
+                if s.blur > 64 {
+                    return err("text shadow blur must be 0..=64");
+                }
+                Ok(TextShadow {
+                    color: color(&s.color)?,
+                    blur: s.blur,
+                })
+            })
+            .transpose()?,
         casing: match s.casing.as_deref() {
             None | Some("normal") => bezel_core::domain::text_case::TextCase::Normal,
             Some("upper") => bezel_core::domain::text_case::TextCase::Upper,
@@ -2163,6 +2284,37 @@ mod text_case_tests {
         assert!(restored.parts.is_empty());
         for field in ["tabularDigits", "overflow", "parts"] {
             assert!(written.get(field).is_none(), "{field} is not written");
+        }
+    }
+
+    #[test]
+    fn shadow_is_optional_round_trips_and_rejects_invalid_values() {
+        let (old, written) = round_trip(base());
+        assert_eq!(old.shadow, None);
+        assert!(written.get("shadow").is_none());
+        for blur in [0, 8, 64] {
+            let mut json = base();
+            json["shadow"] = serde_json::json!({"color":"#11223399", "blur":blur});
+            let (restored, written) = round_trip(json.clone());
+            assert_eq!(restored.shadow.unwrap().blur, blur);
+            assert_eq!(written["shadow"], json["shadow"]);
+            let mut dto = style_dto(&restored);
+            dto.shadow = None;
+            assert!(
+                serde_json::to_value(style_dto(&style(&dto).unwrap()))
+                    .unwrap()
+                    .get("shadow")
+                    .is_none()
+            );
+        }
+        for shadow in [
+            serde_json::json!({"color":"#000000ff", "blur":65}),
+            serde_json::json!({"color":"bad", "blur":8}),
+        ] {
+            let mut json = base();
+            json["shadow"] = shadow;
+            let dto = serde_json::from_value(json).unwrap();
+            assert!(style(&dto).is_err());
         }
     }
 
