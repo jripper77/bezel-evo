@@ -1605,6 +1605,8 @@ mod tests {
             visible,
             locked: false,
             kind: ElementKind::Image {
+                radius: 0.,
+                corners: None,
                 fade: None,
                 asset: gif,
                 fit: Fit::Fill,

@@ -633,6 +633,10 @@ pub enum ElementKind {
         anchor: Anchor,
         /// How a GIF plays.
         playback: Playback,
+        /// Uniform image corner radius; zero preserves original pixels.
+        radius: f32,
+        /// Independent corner radii in clockwise order.
+        corners: Option<[f32; 4]>,
     },
     /// A filled shape.
     Shape {
@@ -1309,6 +1313,8 @@ mod tests {
             element(
                 3,
                 ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     fade: None,
                     asset: AssetRef("assets/logo.png".into()),
                     fit: Fit::Contain,
@@ -1405,6 +1411,8 @@ mod tests {
             ..element(
                 id,
                 ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     fade: None,
                     asset: AssetRef(name.into()),
                     fit: Fit::Fill,
@@ -1540,6 +1548,8 @@ mod tests {
             element(
                 1,
                 ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     fade: None,
                     asset: AssetRef("a.gif".into()),
                     fit: Fit::Fill,

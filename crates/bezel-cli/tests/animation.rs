@@ -79,6 +79,8 @@ fn theme() -> (Theme, BTreeMap<AssetRef, Vec<u8>>) {
         visible: true,
         locked: false,
         kind: ElementKind::Image {
+            radius: 0.,
+            corners: None,
             fade: None,
             asset: asset.clone(),
             fit: Fit::Fill,

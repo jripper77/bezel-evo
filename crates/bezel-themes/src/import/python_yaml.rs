@@ -571,6 +571,8 @@ impl Importer {
             } else {
                 let frame = BoxF::new(x, y, size.0, size.1);
                 let kind = ElementKind::Image {
+                    radius: 0.,
+                    corners: None,
                     fade: None,
                     asset,
                     fit: Fit::Fill,

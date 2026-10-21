@@ -17,6 +17,8 @@ fn image(asset: &str, fit: Fit, anchor: Anchor, playback: Playback) -> Theme {
     let element = testkit::element(
         BoxF::new(0.0, 0.0, 10.0, 10.0),
         ElementKind::Image {
+            radius: 0.,
+            corners: None,
             fade: None,
             asset: AssetRef(asset.into()),
             fit,
@@ -118,4 +120,44 @@ fn a_gif_plays_at_its_speed_and_once_stays_on_its_last_frame() {
         "the last frame stays"
     );
     assert!(testkit::close(at(&mut renderer, once, 50), RED, 8));
+}
+
+#[test]
+fn old_png_pixels_and_zero_radii_are_identical_to_the_original_picture() {
+    let scene = Scene::empty().asset("red.png", testkit::png(10, 10, |_, _| RED));
+    let mut theme = image("red.png", Fit::Fill, Anchor::Center, Playback::default());
+    let mut renderer = testkit::renderer();
+    let legacy = testkit::render(&mut renderer, &theme, &scene);
+    assert_eq!(legacy.as_rgba(), [255, 0, 0, 255].repeat(100));
+    if let ElementKind::Image { corners, .. } = &mut theme.elements[0].kind {
+        *corners = Some([0.; 4]);
+    }
+    assert_eq!(testkit::render(&mut renderer, &theme, &scene), legacy);
+}
+
+#[test]
+fn png_and_animated_gif_share_independent_corner_clipping() {
+    for (asset, bytes) in [
+        ("red.png", testkit::png(10, 10, |_, _| RED)),
+        ("a.gif", testkit::gif(10, 10, &[(RED, 100), (GREEN, 100)])),
+    ] {
+        let mut scene = Scene::empty().asset(asset, bytes);
+        let mut theme = image(asset, Fit::Fill, Anchor::Center, Playback::default());
+        if let ElementKind::Image { corners, .. } = &mut theme.elements[0].kind {
+            *corners = Some([5., 0., 0., 0.]);
+        }
+        let mut renderer = testkit::renderer();
+        for ms in [0, 150] {
+            scene.animation = Duration::from_millis(ms);
+            let frame = testkit::render(&mut renderer, &theme, &scene);
+            assert_eq!(testkit::px(&frame, 0, 0), Rgba::BLACK);
+            let expected = if asset.ends_with("gif") && ms == 150 {
+                GREEN
+            } else {
+                RED
+            };
+            assert!(testkit::close(testkit::px(&frame, 9, 0), expected, 1));
+            assert!(testkit::close(testkit::px(&frame, 5, 5), expected, 1));
+        }
+    }
 }

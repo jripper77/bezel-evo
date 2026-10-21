@@ -253,6 +253,8 @@ fn rotation_turns_text_graph_and_spectrum_content() {
             style: TextStyle::default(),
         },
         ElementKind::Image {
+            radius: 0.,
+            corners: None,
             asset: AssetRef("test.png".into()),
             fit: Fit::Fill,
             anchor: Default::default(),
