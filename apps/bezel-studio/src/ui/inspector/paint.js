@@ -16,7 +16,7 @@ export function gaugeFillFields(ctx, element, { path = ['kind', 'fill'] } = {}) 
     else set(value);
   };
   return [
-    iconChoice(t('ring.fillMode'), arc || linear && !ring ? 'gradient' : linear ? 'linear' : 'solid', modes, mode => {
+    iconChoice(t(ring ? 'ring.fillMode' : 'inspector.fill'), arc || linear && !ring ? 'gradient' : linear ? 'linear' : 'solid', modes, mode => {
       if (mode === 'solid') replace(first);
       else if (mode === 'gradient') replace(ring ? { scale: 'arc', start: first, end: last, transition: 50 } : { angle: 0, stops: [[0, first], [1, last]] });
     }, { wide: true }),
