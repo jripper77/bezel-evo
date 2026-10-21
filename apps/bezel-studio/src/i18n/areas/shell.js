@@ -9,6 +9,7 @@ export default {
   en: {
     'shell.guideDistance': 'Distance between aligned objects: {value}',
 
+    'shell.objectSensor': 'Linked sensor {key}: change it',
     'shell.editShapeImage': 'Shape image',
     'shell.imageEditHint': 'Drag to move · Wheel or +/− to scale · Escape to finish',
     'shell.finishImage': 'Finish editing the shape image',
@@ -54,6 +55,7 @@ export default {
   'pt-BR': {
     'shell.guideDistance': 'Distância entre objetos alinhados: {value}',
 
+    'shell.objectSensor': 'Sensor vinculado {key}: alterar',
     'shell.editShapeImage': 'Imagem da forma',
     'shell.imageEditHint': 'Arraste para mover · Roda ou +/− para ampliar · Esc para concluir',
     'shell.finishImage': 'Concluir edição da imagem da forma',
@@ -99,6 +101,7 @@ export default {
   it: {
     'shell.guideDistance': 'Distanza fra oggetti allineati: {value}',
 
+    'shell.objectSensor': 'Sensore collegato {key}: cambia',
     'shell.editShapeImage': 'Immagine della forma',
     'shell.imageEditHint': 'Trascina per spostare · Rotella o +/− per scalare · Esc per terminare',
     'shell.finishImage': 'Termina modifica dell’immagine della forma',

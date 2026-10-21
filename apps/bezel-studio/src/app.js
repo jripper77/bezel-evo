@@ -150,10 +150,13 @@ const canvasView = createCanvasView({
   onHandleEdit: result => inspector.highlightField(result?.field, result?.fieldParams),
   textParts: element => inspector.partPieces(element),
   onTextPart: (element, scope, part) => inspector.pickPart(element, scope, part),
+  onBarSensor: element => inspector.openSensor(element),
+  onBarTry: () => inspector.tryElement(),
+  onBarMenu: (button, onClose) => objectMenu.openAt(button, onClose),
   onFrameRequest: () => setFramingMode(true),
 });
 
-wireObjectMenu({store,canvasView,fitContent,stage:$('stage-scroll'),layers:$('layer-list'),t});
+const objectMenu = wireObjectMenu({store,canvasView,fitContent,stage:$('stage-scroll'),layers:$('layer-list'),t});
 
 // The Media tab's Collection (D-2026-10-01-gif-sticker-search-5), and
 // "Search GIFs and stickers", opened from it (-4): what the search adds

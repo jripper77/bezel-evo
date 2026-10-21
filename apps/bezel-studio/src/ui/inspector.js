@@ -709,6 +709,19 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   return { render, contextChanged, frameShown,
+    /** Opens the sensor picker of the selected element's linked sensor, as its card would. */
+    openSensor(element) {
+      const card = root.querySelector(`[data-sensor-key="${CSS.escape(boundKey(element) ?? '')}"]`);
+      if (!card) return;
+      const toggle = card.closest('.accordion-section')?.querySelector(':scope > .accordion-heading > button');
+      if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click();
+      const shown = root.querySelector(`[data-sensor-key="${CSS.escape(boundKey(element) ?? '')}"]`) ?? card;
+      shown.scrollIntoView({ block: 'nearest' }); shown.click();
+    },
+    /** The inspector's own Try: a detached trial in its preview, never saved. */
+    tryElement() {
+      root.querySelector('.inspector-try:not(:disabled)')?.click();
+    },
     /** The parts of a value or a digital clock as they read now (null: none). */
     partPieces(element) {
       const key = boundKey(element);

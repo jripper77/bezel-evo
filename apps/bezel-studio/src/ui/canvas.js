@@ -2,6 +2,7 @@ import { appliedRotation, canRotate, centerOf, toLocal, rotatePoint, rotatedBoun
 import { canvasTarget, groupTarget, selectionRoots, isShown, withChildren, owners } from '../editor/cards.js';
 import { editedFill, frameHandles, scaledFrames, scaledText, propertyHandles, editPropertyHandle, resetPropertyHandle, textPartAt } from '../editor/handles.js';
 import { canvasMeasure } from '../demo-render.js';
+import { boundKey } from '../editor/widgets.js';
 // The canvas: shows the rendered frame at a zoom level and handles direct
 // manipulation on a DOM overlay (selection, eight resize handles, snapping
 // guides, marquee). Everything is in canvas pixels until drawn. In framing
@@ -9,7 +10,7 @@ import { canvasMeasure } from '../demo-render.js';
 // (D-2026-10-01-video-background-framing-6): drag pans it, the wheel zooms
 // around the pointer, keys nudge, zoom, reset and leave; each drag or wheel
 // burst is one undo step, and no element can be selected meanwhile.
-import { el } from './dom.js';
+import { el, icon } from './dom.js';
 import { segmented, iconButton } from './fields.js';
 import { NATURAL_REPEATS } from './inspector/art.js';
 import { ICONS } from './icons.js';
@@ -34,7 +35,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -203,7 +204,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   }
 
   /** What keeps the wheel for itself over the stage: its floating bars and form controls. */
-  const WHEEL_KEEPERS = ['.canvas-edit-tools', '.canvas-card-faces', '.stage-tools', '.stage-zoom', 'input', 'select', 'textarea'].join();
+  const WHEEL_KEEPERS = ['.canvas-edit-tools', '.canvas-card-faces', '.canvas-object-bar', '.stage-tools', '.stage-zoom', 'input', 'select', 'textarea'].join();
 
   function containsClient(clientX, clientY) {
     const r = box.getBoundingClientRect();
@@ -348,6 +349,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
         onblur: () => { if (!press) clearHandleValue(); },
       }));
     }
+    if (chosen.length && !fill && !press?.started) nodes.push(objectBar(chosen, roots));
     for (const g of guides) {
       nodes.push(el('div', { class: `guide ${g.axis}`, style: g.axis === 'x' ? { left: px(g.position) } : { top: px(g.position) } }));
     }
@@ -359,6 +361,26 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     if (marquee) nodes.push(el('div', { class: 'marquee', style: boxStyle(marquee) }));
     if (handleReadout) nodes.push(el('span', { class: 'handle-readout', role: 'status', style: { left: `calc(${px(handleReadout.position.x)} + 14px)`, top: `calc(${px(handleReadout.position.y)} - 28px)` }, text: handleReadout.text }));
     overlay.replaceChildren(...nodes);
+  }
+
+  /**
+   * The bar over the selection (D-2026-10-20-studio-ux-v2-10): its linked
+   * sensor, Try, Duplicate and the object menu. Every action is an existing
+   * command; Try plays the inspector's detached trial and saves nothing.
+   */
+  function objectBar(chosen, roots) {
+    const top = unionBox(roots.map(e => rotatedBounds(e.frame, appliedRotation(e))));
+    const single = chosen.length === 1 ? chosen[0] : null, key = single && boundKey(single);
+    const refocus = name => overlay.querySelector(`[data-object-bar="${name}"]`)?.focus();
+    const tag = (node, name) => { node.dataset.objectBar = name; return node; };
+    return el('div', { class: 'canvas-object-bar', role: 'toolbar', 'aria-label': handleLabel('menu.title'),
+      style: { left: px(top.x + top.width / 2), top: `calc(${px(top.y)} - 36px)` } }, [
+      key && tag(el('button', { type: 'button', class: 'canvas-object-sensor', title: handleLabel('shell.objectSensor', { key }), 'aria-label': handleLabel('shell.objectSensor', { key }),
+        onclick: () => onBarSensor(single) }, [icon(ICONS.bolt, 14), el('span', { text: key })]), 'sensor'),
+      single && tag(iconButton(handleLabel('insp.tryObject'), ICONS.play, () => onBarTry(single), { class: 'quiet', disabled: !handleMotion() }), 'try'),
+      tag(iconButton(handleLabel('common.duplicate'), ICONS.copy, () => { store.dispatch('duplicate', { ids: chosen.map(e => e.id) }); refocus('duplicate'); }, { class: 'quiet' }), 'duplicate'),
+      tag(iconButton(handleLabel('menu.title'), ICONS.more, evt => onBarMenu(evt.currentTarget, () => refocus('menu')), { class: 'quiet', 'aria-haspopup': 'menu', 'aria-expanded': 'false' }), 'menu'),
+    ]);
   }
 
   // ------------------------------------------------------ interactions ----
@@ -386,7 +408,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   }
 
   function onPointerDown(evt) {
-    if (evt.button !== 0 || press || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools')) return;
+    if (evt.button !== 0 || press || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools, .canvas-object-bar')) return;
     if (textEditor?.node.contains(evt.target)) return;
     if (textEditor) finishTextEdit(true);
     const viewport = scroll.getBoundingClientRect();
@@ -737,7 +759,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
 
   /** A double click on the video background, off any element, asks for framing mode. */
   function onDoubleClick(evt) {
-    if (textEditor?.node.contains(evt.target) || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools')) return;
+    if (textEditor?.node.contains(evt.target) || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools, .canvas-object-bar')) return;
     if (framing) return;
     const state = store.getState();
     const property = evt.target.closest?.('[data-property-handle]')?.dataset.propertyHandle;
