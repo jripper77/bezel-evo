@@ -56,6 +56,56 @@ Non creare un’altra worktree T-8 alla ripresa: proseguire questa.
   geometria della rotazione e tipi di ripetizione già usati dall’inspector.
   Nessuna duplicazione di componenti o implementazione del ritaglio.
 
+## Ulteriore passo completato — orologio e guide
+
+- Orologio analogico: `analog.hourLength`, `minuteLength`, `secondLength`
+  facoltativi, moltiplicatori della lunghezza originale (100% = invariata),
+  intervallo 10–200%. Il valore originale è omesso in Rust e rimosso anche
+  dallo stato JS quando si torna al 100%; nessuna inizializzazione scrive i
+  campi. La coda della lancetta dei secondi e gli spessori non cambiano.
+- Dominio, DTO, renderer nativo e demo estesi insieme. Prima della modifica
+  sono stati catturati i riferimenti pixel originali nei tre stili: sottili,
+  arrotondate e freccia. I test verificano quei riferimenti invariati e i pixel
+  delle nuove lunghezze; test di andata/ritorno per ogni campo e per i default.
+- Tre maniglie a rombo sulle punte, solo per le lancette visibili, con campi
+  nell’inspector, trascinamento, tastiera e Undo. Le punte restano all’ora reale:
+  vengono riposizionate ai nuovi frame senza ricreare i pulsanti, così il focus
+  resta fermo. Nessun timer aggiunto. Il moto ridotto segue la politica esistente.
+- Guide rosa: distanza reale dal vicino allineato più prossimo, in pixel del
+  documento, anche quando il canvas è ingrandito. Nessuna distanza artificiale
+  per oggetti sovrapposti o guide riferite solo al canvas. Spariscono a fine gesto.
+- Il campo dell’inspector illuminato viene portato in vista se necessario,
+  senza prendere il focus dalla maniglia. `alignmentDistances` è puro, in
+  `editor/snap.js`, e non muta i riquadri; nessun calcolo delle distanze se non
+  ci sono guide attive. Primitivi riusati, nessuna duplicazione.
+
+## Verifiche del nuovo passo
+
+- **139 unitari UI mirati verdi**: handles, clock-format, demo-render-analog,
+  demo-backend, cards, editor-geometry, rotation, inspector-model, i18n e static-guards.
+  `handles.js`: **100% righe/rami/funzioni**, con soglie Node esplicite.
+  Log `target/logs/t8/unit-clock-step-final.log`.
+- **68 e2e verdi insieme** nelle cinque spec canvas di T-8: nuovi controlli
+  dell’orologio, focus durante i cambi d’ora, pixel legacy/demo/nativi,
+  visibilità del campo evidenziato e distanze delle guide, più i gesti già
+  esistenti della task. en/pt-BR × chiaro/scuro e axe.
+  Log `target/logs/t8/e2e-clock-step-final.log`.
+- Rust toccato: `bezel-core` **325 test + 2 doc test**; `bezel-themes` **95**;
+  `bezel-render` **138** (137 verdi nella prima esecuzione e il solo nuovo test
+  pixel corretto/rieseguito verde). La prima posizione del campione era sul
+  bordo antialias del cappuccio arrotondato: spostata oltre il cappuccio,
+  tolleranze conservate. Nessuna suite ampia rilanciata per quel test.
+  Timing release, corpus esterno e un test nativo già ignorato restano ignorati.
+- Clippy `-p bezel-core -p bezel-themes -p bezel-render --all-targets -- -D warnings`
+  verde; fmt e diff check verdi. Log `analog-rust-test.log`,
+  `analog-pixels-retry.log`, `analog-themes-test.log`, `analog-rust-doc-test.log`,
+  `analog-timing-test.log`, `analog-clippy.log` nella cartella della task.
+- Riferimenti precedenti catturati da renderer invariati: `analog-baseline.log`
+  e `analog-demo-baseline.log`. Nessun accesso a temi o applicazioni personali.
+- Evidenza it chiaro/scuro aggiornata in `evidence/t8-clock/`: due stati, otto
+  PNG (intero e dettaglio), con l’inspector portato al campo della lunghezza.
+  È ancora un confronto parziale: non chiude l’accettazione finale T-8.
+
 ## Commit
 
 - `a138a5c`: motore puro e test delle maniglie.
@@ -66,6 +116,9 @@ Non creare un’altra worktree T-8 alla ripresa: proseguire questa.
 - `1551269`: modifica diretta del Testo e Ctrl-ridimensionamento.
 - `a06f8b1`: facce Card e ingresso nei membri.
 - `2e0a040`: spostamento/scala dell’immagine nelle Forme.
+- `fa71016`: checkpoint del passo precedente.
+- `aa2e0cc`: lunghezze analogiche, renderer, maniglie e test.
+- `966aec8`: guide con distanza e campo evidenziato portato in vista.
 
 ## Verifica del passo successivo
 
@@ -127,20 +180,20 @@ finale di tutti i widget richiesto da T-8.**
    T-0, `createInspectorTrial` e `preview-animation`; la prova non deve salvare
    nulla. Il motore puro restituisce `trial` per la barra, ma l’adattatore del
    canvas per ora la filtra: non c’è un controllo finto o inattivo.
-2. Orologio analogico: le lunghezze delle lancette sono ancora costanti nei
-   renderer. Includere i campi mancanti in questa attività (D-20), facoltativi
-   e omessi ai valori predefiniti, con test legacy/pixel nativi e demo.
-3. Immagine: maniglia di ancoraggio e verifica del modello oggi discreto.
+   Attenzione: `inspector_trial::Trial::new` isola l’oggetto e la sua curva
+   parte dalla lettura attuale, non dal minimo. Non usare l’inversa della
+   curva come se garantisse il valore 0–100% richiesto dalla maniglia Barra.
+2. Immagine: maniglia di ancoraggio e verifica del modello oggi discreto.
    La modifica dell’immagine nelle Forme è ora completata (vedi sopra).
-4. Player: fornire al motore puro il **vero rettangolo della copertina**
+3. Player: fornire al motore puro il **vero rettangolo della copertina**
    (`coverFrame`) e collegare fade/divisore. Non usare l’intero riquadro del
    Player come rettangolo della cover. I campi coverFade e coverGap già esistono.
-5. Testo/valore: clic sulla parte per selezionarla nell’inspector. Ctrl-SE e
+4. Testo/valore: clic sulla parte per selezionarla nell’inspector. Ctrl-SE e
    modifica inline del Testo sono ora completati. Verificare tutte le parti
    con le geometrie reali, senza valori di esempio introdotti nel prodotto.
-6. Guide rosa con distanza; completare focus/letture dei controlli per tutti
-   i tipi, prove di oggetti ruotati e confronto visivo completo scuro/chiaro.
-7. Rieseguire solo i test delle aree ulteriormente toccate, scrivere
+5. Completare focus/letture dei controlli per tutti i tipi e il confronto
+   visivo completo scuro/chiaro. Le guide con distanza sono ora completate.
+6. Rieseguire solo i test delle aree ulteriormente toccate, scrivere
    SUMMARY-T-8.md finale, aggiornare Status e unire con --no-ff solo alla fine.
 
 Le zone della lancetta condividono lo stesso confine tra gli intervalli

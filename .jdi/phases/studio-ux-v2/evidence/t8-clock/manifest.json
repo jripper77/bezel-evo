@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-clock-length",
+    "file": "dark/app/shell/ux2-clock-length.png",
+    "detail": "dark/app/shell/ux2-clock-length-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-alignment-distance",
+    "file": "dark/app/shell/ux2-alignment-distance.png",
+    "detail": "dark/app/shell/ux2-alignment-distance-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-clock-length",
+    "file": "light/app/shell/ux2-clock-length.png",
+    "detail": "light/app/shell/ux2-clock-length-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-alignment-distance",
+    "file": "light/app/shell/ux2-alignment-distance.png",
+    "detail": "light/app/shell/ux2-alignment-distance-detail.png"
+  }
+]

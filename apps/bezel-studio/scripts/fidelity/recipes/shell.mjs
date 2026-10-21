@@ -48,6 +48,42 @@ export default {
       await app.page.mouse.dblclick(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
       await app.page.keyboard.press('Shift+ArrowRight');
     } },
+    { name: 'ux2-clock-length', capture: '.workspace', run: async app => {
+      const t = translator('it'), inspector = app.page.locator('#inspector');
+      await app.add('clock'); await openSection(app.page, 'layout');
+      for (const key of ['inspector.width', 'inspector.height']) {
+        const field = inspector.getByRole('spinbutton', { name: t(key), exact: true });
+        await field.fill('360'); await field.press('Tab');
+      }
+      await openSection(app.page, 'shape');
+      await inspector.getByRole('button', { name: t('insp.clock.analog'), exact: true }).click();
+      const frame = await app.page.locator('#overlay .sel-box[role="img"]').boundingBox();
+      const handle = await app.page.locator('#overlay [data-property-handle="clock-hour-length"]').boundingBox();
+      const x = handle.x + handle.width / 2, y = handle.y + handle.height / 2;
+      const dx = x - frame.x - frame.width / 2, dy = y - frame.y - frame.height / 2, length = Math.hypot(dx, dy);
+      await app.page.mouse.move(x, y); await app.page.mouse.down();
+      await app.page.mouse.move(x + dx / length * 12, y + dy / length * 12, { steps: 4 });
+    } },
+    { name: 'ux2-alignment-distance', capture: '.workspace', run: async app => {
+      const t = translator('it'), inspector = app.page.locator('#inspector');
+      await app.page.locator('#grid-toggle').focus();
+      await app.page.keyboard.press('Control+a'); await app.page.keyboard.press('Delete');
+      const place = async (x, y) => {
+        await app.add('shape'); await openSection(app.page, 'layout');
+        for (const [key, value] of [['inspector.x', x], ['inspector.y', y], ['inspector.width', 120], ['inspector.height', 60]]) {
+          const field = inspector.getByRole('spinbutton', { name: t(key), exact: true });
+          await field.fill(String(value)); await field.press('Tab');
+        }
+        await app.tab('layers');
+        return app.page.locator('.layer-row.selected').getAttribute('data-element-id');
+      };
+      const first = await place(100, 500); await place(300, 600);
+      await app.page.locator(`.layer-row[data-element-id="${first}"] .layer-name`).click();
+      const bounds = await app.page.locator('#overlay .sel-box[role="img"]').boundingBox();
+      const zoom = (await app.page.locator('#canvas-box').boundingBox()).width / 480;
+      await app.page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); await app.page.mouse.down();
+      await app.page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2 + 100 * zoom, { steps: 4 });
+    } },
     { name: 'main', run: async () => {} },
     { name: 'logo', capture: '.brand', run: async () => {} },
     // An edit: "Unsaved" in the breadcrumb and the statusbar.
