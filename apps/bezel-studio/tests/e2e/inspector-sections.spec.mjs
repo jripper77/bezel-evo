@@ -81,13 +81,13 @@ test('the preview shows the selected object rendered alone, on or off the canvas
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 
-test('a card has Faces, Motion and Triggers sections; its faces are a list, the one in view marked', async ({ page, t }) => {
+test('a card has Layout, Faces, Shape, Color and Behavior sections; its faces are a list, the one in view marked', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await addWidget(page, t, 'card');
   const inspector = page.locator('#inspector');
   expect(await inspector.locator(':scope > [data-inspector-section]').evaluateAll(nodes => nodes.map(n => n.dataset.inspectorSection)))
-    .toEqual(['layout', 'shape', 'color', 'faces', 'motion', 'triggers']);
+    .toEqual(['layout', 'faces', 'shape', 'color', 'behavior']);
   const faces = inspector.getByRole('list', { name: t('card.tab.faces'), exact: true });
   await inspector.getByRole('button', { name: t('card.addFace'), exact: true }).click();
   const current = faces.locator('[aria-current="true"]');
@@ -96,9 +96,11 @@ test('a card has Faces, Motion and Triggers sections; its faces are a list, the 
   await faces.getByRole('button', { name: t('cardInsp.editFace', { name: t('card.faceName', { number: 1 }) }), exact: true }).click();
   await expect(current).toHaveAttribute('data-face', '0');
   await expect(faces.getByText(t('layers.inView'), { exact: true })).toHaveCount(1);
-  await openSection(page, 'motion');
-  await expect(inspector.locator('[data-inspector-section="motion"]').getByRole('button', { name: t('card.animateNext'), exact: true })).toBeEnabled();
-  await openSection(page, 'triggers');
-  await expect(inspector.getByRole('button', { name: t('trigger.add'), exact: true })).toBeEnabled();
+  // ▶ in the header tries the next face; triggers are in Behavior, with the transition.
+  await expect(inspector.getByRole('button', { name: t('insp.tryObject'), exact: true })).toBeEnabled();
+  await openSection(page, 'behavior');
+  const behavior = inspector.locator('[data-inspector-section="behavior"]');
+  await expect(behavior.getByRole('group', { name: t('card.effect'), exact: true })).toBeVisible();
+  await expect(behavior.getByRole('button', { name: t('trigger.add'), exact: true })).toBeEnabled();
   await expectAccessible(page); expect(errors).toEqual([]);
 });

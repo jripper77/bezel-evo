@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection } from './helpers.mjs';
 
 test('flip shades its source once per frame and projects distinct face pictures', async ({ page }) => {
   await page.goto('/index.html?demo=turing88');
@@ -57,18 +57,20 @@ test('card built in the editor previews fade, slide and flip with changing frame
   await detail.getByRole('button', { name: t('card.addFace'), exact: true }).click();
   await add('ring');
   await selectCard();
-  await detail.getByRole('tab', { name: t('card.tab.motion'), exact: true }).click();
-  const effects = detail.getByRole('radiogroup', { name: t('card.effect'), exact: true });
-  await effects.getByRole('radio', { name: t('card.effect.flip'), exact: true }).check();
-  await expect(effects.getByRole('radio', { name: t('card.effect.flip'), exact: true })).toBeChecked();
-  const duration = detail.getByRole('slider', { name: new RegExp(t('card.duration')) });
-  await duration.evaluate(e => { e.value = '1000'; e.dispatchEvent(new Event('change', { bubbles: true })); });
+  await openSection(page, 'behavior');
+  const effects = detail.getByRole('group', { name: t('card.effect'), exact: true });
+  const effect = (name) => effects.getByRole('button', { name: t(`card.effect.${name}`), exact: true });
+  await effect('flip').click();
+  await expect(effect('flip')).toHaveAttribute('aria-pressed', 'true');
+  const duration = detail.getByRole('spinbutton', { name: t('card.duration'), exact: true });
+  await duration.fill('1000'); await duration.press('Tab');
   await detail.getByRole('group', { name: t('common.direction'), exact: true }).getByRole('button', { name: t('common.right'), exact: true }).click();
-  for (const effect of ['fade', 'slide', 'flip']) {
-    await effects.getByRole('radio', { name: t(`card.effect.${effect}`), exact: true }).check();
+  for (const name of ['fade', 'slide', 'flip']) {
+    await effects.getByRole('button', { name: t(`card.effect.${name}`), exact: true }).click();
     await page.waitForTimeout(150);
     const sampling = page.evaluate(async () => {
-      const source = document.querySelector('#preview');
+      // ▶ Try plays the next face in the inspector's own preview.
+      const source = document.querySelector('#inspector .inspector-preview canvas');
       const sample = document.createElement('canvas'); sample.width = 48; sample.height = 192;
       const ctx = sample.getContext('2d', { willReadFrequently: true }), hashes = [];
       for (let i = 0; i < 10; i++) {
@@ -79,14 +81,17 @@ test('card built in the editor previews fade, slide and flip with changing frame
       }
       return hashes;
     });
-    await detail.getByRole('button', { name: t('card.animateNext'), exact: true }).click();
+    await detail.getByRole('button', { name: t('insp.tryObject'), exact: true }).click();
     const hashes = await sampling;
-    expect(new Set(hashes).size, effect).toBeGreaterThanOrEqual(4);
-    await expect(detail.getByRole('slider', { name: new RegExp(t('card.duration')) })).toHaveValue('1000');
+    expect(new Set(hashes).size, name).toBeGreaterThanOrEqual(4);
+    await expect(duration).toHaveValue('1000');
   }
-  await detail.getByRole('switch', { name: t('cardInsp.animateShared'), exact: true }).uncheck();
+  const shared = detail.getByRole('button', { name: t('cardInsp.animateShared'), exact: true });
+  await shared.click();
+  await expect(shared).toHaveAttribute('aria-pressed', 'false');
+  // With reduced motion the trial does not play.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await detail.getByRole('button', { name: t('card.animateNext'), exact: true }).click();
+  await expect(detail.getByRole('button', { name: t('insp.tryObject'), exact: true })).toBeDisabled();
   await expectAccessible(page);
   expect(errors).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('card-animation.png') });

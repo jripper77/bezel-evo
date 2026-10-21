@@ -366,8 +366,8 @@ and **Behavior**; its header says which face is in view and how many there are.
 
 - **Transition between faces**: one effect for the whole Card (none, fade, slide
   or flip), its duration (150 to 1500 ms), for slide and flip its direction, and
-  whether the shared background moves with the faces. **Animate next face**
-  tries it.
+  whether the shared background moves with the faces. **▶ Try** in the
+  inspector's header plays it.
 - **Timed triggers** change the face at regular intervals: *every 30 s → show
   the next face* (or a given face). **Add timed trigger** adds one.
 - **App triggers** show a face for a while: when an application is running, is
