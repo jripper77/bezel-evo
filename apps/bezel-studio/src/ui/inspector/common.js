@@ -8,14 +8,15 @@ import { applyTextCase, TEXT_CASES } from '../../text-case.js';
 import { MAX_COLOR_THRESHOLDS, addColorThreshold, defaultValueColor, supportsValueColor } from '../../value-color.js';
 import { moveRule } from '../../card-rules.js';
 import { formatClock } from '../../clock-format.js';
+import { formatValue } from '../../value-format.js';
 import { readIcon } from '../../icon-catalog.js';
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { chipButton, fieldGrid, fontPicker, numberField, cornersField, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField, toggleField, textField } from '../fields.js';
+import { chipButton, fieldGrid, fontPicker, numberField, iconChoice, cornersField, iconButton, prefixedField, propertySection as section, segmented, selectField, toggleField, textField } from '../fields.js';
 import { CORNERS, cornerValue, coverBox } from '../../corner-radii.js';
 import { boundKey } from '../../editor/widgets.js';
 import { appChips, durationParts, graphTiming } from '../../inspector-tabs.js';
-import { TRANSITION_RANGE, formatMs, transitionOf, transitionPatch } from '../../value-transition.js';
+import { TRANSITION_RANGE, AVERAGE_RANGE, averageOf, transitionOf, transitionPatch } from '../../value-transition.js';
 
 export function createCommonFields({ t, store, update, root, sensors, host, pickers, colorField, video, barCornerModes, sourceState, redraw, shownValue, optionTiles }) {
   const button = (text, onclick) => el('button', { type: 'button', class: 'text-button', text, onclick });
@@ -28,8 +29,8 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
 
   /** The same prefixed angle controls for rings and needles. */
   const angleFields = (e) => fieldGrid([
-    prefixedField(t('insp.arcStart'), t('inspector.startAngle'), e.kind.startAngle, (v) => update(e.id, { kind: { startAngle: v } }), { min: -360, max: 360, unit: '°' }),
-    prefixedField(t('insp.arcSweep'), t('inspector.sweep'), e.kind.sweep, (v) => update(e.id, { kind: { sweep: v } }), { min: 1, max: 360, unit: '°' }),
+    prefixedField(t('insp.arcStart'), t('inspector.startAngle'), e.kind.startAngle, (v) => update(e.id, { kind: { startAngle: Math.max(-360, Math.min(360, v)) } }), { min: -360, max: 360, unit: '°' }),
+    prefixedField(t('insp.arcSweep'), t('inspector.sweep'), e.kind.sweep, (v) => update(e.id, { kind: { sweep: Math.max(1, Math.min(360, v)) } }), { min: 1, max: 360, unit: '°' }),
   ]);
 
   /** The same track toggle and paint for bars and rings. */
@@ -54,9 +55,10 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
 
   /** Min and max of a binding, mono-prefixed side by side. */
   function rangeFields(id, binding, { muted = false } = {}) {
+    const unit = sensorNativeUnit(sensors.catalog().find(sensor => sensor.key === binding.key)?.quantity);
     const grid = fieldGrid([
-      prefixedField(t('insp.minPrefix'), t('inspector.min'), binding.min, (v) => update(id, { kind: { binding: { min: v } } }), { step: 'any' }),
-      prefixedField(t('insp.maxPrefix'), t('inspector.max'), binding.max, (v) => update(id, { kind: { binding: { max: v } } }), { step: 'any' }),
+      prefixedField(t('insp.minPrefix'), t('inspector.min'), binding.min, (v) => update(id, { kind: { binding: { min: Math.min(v, binding.max - 0.001) } } }), { step: 'any', unit }),
+      prefixedField(t('insp.maxPrefix'), t('inspector.max'), binding.max, (v) => update(id, { kind: { binding: { max: Math.max(v, binding.min + 0.001) } } }), { step: 'any', unit }),
     ]);
     if (muted) {
       grid.classList.add('is-muted');
@@ -81,26 +83,41 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   function sampleText(e) {
     const c = e.kind.content ?? {};
     if (c.type === 'static' && c.text) return c.text;
-    if (c.type === 'sensor') return `${c.prefix ?? ''}${shownValue(c.key)}${c.suffix ?? ''}`;
+    if (c.type === 'sensor') {
+      const reading = host.lastSample()?.readings?.[c.key];
+      const parts = formatValue(reading?.text ?? reading?.value ?? null, sensors.catalog().find(sensor => sensor.key === c.key)?.quantity, c.format);
+      return `${c.prefix ?? ''}${parts.number}${parts.unit}${c.suffix ?? ''}`;
+    }
     if (c.type === 'clock') return formatClock(c.pattern ?? '%H:%M', new Date(), c.language ?? null);
     if (c.type === 'player') return host.lastSample()?.activity?.media?.[0]?.title ?? e.name;
     return e.name;
   }
 
   /** The font of a text: family and face, size (unless shown elsewhere), color, alignment and spacing. */
-  function fontFields(e, { size = true } = {}) {
-    const s = e.kind.style;
+  function fontFields(e, { size = true, compact = false, style = e.kind.style, setStyle = patch => update(e.id, { kind: { style: patch } }) } = {}) {
+    const s = style;
     const { texts, source } = pickers.font(applyTextCase(sampleText(e), s.casing));
-    // A family picked instead of the theme's own font file drops that file.
-    const setFont = (font) => update(e.id, { kind: { style: { font } } });
+    const picker = fontPicker(texts, s.font, font => setStyle({ font }), source, { faceSample: compact ? t('insp.faceSample') : null });
+    const fontSize = size && numberField(t('inspector.size'), s.size, value => setStyle({ size: Math.max(4, value) }), { min: 4, max: 800, unit: 'px', iconName: 'textSize' });
+    const cases = TEXT_CASES.map(value => [value, t(`textCase.${value}`)]);
+    const casing = compact ? iconChoice(t('textCase.label'), s.casing ?? 'normal', cases, casing => setStyle({ casing }), { wide: true })
+      : selectField(t('textCase.label'), s.casing ?? 'normal', cases, casing => setStyle({ casing }));
+    if (compact) [...casing.querySelectorAll('button')].forEach((button, index) => { button.textContent = t(`insp.caseSample.${TEXT_CASES[index]}`); });
+    const alignments = [['left', t('common.left'), 'textLeft'], ['center', t('inspector.alignCenter'), 'textCenter'], ['right', t('common.right'), 'textRight']];
+    const verticals = [['top', t('inspector.valignTop'), 'textTop'], ['middle', t('inspector.valignMiddle'), 'textMiddle'], ['bottom', t('inspector.valignBottom'), 'textBottom']];
+    const horizontal = compact ? iconChoice(t('inspector.align'), s.align, alignments, align => setStyle({ align }), { wide: true, iconOnly: true })
+      : segmented(t('inspector.align'), s.align, alignments, align => setStyle({ align }));
+    const vertical = compact ? iconChoice(t('axis.vertical'), s.valign, verticals, valign => setStyle({ valign }), { wide: true, iconOnly: true })
+      : segmented(t('axis.vertical'), s.valign, verticals, valign => setStyle({ valign }));
+    const face = compact && picker.lastElementChild;
     return [
-      fontPicker(texts, s.font, setFont, source),
-      selectField(t('textCase.label'), s.casing ?? 'normal', TEXT_CASES.map((value) => [value, t(`textCase.${value}`)]), (casing) => update(e.id, { kind: { style: { casing } } })),
-      size && numberField(t('inspector.size'), s.size, (v) => update(e.id, { kind: { style: { size: Math.max(4, v) } } }), { min: 4, max: 800, unit: 'px', iconName: 'textSize' }),
-      colorField(t('inspector.color'), typeof s.paint === 'string' ? s.paint : '#ffffffff', (v) => update(e.id, { kind: { style: { paint: v } } })),
-      segmented(t('inspector.align'), s.align, [['left', t('common.left')], ['center', t('inspector.alignCenter')], ['right', t('common.right')]], (v) => update(e.id, { kind: { style: { align: v } } })),
-      segmented(t('axis.vertical'), s.valign, [['top', t('inspector.valignTop')], ['middle', t('inspector.valignMiddle')], ['bottom', t('inspector.valignBottom')]], (v) => update(e.id, { kind: { style: { valign: v } } })),
-      numberField(t('inspector.letterSpacing'), s.letterSpacing ?? 0, (v) => update(e.id, { kind: { style: { letterSpacing: v } } }), { step: 'any', unit: 'px', iconName: 'spacing' }),
+      picker,
+      compact ? fieldGrid([face, fontSize]) : casing,
+      compact ? casing : fontSize,
+      colorField(t('inspector.color'), typeof s.paint === 'string' ? s.paint : '#ffffffff', paint => setStyle({ paint })),
+      compact ? fieldGrid([horizontal, vertical]) : horizontal,
+      compact ? null : vertical,
+      numberField(t('inspector.letterSpacing'), s.letterSpacing ?? 0, letterSpacing => setStyle({ letterSpacing }), { step: 'any', unit: 'px', iconName: 'spacing' }),
     ];
   }
 
@@ -182,7 +199,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     return [
       toggleField(t('inspector.segments'), Boolean(seg), (on) => update(e.id, { kind: { segments: on ? { count: 10, gap: e.kind.type === 'ring' ? 4 : 2 } : null } })),
       seg && el('div', { class: 'field-row' }, [
-        numberField(t('inspector.count'), seg.count, (v) => update(e.id, { kind: { segments: { count: Math.max(1, v) } } }), { min: 1, max: 200, iconName: 'count' }),
+        numberField(t('inspector.count'), seg.count, (v) => update(e.id, { kind: { segments: { count: Math.min(200, Math.max(1, v)) } } }), { min: 1, max: 200, iconName: 'count' }),
         numberField(t('inspector.gap'), seg.gap, (v) => update(e.id, { kind: { segments: { gap: Math.max(0, v) } } }), { min: 0, step: 'any', unit: e.kind.type === 'ring' ? '°' : 'px', iconName: 'spacing' }),
       ]),
     ];
@@ -191,11 +208,15 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   /** How the shown value moves to a new reading (D-2026-10-15-studio-redesign-fidelity-18): none or smooth, and how long. */
   function transitionSection(e) {
     const { mode, durationMs } = transitionOf(e);
-    const set = (change) => update(e.id, { valueTransition: transitionPatch(e, change) });
+    const isValue = e.kind.type === 'text' && e.kind.content?.type === 'sensor';
+    const modes = ['none', 'smooth', 'inertia', ...(isValue ? ['count', 'roll'] : [])];
+    if (!modes.includes(mode)) modes.push(mode);
+    const set = (change) => update(e.id, { valueTransition: { ...transitionPatch(e, change), ...(change.average === 1 ? { average: 1 } : {}) } });
     return section('transition', t('insp.transition'), [
-      segmented(t('insp.transition'), mode, [['none', t('fade.none')], ['smooth', t('insp.transitionSmooth')], ['inertia', t('insp.transitionInertia')]], (next) => set({ mode: next }), { bare: true }),
-      mode !== 'none' && rangeField(t(mode === 'inertia' ? 'insp.transitionSettling' : 'card.duration'), durationMs, (next) => set({ durationMs: next }), { ...TRANSITION_RANGE, format: formatMs, compact: true }),
+      segmented(t('insp.transition'), mode, modes.map(value => [value, t(value === 'none' ? 'fade.none' : `insp.transition${value[0].toUpperCase()}${value.slice(1)}`)]), (next) => set({ mode: next }), { bare: true }),
+      mode !== 'none' && numberField(t(mode === 'inertia' ? 'insp.transitionSettling' : 'card.duration'), durationMs, durationMs => set({ durationMs }), { ...TRANSITION_RANGE, unit: 'ms' }),
       el('p', { class: 'hint', text: t(mode === 'inertia' ? 'insp.transitionInertiaHint' : 'insp.transitionHint') }),
+      isValue && numberField(t('insp.averageReadings'), averageOf(e), average => set({ average: Math.max(AVERAGE_RANGE.min, Math.min(AVERAGE_RANGE.max, average)) }), AVERAGE_RANGE),
     ]);
   }
 
@@ -269,6 +290,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   }
 
   function visualizationFields(e) {
+    if (e.kind.type === 'graph') return null;
     const styles = visualStyles(e.kind.type);
     if (!styles.length || e.isGroup) return null;
     const v = e.visualization;

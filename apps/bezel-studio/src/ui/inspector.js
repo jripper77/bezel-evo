@@ -4,7 +4,7 @@ import { describeSections } from './inspector/sections.js';
 import { objectMenuItems } from './object-menu.js';
 import { openMenuAt } from './menu.js';
 import { createCommonFields } from './inspector/common.js';
-import { sections as multiSections } from './inspector/multi.js';
+import { sections as multiSections, header as multiHeader } from './inspector/multi.js';
 import { panel as themePanel, sections as themeSections } from './inspector/theme.js';
 import { sections as clockPanels } from './inspector/clock.js';
 import { sections as weatherPanels } from './inspector/weather.js';
@@ -19,7 +19,6 @@ import { sections as shapePanels } from './inspector/shape.js';
 import { sections as imagePanels } from './inspector/image.js';
 import { canRotate, appliedRotation } from '../editor/rotation.js';
 import { createInspectorTrial } from '../inspector-trial.js';
-import { visualization } from '../visualization.js';
 
 import { closeSensorPicker, refreshSensorPicker } from './sensor-picker.js';
 
@@ -30,7 +29,8 @@ import { canFitContent } from '../editor/fit-content.js';
 
 import { el, icon, svgEl as node } from './dom.js';
 import { ICONS } from './icons.js';
-import { accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, prefixedField, rangeField, propertySection as section, segmented, selectField } from './fields.js';
+import { accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, bindButton, numberField, prefixedField, rangeField, propertySection as section, segmented, selectField } from './fields.js';
+import { withChildren } from '../editor/cards.js';
 import { splitColor } from '../color-math.js';
 
 import { boundKey, createWidget, widgetOf } from '../editor/widgets.js';
@@ -54,7 +54,7 @@ const ALIGN_EDGES = Object.freeze([['left', 'alignLeft'], ['centerX', 'alignCent
 // The same reading order for every object's Look tab: structure/type,
 // typography, paint, edges, then effects. A kind omits what it does not use.
 const LOOK_ORDER = Object.freeze([
-  'show', 'shape', 'visualization', 'style', 'spectrum-bars', 'arc', 'spacing', 'appearance', 'font',
+  'show', 'shape', 'visualization', 'style', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'spacing', 'appearance', 'font',
   'color', 'picture', 'spectrum-paint', 'fill', 'progress', 'track', 'segments',
   'outline', 'corners', 'shadow', 'transparency', 'preview', 'visibility',
 ]);
@@ -129,6 +129,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   // Spectrum bars' corner mode chosen in this session, by element id (true = each corner).
   const barCornerModes = new Map();
   const sizeLinks = new Map();
+  const rotationBindings = new Map();
   const sourceState = { custom: false };
   // The app's pickers (ui/pickers.js); an inspector on its own makes its own, without fonts until asked.
   const pickers = shared ?? createPickers({ store, t, bridge: bridge ?? { fontCatalog: async () => null, fontFace: async () => null } });
@@ -305,6 +306,16 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   function membershipForm(e, theme) {
+    if (['text', ...BOUND].includes(widgetOf(e))) {
+      const descendants = new Set(withChildren(theme, [e.id]));
+      const parents = theme.elements.filter(parent => (parent.isGroup || parent.card) && !descendants.has(parent.id));
+      const current = e.groupParent ?? e.cardMember?.parent;
+      const card = parents.find(parent => parent.id === current && parent.card);
+      return [selectField(t('inspector.membership'), current == null ? '' : String(current), [['', t('layers.rootDrop')], ...parents.map(parent => [String(parent.id), parent.name])], value => {
+        const parent = parents.find(parent => String(parent.id) === value);
+        store.dispatch('placeLayer', { ids: [e.id], ...(parent ? { target: parent.id, inside: true } : { root: true }) });
+      }), card && selectField(t('card.face'), e.cardMember.face == null ? '' : String(e.cardMember.face), [['', t('cardInsp.base')], ...card.card.faces.map((name, index) => [String(index), name])], value => store.dispatch('attachCard', { ids: [e.id], parent: card.id, face: value === '' ? null : Number(value) }))];
+    }
     const facts = layerFacts(theme, e);
     const summary = el('p', { class: 'hint membership-location', text: facts.group
       ? t('insp.inGroup', { group: facts.group }) : t('layers.rootDrop') });
@@ -445,7 +456,11 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   function refreshLive() {
     const sample = host.lastSample();
     const live = root.querySelector('.inspector-live');
-    if (live) { live.textContent = t(sample ? 'insp.live' : 'insp.waiting'); live.dataset.live = String(Boolean(sample)); }
+    if (live) {
+      const fixed = shownElement?.kind?.content?.type === 'static';
+      live.textContent = t(fixed ? 'insp.fixedState' : sample ? 'insp.live' : 'insp.waiting');
+      live.dataset.live = String(!fixed && Boolean(sample));
+    }
     if (!sample) return;
     if (sample !== seenSample) {
       seenSample = sample;
@@ -514,31 +529,37 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       const seconds = timingOf(e).duration;
       specific.data?.find(group => group?.dataset.section === 'window')?.append(el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]));
     }
-    const opacity = rangeField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: v / 100 }), { format: v => `${v}%` });
+    const opacity = numberField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%' });
+    const linked = ['text', ...BOUND].includes(widgetOf(e));
+    const motion = sensorMotionSection(e);
+    if (linked && motion && (rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))) {
+      motion.dataset.section = 'rotation-binding';
+      layout.push(motion);
+    }
     const look = [visualizationFields(e), ...(specific.look ?? []).filter(group => {
       if (['matrix','pixel'].includes(e.visualization?.style) && group?.dataset.section === 'segments') return false;
       return !(e.visualization?.style === 'matrix' && group?.dataset.section === 'corners');
-    }), sensorMotionSection(e)].filter(Boolean);
+    }), !linked && motion].filter(Boolean);
     if (e.kind.type === 'graph' && e.visualization?.style === 'mirrored') {
       const v = e.visualization;
       const set = patch => update(e.id, { visualization: { ...v, ...patch } });
       const b = v.secondary;
-      (specific.data ??= []).splice(1, 0, section('secondary-source', t('visual.secondary'), [
+      (specific.data ??= []).splice(specific.data.findIndex(group => group?.dataset.section === 'source') + 1, 0, section('secondary-source', t('visual.secondary'), [
         sourceCard(e.id, b?.key ?? '', key => ({ visualization: { ...v, secondary: { key, min: b?.min ?? 0, max: b?.max ?? 100 } } }), { numeric: true, label: t('visual.secondary'), scope: 'secondary-source' }),
         b && !e.kind.autoscale && fieldGrid([
           prefixedField(t('insp.minPrefix'), t('visual.secondaryMin'), b.min, min => set({ secondary: { ...b, min: Math.min(min,b.max-0.001) } }), { step:'any' }),
           prefixedField(t('insp.maxPrefix'), t('visual.secondaryMax'), b.max, max => set({ secondary: { ...b, max: Math.max(max,b.min+0.001) } }), { step:'any' }),
         ]),
-        colorField(t('visual.secondaryColor'), v.secondaryColor, secondaryColor => set({ secondaryColor })),
         el('p', { class:'hint', text:t('visual.mirroredHint') }),
       ]));
+      look.find(group => group.dataset.section === 'color')?.querySelector('.property-section-body').append(colorField(t('visual.secondaryColor'), v.secondaryColor, secondaryColor => set({ secondaryColor })));
     }
     const fontGroup = look.find(group => group.dataset.section === 'font');
-    const textPaint = fontGroup?.querySelector('.color-field');
+    const textPaint = fontGroup?.querySelector(':scope > .property-section-body > .color-field');
     if (textPaint) look.push(section('color', t('inspector.color'), [textPaint]));
     const conditional = valueColorSection(e, assets);
     if (conditional) {
-      const paint = look.flatMap(group => [...group.querySelectorAll('.color-field')])[0];
+      const paint = look.filter(group => ['color', 'spectrum-paint'].includes(group.dataset.section)).flatMap(group => [...group.querySelectorAll('.color-field')])[0] ?? look.flatMap(group => [...group.querySelectorAll('.color-field')])[0];
       const group = paint?.closest('.property-section');
       if (['color', 'spectrum-paint'].includes(group?.dataset.section)) group.querySelector('.property-section-body').append(conditional);
       else if (paint) paint.after(conditional);
@@ -571,18 +592,25 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
           linked: sizeLinks.get(e.id) ?? ['ring', 'image'].includes(widget),
           onLink: linked => { sizeLinks.set(e.id, linked); render(shown.assets); },
         }),
-      canRotate(theme, e) && el('div', { class: 'geometry-rotation' }, [prefixedField(t('insp.rotation'), t('insp.rotation'), appliedRotation(e), rotation => store.dispatch('rotate', { id: e.id, rotation }), { step: 'any', unit: '°' })]),
+      canRotate(theme, e) && el('div', { class: 'geometry-rotation bound-field' }, [
+        prefixedField('', t('insp.rotation'), appliedRotation(e), rotation => store.dispatch('rotate', { id: e.id, rotation }), { step: 'any', unit: '°', iconName: 'rotate' }),
+        ['text', ...BOUND].includes(widget) && bindButton(t('insp.sensorMotion'), Boolean(e.sensorMotion), () => { rotationBindings.set(e.id, !(rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))); render(shown.assets); }),
+      ]),
       el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
     ], { tool: iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }) });
-    const actions = section('actions', t('inspector.actions'), [el('div', { class: 'actions' }, [
+    const actions = section('actions', ['text', ...BOUND].includes(widget) ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
       e.isGroup && el('button', { type: 'button', class: 'text-button', text: t('group.ungroup'), onclick: () => store.dispatch('ungroup', { ids: [e.id] }) }),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('reorder', { id: e.id, index: theme.elements.length }) }, [t('inspector.front')]),
+      iconButton(t('insp.oneForward'), ICONS.up, () => store.dispatch('reorder', { id: e.id, index: theme.elements.findIndex(item => item.id === e.id) + 1 })),
+      iconButton(t('insp.oneBackward'), ICONS.down, () => store.dispatch('reorder', { id: e.id, index: theme.elements.findIndex(item => item.id === e.id) - 1 })),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('reorder', { id: e.id, index: 0 }) }, [t('inspector.back')]),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('duplicate', { ids: [e.id] }) }, [icon(ICONS.copy, 16), t('common.duplicate')]),
       el('button', { type: 'button', class: 'text-button danger', onclick: () => store.dispatch('remove', { ids: [e.id] }) }, [icon(ICONS.trash, 16), t('common.delete')]),
     ])]);
+    const rotationField = position.querySelector('.geometry-rotation');
+    if (rotationField) position.querySelector('.geometry-fields').append(rotationField);
     const layout = [position, section('membership', t('inspector.membership'), membershipForm(e, theme)), actions];
-    const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, bridge, section, editIcon, searchCities, optionTiles, arcPreview, customSource: sourceState.custom,
+    const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, bridge, section, editIcon, searchCities, optionTiles, arcPreview, redraw: () => render(shown.assets), customSource: sourceState.custom,
       completePanels: specific => panelsOf(e, theme, assets, specific, layout) };
     const descriptors = e.isGroup ? describeSections(context, context.completePanels({})) : FORMS[e.card ? 'card' : widget]?.(context) ?? [];
     return [header(e, widget, theme), showAs(e, theme), ...sectioned(kind, descriptors, e)];
@@ -596,6 +624,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     sliding = false;
     const { theme, selection } = store.getState();
     const chosen = selection.map(id => theme.elements.find(e => e.id === id)).filter(Boolean);
+    root.classList.toggle('inspector-linked', chosen.length > 1 || chosen.length === 1 && ['text', 'value', 'ring', 'bar', 'needle', 'graph'].includes(widgetOf(chosen[0])));
     let nodes;
     if (chosen.length === 0) {
       trial.stop();
@@ -606,7 +635,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       if (chosen.length > 1) trial.stop();
       background.dismiss();
       if (chosen.length > 1) shownElement = null;
-      nodes = chosen.length === 1 ? elementForm(chosen[0], theme, assets) : [el('h2', { text: t('inspector.multi', { count: chosen.length }) }), ...sectioned('multi', multiSections({ ids: chosen.map(e => e.id), t, store, alignTool, ALIGN_EDGES }), null)];
+      nodes = chosen.length === 1 ? elementForm(chosen[0], theme, assets) : [multiHeader({ ids: chosen.map(e => e.id), t, store, host, video }), ...sectioned('multi', multiSections({ ids: chosen.map(e => e.id), t, store, alignTool, ALIGN_EDGES, colorField, sensors, host }), null)];
     }
     // Keep focus where the user was: on the same tab, on the field of the
     // same label, or of the same stable id (the framing's). A number field
