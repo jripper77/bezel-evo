@@ -101,7 +101,6 @@ export default {
     'themesPanel.new': 'New theme',
     'themesPanel.duplicateLabel': 'Duplicate {name}',
     'themesPanel.gallery': 'Open theme gallery',
-    'themesPanel.selected': 'Selected: {name}',
     'themesPanel.openEditor': 'Open in the editor',
   },
   'pt-BR': {
@@ -199,7 +198,6 @@ export default {
     'themesPanel.new': 'Novo tema',
     'themesPanel.duplicateLabel': 'Duplicar {name}',
     'themesPanel.gallery': 'Abrir galeria de temas',
-    'themesPanel.selected': 'Selecionado: {name}',
     'themesPanel.openEditor': 'Abrir no editor',
   },
   it: {
@@ -297,7 +295,6 @@ export default {
     'themesPanel.new': 'Nuovo tema',
     'themesPanel.duplicateLabel': 'Duplica {name}',
     'themesPanel.gallery': 'Apri galleria temi',
-    'themesPanel.selected': 'Selezionato: {name}',
     'themesPanel.openEditor': "Apri nell'editor",
   },
 };

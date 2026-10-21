@@ -40,7 +40,7 @@ import { boundKey, createWidget, widgetOf } from '../editor/widgets.js';
 import { videoStatus } from '../editor/background.js';
 import { ROTATIONS, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, framingOf, framingPercents, reframed, resolvedRotation, withoutFraming } from '../editor/video-framing.js';
 import { formatBytes } from './storage.js';
-import { arcDrawing, layerFacts } from '../inspector-tabs.js';
+import { arcDrawing, layerFacts } from '../inspector-helpers.js';
 import { createPeakWatch, createPreviewScheduler, fitPreview, previewOffset, previewSide } from '../element-preview.js';
 import { createPreviewAnimation } from '../preview-animation.js';
 import { sections as cardSections } from './inspector/card.js';

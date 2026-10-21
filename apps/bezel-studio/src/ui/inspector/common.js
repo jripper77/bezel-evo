@@ -15,7 +15,7 @@ import { ICONS } from '../icons.js';
 import { chipButton, fieldGrid, fontPicker, numberField, iconChoice, cornersField, iconButton, prefixedField, propertySection as section, segmented, selectField, toggleField, textField } from '../fields.js';
 import { CORNERS, cornerValue, coverBox } from '../../corner-radii.js';
 import { boundKey } from '../../editor/widgets.js';
-import { appChips, durationParts, graphTiming } from '../../inspector-tabs.js';
+import { appChips, durationParts, graphTiming } from '../../inspector-helpers.js';
 import { TRANSITION_RANGE, AVERAGE_RANGE, averageOf, transitionOf, transitionPatch } from '../../value-transition.js';
 
 export function createCommonFields({ t, store, update, root, sensors, host, pickers, colorField, video, barCornerModes, sourceState, redraw, shownValue, optionTiles }) {

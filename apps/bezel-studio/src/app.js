@@ -504,7 +504,7 @@ const animation = createPreviewAnimation({
 const memoryStatus = createMemoryStatus({ t, root: $('status-memory'), notify: (message) => toast(message) });
 
 // "Trial values" in the canvas toolbar: trial inputs instead of the sensors, never saved.
-const trialValues = createTrialValues({ after: $('grid-toggle'), t: (key) => t(key), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
+const trialValues = createTrialValues({ button: $('trial-values'), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
 
 async function drawPreview() {
   if (switchingScreen) return;
@@ -539,7 +539,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) renderNow();
 });
 reducedMotion?.addEventListener?.('change', () => {
-  trialValues.retranslate();
+  trialValues.follow();
   inspector.contextChanged();
   renderNow();
 });
@@ -1398,7 +1398,6 @@ function setLocale(next) {
   sensorStatus.close();
   memoryStatus.retranslate();
   renderScreenPill();
-  trialValues.retranslate();
   applyIcons(document, ICONS);
   refreshChrome('select');
   renderScreenSelect();

@@ -4,7 +4,7 @@ import { ICONS } from '../icons.js';
 import { iconButton, iconChoice } from '../fields.js';
 import { openMenuAt } from '../menu.js';
 import { isHorizontal, isTurned, orientationOf } from '../../editor/geometry.js';
-import { refreshChoices } from '../../inspector-tabs.js';
+import { refreshChoices } from '../../inspector-helpers.js';
 import { backgroundName } from '../../editor/background.js';
 
 export function header({ theme, t, store, video, host }) {

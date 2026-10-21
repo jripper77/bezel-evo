@@ -5,7 +5,7 @@ import { el, svgEl as node } from '../dom.js';
 import { chipButton, dashedHint, numberField, iconButton, iconChoice, rangeField, propertySection as section, segmented, selectField, sentence } from '../fields.js';
 import { joinColor, splitColor } from '../../color-math.js';
 import { sentenceParts } from '../../sentence.js';
-import { DURATION_UNITS, INTERVAL_UNITS, TIME_UNITS, graphRuler, graphSentence, graphTimingPatch, graphWindowRange, quickDurations } from '../../inspector-tabs.js';
+import { DURATION_UNITS, INTERVAL_UNITS, TIME_UNITS, graphRuler, graphSentence, graphTimingPatch, graphWindowRange, quickDurations } from '../../inspector-helpers.js';
 import { ICONS } from '../icons.js';
 import { ART } from './art.js';
 

@@ -3,21 +3,17 @@
 // sensor sweeping its scale (render_preview's trialMs). A bar's trial handle
 // holds one sensor instead (trialHold) while it is dragged. Nothing is
 // saved, and the screens keep showing the sensors.
-import { el, icon } from './dom.js';
-import { ICONS } from './icons.js';
 
 /**
  * @param {object} opts
- * @param {HTMLElement} opts.after the toolbar control the button follows
- * @param {(key: string) => string} opts.t
+ * @param {HTMLButtonElement} opts.button the toolbar's Trial values button
  * @param {() => boolean} opts.motion whether motion is allowed (the sweep needs it)
  * @param {() => void} opts.onChange the canvas must be drawn again
  */
-export function createTrialValues({ after, t, motion, onChange, now = () => performance.now() }) {
+export function createTrialValues({ button, motion, onChange, now = () => performance.now() }) {
   let start = null;
   let hold = null;
-  const button = el('button', { type: 'button', class: 'icon-button quiet', id: 'trial-values', 'aria-pressed': 'false', onclick: () => set(start === null) }, [icon(ICONS['test-values'], 18)]);
-  after.after(button);
+  button.addEventListener('click', () => set(start === null));
 
   function set(on) {
     const next = on && motion() ? now() : null;
@@ -27,13 +23,11 @@ export function createTrialValues({ after, t, motion, onChange, now = () => perf
     onChange();
   }
 
-  function retranslate() {
-    button.title = t('shell.trialValues');
-    button.setAttribute('aria-label', t('shell.trialValues'));
+  function follow() {
     button.disabled = !motion();
     if (!motion()) set(false);
   }
-  retranslate();
+  follow();
 
   return {
     /** The render options of the canvas now: `{trialMs?, trialHold?}`. */
@@ -46,7 +40,7 @@ export function createTrialValues({ after, t, motion, onChange, now = () => perf
       if (changed) onChange();
     },
     set,
-    /** The language or the motion preference changed. */
-    retranslate,
+    /** The motion preference may have changed. */
+    follow,
   };
 }

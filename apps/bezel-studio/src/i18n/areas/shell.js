@@ -70,7 +70,6 @@ export default {
     "shell.handle.resize.w": "Resize left",
 
     'shell.memoryChip': 'memory {value}',
-    'shell.memoryTitle': 'Bezel memory usage',
     'shell.memoryUnavailable': 'not available',
     'shell.memoryMB': '{value} MB',
     'shell.memoryDemoBadge': 'demo',
@@ -81,8 +80,6 @@ export default {
     'shell.memoryRole.webview': 'Studio WebView2',
     'shell.memoryRole.light': 'Bezel Light',
     'shell.memoryRole.sensors': 'Sensor reader',
-    'shell.breadcrumb': 'Path',
-    'shell.unsaved': 'Unsaved',
     'shell.saveHint': 'Save the theme (Ctrl+S)',
     'shell.saveKeys': 'Ctrl S',
     'shell.grid': 'Show guides and grid',
@@ -94,7 +91,6 @@ export default {
     'shell.legend': '{width} × {height}',
     'shell.legendTurned': '{width} × {height} · turned {degrees}°',
     'shell.screenSize': '{width}×{height} · {port}',
-    'shell.fps': ' · {fps} fps',
   },
   'pt-BR': {
     'shell.guideDistance': 'Distância entre objetos alinhados: {value}',
@@ -160,7 +156,6 @@ export default {
     "shell.handle.resize.w": "Redimensionar esquerda",
 
     'shell.memoryChip': 'memória {value}',
-    'shell.memoryTitle': 'Uso de memória do Bezel',
     'shell.memoryUnavailable': 'indisponível',
     'shell.memoryMB': '{value} MB',
     'shell.memoryDemoBadge': 'demo',
@@ -171,8 +166,6 @@ export default {
     'shell.memoryRole.webview': 'WebView2 do Studio',
     'shell.memoryRole.light': 'Bezel Light',
     'shell.memoryRole.sensors': 'Leitor de sensores',
-    'shell.breadcrumb': 'Caminho',
-    'shell.unsaved': 'Não salvo',
     'shell.saveHint': 'Salvar o tema (Ctrl+S)',
     'shell.saveKeys': 'Ctrl S',
     'shell.grid': 'Mostrar guias e grade',
@@ -184,7 +177,6 @@ export default {
     'shell.legend': '{width} × {height}',
     'shell.legendTurned': '{width} × {height} · girado {degrees}°',
     'shell.screenSize': '{width}×{height} · {port}',
-    'shell.fps': ' · {fps} fps',
   },
   it: {
     'shell.guideDistance': 'Distanza fra oggetti allineati: {value}',
@@ -250,7 +242,6 @@ export default {
     "shell.handle.resize.w": "Ridimensiona a sinistra",
 
     'shell.memoryChip': 'memoria {value}',
-    'shell.memoryTitle': 'Uso memoria di Bezel',
     'shell.memoryUnavailable': 'non disponibile',
     'shell.memoryMB': '{value} MB',
     'shell.memoryDemoBadge': 'demo',
@@ -261,8 +252,6 @@ export default {
     'shell.memoryRole.webview': 'WebView2 di Studio',
     'shell.memoryRole.light': 'Bezel Light',
     'shell.memoryRole.sensors': 'Lettore sensori',
-    'shell.breadcrumb': 'Percorso',
-    'shell.unsaved': 'Non salvato',
     'shell.saveHint': 'Salva il tema (Ctrl+S)',
     'shell.saveKeys': 'Ctrl S',
     'shell.grid': 'Mostra guide e griglia',
@@ -274,6 +263,5 @@ export default {
     'shell.legend': '{width} × {height}',
     'shell.legendTurned': '{width} × {height} · ruotato {degrees}°',
     'shell.screenSize': '{width}×{height} · {port}',
-    'shell.fps': ' · {fps} fps',
   },
 };
