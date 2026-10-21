@@ -7,6 +7,15 @@ export const PREFIXES = Object.freeze(['shell.']);
 
 export default {
   en: {
+    "shell.handle.resize.nw": "Resize top left",
+    "shell.handle.resize.n": "Resize top",
+    "shell.handle.resize.ne": "Resize top right",
+    "shell.handle.resize.e": "Resize right",
+    "shell.handle.resize.se": "Resize bottom right",
+    "shell.handle.resize.s": "Resize bottom",
+    "shell.handle.resize.sw": "Resize bottom left",
+    "shell.handle.resize.w": "Resize left",
+
     'shell.memoryChip': 'memory {value}',
     'shell.memoryTitle': 'Bezel memory usage',
     'shell.memoryUnavailable': 'not available',
@@ -35,6 +44,15 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   'pt-BR': {
+    "shell.handle.resize.nw": "Redimensionar canto superior esquerdo",
+    "shell.handle.resize.n": "Redimensionar parte superior",
+    "shell.handle.resize.ne": "Redimensionar canto superior direito",
+    "shell.handle.resize.e": "Redimensionar direita",
+    "shell.handle.resize.se": "Redimensionar canto inferior direito",
+    "shell.handle.resize.s": "Redimensionar parte inferior",
+    "shell.handle.resize.sw": "Redimensionar canto inferior esquerdo",
+    "shell.handle.resize.w": "Redimensionar esquerda",
+
     'shell.memoryChip': 'memória {value}',
     'shell.memoryTitle': 'Uso de memória do Bezel',
     'shell.memoryUnavailable': 'indisponível',
@@ -63,6 +81,15 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   it: {
+    "shell.handle.resize.nw": "Ridimensiona in alto a sinistra",
+    "shell.handle.resize.n": "Ridimensiona in alto",
+    "shell.handle.resize.ne": "Ridimensiona in alto a destra",
+    "shell.handle.resize.e": "Ridimensiona a destra",
+    "shell.handle.resize.se": "Ridimensiona in basso a destra",
+    "shell.handle.resize.s": "Ridimensiona in basso",
+    "shell.handle.resize.sw": "Ridimensiona in basso a sinistra",
+    "shell.handle.resize.w": "Ridimensiona a sinistra",
+
     'shell.memoryChip': 'memoria {value}',
     'shell.memoryTitle': 'Uso memoria di Bezel',
     'shell.memoryUnavailable': 'non disponibile',

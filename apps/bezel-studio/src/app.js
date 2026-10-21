@@ -144,7 +144,8 @@ const canvasView = createCanvasView({
   onZoom: (z) => { $('zoom-label').textContent = `${Math.round(z * 100)}%`; },
   describe: (name) => t('stage.selected', { name }),
   rotationLabel: () => t('insp.rotateHandle'),
-  rotationLabel: () => t('insp.rotateHandle'),
+  handleLabel: (key, params) => t(key, params),
+  onHandleEdit: result => inspector.highlightField(result?.field, result?.fieldParams),
   onFrameRequest: () => setFramingMode(true),
 });
 

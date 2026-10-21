@@ -707,6 +707,17 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   return { render, contextChanged, frameShown,
+    highlightField(key, params) {
+      root.querySelectorAll('.canvas-field-active').forEach(node => node.classList.remove('canvas-field-active'));
+      if (!key) return;
+      const label = t(key, params);
+      const field = [...root.querySelectorAll('input')].find(input => input.getAttribute('aria-label') === label || input.labels?.[0]?.textContent.trim() === label);
+      if (!field) return;
+      const section = field.closest('.accordion-section');
+      const toggle = section?.querySelector(':scope > .accordion-heading > button');
+      if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click();
+      (field.closest('.fld, .number-control, .field') ?? field).classList.add('canvas-field-active');
+    },
     storageChanged(screen, overview) {
       if (background.updateListing(screen, overview) && !store.getState().selection.length) render(shown.assets);
     },
