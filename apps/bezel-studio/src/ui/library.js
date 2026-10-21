@@ -5,7 +5,7 @@
 // base.css); what the panels compute lives in library-model.js.
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
-import { accordionSection, chipButton, dashedHint, kindIcon, pill, searchField, screenThumb, sectionTitle, selectField } from './fields.js';
+import { accordionSection, chipButton, dashedHint, kindIcon, searchField, screenThumb, sectionTitle, selectField } from './fields.js';
 import { createSectionMemory } from '../inspector-sections.js';
 import { makeDraggable } from './dragdrop.js';
 import { defaultRange, widgetOf, WIDGETS } from '../editor/widgets.js';
@@ -18,7 +18,8 @@ import { createIconPicker } from './icon-picker.js';
 import { createThemesDialog } from './themes-dialog.js';
 import { layerGroups } from '../editor/layers.js';
 import { wireLayerDrag } from './layer-drag.js';
-import { WIDGET_GROUPS, countLayers, createHistory, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
+import { SENSOR_CATEGORY_ICONS } from '../sensor-picker-model.js';
+import { WIDGET_GROUPS, countLayers, createHistory, groupHeadline, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
 import { libreStatus } from '../libre-status.js';
 import { matchesSensor, probeOf, readingState } from '../sensor-probes.js';
 import { timeAgo } from '../relative-time.js';
@@ -82,7 +83,6 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   let readings = {};
   let editing = null;
   // The hardware the Sensors panel shows (one category or all of them).
-  let sensorCategory = ALL_CATEGORIES;
   let sensorProbe = 'all';
   let sensorStatus = 'all';
   let sensorError = false;
@@ -154,6 +154,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   }
 
   // Which groups of the Widgets panel are open (all at first), remembered.
+  // Which sensor categories are open (the processor and graphics at first), remembered.
+  const sensorMemory = createSectionMemory({ key: 'bezel.sensorGroups', ids: CATEGORY_ORDER, open: ['cpu', 'gpu'] });
   const widgetMemory = createSectionMemory({ key: 'bezel.widgetGroups', ids: WIDGET_GROUPS.map(g => g.id), open: WIDGET_GROUPS.map(g => g.id) });
 
   // ------------------------------------------------------------- widgets --
@@ -252,14 +254,18 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
 
   function sensorRow(s) {
     const r = sensorError ? { unavailable: t('sensorsPanel.status.unavailable') } : readings[s.key];
-    const value = el('span', { class: `value${r?.unavailable ? ' unavailable' : ''}`, dataset: { valueFor: s.key }, text: sensorValue(s.key, r), title: sensorValueTitle(r) });
-    const row = el('button', { type: 'button', class: `sensor-row${s.quantity === 'text' ? ' sensor-row-text' : ''}${s.category === 'system' ? ' sensor-row-system' : ''}`, dataset: { key: s.key, probe: probeOf(s, catalog), status: readingState(s, readings, sensorError) }, 'aria-label': t('library.addSensor', { name: s.label }) }, [
-      el('span', { class: 'sensor-text' }, [
-        el('span', { class: 'label', text: s.label }),
-        el('span', { class: 'key', text: s.key }),
-      ]),
-      ...(s.quantity === 'text' || s.category === 'system' ? [el('span')] : [sparkline(s.key, s.category)]),
+    const status = readingState(s, readings, sensorError), probe = probeOf(s, catalog);
+    const value = el('span', { class: `value${r?.unavailable ? ' unavailable' : ''}`, dataset: { valueFor: s.key }, text: status === 'unavailable' ? '—' : sensorValue(s.key, r), title: sensorValueTitle(r) });
+    // Two lines (D-2026-10-20-studio-ux-v2-14): the whole name and the value,
+    // then the key and its sparkline, or why the sensor cannot be read.
+    const why = status === 'unavailable'
+      ? el('span', { class: 'reason', text: probe === 'LibreHardwareMonitor' ? t('sensorsPanel.needsLibre') : t('shell.memoryUnavailable'), title: sensorValueTitle(r) })
+      : el('span', { class: 'key', text: s.key });
+    const row = el('button', { type: 'button', class: `sensor-row${s.quantity === 'text' ? ' sensor-row-text' : ''}${s.category === 'system' ? ' sensor-row-system' : ''}`, dataset: { key: s.key, probe, status }, 'aria-label': t('library.addSensor', { name: s.label }) }, [
+      el('span', { class: 'label', text: s.label }),
       value,
+      why,
+      ...(s.quantity === 'text' || s.category === 'system' || status === 'unavailable' ? [] : [sparkline(s.key, s.category)]),
     ]);
     const sensor = { key: s.key, quantity: s.quantity, label: s.label };
     makeDraggable(row, {
@@ -285,25 +291,28 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   let reported = null;
   function reportShown() {
     const open = !$('panel-sensors').hidden && document.visibilityState !== 'hidden';
-    const keys = catalogKeysInView(catalog, sensorSearch.value, open, shownCategory(), { probe: sensorProbe });
+    const keys = catalogKeysInView(catalog, sensorSearch.value, open, ALL_CATEGORIES, { probe: sensorProbe });
     if (keys.join(' ') === reported) return;
     reported = keys.join(' ');
     actions.showSensors(keys);
   }
   document.addEventListener('visibilitychange', () => reportShown());
 
-  /** The category chosen, or all of them once the catalog no longer has it. */
-  const shownCategory = () => (catalog.some((s) => s.category === sensorCategory) ? sensorCategory : ALL_CATEGORIES);
-
-  /** The hardware filter: "All", then one chip per category of the catalog. */
+  /** Quick state chips: all, readable, not readable (with how many, within the probe and search). */
   function renderSensorFilter() {
-    const chosen = shownCategory();
-    const chip = (category, label) => chipButton(label, category === chosen, () => { sensorCategory = category; renderSensors(); }, { dataset: { category } });
-    const categories = sensorCategories(catalog);
-    $('sensor-filter').replaceChildren(...(categories.length > 1
-      ? [chip(ALL_CATEGORIES, t('collection.filter.all')), ...categories.map((c) => chip(c, t(`category.${c}`)))]
-      : []));
+    const scoped = (status) => groupSensors(catalog, sensorSearch.value, ALL_CATEGORIES, { probe: sensorProbe, status, readings, error: sensorError }).reduce((n, [, items]) => n + items.length, 0);
+    const missing = scoped('unavailable');
+    const chip = (status, label) => chipButton(label, sensorStatus === status, () => { sensorStatus = status; renderSensors(); }, { dataset: { status } });
+    $('sensor-filter').setAttribute('aria-label', t('sensorsPanel.status'));
+    $('sensor-filter').replaceChildren(
+      chip('all', t('collection.filter.all')),
+      chip('available', t('sensorsPanel.status.available')),
+      chip('unavailable', missing ? t('sensorsPanel.unavailableCount', { count: missing }) : t('sensorsPanel.status.unavailable')),
+    );
   }
+
+  /** The values beside a category's title: how many sensors, then its headline readings. */
+  const groupSummary = (cat, items) => [String(items.length), ...groupHeadline(cat, items, sensorError ? null : readings)].join(' · ');
 
   function renderSensors() {
     renderProbeFilters();
@@ -311,26 +320,45 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     reportShown();
     renderSensorFilter();
     const list = $('sensor-list');
-    const groups = groupSensors(catalog, sensorSearch.value, shownCategory(), { probe: sensorProbe, status: sensorStatus, readings, error: sensorError });
-    const resultText = t('sensorsPanel.results', { shown: groups.reduce((n, [, items]) => n + items.length, 0), total: catalog.length });
+    const groups = groupSensors(catalog, sensorSearch.value, ALL_CATEGORIES, { probe: sensorProbe, status: sensorStatus, readings, error: sensorError });
+    const shown = groups.reduce((n, [, items]) => n + items.length, 0);
+    const resultText = t('sensorsPanel.results', { shown, total: catalog.length });
     if ($('sensor-result-count').textContent !== resultText) $('sensor-result-count').textContent = resultText;
+    // Said only while a filter hides some sensors (it stays a live region for screen readers).
+    $('sensor-result-count').classList.toggle('visually-hidden', shown === catalog.length);
+    renderRate();
     if (groups.length === 0) {
       list.replaceChildren(el('p', { class: 'empty-note', text: t('library.noSensors') }));
       return;
     }
-    list.replaceChildren(...groups.map(([cat, items]) => el('section', { class: 'sensor-group', 'aria-labelledby': `sensor-group-${cat}` }, [
-      sectionTitle(t(`category.${cat}`), { id: `sensor-group-${cat}`, count: sharedSource(items) }),
-      ...(cat === 'system' ? ['system', 'audio', 'power'].flatMap((group) => {
-        const members = items.filter((s) => systemGroup(s.key) === group);
-        return members.length ? [el('h3', { class: 'sensor-subgroup', text: t(`sensorsPanel.group.${group}`) }), ...members.map(sensorRow)] : [];
-      }) : items.map(sensorRow)),
-    ])));
+    // A search or a filter shows every category it finds open; otherwise each as it was left.
+    const filtered = Boolean(sensorSearch.value.trim()) || sensorStatus !== 'all' || sensorProbe !== 'all';
+    list.replaceChildren(...groups.map(([cat, items]) => {
+      const section = accordionSection({
+        id: cat, title: t(`category.${cat}`), icon: SENSOR_CATEGORY_ICONS[cat] ?? 'monitor', summary: groupSummary(cat, items), keepSummary: true,
+        expanded: filtered || !CATEGORY_ORDER.includes(cat) || sensorMemory.isOpen('sensors', cat),
+        onToggle: ({ exclusive }) => { sensorMemory.toggle('sensors', cat, { exclusive }); renderSensors(); list.querySelector(`[data-inspector-section="${cat}"] .accordion-toggle`)?.focus(); },
+        render: (body) => body.append(...(cat === 'system' ? ['system', 'audio', 'power'].flatMap((group) => {
+          const members = items.filter((s) => systemGroup(s.key) === group);
+          return members.length ? [el('h4', { class: 'sensor-subgroup', text: t(`sensorsPanel.group.${group}`) }), ...members.map(sensorRow)] : [];
+        }) : items.map(sensorRow))),
+      }).element;
+      section.classList.add('sensor-group');
+      section.dataset.category = cat;
+      const source = sharedSource(items);
+      if (source) section.querySelector('.accordion-toggle').title = source;
+      return section;
+    }));
   }
 
-  /** How often samples arrive, beside the title, once two have. */
+  /** Beside the title: how many sensors and, once two samples came, how often they update. */
   function renderRate() {
     const seconds = updateSeconds(history.times());
-    $('sensor-rate').replaceChildren(...(seconds ? [pill(t('sensorsPanel.every', { seconds }), { tone: 'ok', dot: true })] : []));
+    const text = [String(catalog.length), seconds ? t('insp.theme.every', { seconds }) : null].filter(Boolean).join(' · ');
+    const rate = $('sensor-rate');
+    rate.classList.add('count');
+    rate.title = seconds ? t('sensorsPanel.every', { seconds }) : '';
+    if (rate.textContent !== text) rate.textContent = text;
   }
 
   // The LibreHardwareMonitor notice, drawn again only when what it says changes.
@@ -357,15 +385,26 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
    * taken: the sparklines' history and the update rate come from it.
    */
   function updateReadings(next, at = null) {
-    const visibleKeys = () => groupSensors(catalog, sensorSearch.value, shownCategory(), { probe: sensorProbe, status: sensorStatus, readings, error: sensorError }).flatMap(([, items]) => items.map(s => s.key)).join(' ');
+    const visibleKeys = () => groupSensors(catalog, sensorSearch.value, ALL_CATEGORIES, { probe: sensorProbe, status: sensorStatus, readings, error: sensorError }).flatMap(([, items]) => items.map(s => s.key)).join(' ');
     const before = sensorStatus !== 'all' ? visibleKeys() : null;
+    const wasError = sensorError;
     sensorError = false;
     readings = next;
     history.push(next, at);
-    if (before !== null && before !== visibleKeys()) renderSensors();
-    else for (const row of document.querySelectorAll('.sensor-row[data-key]')) {
+    // A row that becomes readable or not changes its second line: draw the list again.
+    const turned = wasError || [...document.querySelectorAll('.sensor-row[data-key]')].some(row => {
+      const sensor = catalog.find(s => s.key === row.dataset.key);
+      return sensor && (readingState(sensor, readings) === 'unavailable') !== (row.dataset.status === 'unavailable');
+    });
+    if (turned || (before !== null && before !== visibleKeys())) { renderSensors(); return; }
+    for (const row of document.querySelectorAll('.sensor-row[data-key]')) {
       const sensor = catalog.find(s => s.key === row.dataset.key);
       if (sensor) row.dataset.status = readingState(sensor, readings);
+    }
+    for (const section of document.querySelectorAll('#sensor-list .sensor-group')) {
+      const items = groupSensors(catalog, sensorSearch.value, ALL_CATEGORIES, { probe: sensorProbe, status: sensorStatus, readings }).find(([cat]) => cat === section.dataset.category)?.[1];
+      const summary = section.querySelector('.accordion-summary');
+      if (items && summary) summary.textContent = groupSummary(section.dataset.category, items);
     }
     for (const span of document.querySelectorAll('[data-value-for]')) {
       const r = readings[span.dataset.valueFor];
@@ -386,6 +425,14 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   probeSelect.dataset.sensorFilter = 'probe';
   statusSelect.dataset.sensorFilter = 'status';
   $('sensor-probe-filters').replaceChildren(probeField, statusField);
+  // Probe and state live behind Filters beside the search; a dot says one is on.
+  const filtersButton = el('button', { type: 'button', class: 'icon-button sensor-filters-toggle', 'aria-controls': 'sensor-probe-filters', 'aria-expanded': 'false', onclick: () => showFilters($('sensor-probe-filters').hidden) }, [icon(ICONS.filter, 18)]);
+  $('sensor-search-box').append(filtersButton);
+  function showFilters(open) {
+    $('sensor-probe-filters').hidden = !open;
+    filtersButton.setAttribute('aria-expanded', String(open));
+  }
+  showFilters(false);
   let filterSignature = '';
   function renderProbeFilters() {
     const probes = [...new Set(catalog.map(sensor => probeOf(sensor, catalog)))].sort();
@@ -401,6 +448,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     }
     probeSelect.value = sensorProbe;
     statusSelect.value = sensorStatus;
+    filtersButton.title = t('sensorsPanel.filters');
+    filtersButton.setAttribute('aria-label', t('sensorsPanel.filters'));
+    filtersButton.classList.toggle('filters-on', sensorProbe !== 'all' || sensorStatus === 'pending');
   }
 
   // -------------------------------------------------------------- layers --
@@ -913,8 +963,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     openSensors({ probe = 'all', status = 'all' } = {}) {
       sensorProbe = probe;
       sensorStatus = status;
-      sensorCategory = ALL_CATEGORIES;
       sensorSearch.value = '';
+      // A filtered opening shows its filters.
+      showFilters(probe !== 'all' || status !== 'all');
       renderSensors();
       selectTab(tabs.find(tab => tab.dataset.tab === 'sensors'));
       probeSelect.focus();

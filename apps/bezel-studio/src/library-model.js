@@ -101,6 +101,23 @@ export function sparkPath(values, width, height = 20, pad = 2) {
   return v.map((n, i) => `${i ? 'L' : 'M'}${r(i * step)} ${r(y(n))}`).join(' ');
 }
 
+/**
+ * The values a sensor group shows beside its title
+ * (D-2026-10-20-studio-ux-v2-14): its first available percentage and
+ * temperature, else its first available reading; none for the PC's
+ * information, whose readings are words.
+ */
+export function groupHeadline(category, items, readings) {
+  if (category === 'system') return [];
+  const shown = (s) => {
+    const r = readings?.[s.key];
+    return r && !r.unavailable && Number.isFinite(r.value) && r.display ? r.display : null;
+  };
+  const first = (wanted) => items.filter(wanted).map(shown).find(Boolean) ?? null;
+  const picked = [first((s) => s.quantity === 'percent'), first((s) => s.quantity === 'celsius')].filter(Boolean);
+  return picked.length ? picked : [first((s) => s.quantity !== 'text')].filter(Boolean);
+}
+
 /** The source the sensors of a group share (shown beside its title), or `null`. */
 export function sharedSource(items) {
   const sources = new Set(items.map((s) => s.source).filter(Boolean));

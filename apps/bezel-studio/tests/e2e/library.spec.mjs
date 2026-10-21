@@ -79,9 +79,9 @@ test('sensors draw their recent values, say how often they update and bind when 
   await tab(page, t, 'sensors');
   const panel = page.locator('#panel-sensors');
   await expect(panel.getByRole('searchbox', { name: t('library.searchSensors'), exact: true })).toHaveAttribute('placeholder', t('sensorsPanel.search'));
-  await expect(panel.locator('.panel-head .pill')).toHaveText(t('sensorsPanel.every', { seconds: 1 }), { timeout: 10_000 });
+  await expect(panel.locator('#sensor-rate')).toHaveText(`20 · ${t('insp.theme.every', { seconds: 1 })}`, { timeout: 10_000 });
   await expect(panel.locator('svg[data-spark-for="cpu.usage"] path')).toHaveAttribute('d', /^M0 [\d.]+ L/, { timeout: 10_000 });
-  await expect(panel.locator('.sensor-group .section-title').first()).toHaveText(t('category.cpu'));
+  await expect(panel.locator('.sensor-group .accordion-title').first()).toHaveText(t('category.cpu'));
   await expectAccessible(page);
 
   // Dropped on the ring (which reads cpu.usage), the sensor binds it: no new object.
@@ -379,5 +379,46 @@ test('Media removes unused files and protects an image used as background', asyn
   await remove.click();
   await expect(item).toHaveCount(0);
   await expect(panel).toContainText(t('media.empty'));
+  expect(errors).toEqual([]);
+});
+
+test('sensor categories fold with their headline values, rows keep whole names at every panel width', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  for (const width of [240, 272, 360]) {
+    await page.addInitScript((w) => localStorage.setItem('bezel.panelWidths', JSON.stringify({ library: w })), width);
+    await page.goto('/index.html?demo=turing88&libre=partial');
+    await tab(page, t, 'sensors');
+    const panel = page.locator('#panel-sensors');
+    // Every category open, so every row is measured.
+    // Opening one draws the list again: always open the first still folded.
+    const folded = panel.locator('.sensor-group .accordion-toggle[aria-expanded="false"]');
+    while (await folded.count()) await folded.first().click();
+    await expect(panel.locator('.sensor-row').first()).toBeVisible();
+    const cut = await panel.locator('.sensor-row .label, .sensor-row .key, .sensor-row .reason').evaluateAll(nodes => nodes.filter(n => n.scrollWidth > n.clientWidth + 1).map(n => n.textContent));
+    expect(cut, `cut at ${width}px`).toEqual([]);
+    const overflow = await panel.locator('.sensor-row').evaluateAll(rows => rows.filter(r => r.scrollWidth > r.clientWidth + 1).length);
+    expect(overflow, `rows wider than the panel at ${width}px`).toBe(0);
+  }
+  const panel = page.locator('#panel-sensors');
+  const cpu = panel.getByRole('button', { name: t('category.cpu'), exact: true });
+  await expect(cpu.locator('.accordion-summary')).toHaveText(/^5 · \S+%/);
+  await cpu.click(); await expect(cpu).toHaveAttribute('aria-expanded', 'false');
+  await expect(cpu.locator('.accordion-summary')).toBeVisible();
+  // A sensor that cannot be read says why instead of its key, without a sparkline.
+  const missing = panel.locator('.sensor-row[data-status="unavailable"]').first();
+  await expect(missing.locator('.reason')).toHaveText(t('sensorsPanel.needsLibre'));
+  await expect(missing.locator('.value')).toHaveText('—');
+  await expect(missing.locator('svg')).toHaveCount(0);
+  // Quick state chips filter, with how many cannot be read.
+  await panel.locator('#sensor-filter [data-status="unavailable"]').click();
+  await expect(panel.locator('.sensor-row')).toHaveCount(1);
+  await expect(panel.locator('#sensor-filter [data-status="unavailable"]')).toHaveText(t('sensorsPanel.unavailableCount', { count: 1 }));
+  await panel.locator('#sensor-filter [data-status="all"]').click();
+  // Probe and state sit behind Filters.
+  const filters = panel.getByRole('button', { name: t('sensorsPanel.filters'), exact: true });
+  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toBeHidden();
+  await filters.click(); await expect(filters).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toBeVisible();
+  await expectAccessible(page);
   expect(errors).toEqual([]);
 });

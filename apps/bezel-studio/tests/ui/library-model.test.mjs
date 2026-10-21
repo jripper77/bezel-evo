@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  WIDGET_COUNT, WIDGET_GROUPS, countLayers, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
+  WIDGET_COUNT, WIDGET_GROUPS, countLayers, groupHeadline, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
   sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups,
 } from '../../src/library-model.js';
 import { createWidget, WIDGETS } from '../../src/editor/widgets.js';
@@ -165,4 +165,18 @@ test('a sensor drop respects both ownership relations and off-face ancestors', (
   assert.equal(sensorDropTarget([{ ...card, locked: true }, group, member], { x: 5, y: 5 }, sensor, range), null);
   assert.equal(sensorDropTarget([card, { ...group, cardMember: { parent: 7, face: 1 } }, member], { x: 5, y: 5 }, sensor, range), null);
   assert.equal(sensorDropTarget([member], { x: 5, y: 5 }, sensor, range), null, 'an orphan cannot bind');
+});
+
+test('a sensor category shows its first readable percentage and temperature, else its first reading', () => {
+  const items = [
+    { key: 'cpu.usage', quantity: 'percent' }, { key: 'cpu.temperature', quantity: 'celsius' },
+    { key: 'cpu.frequency', quantity: 'megahertz' },
+  ];
+  const readings = { 'cpu.usage': { value: 20, display: '20%' }, 'cpu.temperature': { value: 50, display: '50 °C' }, 'cpu.frequency': { value: 4600, display: '4.60 GHz' } };
+  assert.deepEqual(groupHeadline('cpu', items, readings), ['20%', '50 °C']);
+  assert.deepEqual(groupHeadline('cpu', items, { ...readings, 'cpu.temperature': { unavailable: 'no' } }), ['20%']);
+  assert.deepEqual(groupHeadline('cpu', items.slice(2), readings), ['4.60 GHz']);
+  assert.deepEqual(groupHeadline('cpu', items, null), []);
+  assert.deepEqual(groupHeadline('system', items, readings), [], 'the PC information has words');
+  assert.deepEqual(groupHeadline('network', [{ key: 'net.name', quantity: 'text' }], { 'net.name': { value: 1, display: 'eth0' } }), []);
 });

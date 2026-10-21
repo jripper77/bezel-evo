@@ -20,6 +20,7 @@ export const ICONS = Object.freeze({
   shadow: ['M6 6h10v10H6zM9 19h10V9'],
   'fixed-digits': ['M4 6h4v12H4zM10 6h4v12h-4zM16 6h4v12h-4z'],
   "bolt": ["M13 2 4 14h7l-1 8 9-12h-7z"],
+  "filter": ["M4 6h16M7 12h10M10 18h4"],
   "test-values": ["M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"],
   "section-layout": ["M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"],
   "data": ["M3 12h4l3-7 4 14 3-7h4"],

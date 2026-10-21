@@ -159,8 +159,9 @@ test('System separates audio and power, shows text in full and omits uptime spar
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await page.getByRole('tab', { name: t(libraryTabKey('sensors')), exact: true }).click();
-  await page.locator('#sensor-filter [data-category="system"]').click();
   const panel = page.locator('#panel-sensors');
+  // The PC's information is a folded category (T-9a): open it.
+  await panel.getByRole('button', { name: t('category.system'), exact: true }).click();
   await expect(panel.locator('.sensor-subgroup')).toHaveText([t('sensorsPanel.group.system'), t('sensorsPanel.group.audio'), t('sensorsPanel.group.power')]);
   const host = panel.locator('[data-key="system.hostname"] .value');
   await expect(host).toHaveText('bezel-demo-workstation');

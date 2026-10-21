@@ -254,7 +254,8 @@ test('the sparkline width has one source, --spark-width, read by its sheet and b
   assert.deepEqual(token, [['--spark-width', '60px']]);
   const valueOf = (prelude, property) => sheets.library.filter((rule) => rule.prelude === prelude).flatMap((rule) => declarations(rule.body)).find(([p]) => p === property)?.[1];
   assert.equal(valueOf('.sparkline', 'width'), 'var(--spark-width)');
-  assert.equal(valueOf('.sensor-row', 'grid-template-columns'), 'minmax(0, 1fr) var(--spark-width) 80px', 'the fixed columns of c28b861');
+  // D-2026-10-20-studio-ux-v2-14: two-line rows; the sparkline keeps the token's width in its own cell.
+  assert.equal(valueOf('.sensor-row', 'grid-template-columns'), 'minmax(0, 1fr) auto', 'name and value, then key and sparkline');
   const library = readFileSync(join(SRC, 'ui', 'library.js'), 'utf8');
   assert.match(library, /getPropertyValue\('--spark-width'\)/);
   assert.doesNotMatch(library, /viewBox', '0 0 \d/, 'the drawing takes its width from the token');
