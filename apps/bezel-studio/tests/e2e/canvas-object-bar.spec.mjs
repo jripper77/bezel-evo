@@ -44,3 +44,16 @@ test('the bar hides while dragging and offers only common actions for several ob
   await expect(action(page, 'duplicate')).toBeVisible(); await expect(action(page, 'menu')).toBeVisible();
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+test('the bar moves below a selection whose top would hide under the stage toolbar', async ({ page }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await page.locator('#tab-layers').click();
+  // The demo theme's clock sits at the top of the canvas, under the toolbar.
+  await page.locator('#layer-list .layer-name').getByText('Clock', { exact: true }).first().click();
+  const toolbar = await page.locator('.stage-tools').boundingBox(), shown = await bar(page).boundingBox();
+  const frame = await page.locator('#overlay .sel-box').boundingBox();
+  const overlaps = shown.y < toolbar.y + toolbar.height && shown.y + shown.height > toolbar.y && shown.x < toolbar.x + toolbar.width && shown.x + shown.width > toolbar.x;
+  expect(overlaps).toBe(false);
+  expect(shown.y).toBeGreaterThan(frame.y + frame.height);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

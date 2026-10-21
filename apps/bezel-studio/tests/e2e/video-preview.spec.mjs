@@ -1,11 +1,13 @@
-import { test, expect, watchErrors } from './helpers.mjs';
+import { test, expect, watchErrors, addMedia } from './helpers.mjs';
 
 test('Media offers a local preview without changing the background', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await page.getByRole('tab', { name: t('library.media') }).click();
-  await page.getByRole('button', { name: t('media.addVideo') }).click();
+  await addMedia(page, t, 'video');
   const item = page.locator('.media-item[data-ref="assets/ferias.mp4"]');
+  // A file's actions show on hover or focus (T-9a).
+  await item.hover();
   await item.getByRole('button', { name: t('common.preview'), exact: true }).click();
   const dialog = page.locator('.video-preview-dialog');
   await expect(dialog).toBeVisible();

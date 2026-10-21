@@ -100,6 +100,12 @@ export async function copyAndPaste(page) {
  * CSS px), as remembered by panel-sizes.js: a spec that measures the canvas
  * does not depend on the panels' starting widths.
  */
+/** Adds a picture (`image`) or a video through Media's + (T-9a). */
+export async function addMedia(page, t, kind = 'image') {
+  await page.locator('#panel-media .media-plus').click();
+  await page.getByRole('menuitem', { name: t(kind === 'video' ? 'media.addVideo' : 'media.add'), exact: true }).click();
+}
+
 export async function setPanelWidths(page, widths) {
   await page.addInitScript((saved) => localStorage.setItem('bezel.panelWidths', JSON.stringify(saved)), widths);
 }

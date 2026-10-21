@@ -4,16 +4,17 @@
 // binding it, the Libre notice, Layers names in full, its filter and the
 // multiple-selection bar, the "New theme" card, the theme search and
 // Duplicate, and the Media totals.
-import { test, expect, watchErrors, expectAccessible, dragTo, layers, libraryTabKey } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, dragTo, layers, libraryTabKey, addMedia } from './helpers.mjs';
 
 const tab = (page, t, name) => page.getByRole('tab', { name: t(libraryTabKey(name)), exact: true }).click();
 
-test('widgets come in three groups with a count, a search and the hint at the foot', async ({ page, t }) => {
+test('widgets come in four foldable groups with a count, a search and the hint at the foot', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const panel = page.locator('#panel-widgets');
   await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 14 }));
-  await expect(panel.locator('.section-title')).toHaveText([t('widgets.group.textData'), t('widgets.group.indicators'), t('widgets.group.mediaStructure')]);
+  await expect(panel.locator('.accordion-title')).toHaveText(['values', 'timeMedia', 'textShapes', 'containers'].map(id => t(`widgets.group.${id}`)));
+  await expect(panel.locator('.accordion-summary')).toHaveText(['5', '4', '3', '2']);
   await expect(panel.locator('.widget-tile')).toHaveCount(14);
   await expect(panel.locator('.dashed-hint kbd')).toHaveText(t('widgets.enterKey'));
   await expectAccessible(page);
@@ -21,13 +22,26 @@ test('widgets come in three groups with a count, a search and the hint at the fo
   const search = panel.getByRole('searchbox', { name: t('widgets.search'), exact: true });
   await search.fill(t('widget.needle').toUpperCase());
   await expect(panel.locator('.widget-tile')).toHaveCount(1);
-  await expect(panel.locator('.section-title')).toHaveText([t('widgets.group.indicators')]);
+  await expect(panel.locator('.accordion-title')).toHaveText([t('widgets.group.values')]);
   await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 1 }));
   await search.fill('zzzz');
   await expect(panel.locator('.widget-tile')).toHaveCount(0);
   await expect(panel).toContainText(t('widgets.none'));
   await search.fill('');
   await expect(panel.locator('.widget-tile')).toHaveCount(14);
+
+  // A group folds with its count still in sight, and stays folded after a reload.
+  const values = panel.getByRole('button', { name: t('widgets.group.values'), exact: true });
+  await values.click(); await expect(values).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.locator('.widget-tile:visible')).toHaveCount(9);
+  await expect(panel.locator('.accordion-summary').first()).toBeVisible();
+  await expectAccessible(page);
+  await page.reload();
+  await expect(values).toHaveAttribute('aria-expanded', 'false');
+  // A search opens every group it finds.
+  await search.fill(t('widget.ring'));
+  await expect(values).toHaveAttribute('aria-expanded', 'true');
+  await search.fill(''); await values.click(); await expect(values).toHaveAttribute('aria-expanded', 'true');
 
   // Enter on a focused tile adds it at the centre, as the hint says.
   await panel.getByRole('button', { name: t('library.addWidget', { name: t('common.text') }), exact: true }).focus();
@@ -52,7 +66,8 @@ test('the Group tile groups the selection and says why it cannot otherwise', asy
   await tab(page, t, 'widgets');
   await expect(group).toHaveAttribute('aria-disabled', 'false');
   await group.click();
-  await expect(page.locator('#inspector h2')).toHaveText(t('widget.group'));
+  // The inspector's heading names the new group (T-0 made it an editable name).
+  await expect(page.locator('#inspector .inspector-name')).toHaveValue(t('widget.group'));
   await tab(page, t, 'layers');
   await expect(page.locator('#layer-list [data-group-id]')).toHaveCount(1);
   expect(errors).toEqual([]);
@@ -64,9 +79,9 @@ test('sensors draw their recent values, say how often they update and bind when 
   await tab(page, t, 'sensors');
   const panel = page.locator('#panel-sensors');
   await expect(panel.getByRole('searchbox', { name: t('library.searchSensors'), exact: true })).toHaveAttribute('placeholder', t('sensorsPanel.search'));
-  await expect(panel.locator('.panel-head .pill')).toHaveText(t('sensorsPanel.every', { seconds: 1 }), { timeout: 10_000 });
+  await expect(panel.locator('#sensor-rate')).toHaveText(`20 · ${t('insp.theme.every', { seconds: 1 })}`, { timeout: 10_000 });
   await expect(panel.locator('svg[data-spark-for="cpu.usage"] path')).toHaveAttribute('d', /^M0 [\d.]+ L/, { timeout: 10_000 });
-  await expect(panel.locator('.sensor-group .section-title').first()).toHaveText(t('category.cpu'));
+  await expect(panel.locator('.sensor-group .accordion-title').first()).toHaveText(t('category.cpu'));
   await expectAccessible(page);
 
   // Dropped on the ring (which reads cpu.usage), the sensor binds it: no new object.
@@ -107,8 +122,10 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   await tab(page, t, 'layers');
   const panel = page.locator('#panel-layers');
   await expect(layers(page)).toHaveCount(3);
-  await expect(panel.locator('#layer-front .section-title')).toHaveText(t('layersPanel.front'));
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.count', { count: 3 }));
+  // The count sits beside the title; the list says it reads from the topmost down.
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.count', { count: 3 }));
+  await expect(panel.locator('#layer-list')).toHaveAttribute('aria-label', t('layersPanel.front'));
+  await expect(panel.locator('#layer-hint')).toHaveText(t('layersPanel.hint'));
   // Every name fits at the default width: the tools never take its room.
   const labels = panel.locator('.layer-label');
   await expect(labels).toHaveText(['Background card', 'CPU', 'Clock']);
@@ -121,7 +138,7 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   const filter = panel.getByRole('searchbox', { name: t('layersPanel.filter'), exact: true });
   await filter.fill('cpu.usage');
   await expect(layers(page)).toHaveCount(1);
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.countOne'));
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.countOne'));
   await filter.fill('CLOCK');
   await expect(panel.locator('.layer-label')).toHaveText(['Clock']);
   await filter.fill('zzzz');
@@ -129,11 +146,16 @@ test('Layers shows names in full, filters by name or sensor and counts what it s
   await expect(panel).toContainText(t('layersPanel.noMatch'));
   await filter.fill('');
   await expect(layers(page)).toHaveCount(3);
+  // The object type sits behind Filters, with a dot while it filters.
+  const filters = panel.getByRole('button', { name: t('layersPanel.filters'), exact: true });
   const type = panel.getByRole('combobox', { name: t('layersPanel.type'), exact: true });
+  await expect(type).toBeHidden();
+  await filters.click();
   await expect(type).toHaveValue('all');
   await type.selectOption('clock');
+  await expect(filters).toHaveClass(/filters-on/);
   await expect(panel.locator('.layer-label')).toHaveText(['Clock']);
-  await expect(panel.locator('#layer-front .count')).toHaveText(t('layers.countOne'));
+  await expect(panel.locator('#layer-count')).toHaveText(t('layers.countOne'));
   await filter.fill('cpu.usage');
   await expect(layers(page)).toHaveCount(0);
   await expect(panel).toContainText(t('layersPanel.noMatch'));
@@ -162,7 +184,14 @@ test('two selected layers get the bar: Group (Ctrl G), Make card and Deselect', 
   await select();
   await expect(bar).toBeVisible();
   await expect(bar.locator('strong')).toHaveText(t('layersPanel.selected', { count: 2 }));
-  await expect(bar.locator('kbd')).toHaveText(t('layersPanel.groupKeys'));
+  await expect(bar.getByRole('button', { name: t('layersPanel.groupLabel'), exact: true })).toHaveAttribute('aria-keyshortcuts', 'Control+G');
+  // Align offers the six alignments; distributing needs three objects.
+  await bar.getByRole('button', { name: t('inspector.alignTools'), exact: true }).click();
+  const menu = page.getByRole('menu', { name: t('inspector.alignTools') });
+  await expect(menu.getByRole('menuitem')).toHaveCount(8);
+  await expect(menu.getByRole('menuitem', { name: t('align.distributeX'), exact: true })).toBeDisabled();
+  await menu.getByRole('menuitem', { name: t('align.left'), exact: true }).click();
+  await page.locator('#undo').click();
   await expectAccessible(page);
 
   await bar.getByRole('button', { name: t('layersPanel.groupLabel'), exact: true }).click();
@@ -177,6 +206,7 @@ test('two selected layers get the bar: Group (Ctrl G), Make card and Deselect', 
   await expect(group.locator('.layer-children')).toBeVisible();
   await filter.fill('');
   await expect(group.locator('.layer-children')).toBeHidden();
+  await page.getByRole('button', { name: t('layersPanel.filters'), exact: true }).click();
   const type = page.getByRole('combobox', { name: t('layersPanel.type'), exact: true });
   await type.selectOption('ring');
   await expect(group.locator('.layer-children')).toBeVisible();
@@ -242,7 +272,8 @@ test('Media says what the theme holds and opens the GIF search from its foot', a
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
   await expect(panel.locator('.media-drop-title')).toHaveText(t('mediaPanel.dropTitle'));
-  await expect(panel.locator('#media-head .section-title')).toHaveText(t('media.inTheme'));
+  await expect(panel.locator('#media-head .accordion-title')).toHaveText(t('media.inTheme'));
+  await expect(panel.getByRole('button', { name: t('mediaPanel.choose'), exact: true })).toHaveAttribute('aria-haspopup', 'menu');
   const open = panel.getByRole('button', { name: t('media.searchGifs') });
   await expect(open).toBeVisible();
   await expect(open).toContainText(t('mediaPanel.provider'));
@@ -324,45 +355,95 @@ test('the Themes dialog reuses its grid, selects before opening, duplicates and 
 });
 
 
-test('Media lists bridge imports, counts files without posters and applies their background', async ({ page, t }) => {
+test('Media lists bridge imports, counts files without posters and says where each is used', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
   const items = panel.locator('.media-item');
   await expect(items).toHaveCount(0);
-  await panel.locator('#media-add').click();
+  await addMedia(page, t, 'image');
   await expect(items).toHaveCount(1);
-  await expect(items.first().locator('.media-kind')).toHaveText('PNG');
-  await panel.locator('#media-add-video').click();
+  await expect(items.first().locator('.media-name small')).toHaveText(/^PNG/);
+  await addMedia(page, t, 'video');
   await expect(items).toHaveCount(2);
-  await expect(panel.locator('#media-head .count')).toContainText(t('media.count', { count: 2 }));
-  const video = items.filter({ has: page.getByText(t('common.video'), { exact: true }) });
+  await expect(panel.locator('#media-count')).toContainText(t('media.count', { count: 2 }));
+  await expect(panel.locator('.media-group .accordion-summary')).toHaveText('2');
+  const video = items.filter({ has: page.getByText(new RegExp(`^${t('common.video')} ·`)) });
   await expect(video).toHaveCount(1);
+  await video.hover();
   await video.getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
-  await expect(video).toHaveClass(/is-background/);
-  await expect(video.locator('.media-bg')).toBeVisible();
+  // The badge says where the file is used, from the theme's own references.
+  const where = t('mediaPanel.usedBy', { where: t('common.background').toLocaleLowerCase() });
+  await expect(video.locator('.media-uses')).toHaveText(where);
+  await expect(video).toHaveClass(/in-use/);
   await page.locator('#undo').click();
-  await expect(video.locator('.media-bg')).toBeHidden();
+  await expect(video.locator('.media-uses')).toHaveCount(0);
+  await expect(panel.locator('.media-hint')).toHaveText(t('mediaPanel.usesHint'));
+  // From the collection and Icons lead to their tabs.
+  await panel.locator('.media-link[data-subtab="icons"]').click();
+  await expect(page.locator('#subtab-media-icons')).toHaveAttribute('aria-selected', 'true');
+  await page.locator('#subtab-media-theme').click();
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
 
-test('Media removes unused files and protects an image used as background', async ({ page, t }) => {
+test('Media offers the bin only on unused files: one used as background cannot be removed', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await tab(page, t, 'media');
   const panel = page.locator('#panel-media');
-  await panel.locator('#media-add').click();
+  await addMedia(page, t, 'image');
   const item = panel.locator('.media-item');
   const remove = item.getByRole('button', { name: t('mediaPanel.remove', { name: 'image-1.png' }), exact: true });
+  await expect(remove).toBeVisible();
+  await item.hover();
   await item.getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
-  await remove.click();
-  await expect(page.locator('#toast')).toHaveText(t('mediaPanel.inUse'));
-  await expect(item).toHaveCount(1);
+  await expect(remove).toHaveCount(0);
   await page.locator('#undo').click();
   await remove.click();
   await expect(item).toHaveCount(0);
   await expect(panel).toContainText(t('media.empty'));
+  expect(errors).toEqual([]);
+});
+
+test('sensor categories fold with their headline values, rows keep whole names at every panel width', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  for (const width of [240, 272, 360]) {
+    await page.addInitScript((w) => localStorage.setItem('bezel.panelWidths', JSON.stringify({ library: w })), width);
+    await page.goto('/index.html?demo=turing88&libre=partial');
+    await tab(page, t, 'sensors');
+    const panel = page.locator('#panel-sensors');
+    // Every category open, so every row is measured.
+    // Opening one draws the list again: always open the first still folded.
+    const folded = panel.locator('.sensor-group .accordion-toggle[aria-expanded="false"]');
+    while (await folded.count()) await folded.first().click();
+    await expect(panel.locator('.sensor-row').first()).toBeVisible();
+    const cut = await panel.locator('.sensor-row .label, .sensor-row .key, .sensor-row .reason').evaluateAll(nodes => nodes.filter(n => n.scrollWidth > n.clientWidth + 1).map(n => n.textContent));
+    expect(cut, `cut at ${width}px`).toEqual([]);
+    const overflow = await panel.locator('.sensor-row').evaluateAll(rows => rows.filter(r => r.scrollWidth > r.clientWidth + 1).length);
+    expect(overflow, `rows wider than the panel at ${width}px`).toBe(0);
+  }
+  const panel = page.locator('#panel-sensors');
+  const cpu = panel.getByRole('button', { name: t('category.cpu'), exact: true });
+  await expect(cpu.locator('.accordion-summary')).toHaveText(/^5 · \S+%/);
+  await cpu.click(); await expect(cpu).toHaveAttribute('aria-expanded', 'false');
+  await expect(cpu.locator('.accordion-summary')).toBeVisible();
+  // A sensor that cannot be read says why instead of its key, without a sparkline.
+  const missing = panel.locator('.sensor-row[data-status="unavailable"]').first();
+  await expect(missing.locator('.reason')).toHaveText(t('sensorsPanel.needsLibre'));
+  await expect(missing.locator('.value')).toHaveText('—');
+  await expect(missing.locator('svg')).toHaveCount(0);
+  // Quick state chips filter, with how many cannot be read.
+  await panel.locator('#sensor-filter [data-status="unavailable"]').click();
+  await expect(panel.locator('.sensor-row')).toHaveCount(1);
+  await expect(panel.locator('#sensor-filter [data-status="unavailable"]')).toHaveText(t('sensorsPanel.unavailableCount', { count: 1 }));
+  await panel.locator('#sensor-filter [data-status="all"]').click();
+  // Probe and state sit behind Filters.
+  const filters = panel.getByRole('button', { name: t('sensorsPanel.filters'), exact: true });
+  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toBeHidden();
+  await filters.click(); await expect(filters).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toBeVisible();
+  await expectAccessible(page);
   expect(errors).toEqual([]);
 });

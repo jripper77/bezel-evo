@@ -1,6 +1,6 @@
 // The inspector (artboards Main's right panel, GraphData/Look, PlayerData/Look).
 import { fileURLToPath } from 'node:url';
-import { openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { addMedia, openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 
 const t = translator('it');
@@ -112,7 +112,8 @@ export default {
     { name: 'bg-computer-image', run: async (app) => {
       await standalone(app, null);
       await app.page.locator('#tab-media').click();
-      await app.page.locator('#media-add').click();
+      await addMedia(app.page, t, 'image');
+      await app.page.locator('.media-item').hover();
       await app.page.locator('.media-item').getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
     } },
     { name: 'bg-computer-video', run: async (app) => {

@@ -17,8 +17,12 @@
 .library-panel > .panel-foot { margin-bottom: 0; }
 
 /* -------------------------------------------------------------- widgets -- */
-.widget-groups { display: grid; gap: 14px; }
-.widget-group .section-head { margin: 0 0 8px; }
+/* Widget groups: the shared accordion, flush with the panel's edges. */
+.widget-groups { display: grid; margin: 0 -16px; }
+.widget-group > .accordion-body { padding: 0 16px 14px; gap: 0; }
+.widget-group .accordion-toggle { min-height: 40px; padding: 0 16px; }
+.widget-group:first-child { border-top: 0; }
+.widget-group .accordion-toggle > .ic:last-child { margin-left: 8px; }
 .widget-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .widget-tile { width: 100%; min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2); cursor: grab; touch-action: none; user-select: none; font-size: var(--fs-compact); font-weight: 500; }
 .widget-tile .ic { color: var(--accent-ink); }
@@ -32,19 +36,32 @@
 /* -------------------------------------------------------------- sensors -- */
 .panel-rate:empty { display: none; }
 .panel-head .panel-rate { margin-left: auto; }
-.sensor-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+/* A panel's Filters button stands as tall as the search box beside it; a dot says a filter is on. */
+.search-with-filters { display: flex; gap: 8px; align-items: stretch; }
+.search-with-filters > :first-child { flex: 1; min-width: 0; }
+.filters-toggle { position: relative; flex: none; width: 36px; border: 1px solid var(--border); }
+.filters-toggle.filters-on::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.sensor-probe-filters[hidden], #layer-type[hidden] { display: none; }
+/* Categories: the shared accordion, flush with the panel's edges. */
+.sensor-list { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 -16px; }
 .sensor-probe-filters .field { min-width: 0; }
 .sensor-probe-filters select { min-width: 0; width: 100%; }
 .sensor-result-count { margin: -4px 0 0; font-size: var(--fs-meta); }
 .sensor-list > .empty-note { margin: 0; }
-.sensor-group { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
-.sensor-group .section-head { flex-wrap: wrap; gap: 4px 8px; margin: 0; padding: 0 4px 6px; }
-.sensor-group .section-head .count { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-.sensor-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) var(--spark-width) 80px; align-items: center; column-gap: 10px; text-align: left; padding: 10px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; cursor: grab; touch-action: none; user-select: none; }
+.sensor-group { min-width: 0; }
+.sensor-group:first-child { border-top: 0; }
+.sensor-group .accordion-toggle { min-height: 44px; padding: 0 16px; }
+.sensor-group .accordion-toggle > .ic:last-child { margin-left: 8px; }
+.sensor-group > .accordion-body { gap: 2px; padding: 0 8px 12px; }
+/* Two lines: the whole name and the value, then the key and the sparkline (or why it cannot be read). */
+.sensor-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "key spark"; align-items: center; gap: 4px 10px; text-align: left; padding: 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; cursor: grab; touch-action: none; user-select: none; }
 .sensor-row:hover, .sensor-row:focus-visible { border-color: var(--border); background: var(--surface-2); }
-.sensor-text { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
-.sensor-row .key { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font-size: var(--fs-meta); font-family: var(--font-mono); }
-.sensor-row .value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sensor-row .label { grid-area: label; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-weight: 600; }
+.sensor-row .key, .sensor-row .reason { grid-area: key; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: var(--fs-meta); }
+.sensor-row .key { color: var(--dim); font-family: var(--font-mono); }
+.sensor-row .reason { grid-column: 1 / -1; color: var(--warn); }
+.sensor-row .sparkline { grid-area: spark; justify-self: end; }
+.sensor-row .value { grid-area: value; max-width: 160px; overflow-wrap: anywhere; text-align: right; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
 .sensor-row .value.unavailable { color: var(--dim); font-weight: 400; }
 /* A sensor's recent values, in the colour of its hardware. */
 .sparkline { width: var(--spark-width); height: 20px; color: var(--dim); }
@@ -117,8 +134,11 @@ button.layer-group-title { cursor: pointer; }
 .layer-selection { position: sticky; bottom: 12px; z-index: 2; display: grid; gap: 10px; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-3); box-shadow: var(--shadow); }
 .layer-selection-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .layer-selection-head .text-button { min-height: 26px; padding: 0 8px; font-size: var(--fs-compact); }
-.layer-selection-actions .text-button { min-height: 34px; font-weight: 600; }
-.layer-selection-actions kbd { background: transparent; color: var(--dim); font-size: var(--fs-meta); }
+.layer-selection-actions .text-button { min-width: 0; min-height: 34px; gap: 6px; padding: 0 6px; font-size: var(--fs-compact); font-weight: 500; }
+#layer-count { margin-left: auto; }
+/* Group, Make card and Align share one row, wrapping between buttons when narrow. */
+.layer-selection-actions { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 8px; background: var(--surface-2); }
+.layer-selection-actions > .text-button { flex: 1 1 auto; }
 
 /* --------------------------------------------------------------- themes -- */
 #panel-themes .panel-head { flex-wrap: wrap; }
@@ -154,7 +174,13 @@ button.layer-group-title { cursor: pointer; }
 /* ---------------------------------------------------------------- media -- */
 #panel-media .subtabs { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
 #panel-media .subtabs [role="tab"] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 4px; }
-.media-drop { display: grid; justify-items: center; gap: 4px; padding: 18px 12px; border: 1.5px dashed var(--border); border-radius: 12px; text-align: center; }
+#panel-media .subtabs [role="tab"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+/* The compact drop area (D-14): icon, what to do and the formats, then +. */
+.media-drop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 2px; padding: 12px; border: 1.5px dashed var(--border); border-radius: 12px; text-align: left; }
+.media-drop > .kind-icon { grid-row: 1 / span 2; }
+.media-drop > .hint, .media-drop > .button-row { display: none; }
+.media-drop > .media-plus { grid-column: 3; grid-row: 1 / span 2; border: 1px solid var(--border); }
+.media-drop > .media-formats { grid-column: 2; margin: 0; }
 .media-drop-title { font-weight: 600; }
 .media-drop .hint { margin: 0; line-height: 1.45; }
 .media-formats { margin: 0; color: var(--dim); font-family: var(--font-mono); font-size: var(--fs-meta); }
@@ -165,16 +191,30 @@ button.layer-group-title { cursor: pointer; }
 .media-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .media-list > .empty-note { grid-column: 1 / -1; }
 .media-item { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
-.media-item.is-background { border-color: var(--accent); }
+.media-item.in-use { border-color: var(--accent-line); }
 .media-item .thumb, .bg-video .thumb { display: grid; place-items: center; color: var(--screen-thumb-ink); }
 .media-item .thumb { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; background: var(--screen-thumb) center / contain no-repeat; }
 .media-item .thumb[style*="background-image"], .bg-video .thumb[style*="background-image"] { background-size: cover; }
-.media-kind, .media-bg { position: absolute; top: 5px; font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; }
-.media-kind { left: 5px; background: var(--screen-chip); color: var(--screen-chip-ink); }
-.media-bg { right: 5px; background: var(--accent); color: var(--accent-text); }
+/* Where a file is used, on its picture. */
+.media-uses { position: absolute; left: 5px; right: 5px; bottom: 5px; justify-self: start; max-width: calc(100% - 10px); overflow-wrap: anywhere; background: var(--screen-chip); color: var(--ok); font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 500; }
 .media-item .media-name { font-size: var(--fs-field); font-weight: 600; }
 .media-item .media-name small { color: var(--dim); font-family: var(--font-mono); font-size: var(--fs-meta); font-weight: 400; }
-.media-item .actions { display: flex; gap: 2px; }
+/* Its actions on hover or focus; an unused file's trash always shows. */
+.media-item { position: relative; }
+.media-item .actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface-3); opacity: 0; }
+.media-item:is(:hover, :focus-within) .actions, .media-item .actions:has(.media-remove) { opacity: 1; }
+.media-item:not(:hover, :focus-within) .actions > :not(.media-remove) { display: none; }
+.media-group { margin: 12px -16px 0; }
+.media-group .accordion-toggle { min-height: 44px; padding: 0 16px; }
+.media-group .accordion-toggle > .ic:last-child { margin-left: 8px; }
+.media-group > .accordion-body { gap: 10px; padding: 0 16px 12px; }
+.media-hint { margin: 0; }
+.media-links { display: grid; margin: 0 -16px; }
+.media-link { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 16px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.media-link:hover { background: var(--surface-2); }
+.media-link-title { font-weight: 600; }
+.media-link-summary { min-width: 0; margin-left: auto; color: var(--muted); font-size: var(--fs-small); }
+.media-link > .ic { color: var(--dim); }
 .media-item .actions .icon-button { width: 28px; min-height: 28px; }
 .panel.drop-target { outline: 3px dashed var(--accent); outline-offset: -3px; border-radius: 8px; }
 #media-collection > .hint { margin: 0 0 12px; }

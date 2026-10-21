@@ -25,6 +25,20 @@ export function wireObjectMenu({store,canvasView,stage,layers,t,fitContent=()=>{
  return {close:closeMenu,openAt};
 }
 
+/** The six alignments, each with its icon (the inspector's row and the layers' Align menu). */
+export const ALIGN_EDGES = Object.freeze([['left', 'alignLeft'], ['centerX', 'alignCenterX'], ['right', 'alignRight'], ['top', 'alignTop'], ['centerY', 'alignCenterY'], ['bottom', 'alignBottom']]);
+
+/** Align and distribute `ids`: the menu items (distributing needs three objects). */
+export function alignItems({ store, t, ids }) {
+  const action = (label, run, disabled = false) => ({ label, run, disabled });
+  return [
+    ...ALIGN_EDGES.map(([edge]) => action(t(`align.${edge}`), () => store.dispatch('align', { ids, edge }))),
+    SEPARATOR,
+    action(t('align.distributeX'), () => store.dispatch('distribute', { ids, axis: 'x' }), ids.length < 3),
+    action(t('align.distributeY'), () => store.dispatch('distribute', { ids, axis: 'y' }), ids.length < 3),
+  ];
+}
+
 /** The same actions in the canvas, layers and inspector. */
 export function objectMenuItems({store,t,fitContent=()=>{}}) {
   const {theme,selection}=store.getState();

@@ -8,14 +8,15 @@ import { contains } from './editor/geometry.js';
 import { isShown, owners } from './editor/cards.js';
 
 /**
- * The Widgets panel's groups, in order (artboard Main): text and data,
- * indicators, media and structure. `group` is the Group tile: it groups the
- * selection instead of adding an object.
+ * The Widgets panel's groups, in order (D-2026-10-20-studio-ux-v2-14, board
+ * MainNew): values, time and media, text and shapes, containers. `group` is
+ * the Group tile: it groups the selection instead of adding an object.
  */
 export const WIDGET_GROUPS = Object.freeze([
-  Object.freeze({ id: 'textData', widgets: Object.freeze(['text', 'value', 'clock', 'weather']) }),
-  Object.freeze({ id: 'indicators', widgets: Object.freeze(['ring', 'bar', 'needle', 'graph']) }),
-  Object.freeze({ id: 'mediaStructure', widgets: Object.freeze(['image', 'player', 'spectrum', 'shape', 'card', 'group']) }),
+  Object.freeze({ id: 'values', widgets: Object.freeze(['value', 'ring', 'bar', 'needle', 'graph']) }),
+  Object.freeze({ id: 'timeMedia', widgets: Object.freeze(['clock', 'weather', 'player', 'spectrum']) }),
+  Object.freeze({ id: 'textShapes', widgets: Object.freeze(['text', 'image', 'shape']) }),
+  Object.freeze({ id: 'containers', widgets: Object.freeze(['card', 'group']) }),
 ]);
 
 /** How many tiles the Widgets panel has in all. */
@@ -100,6 +101,23 @@ export function sparkPath(values, width, height = 20, pad = 2) {
   return v.map((n, i) => `${i ? 'L' : 'M'}${r(i * step)} ${r(y(n))}`).join(' ');
 }
 
+/**
+ * The values a sensor group shows beside its title
+ * (D-2026-10-20-studio-ux-v2-14): its first available percentage and
+ * temperature, else its first available reading; none for the PC's
+ * information, whose readings are words.
+ */
+export function groupHeadline(category, items, readings) {
+  if (category === 'system') return [];
+  const shown = (s) => {
+    const r = readings?.[s.key];
+    return r && !r.unavailable && Number.isFinite(r.value) && r.display ? r.display : null;
+  };
+  const first = (wanted) => items.filter(wanted).map(shown).find(Boolean) ?? null;
+  const picked = [first((s) => s.quantity === 'percent'), first((s) => s.quantity === 'celsius')].filter(Boolean);
+  return picked.length ? picked : [first((s) => s.quantity !== 'text')].filter(Boolean);
+}
+
 /** The source the sensors of a group share (shown beside its title), or `null`. */
 export function sharedSource(items) {
   const sources = new Set(items.map((s) => s.source).filter(Boolean));
@@ -166,6 +184,29 @@ export function filterLayers(nodes, query, kindOf, type = 'all') {
 /** How many objects a tree shows (containers and members). */
 export function countLayers(nodes) {
   return nodes.reduce((n, node) => n + 1 + countLayers(node.children) + node.groups.reduce((m, g) => m + countLayers(g.nodes), 0), 0);
+}
+
+/**
+ * Where the theme uses the file `ref`, read as bezel-core Theme::assets
+ * reads a theme: `{ background: true }` for the background (its picture,
+ * video or poster), else `{ id, name }` for each object whose picture, shape
+ * image, needle picture or font (also a part's) it is. Empty: unused.
+ */
+export function assetUses(theme, ref) {
+  if (!ref) return [];
+  const uses = [];
+  const bg = theme?.background ?? {};
+  if (['image', 'video'].includes(bg.type) && (bg.asset === ref || bg.poster === ref)) uses.push({ background: true });
+  for (const e of theme?.elements ?? []) {
+    const k = e.kind ?? {};
+    const refs = k.type === 'image' ? [k.asset]
+      : k.type === 'shape' ? [k.image?.asset]
+        : k.type === 'needle' ? [k.asset, k.look?.center?.style?.font?.asset]
+          : k.type === 'text' ? [k.style?.font?.asset, ...Object.values(k.style?.parts ?? {}).map((p) => p?.fontAsset)]
+            : [];
+    if (refs.includes(ref)) uses.push({ id: e.id, name: e.name });
+  }
+  return uses;
 }
 
 /** The Media list's totals: how many files and their bytes (`null` when no size is known). */

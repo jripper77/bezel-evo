@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  WIDGET_COUNT, WIDGET_GROUPS, countLayers, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
+  WIDGET_COUNT, WIDGET_GROUPS, assetUses, countLayers, groupHeadline, createHistory, filterLayers, layerMeta, matchesQuery, mediaTotals,
   sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups,
 } from '../../src/library-model.js';
 import { createWidget, WIDGETS } from '../../src/editor/widgets.js';
@@ -12,17 +12,17 @@ const labelOf = (w) => LABELS[w];
 
 test('the widget groups hold every widget once, plus the Group tile', () => {
   const all = WIDGET_GROUPS.flatMap((g) => g.widgets);
-  assert.deepEqual(WIDGET_GROUPS.map((g) => g.id), ['textData', 'indicators', 'mediaStructure']);
+  assert.deepEqual(WIDGET_GROUPS.map((g) => g.id), ['values', 'timeMedia', 'textShapes', 'containers']);
   assert.deepEqual([...all].sort(), [...WIDGETS, 'group'].sort());
   assert.equal(new Set(all).size, all.length);
   assert.equal(WIDGET_COUNT, 14);
 });
 
 test('the widget search matches names and ids, ignoring case and accents, and drops empty groups', () => {
-  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [4, 4, 6]);
-  assert.deepEqual(widgetGroups(labelOf, ' BARRA '), [{ id: 'indicators', widgets: ['bar'] }]);
-  assert.deepEqual(widgetGroups(labelOf, 'player'), [{ id: 'mediaStructure', widgets: ['player'] }]);
-  assert.deepEqual(widgetGroups(labelOf, 'media pl'), [{ id: 'mediaStructure', widgets: ['player'] }]);
+  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [5, 4, 3, 2]);
+  assert.deepEqual(widgetGroups(labelOf, ' BARRA '), [{ id: 'values', widgets: ['bar'] }]);
+  assert.deepEqual(widgetGroups(labelOf, 'player'), [{ id: 'timeMedia', widgets: ['player'] }]);
+  assert.deepEqual(widgetGroups(labelOf, 'media pl'), [{ id: 'timeMedia', widgets: ['player'] }]);
   assert.deepEqual(widgetGroups(labelOf, 'nothing'), []);
   assert.ok(matchesQuery('meteo', 'Météo'));
   assert.ok(matchesQuery('', 'anything'));
@@ -165,4 +165,43 @@ test('a sensor drop respects both ownership relations and off-face ancestors', (
   assert.equal(sensorDropTarget([{ ...card, locked: true }, group, member], { x: 5, y: 5 }, sensor, range), null);
   assert.equal(sensorDropTarget([card, { ...group, cardMember: { parent: 7, face: 1 } }, member], { x: 5, y: 5 }, sensor, range), null);
   assert.equal(sensorDropTarget([member], { x: 5, y: 5 }, sensor, range), null, 'an orphan cannot bind');
+});
+
+test('a sensor category shows its first readable percentage and temperature, else its first reading', () => {
+  const items = [
+    { key: 'cpu.usage', quantity: 'percent' }, { key: 'cpu.temperature', quantity: 'celsius' },
+    { key: 'cpu.frequency', quantity: 'megahertz' },
+  ];
+  const readings = { 'cpu.usage': { value: 20, display: '20%' }, 'cpu.temperature': { value: 50, display: '50 °C' }, 'cpu.frequency': { value: 4600, display: '4.60 GHz' } };
+  assert.deepEqual(groupHeadline('cpu', items, readings), ['20%', '50 °C']);
+  assert.deepEqual(groupHeadline('cpu', items, { ...readings, 'cpu.temperature': { unavailable: 'no' } }), ['20%']);
+  assert.deepEqual(groupHeadline('cpu', items.slice(2), readings), ['4.60 GHz']);
+  assert.deepEqual(groupHeadline('cpu', items, null), []);
+  assert.deepEqual(groupHeadline('system', items, readings), [], 'the PC information has words');
+  assert.deepEqual(groupHeadline('network', [{ key: 'net.name', quantity: 'text' }], { 'net.name': { value: 1, display: 'eth0' } }), []);
+});
+
+test('a file is in use where the core reads the theme assets: background, pictures, shapes, needles and fonts', () => {
+  const theme = {
+    background: { type: 'video', asset: 'clip.mp4', poster: 'clip.png' },
+    elements: [
+      { id: 1, name: 'Logo', kind: { type: 'image', asset: 'logo.png' } },
+      { id: 2, name: 'Card base', kind: { type: 'shape', image: { asset: 'dots.svg' } } },
+      { id: 3, name: 'Gauge', kind: { type: 'needle', asset: 'hand.png', look: { center: { style: { font: { asset: 'plex.ttf' } } } } } },
+      { id: 4, name: 'Clock', kind: { type: 'text', style: { font: { asset: 'doto.ttf' }, parts: { minutes: { fontAsset: 'plex.ttf' } } } } },
+      { id: 5, name: 'Empty', kind: { type: 'image', asset: '' } },
+    ],
+  };
+  assert.deepEqual(assetUses(theme, 'clip.mp4'), [{ background: true }]);
+  assert.deepEqual(assetUses(theme, 'clip.png'), [{ background: true }], 'the poster too');
+  assert.deepEqual(assetUses(theme, 'logo.png'), [{ id: 1, name: 'Logo' }]);
+  assert.deepEqual(assetUses(theme, 'dots.svg'), [{ id: 2, name: 'Card base' }]);
+  assert.deepEqual(assetUses(theme, 'hand.png'), [{ id: 3, name: 'Gauge' }]);
+  assert.deepEqual(assetUses(theme, 'plex.ttf'), [{ id: 3, name: 'Gauge' }, { id: 4, name: 'Clock' }]);
+  assert.deepEqual(assetUses(theme, 'doto.ttf'), [{ id: 4, name: 'Clock' }]);
+  assert.deepEqual(assetUses(theme, 'unused.png'), []);
+  assert.deepEqual(assetUses(theme, ''), [], 'an empty placeholder references nothing');
+  assert.deepEqual(assetUses({ background: { type: 'image', asset: 'a.png' } }, 'a.png'), [{ background: true }]);
+  assert.deepEqual(assetUses({ background: { type: 'color' }, elements: [{ id: 9, name: 'Ring', kind: { type: 'ring' } }, { id: 8, name: 'T', kind: { type: 'text', style: {} } }] }, 'a.png'), []);
+  assert.deepEqual(assetUses(null, 'a.png'), []);
 });

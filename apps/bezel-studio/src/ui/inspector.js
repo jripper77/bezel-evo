@@ -1,7 +1,7 @@
 import { resizedFrame } from '../inspector-model.js';
 import { createSectionMemory } from '../inspector-sections.js';
 import { describeSections } from './inspector/sections.js';
-import { objectMenuItems } from './object-menu.js';
+import { ALIGN_EDGES, objectMenuItems } from './object-menu.js';
 import { openMenuAt } from './menu.js';
 import { createCommonFields } from './inspector/common.js';
 import { sections as multiSections, header as multiHeader } from './inspector/multi.js';
@@ -52,7 +52,6 @@ const BOUND = ['value', 'bar', 'ring', 'needle', 'graph'];
 /** The tallest the preview is drawn, CSS pixels. */
 const PREVIEW_HEIGHT = 72;
 /** The edges an object aligns to on the screen, and their icons. */
-const ALIGN_EDGES = Object.freeze([['left', 'alignLeft'], ['centerX', 'alignCenterX'], ['right', 'alignRight'], ['top', 'alignTop'], ['centerY', 'alignCenterY'], ['bottom', 'alignBottom']]);
 // The same reading order for every object's Look tab: structure/type,
 // typography, paint, edges, then effects. A kind omits what it does not use.
 const LOOK_ORDER = Object.freeze([

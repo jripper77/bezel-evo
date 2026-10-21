@@ -23,6 +23,10 @@ const MAX_ZOOM = 8;
 const ZOOM_STEP = 1.25;
 /** Pointer travel (screen px) before a press becomes a drag. */
 const DRAG_THRESHOLD = 3;
+/** The floating object bar's height, CSS px (shell.css .canvas-object-bar). */
+const BAR_HEIGHT = 36;
+/** Half its widest width (sensor, Try, Duplicate and the menu). */
+const BAR_HALF_WIDTH = 120;
 
 /**
  * @param {object} opts
@@ -384,8 +388,15 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     const single = chosen.length === 1 ? chosen[0] : null, key = single && boundKey(single);
     const refocus = name => overlay.querySelector(`[data-object-bar="${name}"]`)?.focus();
     const tag = (node, name) => { node.dataset.objectBar = name; return node; };
-    return el('div', { class: 'canvas-object-bar', role: 'toolbar', 'aria-label': handleLabel('menu.title'),
-      style: { left: px(top.x + top.width / 2), top: `calc(${px(top.y)} - 36px)` } }, [
+    // Above the selection unless the stage's toolbar or its top edge is in the way: then below it
+    // (and below a Card's face tabs).
+    const origin = box.getBoundingClientRect(), tools = scroll.parentElement?.querySelector('.stage-tools')?.getBoundingClientRect();
+    const rise = origin.top + top.y * zoom - 36 - BAR_HEIGHT, middle = origin.left + (top.x + top.width / 2) * zoom;
+    const blocked = tools && tools.height > 0 && rise < tools.bottom + 4 && middle + BAR_HALF_WIDTH > tools.left && middle - BAR_HALF_WIDTH < tools.right;
+    const below = rise < scroll.getBoundingClientRect().top || blocked;
+    const faces = single?.card || editingCard !== null ? 44 : 0;
+    return el('div', { class: `canvas-object-bar${below ? ' below' : ''}`, role: 'toolbar', 'aria-label': handleLabel('menu.title'),
+      style: { left: px(top.x + top.width / 2), top: below ? `calc(${px(top.y + top.height)} + ${14 + faces}px)` : `calc(${px(top.y)} - 36px)` } }, [
       key && tag(el('button', { type: 'button', class: 'canvas-object-sensor', title: handleLabel('shell.objectSensor', { key }), 'aria-label': handleLabel('shell.objectSensor', { key }),
         onclick: () => onBarSensor(single) }, [icon(ICONS.bolt, 14), el('span', { text: key })]), 'sensor'),
       single && tag(iconButton(handleLabel('insp.tryObject'), ICONS.play, () => onBarTry(single), { class: 'quiet', disabled: !handleMotion() }), 'try'),

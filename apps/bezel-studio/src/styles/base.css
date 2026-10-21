@@ -120,7 +120,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .fld input:focus-visible { outline: none; }
 .fld:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .fld-unit { flex: none; color: var(--dim); font-size: var(--fs-caps); }
-.fld-grid, .layer-selection-actions, .storage-meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fld-grid, .storage-meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 /* Corner radii, `cornerRadii()`: the drawing and one radius beside it, or a
    field at each corner around it; the field being edited lights its corner. */
 .corner-radii { display: grid; gap: 8px; align-items: center; }

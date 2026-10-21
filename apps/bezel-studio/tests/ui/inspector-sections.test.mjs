@@ -108,3 +108,16 @@ test('summaries use the language, units and actual values, with no missing reado
   assert.equal(summaryOf([], { separator: ' / ' }), '');
   assert.equal(summaryOf([1, 2], { separator: ' / ' }), '1 / 2');
 });
+
+test('another panel keeps its own sections, open at first, under its own key', () => {
+  const storage = storageWith();
+  const memory = createSectionMemory({ storage, key: 'bezel.widgetGroups', ids: ['values', 'containers'], open: ['values', 'containers'] });
+  assert.equal(memory.isOpen('widgets', 'values'), true);
+  assert.equal(memory.isOpen('widgets', 'layout'), false, 'inspector sections are not its own');
+  assert.equal(memory.toggle('widgets', 'values'), false);
+  assert.equal(memory.toggle('widgets', 'containers', { exclusive: true }), true);
+  assert.equal(memory.isOpen('widgets', 'values'), false);
+  const next = createSectionMemory({ storage, key: 'bezel.widgetGroups', ids: ['values', 'containers'], open: ['values', 'containers'] });
+  assert.equal(next.isOpen('widgets', 'values'), false);
+  assert.equal(createSectionMemory({ storage }).isOpen('widgets', 'data'), true, 'the inspector key is untouched');
+});

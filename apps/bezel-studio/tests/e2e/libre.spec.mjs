@@ -39,6 +39,8 @@ test('failed count opens the filtered library and still detects recovery', async
   await expect(popup).toBeHidden();
   const panel = page.locator('#panel-sensors');
   await expect(panel).toBeVisible();
+  // A filtered opening shows its filters beside the search.
+  await expect(panel.locator('.filters-toggle')).toHaveAttribute('aria-expanded', 'true');
   await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toHaveValue('LibreHardwareMonitor');
   await expect(panel.getByRole('combobox', { name: t('sensorsPanel.status'), exact: true })).toHaveValue('unavailable');
   await expect(panel.locator('.sensor-row')).toHaveCount(1);
@@ -62,15 +64,18 @@ test('probe, state, category and search combine and generic open resets filters'
   await expect(rows).toHaveCount(3);
   await panel.getByRole('combobox', { name: t('sensorsPanel.status'), exact: true }).selectOption('available');
   await expect(rows).toHaveCount(2);
-  await panel.locator('#sensor-filter button[data-category="cpu"]').click();
+  // Categories fold now instead of filtering: a search narrows to the processor.
+  await panel.getByRole('searchbox').fill('cpu');
   await expect(rows).toHaveCount(1);
   await panel.getByRole('searchbox').fill('not-a-sensor');
   await expect(rows).toHaveCount(0);
   popup = await openStatus(page, t);
   await popup.getByRole('button', { name: t('sensorStatus.openSensors'), exact: true }).click();
   await expect(panel.getByRole('searchbox')).toHaveValue('');
-  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.probe'), exact: true })).toHaveValue('all');
-  await expect(panel.getByRole('combobox', { name: t('sensorsPanel.status'), exact: true })).toHaveValue('all');
+  // An unfiltered opening folds the filters away, both reset.
+  await expect(panel.locator('.filters-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.locator('select[data-sensor-filter="probe"]')).toHaveValue('all');
+  await expect(panel.locator('select[data-sensor-filter="status"]')).toHaveValue('all');
   await expect(rows).toHaveCount(23);
   await openStatus(page, t);
   await page.screenshot({ path: info.outputPath('sensor-filters-overview.png') });
