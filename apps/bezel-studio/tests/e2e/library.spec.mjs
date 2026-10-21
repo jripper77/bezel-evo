@@ -186,8 +186,8 @@ test('two selected layers get the bar: Group (Ctrl G), Make card and Deselect', 
   await expect(bar.locator('strong')).toHaveText(t('layersPanel.selected', { count: 2 }));
   await expect(bar.getByRole('button', { name: t('layersPanel.groupLabel'), exact: true })).toHaveAttribute('aria-keyshortcuts', 'Control+G');
   // Align offers the six alignments; distributing needs three objects.
-  await bar.getByRole('button', { name: t('layersPanel.align'), exact: true }).click();
-  const menu = page.getByRole('menu', { name: t('layersPanel.align') });
+  await bar.getByRole('button', { name: t('inspector.alignTools'), exact: true }).click();
+  const menu = page.getByRole('menu', { name: t('inspector.alignTools') });
   await expect(menu.getByRole('menuitem')).toHaveCount(8);
   await expect(menu.getByRole('menuitem', { name: t('align.distributeX'), exact: true })).toBeDisabled();
   await menu.getByRole('menuitem', { name: t('align.left'), exact: true }).click();

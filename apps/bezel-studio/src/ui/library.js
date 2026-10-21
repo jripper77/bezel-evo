@@ -617,8 +617,8 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
           icon(ICONS.card, 16), el('span', { text: t('layersPanel.card') }),
         ]),
         el('button', { type: 'button', class: 'text-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', disabled: chosen.every((e) => e.locked),
-          onclick: (evt) => openMenuAt(evt.currentTarget, { label: t('layersPanel.align'), items: alignItems({ store, t, ids: selection }) }) }, [
-          icon(ICONS.alignLeft, 16), el('span', { text: t('layersPanel.align') }),
+          onclick: (evt) => openMenuAt(evt.currentTarget, { label: t('inspector.alignTools'), items: alignItems({ store, t, ids: selection }) }) }, [
+          icon(ICONS.alignLeft, 16), el('span', { text: t('inspector.alignTools') }),
         ]),
       ]),
     );
