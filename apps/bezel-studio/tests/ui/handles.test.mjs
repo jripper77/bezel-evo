@@ -110,6 +110,8 @@ test('bar testing is transient for every direction and clamps to the scale', () 
   }
   e.kind.direction = 'leftToRight';
   assert.equal(edit(e, 'trial-value', { x: 1000, y: 70 }).trial, 1);
+  const shown = edit(e, 'trial-value', { x: 70.3, y: 70 });
+  near(shown.trial, .3015); assert.equal(shown.value, 30, 'the readout is a whole percent');
 });
 
 test('manual graph limits preserve the opposite bound and turn off automatic scale', () => {
@@ -122,6 +124,10 @@ test('manual graph limits preserve the opposite bound and turn off automatic sca
   assert.deepEqual(resetPropertyHandle(e, 'scale-min'), { kind: { autoscale: true } });
   assert.deepEqual(resetPropertyHandle(e, 'scale-max'), { kind: { autoscale: true } });
   assert.equal(resetPropertyHandle(e, 'removed'), null);
+  // A drag lands on a round bound: whole units for a 0–100 scale, thousands for a 0–100000 one.
+  assert.equal(edit(e, 'scale-max', { x: 210, y: 13.3 }).value, 107);
+  const wide = { ...e, kind: { ...e.kind, binding: { ...e.kind.binding, max: 100000 } } };
+  assert.equal(edit(wide, 'scale-max', { x: 210, y: 13.3 }).value, 107000);
   assert.equal(resetPropertyHandle({ ...e, locked: true }, 'scale-min'), null);
   assert.equal(resetPropertyHandle(made('ring'), 'scale-min'), null);
 });

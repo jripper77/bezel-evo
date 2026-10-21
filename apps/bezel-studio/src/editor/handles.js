@@ -19,6 +19,11 @@ const degrees = (p, center) => Math.atan2(p.x - center.x, center.y - p.y) * 180 
 const atAngle = (center, radius, angle) => ({ x: center.x + radius * Math.sin(angle * Math.PI / 180), y: center.y - radius * Math.cos(angle * Math.PI / 180) });
 const distance = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
 const nearestAngle = (angle, reference) => reference + normalizeDegrees(angle - reference);
+/** A dragged scale bound to a hundredth of the range's order of magnitude (0–100: whole units). */
+const roundToRange = (value, range) => {
+  const step = 10 ** (Math.floor(Math.log10(Math.max(Math.abs(range), 1e-6))) - 2);
+  return Number((Math.round(value / step) * step).toPrecision(12));
+};
 
 /** Eight common square handles; rotation is offered only for eligible objects. */
 export function frameHandles(elements, zoom = 1) {
@@ -136,14 +141,14 @@ export function propertyHandles(element, { fraction = .5, coverFrame = null, dat
     const value = reverse ? 1 - fraction : fraction;
     add('trial-value', 'measure', 'shell.trialHold', '%', fraction * 100, { x: vertical ? center.x : f.x + f.width * value, y: vertical ? f.y + f.height * value : center.y }, p => {
       const at = clamp(vertical ? (p.y - f.y) / f.height : (p.x - f.x) / f.width, 0, 1);
-      return { trial: reverse ? 1 - at : at, value: (reverse ? 1 - at : at) * 100 };
+      return { trial: reverse ? 1 - at : at, value: Math.round((reverse ? 1 - at : at) * 100) };
     });
     // Five percent of the bar per arrow key.
     result.at(-1).keyStep = { x: f.width / 20, y: f.height / 20 };
   }
   if (k.type === 'graph') {
     ['max', 'min'].forEach((key, i) => property(`scale-${key}`, 'point', `inspector.${key}`, '', k.binding[key], { x: f.x + f.width, y: f.y + f.height * i }, ['kind'], p => {
-      const value = k.binding[key] + (f.y + f.height * i - p.y) / f.height * (k.binding.max - k.binding.min);
+      const value = roundToRange(k.binding[key] + (f.y + f.height * i - p.y) / f.height * (k.binding.max - k.binding.min), k.binding.max - k.binding.min);
       return { autoscale: false, binding: { [key]: key === 'min' ? Math.min(value, k.binding.max - .001) : Math.max(value, k.binding.min + .001) } };
     }, value => value.binding[key]));
   }
