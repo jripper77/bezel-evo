@@ -41,7 +41,7 @@ export function openMenu({ label, items, x, y, anchor = null, onClose = () => {}
     ? el('hr', { role: 'separator' })
     : el('button', { type: 'button', role: 'menuitem', disabled: Boolean(item.disabled), text: item.label, onclick: () => { close(null); item.run(); onClose('item'); } })));
   closeOpen = close;
-  document.body.append(menu);
+  (anchor?.closest('dialog[open]') ?? document.body).append(menu);
   keepOnScreen(menu, x, y);
   menu.querySelector('button:not(:disabled)')?.focus();
   menu.addEventListener('keydown', (evt) => {

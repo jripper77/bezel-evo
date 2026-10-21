@@ -881,3 +881,34 @@ test('demoIsolate: a rotated element gets a canvas of its rotated box', () => {
   assert.deepEqual(alone.elements[0].frame, { x: 4, y: 13, width: 60, height: 30 });
   assert.equal(alone.elements[0].rotation, 30);
 });
+
+
+test('theme trials last thirty seconds and preserve editor documents and saved profiles', async () => {
+  let seconds = 1000;
+  const demo = createDemoBackend('turing88', { now: () => seconds });
+  const session = await demo.session(), before = await demo.profiles();
+  const screen = before.displays[0].key, themes = { [screen]: 'demo://Demo' };
+  assert.equal(await demo.tryThemes(themes), 0);
+  await demo.setLive(true, screen);
+  const config = { ...before.config, profiles: [{ id: 'try-me', name: 'Try', themes, rules: [] }] };
+  await demo.saveProfiles(config);
+  assert.equal(await demo.tryThemes(themes, 'try-me'), 1);
+  assert.equal((await demo.profiles()).status.active.profile, 'try-me');
+  seconds += 29; assert.equal((await demo.profiles()).status.preview.remainingSeconds, 1);
+  assert.deepEqual((await demo.session()).theme, session.theme);
+  assert.deepEqual((await demo.profiles()).config, config);
+  seconds++; assert.equal((await demo.profiles()).status.preview, undefined);
+  await assert.rejects(demo.tryThemes(themes, 'unknown'));
+});
+
+test('gallery deletion protects bundled, open and profile themes', async () => {
+  const demo = createDemoBackend('turing88', fixed), entries = await demo.listThemes();
+  const base = entries.find(e => e.bundled);
+  await assert.rejects(demo.deleteTheme(base.location));
+  const copy = await demo.duplicateTheme(base.location, 'Delete me');
+  await demo.saveProfiles({profiles:[{id:'use',name:'Use',themes:{COM1:copy.location},rules:[]}],automatic:true});
+  await assert.rejects(demo.deleteTheme(copy.location));
+  await demo.saveProfiles({profiles:[],automatic:true});
+  await demo.deleteTheme(copy.location); assert.ok(!(await demo.listThemes()).some(e=>e.location===copy.location));
+  await assert.rejects(demo.deleteTheme('outside'));
+});

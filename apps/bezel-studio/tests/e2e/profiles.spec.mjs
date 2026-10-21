@@ -1,158 +1,128 @@
 import { test, expect, watchErrors, expectAccessible, libraryTabKey } from './helpers.mjs';
-
 async function openProfiles(page, t) {
   await page.getByRole('tab', { name: t(libraryTabKey('themes')), exact: true }).click();
   await page.locator('#theme-profiles').click();
   return page.getByRole('dialog', { name: t('profiles.title'), exact: true });
 }
 const item = (dialog, name) => dialog.locator('.pf-list .pf-item').filter({ hasText: name });
-
-test('profiles are managed from Themes and saved independently of the editor', async ({ page, t }, info) => {
+test('profiles autosave independently of the editor and keep every rule type', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const original = await page.locator('#theme-name').inputValue();
   let dialog = await openProfiles(page, t);
-  // Who decides: Automatic with the base themes as its fallback.
-  await expect(dialog.getByRole('radio', { name: t('profiles.automatic'), exact: true })).toBeChecked();
-  await expect(dialog.getByRole('combobox', { name: t('profiles.fallback'), exact: true }).locator('option').first()).toHaveText(t('profiles.currentThemes'));
-  await expect(dialog.getByRole('combobox', { name: t('profiles.manualShows'), exact: true })).toBeDisabled();
-  // The base themes come first and are shown by default.
+  await expect(dialog.getByRole('button', { name: t('profiles.automatic'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(item(dialog, t('profiles.currentThemes'))).toHaveAttribute('aria-current', 'true');
-  await expect(dialog.locator('.pf-theme-current')).toHaveText(['Demo']);
-  await expect(dialog.getByRole('button', { name: t('profiles.remove'), exact: true })).toHaveCount(0);
-
-  // The transition, tried without saving.
-  await dialog.getByRole('combobox', { name: t('card.effect'), exact: true }).selectOption('wipe');
-  await dialog.getByRole('spinbutton', { name: t('profiles.durationMs'), exact: true }).fill('850');
-  const up = dialog.getByRole('button', { name: t('card.direction.up'), exact: true });
-  await up.click();
-  await expect(up).toHaveAttribute('aria-pressed', 'true');
-  await dialog.getByRole('button', { name: t('profiles.preview'), exact: true }).click();
-  // With the base themes selected, it tries them: one theme for the one display.
-  const tried = () => page.evaluate(() => window.demoTransitionPreviews);
-  await expect.poll(tried).toHaveLength(1);
-  const [first] = await tried();
-  expect(first.transition).toEqual({ effect: 'wipe', direction: 'up', durationMs: 850 });
-  expect(Object.values(first.themes)).toHaveLength(1);
-  const help = dialog.getByRole('button', { name: t('profiles.transitionHelp'), exact: true });
-  await help.click();
-  await expect(help).toHaveAttribute('aria-expanded', 'true');
-  await expect(dialog.getByText(t('profiles.transitionHint'))).toBeVisible();
-
-  // A new profile, its rule a sentence; the list sums it up.
-  await dialog.getByRole('button', { name: t('profiles.new'), exact: true }).click();
-  await dialog.getByRole('textbox', { name: t('profiles.nameLabel'), exact: true }).fill('Music');
-  await dialog.getByRole('button', { name: t('profiles.addRule'), exact: true }).click();
+  await dialog.locator('#pf-add').click();
+  await dialog.locator('#pf-name').fill('Music');
+  for (const source of ['mediaPlaying', 'time', 'sensor', 'idle', 'locked']) {
+    const key = source === 'sensor' ? 'inspector.sensor' : source === 'time' ? 'widget.clock' : ['idle', 'locked'].includes(source) ? `profileRules.ui.${source}` : `profiles.${source}`;
+    await dialog.locator('.pf-add-types').getByRole('button', { name: t(key), exact: true }).click();
+  }
   await dialog.getByRole('textbox', { name: t('profiles.app'), exact: true }).fill('Spotify');
-  await dialog.getByRole('spinbutton', { name: t('trigger.priority'), exact: true }).fill('30');
-  await dialog.getByRole('spinbutton', { name: t('profiles.returnDelay'), exact: true }).fill('5');
-  await expect(item(dialog, 'Music').locator('.pf-item-summary')).toHaveText(t('profiles.summary.mediaIn', { app: 'Spotify' }));
-  await expect(item(dialog, 'Music')).toHaveAttribute('aria-current', 'true');
-  // Tried from the profile, unsaved: towards its own themes.
-  await dialog.getByRole('button', { name: t('profiles.preview'), exact: true }).click();
-  await expect.poll(tried).toHaveLength(2);
-  expect((await tried())[1].themes).toEqual(first.themes);
-
-  // From Automatic to Manual with that profile.
-  await dialog.getByRole('radio', { name: t('profiles.manual'), exact: true }).check();
-  const manual = dialog.getByRole('combobox', { name: t('profiles.manualShows'), exact: true });
-  await expect(manual).toBeEnabled();
-  await expect(dialog.getByRole('combobox', { name: t('profiles.fallback'), exact: true })).toBeDisabled();
-  await manual.selectOption({ label: 'Music' });
+  await dialog.getByRole('button', { name: t('profileRules.ui.all'), exact: true }).click();
+  await expect(dialog.locator('.pf-rule')).toHaveCount(5);
+  await expect(dialog.locator('.pf-save-status')).toHaveText(t('profileRules.ui.save.saved'));
+  await dialog.getByRole('button', { name: t('profiles.manual'), exact: true }).click();
+  await dialog.locator('#pf-manual').selectOption({ label: 'Music' });
+  await expect(dialog.locator('.pf-save-status')).toHaveText(t('profileRules.ui.save.saved'));
   await expectAccessible(page);
-  if (info.project.name === 'dark-en') await dialog.screenshot({ path: '../../dist/profiles-editor.png' });
-  await dialog.getByRole('button', { name: t('common.save'), exact: true }).click();
+  await dialog.getByRole('button', { name: t('dialog.close'), exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator('#theme-name')).toHaveValue(original);
-
-  // Reopened: the choice, the transition and the rule are back.
   dialog = await openProfiles(page, t);
-  await expect(dialog.getByRole('radio', { name: t('profiles.manual'), exact: true })).toBeChecked();
-  await expect(dialog.getByRole('combobox', { name: t('profiles.manualShows'), exact: true }).locator('option:checked')).toHaveText('Music');
-  await expect(dialog.getByRole('combobox', { name: t('card.effect'), exact: true })).toHaveValue('wipe');
-  await expect(dialog.getByRole('spinbutton', { name: t('profiles.durationMs'), exact: true })).toHaveValue('850');
-  await expect(dialog.getByRole('button', { name: t('card.direction.up'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: t('profiles.manual'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('#pf-manual option:checked')).toHaveText('Music');
   await item(dialog, 'Music').click();
-  await expect(dialog.getByRole('textbox', { name: t('profiles.nameLabel'), exact: true })).toHaveValue('Music');
+  await expect(dialog.locator('.pf-rule')).toHaveCount(5);
   await expect(dialog.getByRole('textbox', { name: t('profiles.app'), exact: true })).toHaveValue('Spotify');
-  await expect(dialog.getByRole('spinbutton', { name: t('trigger.priority'), exact: true })).toHaveValue('30');
-  await expect(dialog.getByRole('spinbutton', { name: t('profiles.returnDelay'), exact: true })).toHaveValue('5');
-
-  // Deleting asks first, in the app; the manual choice goes back to the base themes.
-  await dialog.getByRole('button', { name: t('profiles.remove'), exact: true }).click();
-  const confirm = page.getByRole('dialog', { name: t('profiles.deleteTitle', { name: 'Music' }), exact: true });
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole('button', { name: t('profiles.remove'), exact: true }).click();
-  await expect(item(dialog, 'Music')).toHaveCount(0);
-  await expect(dialog.getByRole('combobox', { name: t('profiles.manualShows'), exact: true })).toHaveValue('');
-  await dialog.getByRole('button', { name: t('common.save'), exact: true }).click();
-  dialog = await openProfiles(page, t);
-  await expect(dialog.locator('.pf-list .pf-item')).toHaveCount(1);
-  await page.keyboard.press('Escape');
-  await expect(dialog).not.toBeVisible();
-  await expect(page.locator('#theme-profiles')).toBeFocused();
+  await expect(dialog.getByRole('button', { name: t('profileRules.ui.all'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect(errors).toEqual([]);
 });
-
-test('a profile not on show that is incomplete is shown before saving', async ({ page, t }) => {
+test('an invalid profile cannot overwrite the last automatically saved version', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
-  const dialog = await openProfiles(page, t);
-  await dialog.getByRole('button', { name: t('profiles.new'), exact: true }).click();
-  await dialog.getByRole('button', { name: t('profiles.addRule'), exact: true }).click();
-  await dialog.getByRole('combobox', { name: t('profiles.event'), exact: true }).selectOption('foreground');
-  await item(dialog, t('profiles.currentThemes')).click();
-  await dialog.getByRole('button', { name: t('common.save'), exact: true }).click();
-  await expect(dialog).toBeVisible();
-  await expect(item(dialog, t('profiles.new'))).toHaveAttribute('aria-current', 'true');
-  await expect(dialog.getByRole('textbox', { name: t('profiles.app'), exact: true })).toHaveJSProperty('validity.valueMissing', true);
+  let dialog = await openProfiles(page, t);
+  await dialog.locator('#pf-add').click();
+  await dialog.locator('#pf-name').fill('Keep me');
+  await expect(dialog.locator('.pf-save-status')).toHaveText(t('profileRules.ui.save.saved'));
+  await dialog.locator('#pf-name').fill('');
+  await expect(dialog.locator('.pf-save-status')).toHaveText(t('profileRules.ui.save.incomplete'));
+  await dialog.getByRole('button', { name: t('dialog.close'), exact: true }).click();
+  const question = page.getByRole('dialog', { name: t('profileRules.ui.incompleteTitle'), exact: true });
+  await question.getByRole('button', { name: t('profileRules.ui.discard'), exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  dialog = await openProfiles(page, t);
+  await expect(item(dialog, 'Keep me')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 
-test('one profile keeps a separate theme assignment for each of two displays', async ({ page, t }, info) => {
-  const errors = watchErrors(page);
-  await page.goto('/index.html?demo=two');
-  await page.getByRole('tab', { name: t(libraryTabKey('themes')), exact: true }).click();
-  await page.locator('#theme-scope [data-scope="all"]').click();
-  const roundName = 'Midnight 2.1" round';
-  for (const name of ['Demo', roundName]) {
-    await page.getByRole('button', { name: t('themesPanel.duplicateLabel', { name }), exact: true }).click();
-  }
+test('profile transitions, priorities, manual selection and deletion survive autosave', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
   let dialog = await openProfiles(page, t);
-  await expect(dialog.locator('.pf-theme-current')).toHaveText(['Demo', roundName]);
-  await dialog.getByRole('button', { name: t('profiles.new'), exact: true }).click();
-  await dialog.getByRole('textbox', { name: t('profiles.nameLabel'), exact: true }).fill('Gaming');
-  const gamingId = await dialog.locator('.pf-item[aria-current="true"]').getAttribute('data-item');
-  const wide = dialog.locator('[data-screen="/dev/ttyACM1"] select');
-  const round = dialog.locator('[data-screen="COM3"] select');
-  await expect(wide.locator('option:checked')).toHaveText('Demo');
-  await expect(round.locator('option:checked')).toHaveText(roundName);
-  await expect(wide.locator('option')).not.toContainText([roundName]);
-  await wide.selectOption({ label: t('layers.copyOf', { name: 'Demo' }) });
-  await round.selectOption({ label: t('layers.copyOf', { name: roundName }) });
-  await dialog.getByRole('button', { name: t('profiles.addRule'), exact: true }).click();
-  await dialog.getByRole('combobox', { name: t('profiles.event'), exact: true }).selectOption('foreground');
-  await dialog.getByRole('textbox', { name: t('profiles.app'), exact: true }).fill('game.exe');
-  await expect(item(dialog, 'Gaming').locator('.pf-item-summary')).toHaveText(t('profiles.summary.foreground', { app: 'game.exe' }));
-  if (info.project.name === 'dark-en') await dialog.locator('.pf-detail').screenshot({ path: '../../dist/profiles-two-displays.png' });
-  await dialog.getByRole('button', { name: t('profiles.new'), exact: true }).click();
-  await dialog.getByRole('textbox', { name: t('profiles.nameLabel'), exact: true }).fill('Music');
-  const musicId = await dialog.locator('.pf-item[aria-current="true"]').getAttribute('data-item');
-  await expect(dialog.locator('[data-screen="/dev/ttyACM1"] option:checked')).toHaveText('Demo');
+  await dialog.locator('#pf-effect').selectOption('wipe');
+  await dialog.getByRole('spinbutton', {name:t('profiles.durationMs'),exact:true}).fill('850');
+  await dialog.getByRole('button',{name:t('card.direction.up'),exact:true}).click();
+  await dialog.getByRole('button',{name:t('profiles.preview'),exact:true}).click();
+  await dialog.locator('#pf-add').click(); await dialog.locator('#pf-name').fill('Music');
+  await dialog.locator('.pf-add-types').getByRole('button',{name:t('profiles.mediaPlaying'),exact:true}).click();
+  await dialog.getByRole('textbox',{name:t('profiles.app'),exact:true}).fill('Spotify');
+  await dialog.getByRole('spinbutton',{name:t('trigger.priority'),exact:true}).fill('30');
+  await dialog.getByRole('spinbutton',{name:t('profiles.returnDelay'),exact:true}).fill('5');
+  await dialog.locator('#pf-name').focus();
+  await expect(item(dialog,'Music').locator('.pf-item-summary')).toHaveText(t('profiles.summary.mediaIn',{app:'Spotify'}));
+  await dialog.getByRole('button',{name:t('profiles.manual'),exact:true}).click(); await dialog.locator('#pf-manual').selectOption({label:'Music'});
+  await dialog.getByRole('button',{name:t('dialog.close'),exact:true}).click(); dialog = await openProfiles(page,t);
+  await expect(dialog.locator('#pf-effect')).toHaveValue('wipe');
+  await expect(dialog.getByRole('spinbutton',{name:t('profiles.durationMs'),exact:true})).toHaveValue('850');
+  await expect(dialog.getByRole('button',{name:t('card.direction.up'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(dialog.locator('#pf-manual option:checked')).toHaveText('Music'); await item(dialog,'Music').click();
+  await expect(dialog.getByRole('spinbutton',{name:t('trigger.priority'),exact:true})).toHaveValue('30');
+  await expect(dialog.getByRole('spinbutton',{name:t('profiles.returnDelay'),exact:true})).toHaveValue('5');
+  await dialog.locator('.pf-object-head').getByRole('button',{name:t('insp.more'),exact:true}).click();
+  await dialog.getByRole('menuitem',{name:t('profiles.remove'),exact:true}).click();
+  const question=page.getByRole('dialog',{name:t('profiles.deleteTitle',{name:'Music'}),exact:true});
+  await expect(question).toBeVisible(); await question.getByRole('button',{name:t('profiles.remove'),exact:true}).click();
+  await expect(item(dialog,'Music')).toHaveCount(0); await expect(dialog.locator('#pf-manual')).toHaveValue('');
+  await dialog.getByRole('button',{name:t('dialog.close'),exact:true}).click(); dialog=await openProfiles(page,t);
+  await expect(dialog.locator('.pf-item')).toHaveCount(1); await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible(); await expect(page.locator('#theme-profiles')).toBeFocused(); expect(errors).toEqual([]);
+});
+test('an incomplete profile outside the selected row is revealed when closing', async ({page,t}) => {
+  await page.goto('/index.html?demo=turing88'); const dialog=await openProfiles(page,t);
+  await dialog.locator('#pf-add').click();
+  await dialog.locator('.pf-add-types').getByRole('button',{name:t('profiles.foreground'),exact:true}).click();
+  await item(dialog,t('profiles.currentThemes')).click(); await dialog.getByRole('button',{name:t('dialog.close'),exact:true}).click();
+  const question=page.getByRole('dialog',{name:t('profileRules.ui.incompleteTitle'),exact:true});
+  await question.getByRole('button',{name:t('dialog.cancel'),exact:true}).click();
+  await expect(item(dialog,t('profiles.new'))).toHaveAttribute('aria-current','true');
+  await expect(dialog.getByRole('textbox',{name:t('profiles.app'),exact:true})).toHaveJSProperty('validity.valueMissing',true);
+});
+test('one profile retains compatible theme assignments for two displays', async ({page,t}) => {
+  const errors=watchErrors(page); await page.goto('/index.html?demo=two');
+  await page.getByRole('tab',{name:t(libraryTabKey('themes')),exact:true}).click();
+  await page.getByRole('button',{name:t('themesPanel.filters'),exact:true}).click(); await page.locator('#theme-scope [data-scope=all]').click();
+  const roundName='Midnight 2.1" round';
+  for(const name of ['Demo',roundName]) await page.getByRole('button',{name:t('themesPanel.duplicateLabel',{name}),exact:true}).click();
+  let dialog=await openProfiles(page,t); await expect(dialog.locator('.pf-theme-current')).toHaveText(['Demo',roundName]);
+  await dialog.locator('#pf-add').click(); await dialog.locator('#pf-name').fill('Gaming');
+  const gaming=await dialog.locator('.pf-item[aria-current=true]').getAttribute('data-item');
+  const wide=dialog.locator('[data-screen="/dev/ttyACM1"] select'), round=dialog.locator('[data-screen="COM3"] select');
+  await expect(wide.locator('option:checked')).toHaveText('Demo'); await expect(round.locator('option:checked')).toHaveText(roundName);
+  await expect(wide.locator('option').filter({hasText:roundName})).toHaveCount(0);
+  await wide.selectOption({label:t('layers.copyOf',{name:'Demo'})}); await round.selectOption({label:t('layers.copyOf',{name:roundName})});
+  await dialog.locator('.pf-add-types').getByRole('button',{name:t('profiles.foreground'),exact:true}).click();
+  await dialog.getByRole('textbox',{name:t('profiles.app'),exact:true}).fill('game.exe');
+  await expect(item(dialog,'Gaming').locator('.pf-item-summary')).toHaveText(t('profiles.summary.foreground',{app:'game.exe'}));
+  await dialog.locator('#pf-add').click(); await dialog.locator('#pf-name').fill('Music');
+  const music=await dialog.locator('.pf-item[aria-current=true]').getAttribute('data-item');
   await expect(dialog.locator('[data-screen="COM3"] option:checked')).toHaveText(roundName);
-  await dialog.getByRole('combobox', { name: t('profiles.fallback'), exact: true }).selectOption(musicId);
-  await expectAccessible(page);
-  await dialog.getByRole('button', { name: t('common.save'), exact: true }).click();
-  dialog = await openProfiles(page, t);
-  await expect(dialog.getByRole('radio', { name: t('profiles.automatic'), exact: true })).toBeChecked();
-  await expect(dialog.getByRole('combobox', { name: t('profiles.fallback'), exact: true })).toHaveValue(musicId);
-  await dialog.locator(`.pf-item[data-item="${gamingId}"]`).click();
-  await expect(dialog.locator('[data-screen="/dev/ttyACM1"] option:checked')).toHaveText(t('layers.copyOf', { name: 'Demo' }));
-  await expect(dialog.locator('[data-screen="COM3"] option:checked')).toHaveText(t('layers.copyOf', { name: roundName }));
-  await dialog.locator(`.pf-item[data-item="${musicId}"]`).click();
-  await expect(dialog.locator('[data-screen="COM3"] option:checked')).toHaveText(roundName);
-  await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  expect(errors).toEqual([]);
+  await item(dialog,t('profiles.currentThemes')).click(); await dialog.locator('#pf-fallback').selectOption(music);
+  await dialog.getByRole('button',{name:t('dialog.close'),exact:true}).click(); dialog=await openProfiles(page,t);
+  await expect(dialog.locator('#pf-fallback')).toHaveValue(music); await dialog.locator(`[data-item="${gaming}"]`).click();
+  await expect(dialog.locator('[data-screen="/dev/ttyACM1"] option:checked')).toHaveText(t('layers.copyOf',{name:'Demo'}));
+  await expect(dialog.locator('[data-screen="COM3"] option:checked')).toHaveText(t('layers.copyOf',{name:roundName}));
+  await dialog.locator(`[data-item="${music}"]`).click(); await expect(dialog.locator('[data-screen="COM3"] option:checked')).toHaveText(roundName);
+  await expect(page.locator('#theme-name')).toHaveValue('Demo'); await expectAccessible(page); expect(errors).toEqual([]);
 });
 
 test('System separates audio and power, shows text in full and omits uptime sparklines', async ({ page, t }, info) => {
@@ -171,6 +141,21 @@ test('System separates audio and power, shows text in full and omits uptime spar
   await expect(panel.locator('[data-key="system.uptime"] svg')).toHaveCount(0);
   await expect(panel.locator('.sensor-row-text svg')).toHaveCount(0);
   await expectAccessible(page);
-  if (info.project.name === 'dark-en') await panel.screenshot({ path: '../../dist/system-sensors.png' });
+  if (info.project.name === 'dark-en') await panel.screenshot({ path: '../../target/logs/t9c/system-sensors.png' });
+  expect(errors).toEqual([]);
+});
+
+test('the thirty-second trial reports the actual active profile independently of the selected row', async ({page,t}) => {
+  const errors=watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await page.clock.install(); await page.locator('#live').check();
+  const dialog=await openProfiles(page,t); await dialog.locator('#pf-add').click(); await dialog.locator('#pf-name').fill('Trial');
+  const id=await dialog.locator('.pf-item[aria-current=true]').getAttribute('data-item');
+  await dialog.getByRole('button',{name:t('profileRules.ui.try'),exact:true}).click();
+  const badge=dialog.locator(`[data-item="${id}"] .pf-state`);
+  await expect(badge).toHaveAttribute('data-active','true');
+  await dialog.locator('#pf-add').click(); await dialog.locator('#pf-name').fill('Other selection');
+  await expect(dialog.locator('.pf-object-head .pf-state')).toHaveAttribute('data-active','false');
+  await expect(badge).toHaveAttribute('data-active','true');
+  await page.clock.fastForward(31000); await expect(badge).toHaveAttribute('data-active','false');
   expect(errors).toEqual([]);
 });

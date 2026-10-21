@@ -489,6 +489,7 @@ function tauriBridge(invoke, tauri = {}) {
      * @returns {Promise<ThemeEntryDto>}
      */
     duplicateTheme: (location, name) => invoke('duplicate_theme', { location, name }),
+    deleteTheme: (location) => invoke('delete_theme', { location }),
     openTheme: (location) => invoke('open_theme', { location }),
     newTheme: (screen, name, orientation) => invoke('new_theme', { screen, name, orientation }),
     importTheme: () => invoke('import_theme'),
@@ -606,6 +607,7 @@ function tauriBridge(invoke, tauri = {}) {
     profilesRequested: () => invoke('profiles_requested'),
     onProfilesRequested: (cb) => (typeof tauri.event?.listen === 'function' ? tauri.event.listen('profiles-requested', cb) : Promise.resolve(() => {})),
     saveProfiles: (config) => invoke('save_profiles', { config }),
+    tryThemes: (themes, profile = null) => invoke('try_themes', { themes, profile }),
     previewTransition: (transition, themes = {}) => invoke('preview_transition', { transition, themes }),
     setDebug: (on, showReadings, corner) => invoke('set_debug', { on, showReadings, corner }),
     setAudioCapture: (on) => invoke('set_audio_capture', { on }),
