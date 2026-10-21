@@ -2,23 +2,24 @@
 // "Transition" control of a ring, a bar, a needle and a value, and the
 // demo's frames while a value eases (counted by the demo backend on
 // `data-demo-transition-frames`).
-import { test, expect, watchErrors, expectAccessible, clickAddWidget } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection } from './helpers.mjs';
 
 const transition = (page, t) => page.locator('#inspector [data-section="transition"]');
 const modeButton = (page, t, key) => transition(page, t).getByRole('group', { name: t('insp.transition'), exact: true }).getByRole('button', { name: t(key), exact: true });
-const durationSlider = (page, t) => transition(page, t).getByRole('slider', { name: new RegExp(t('card.duration')) });
+const durationSlider = (page, t) => transition(page, t).getByRole('spinbutton', { name: t('card.duration'), exact: true });
 
 test('a new ring eases for 400 ms; the control turns it off, on and longer, with Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'ring');
+  // The transition is in Behavior.
+  await openSection(page, 'behavior');
   await expect(transition(page, t)).toBeVisible();
   await expect(transition(page, t).getByRole('heading', { name: t('insp.transition'), exact: true })).toBeVisible();
   await expect(modeButton(page, t, 'insp.transitionSmooth')).toHaveAttribute('aria-pressed', 'true');
   await expect(modeButton(page, t, 'fade.none')).toHaveAttribute('aria-pressed', 'false');
   await expect(durationSlider(page, t)).toHaveValue('400');
-  await expect(transition(page, t).locator('output')).toHaveText('400 ms');
   await expect(transition(page, t).getByText(t('insp.transitionHint'), { exact: true })).toBeVisible();
 
   await modeButton(page, t, 'fade.none').click();
@@ -29,9 +30,8 @@ test('a new ring eases for 400 ms; the control turns it off, on and longer, with
 
   const slider = durationSlider(page, t);
   await slider.focus();
-  await slider.press('ArrowRight');
+  await slider.press('ArrowUp');
   await expect(durationSlider(page, t)).toHaveValue('450');
-  await expect(transition(page, t).locator('output')).toHaveText('450 ms');
   await page.locator('#undo').click();
   await expect(durationSlider(page, t)).toHaveValue('400');
   await expectAccessible(page);
@@ -43,6 +43,7 @@ test('bars, needles and values have the control; texts and graphs do not', async
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   for (const widget of ['bar', 'needle', 'value']) {
     await clickAddWidget(page, t, widget);
+    await openSection(page, 'behavior');
     await expect(modeButton(page, t, 'insp.transitionSmooth'), widget).toHaveAttribute('aria-pressed', 'true');
   }
   for (const [widget, shown] of [['text', 'content'], ['graph', 'source']]) {

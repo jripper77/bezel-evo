@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste, pickSensor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, pickSensor, openInspectorTab, toggleButton, setToggle } from './helpers.mjs';
 
 test('native visualization presets, scoped controls, second sensor and Undo',async({page,t},info)=>{
   const errors=watchErrors(page);
@@ -6,7 +6,7 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   const detail=page.locator('#inspector');
   const add=async kind=>{
     await page.getByRole('button',{name:t('library.addWidget',{name:t(`widget.${kind}`)}),exact:true}).click();
-    await detail.getByRole('tab',{name:t('inspector.tab.look'),exact:true}).click();
+    await openInspectorTab(page, t, 'inspector.tab.look');
   };
   const preset=name=>detail.locator('[data-section="visualization"]').getByRole('button',{name:t(`visual.${name}`),exact:true});
   await add('bar');await preset('matrix').click();
@@ -27,10 +27,10 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   await expect(detail.getByRole('spinbutton',{name:t('visual.rows'),exact:true})).toHaveCount(0);
   await expect(detail.getByRole('spinbutton',{name:t('visual.cells'),exact:true})).toBeVisible();
   await preset('dial').click();
-  await detail.getByRole('switch',{name:t('visual.marker'),exact:true}).uncheck();
+  await setToggle(toggleButton(detail, t('visual.marker')), false);
   await detail.screenshot({path:info.outputPath('visualization-tiles.png')});
   await add('graph');await preset('mirrored').click();
-  await detail.getByRole('tab',{name:t('inspector.tab.data'),exact:true}).click();
+  await openInspectorTab(page, t, 'inspector.tab.data');
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toBeVisible();
   await pickSensor(page,t,detail,'gpu.usage',t('visual.secondary'));
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toHaveAttribute('data-sensor-key','gpu.usage');

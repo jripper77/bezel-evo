@@ -2,7 +2,7 @@
 // title, artist and time turn on and off like cover, progress and app
 // name, the fit measures only what shows, and the bar's look (colours,
 // thickness, ends, knob, pattern, where the times go) is set in Look.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor, toggleButton } from './helpers.mjs';
 
 /** Whether the preview has a strong red pixel. */
 const hasRed = (preview) => preview.evaluate((canvas) => {
@@ -86,14 +86,14 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   await thickness.focus();
   await page.keyboard.press('ArrowRight');
   await expect(section.getByRole('slider', { name: t('insp.thickness'), exact: true })).toHaveValue('5');
-  const round = section.getByRole('switch', { name: t('inspector.roundCaps'), exact: true });
-  await expect(round).toBeChecked();
+  const round = toggleButton(section, t('inspector.roundCaps'));
+  await expect(round).toHaveAttribute('aria-pressed', 'true');
   await round.click({ force: true });
-  await expect(section.getByRole('switch', { name: t('inspector.roundCaps'), exact: true })).not.toBeChecked();
-  const knob = section.getByRole('switch', { name: t('insp.progressKnob'), exact: true });
-  await expect(knob).not.toBeChecked();
+  await expect(toggleButton(section, t('inspector.roundCaps'))).toHaveAttribute('aria-pressed', 'false');
+  const knob = toggleButton(section, t('insp.progressKnob'));
+  await expect(knob).toHaveAttribute('aria-pressed', 'false');
   await knob.click({ force: true });
-  await expect(section.getByRole('switch', { name: t('insp.progressKnob'), exact: true })).toBeChecked();
+  await expect(toggleButton(section, t('insp.progressKnob'))).toHaveAttribute('aria-pressed', 'true');
 
   // Pattern: continuous, segments (with a count) or dots.
   const style = section.getByRole('group', { name: t('inspector.style'), exact: true });

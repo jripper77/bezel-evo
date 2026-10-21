@@ -164,3 +164,25 @@ export async function storageFileAction(page, t, region, file, action) {
   await region.getByRole('button', { name: t('cardInsp.faceActions', { name: file }), exact: true }).click();
   return page.getByRole('menuitem', { name: t(`storage.action.${action}`), exact: true });
 }
+
+/** An inspector on/off control: a button with a pressed state (they replaced the switches in studio-ux-v2). */
+export const toggleButton = (scope, name) => scope.getByRole('button', { name, exact: true }).and(scope.locator('[aria-pressed]'));
+
+/** Turns `toggle` on or off (nothing when it already is) and checks it took. */
+export async function setToggle(toggle, on) {
+  if ((await toggle.getAttribute('aria-pressed')) !== String(on)) await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', String(on));
+}
+
+/** A choice named `label` in `scope`: a row of buttons (each with its data-value) or a list. */
+const choiceControl = (scope, label) => scope.getByRole('group', { name: label, exact: true }).or(scope.getByRole('combobox', { name: label, exact: true }));
+
+/** Picks `value` in the choice named `label`. */
+export async function choose(scope, label, value) {
+  const control = choiceControl(scope, label);
+  if (await control.evaluate((n) => n.tagName === 'SELECT')) await control.selectOption(value);
+  else await control.locator(`button[data-value="${value}"]`).click();
+}
+
+/** The value chosen in the choice named `label` ('' when none is). */
+export const chosen = (scope, label) => choiceControl(scope, label).evaluate((n) => (n.tagName === 'SELECT' ? n.value : n.querySelector('button[aria-pressed="true"]')?.dataset.value ?? ''));
