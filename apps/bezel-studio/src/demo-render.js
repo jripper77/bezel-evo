@@ -179,7 +179,7 @@ function drawIconComponent(ctx, component, style, colour) {
  * rest as one icon, moving with each part turned, shifted and faded by
  * `pose`, and the 3D shadow, halo and flash.
  */
-function drawWeatherIcon(ctx, style, colour, x, y, side, code, pose) {
+export function drawWeatherIcon(ctx, style, colour, x, y, side, code, pose = REST) {
   const colored = ['colored', 'dimensional'].includes(style);
   ctx.save();
   ctx.translate(x, y);
@@ -483,12 +483,20 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     const moving = motion && !trial ? iconStep(k.content.iconMotion) : null;
     const pose = moving ? iconPose(weatherFamily(code), t, amplitudeOf(k.content.iconMotion), k.content.iconSpeed ?? 1) : REST;
     if (moving) wantFrame(moving);
-    drawWeatherIcon(ctx, k.content.iconStyle, paint(s.paint), f.x, f.y + (f.height - side) / 2, side, code, pose);
+    drawWeatherIcon(ctx, k.content.iconStyle, paint(['colored', 'dimensional'].includes(k.content.iconStyle) ? s.paint : k.content.iconColor ?? s.paint), f.x, f.y + (f.height - side) / 2, side, code, pose);
     f = { ...f, x: f.x + side + gap, width: Math.max(0, f.width - side - gap) };
   }
   if (k.content.type==='player') {
     ctx.textBaseline='top';
-    if(k.content.showCover !== false){const {side,gap}=textFurniture(k).layout(f);ctx.save();ctx.beginPath();ctx.roundRect(f.x,f.y,side,side,k.content.coverCorners ?? k.content.coverRadius ?? 0);ctx.clip();ctx.fillStyle='#334155';ctx.fillRect(f.x,f.y,side,side);ctx.fillStyle=paint(s.paint);ctx.fillText('\u266b',f.x+side*.3,f.y+side*.3);ctx.restore();f={...f,x:f.x+side+gap,width:f.width-side-gap};}
+    if (k.content.showCover !== false) {
+      const { side, gap } = textFurniture(k).layout(f);
+      drawPlayerCover(ctx, { x: f.x, y: f.y, width: side, height: side }, k.content, target => {
+        target.fillStyle = '#334155'; target.fillRect(f.x, f.y, side, side);
+        target.fillStyle = paint(s.paint); target.font = ctx.font; target.textBaseline = 'top';
+        target.fillText('\u266b', f.x + side * .3, f.y + side * .3);
+      });
+      f = { ...f, x: f.x + side + gap, width: f.width - side - gap };
+    }
     f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
   const drawGlyphs = (target, style) => {
@@ -603,20 +611,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
     const lc = layer.getContext('2d');
     lc.translate(-f.x, -f.y);
     drawElement(lc, { ...e, opacity: 1, kind: { ...k, fade: null } }, t, refresh, motion, trial);
-    lc.globalCompositeOperation = 'destination-in';
-    lc.save();
-    if (k.fade.radial) { lc.translate(f.x, f.y); lc.scale(f.width, f.height); }
-    const g = k.fade.radial
-      ? lc.createRadialGradient(k.fade.radial[0], k.fade.radial[1], 0, ...k.fade.radial)
-      : lc.createLinearGradient(...fadeLine(f, k.fade.angle));
-    // Halfway opacity at the midpoint, as the screen renderer's two-piece ramp.
-    g.addColorStop(0, `rgba(0,0,0,${k.fade.start})`);
-    g.addColorStop(k.fade.midpoint ?? .5, `rgba(0,0,0,${(k.fade.start + k.fade.end) / 2})`);
-    g.addColorStop(1, `rgba(0,0,0,${k.fade.end})`);
-    lc.fillStyle = g;
-    if (k.fade.radial) lc.fillRect(0, 0, 1, 1);
-    else lc.fillRect(f.x, f.y, f.width, f.height);
-    lc.restore();
+    applyCanvasFade(lc, k.fade, f);
     ctx.save(); ctx.globalAlpha = e.opacity ?? 1;
     ctx.drawImage(layer, f.x, f.y); ctx.restore();
     return;
@@ -727,6 +722,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
       break;
     }
     case 'image':
+      drawClippedMedia(ctx, f, k, () => {
       if (String(k.asset).toLowerCase().endsWith('.gif')) {
         ctx.fillStyle = GIF_COLORS[demoGifFrame(k, trial?.elapsedMs ?? t * 1000)];
         ctx.fillRect(f.x, f.y, f.width, f.height);
@@ -734,6 +730,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
       ctx.strokeStyle = k.color ? color(k.color) : 'rgba(255,255,255,0.4)';
       ctx.setLineDash([6, 6]);
       ctx.strokeRect(f.x, f.y, f.width, f.height);
+      });
       break;
     default:
       break;
@@ -927,4 +924,36 @@ export function measureApprox(theme, id, t) {
   const ax = style.align === 'right' ? 1 : style.align === 'center' ? 0.5 : 0;
   const ay = style.valign === 'bottom' ? 1 : style.valign === 'middle' ? 0.5 : 0;
   return { x: f.x + (f.width - size.width) * ax, y: f.y + (f.height - size.height) * ay, ...size };
+}
+
+/** The common opacity ramp, on an isolated image/shape/cover canvas. */
+export function applyCanvasFade(ctx, fade, frame) {
+  if (!fade) return;
+  ctx.save(); ctx.globalCompositeOperation = 'destination-in';
+  if (fade.radial) { ctx.translate(frame.x, frame.y); ctx.scale(frame.width, frame.height); }
+  const gradient = fade.radial ? ctx.createRadialGradient(fade.radial[0], fade.radial[1], 0, ...fade.radial) : ctx.createLinearGradient(...fadeLine(frame, fade.angle));
+  gradient.addColorStop(0, `rgba(0,0,0,${fade.start})`);
+  gradient.addColorStop(fade.midpoint ?? .5, `rgba(0,0,0,${(fade.start + fade.end) / 2})`);
+  gradient.addColorStop(1, `rgba(0,0,0,${fade.end})`);
+  ctx.fillStyle = gradient;
+  if (fade.radial) ctx.fillRect(0, 0, 1, 1); else ctx.fillRect(frame.x, frame.y, frame.width, frame.height);
+  ctx.restore();
+}
+
+/** Same cover corner clipping and isolated fade as the native renderer. */
+export function drawPlayerCover(ctx, frame, content, draw) {
+  const target = content.coverFade ? new OffscreenCanvas(Math.ceil(frame.width), Math.ceil(frame.height)).getContext('2d') : ctx;
+  target.save();
+  if (content.coverFade) target.translate(-frame.x, -frame.y);
+  drawClippedMedia(target, frame, { corners: content.coverCorners, radius: content.coverRadius }, draw, true);
+  if (content.coverFade) applyCanvasFade(target, content.coverFade, frame);
+  target.restore();
+  if (content.coverFade) ctx.drawImage(target.canvas, frame.x, frame.y);
+}
+
+/** Shared fitted-media corner clip, matching native path::rounded_corners. */
+export function drawClippedMedia(ctx, frame, geometry, draw, force = false) {
+  const radii = geometry.corners ?? geometry.radius ?? 0;
+  if (!force && !(Array.isArray(radii) ? radii.some(radius => radius > 0) : radii > 0)) { draw(ctx); return; }
+  ctx.save(); ctx.beginPath(); ctx.roundRect(frame.x, frame.y, frame.width, frame.height, radii); ctx.clip(); draw(ctx); ctx.restore();
 }
