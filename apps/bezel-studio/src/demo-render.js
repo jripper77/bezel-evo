@@ -4,7 +4,7 @@ import { appliedRotation, centerOf } from './editor/rotation.js';
 import { drawVisualization } from './demo-visualization.js';
 import { applyTextCase } from './text-case.js';
 import { boundKey } from './editor/widgets.js';
-import { demoSensorValue, DEMO_SENSORS, DEMO_SYSTEM_TEXT } from './demo-sensors.js';
+import { demoSensorValue, DEMO_SENSORS, DEMO_SYSTEM_TEXT, DEMO_WEATHER } from './demo-sensors.js';
 import { formatValue } from './value-format.js';
 import { demoColorValue, withValueColor } from './value-color.js';
 import { demoSpectrum, spectrumOf } from './spectrum.js';
@@ -15,7 +15,7 @@ import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js
 import { fadeLine } from './shape-fade.js';
 import { weatherFamily, weatherText } from './weather-format.js';
 import { HAND_LENGTHS, analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
-import { blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
+import { canvasFont as fontOf, blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
 import { REST, amplitudeOf, iconPose, iconStep } from './weather-motion.js';
 import { demoPeak, faint, fitGauge, gradientAt, lookOf, needleColor, numberShares, scaleNumber, share, tickShares } from './needle-look.js';
@@ -221,7 +221,6 @@ export function drawWeatherIcon(ctx, style, colour, x, y, side, code, pose = RES
 let textDue = null;
 const wantFrame = (ms) => { if (ms !== null) textDue = textDue === null ? ms : Math.min(textDue, ms); };
 
-const fontOf = (face) => `${face.italic ? 'italic ' : ''}${face.weight} ${face.size}px ${face.family}, sans-serif`;
 /** Text advance in `ctx` for a piece's face; the canvas also hit-tests parts with it. */
 export const canvasMeasure = (ctx) => (text, face) => { ctx.font = fontOf(face); return ctx.measureText(text).width; };
 
@@ -319,7 +318,7 @@ function drawDial(ctx, e, t, motion, trial) {
     const hourly = count === 12 || i % 5 === 0, angle = i * 360 / count;
     line(at(26, angle), at(hourly ? 21 : 24, angle), (hourly ? 2 : 1) * unit, color(a.marks));
   }
-  const font = (size) => `${k.style?.font?.italic ? 'italic ' : ''}${k.style?.font?.weight ?? 400} ${size}px ${k.style?.font?.family ?? 'sans-serif'}, sans-serif`;
+  const font = (size) => fontOf({ ...k.style?.font, size });
   ctx.fillStyle = color(a.marks); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const roman = a.numbers === 'roman';
   ctx.font = font((roman ? 5 : 6.5) * unit);
@@ -388,7 +387,7 @@ function drawNeedleLook(ctx, e, frac, t, refresh, motion, trial = null) {
   }
   const size = Math.min(64, Math.max(8, g.radius * 0.12));
   const style = look.center?.style ?? {};
-  ctx.font = `${style.font?.weight ?? 400} ${size}px ${style.font?.family ?? 'Inter'}, sans-serif`;
+  ctx.font = fontOf({ ...style.font, size, family: style.font?.family ?? 'Inter' });
   ctx.fillStyle = color(look.marks); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const language = globalThis.document?.documentElement?.lang ?? 'en';
   for (const s of numberShares(look)) ctx.fillText(scaleNumber(b.min + (b.max - b.min) * s, language), ...at(inner - (major.length ? long : 0) - look.numberGap - size * 0.6, angle(s)));
@@ -447,7 +446,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     const d = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
     text = formatClock(k.content.pattern, d, k.content.language, k.content.casing);
   } else if (k.content.type === 'weather') {
-    text = weatherText(k.content, 20, trial?.weatherCode ?? 3);
+    text = weatherText(k.content, DEMO_WEATHER.temperature, trial?.weatherCode ?? DEMO_WEATHER.code);
   } else if (k.content.type === 'player') {
     text = playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA).lines.join('\n');
   } else if (k.content.type === 'sensor') {
@@ -455,7 +454,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   }
   text = applyTextCase(text, s.casing);
   ctx.fillStyle = paint(s.paint);
-  ctx.font = `${s.font?.italic ? 'italic ' : ''}${s.font?.weight ?? 400} ${s.size}px ${s.font?.family ?? 'sans-serif'}, sans-serif`;
+  ctx.font = fontOf({ ...s.font, size: s.size });
   if (measure && k.content.type === 'player') {
     const shown = playerText(k.content, DEMO_MEDIA);
     const lines = shown.lines.length ? applyTextCase(shown.lines.join('\n'), s.casing).split('\n') : [];
@@ -480,7 +479,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   let f = e.frame;
   if (k.content.type === 'weather' && k.content.showIcon !== false) {
     const { side, gap } = textFurniture(k).layout(f);
-    const code = trial?.weatherCode ?? 3;
+    const code = trial?.weatherCode ?? DEMO_WEATHER.code;
     const moving = motion && !trial ? iconStep(k.content.iconMotion) : null;
     const pose = moving ? iconPose(weatherFamily(code), t, amplitudeOf(k.content.iconMotion), k.content.iconSpeed ?? 1) : REST;
     if (moving) wantFrame(moving);
@@ -501,7 +500,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     f = drawProgress(ctx, k.content, s, f, playerText(k.content, trial ? { ...DEMO_MEDIA, position: trial.elapsedMs / 1000 } : DEMO_MEDIA));
   }
   const drawGlyphs = (target, style) => {
-    target.font = `${style.font?.italic ? 'italic ' : ''}${style.font?.weight ?? 400} ${style.size}px ${style.font?.family ?? 'sans-serif'}, sans-serif`;
+    target.font = fontOf({ ...style.font, size: style.size });
     target.textAlign = style.align === 'center' ? 'center' : style.align === 'right' ? 'right' : 'left';
     target.textBaseline = style.valign === 'top' ? 'top' : style.valign === 'bottom' ? 'bottom' : 'middle';
     if (pieces) { drawPieces(target, style, f, textPieces({ ...e, kind: { ...k, style } }, text, t, value, refresh, motion, trial), t, motion, tabular); return; }

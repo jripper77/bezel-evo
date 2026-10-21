@@ -722,6 +722,43 @@ mod tests {
             let listed = catalog.families.iter().find(|f| f.name == family).unwrap();
             assert_eq!(listed.origin, crate::FontOrigin::Bundled, "{family}");
         }
+        for (name, expected) in [
+            (
+                "Fraunces 144pt",
+                vec![
+                    (300, false),
+                    (300, true),
+                    (400, false),
+                    (400, true),
+                    (600, false),
+                ],
+            ),
+            (
+                "Instrument Sans",
+                vec![(400, false), (500, false), (600, false)],
+            ),
+            (
+                "Space Grotesk",
+                vec![(400, false), (500, false), (600, false)],
+            ),
+            (
+                "Bricolage Grotesque 96pt",
+                vec![(400, false), (500, false), (700, false), (800, false)],
+            ),
+        ] {
+            let family = catalog.families.iter().find(|f| f.name == name).unwrap();
+            let faces: Vec<_> = family.faces.iter().map(|f| (f.weight, f.italic)).collect();
+            assert_eq!(
+                faces, expected,
+                "{name}: only the template faces are shipped"
+            );
+            for face in &family.faces {
+                assert!(
+                    catalog.bundled_face(name, *face).is_some(),
+                    "{name}: face bytes"
+                );
+            }
+        }
         assert_eq!(diagnostics.count(), 0);
         let shipped = engine.bundled.len();
         assert_eq!(shipped, SHIPPED_FONTS.len(), "copies are not loaded twice");

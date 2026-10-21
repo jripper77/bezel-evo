@@ -200,3 +200,10 @@ export function measureText(pieces, style, measure, options) {
   if (!lines) return null;
   return { width: Math.max(1, Math.ceil(Math.max(...lines.map((l) => l.width)))), height: Math.max(1, Math.ceil(lines.reduce((h, l) => h + l.height, 0))) };
 }
+
+
+/** Canvas font shorthand: numeric optical-family names need CSS string quoting. */
+export function canvasFont(face) {
+  const family = String(face.family ?? 'sans-serif').replaceAll('\\', '\\\\').replaceAll('"', '\\"').replace(/[\n\r\f]/g, ' ');
+  return `${face.italic ? 'italic ' : ''}${face.weight ?? 400} ${face.size}px "${family}", sans-serif`;
+}

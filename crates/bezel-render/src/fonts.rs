@@ -11,9 +11,11 @@ use std::path::PathBuf;
 /// The font files Bezel ships (`themes/fonts/`, SIL OFL 1.1, licences in
 /// that folder): Inter (400, 500, 600, 700), JetBrains Mono (400, 500, 700),
 /// Doto and Doto Rounded (100 to 900) and IBM Plex Mono (100 to 700, upright
-/// and italic). A renderer that loads the installed fonts loads these first.
+/// and italic), plus Fraunces (300/400 upright and italic, 600 upright),
+/// Instrument Sans and Space Grotesk (400/500/600), and Bricolage Grotesque
+/// (400/500/700/800). A renderer that loads the installed fonts loads these first.
 /// Order matters to callers that slice it: see [`SHIPPED_FAMILIES`].
-pub const SHIPPED_FONTS: [&[u8]; 39] = [
+pub const SHIPPED_FONTS: [&[u8]; 54] = [
     include_bytes!("../../../themes/fonts/Inter-Regular.ttf"),
     include_bytes!("../../../themes/fonts/Inter-Medium.ttf"),
     include_bytes!("../../../themes/fonts/Inter-SemiBold.ttf"),
@@ -53,15 +55,34 @@ pub const SHIPPED_FONTS: [&[u8]; 39] = [
     include_bytes!("../../../themes/fonts/IBMPlexMono-SemiBoldItalic.ttf"),
     include_bytes!("../../../themes/fonts/IBMPlexMono-Bold.ttf"),
     include_bytes!("../../../themes/fonts/IBMPlexMono-BoldItalic.ttf"),
+    include_bytes!("../../../themes/fonts/Fraunces-LightItalic.ttf"),
+    include_bytes!("../../../themes/fonts/Fraunces-Italic.ttf"),
+    include_bytes!("../../../themes/fonts/Fraunces-Light.ttf"),
+    include_bytes!("../../../themes/fonts/Fraunces-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/Fraunces-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/InstrumentSans-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/InstrumentSans-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/InstrumentSans-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/SpaceGrotesk-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/SpaceGrotesk-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/SpaceGrotesk-SemiBold.ttf"),
+    include_bytes!("../../../themes/fonts/BricolageGrotesque-Regular.ttf"),
+    include_bytes!("../../../themes/fonts/BricolageGrotesque-Medium.ttf"),
+    include_bytes!("../../../themes/fonts/BricolageGrotesque-Bold.ttf"),
+    include_bytes!("../../../themes/fonts/BricolageGrotesque-ExtraBold.ttf"),
 ];
 
 /// Each shipped family and the range of [`SHIPPED_FONTS`] holding its faces.
-pub const SHIPPED_FAMILIES: [(&str, std::ops::Range<usize>); 5] = [
+pub const SHIPPED_FAMILIES: [(&str, std::ops::Range<usize>); 9] = [
     ("Inter", 0..4),
     ("JetBrains Mono", 4..7),
     ("Doto", 7..16),
     ("Doto Rounded", 16..25),
     ("IBM Plex Mono", 25..39),
+    ("Fraunces 144pt", 39..44),
+    ("Instrument Sans", 44..47),
+    ("Space Grotesk", 47..50),
+    ("Bricolage Grotesque 96pt", 50..54),
 ];
 
 /// Whether `bytes` is one of [`SHIPPED_FONTS`] (a copy read from a folder).

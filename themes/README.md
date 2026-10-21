@@ -1,3 +1,20 @@
+# Studio UX v2 templates
+
+Four editable horizontal templates (1920×480) reproduce the offline Studio UX v2 designs using native widgets and local vector artwork:
+
+| Template | Appearance | Live content |
+| --- | --- | --- |
+| Pixel | Black dotted panels, Doto digits, orange block meters | Clock, CPU/GPU/RAM, histories, mirrored network traffic, output volume |
+| Nebula | Glass panels, violet/cyan/pink dials, Space Grotesk | Clock, current Milan weather, telemetry, usage rings and network history |
+| Paper | Cream newspaper layout, Fraunces and Instrument Sans | Clock/date, current Milan weather, CPU temperature history, system indices, media and disk activity |
+| Now Playing | Magenta listening room, geometric standby cover and vinyl, Bricolage Grotesque | Actual session cover/title/artist/source, remaining time, timeline, system-output spectrum and telemetry |
+
+Weather coordinates are editable. There are no stored sample readings, hardware model names, forecast temperatures or track metadata. Missing sensors remain unavailable; no media session shows a waiting label and local standby artwork. Audio capture follows the existing system-audio spectrum settings. Graphs fill as readings arrive. Template labels are editable Italian text; dates follow the system language.
+
+The four additional type families ship only the faces these templates use, with their original OFL licences in `themes/fonts`. Their exact native optical-family names are **Fraunces 144pt** and **Bricolage Grotesque 96pt**. See [font sources](fonts/UX-V2-SOURCES.md).
+
+Regenerate these four templates only with `python scripts/create-ux-v2-themes.py`. The script never rewrites other templates or user documents. For labelled native review frames, set `BEZEL_UX2_THEME_PREVIEWS` to an absolute task output folder and run `cargo test -p bezel --test bundled_themes studio_ux_v2_templates_render_live_and_unavailable_inputs`.
+
 # Modern template pairs
 
 ## Animated graphic collections

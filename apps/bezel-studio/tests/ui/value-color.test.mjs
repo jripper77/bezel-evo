@@ -57,5 +57,7 @@ test('demo resolves the drawn value and changes only the supported paint', () =>
 });
 test('demo colour sensors reuse the sampled catalogue and unavailable means null', () => {
   assert.equal(demoSensorValue('missing', 1), null);
-  DEMO_SENSORS.forEach(([key, , , , base, swing], i) => assert.equal(demoSensorValue(key, 2), demoValue(base, swing, 2, i)));
+  // Available memory is what used memory leaves (T-9d), so the two always agree.
+  DEMO_SENSORS.forEach(([key, , , , base, swing], i) => assert.equal(demoSensorValue(key, 2),
+    key === 'memory.available.percent' ? 100 - demoSensorValue('memory.percent', 2) : demoValue(base, swing, 2, i)));
 });
