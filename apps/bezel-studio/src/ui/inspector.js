@@ -599,8 +599,12 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
         prefixedField('', t('insp.rotation'), appliedRotation(e), rotation => store.dispatch('rotate', { id: e.id, rotation }), { step: 'any', unit: '°', iconName: 'rotate' }),
         !e.card && !e.isGroup && bindButton(t('insp.sensorMotion'), Boolean(e.sensorMotion), () => { rotationBindings.set(e.id, !(rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))); render(shown.assets); }),
       ]),
-      el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
-    ], { tool: iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }) });
+      // The section's own head is hidden in Layout, so Fit sits beside the alignments.
+      el('div', { class: 'geometry-actions' }, [
+        el('div', { class: 'align-row', role: 'group', 'aria-label': t('insp.alignOn') }, ALIGN_EDGES.map(([edge, name]) => alignTool([e.id], edge, ICONS[name]))),
+        iconButton(t('insp.fitContent'), ICONS.frame, () => host.fitContent?.(e.id), { disabled: !canFitContent(theme, e.id), class: 'quiet' }),
+      ]),
+    ]);
     const actions = section('actions', !e.isGroup ? t('insp.order') : t('inspector.actions'), [el('div', { class: 'actions' }, [
       e.isGroup && el('button', { type: 'button', class: 'text-button', text: t('group.ungroup'), onclick: () => store.dispatch('ungroup', { ids: [e.id] }) }),
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('reorder', { id: e.id, index: theme.elements.length }) }, [t('inspector.front')]),
@@ -610,8 +614,6 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       el('button', { type: 'button', class: 'text-button', onclick: () => store.dispatch('duplicate', { ids: [e.id] }) }, [icon(ICONS.copy, 16), t('common.duplicate')]),
       el('button', { type: 'button', class: 'text-button danger', onclick: () => store.dispatch('remove', { ids: [e.id] }) }, [icon(ICONS.trash, 16), t('common.delete')]),
     ])]);
-    const rotationField = position.querySelector('.geometry-rotation');
-    if (rotationField) position.querySelector('.geometry-fields').append(rotationField);
     const layout = [position, section('membership', t('inspector.membership'), membershipForm(e, theme)), actions];
     const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, bridge, section, editIcon, searchCities, optionTiles, arcPreview, redraw: () => render(shown.assets), customSource: sourceState.custom,
       completePanels: specific => panelsOf(e, theme, assets, specific, layout) };

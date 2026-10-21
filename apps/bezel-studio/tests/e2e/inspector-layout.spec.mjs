@@ -8,11 +8,13 @@ test('short numbers stay compact and conditional colour stays with the paint', a
   for (const kind of ['bar', 'ring', 'graph', 'value', 'needle', 'spectrum']) {
     await page.locator('#tab-widgets').click();
     await clickAddWidget(page, t, kind);
+    await openSection(page, 'layout');
     const rotation = inspector.getByRole('spinbutton', { name: t('insp.rotation'), exact: true });
     const box = await rotation.boundingBox();
     expect(box.width).toBeLessThan(115);
     expect(box.width).toBeGreaterThan(60);
-    await expect(rotation.locator('..').locator('.fld-prefix')).toHaveText(t('insp.rotation'));
+    // Its prefix is the rotation icon; the name stays for assistive technology.
+    await expect(rotation.locator('..').locator(':scope > svg')).toHaveCount(1);
     expect(await rotation.evaluate(input => {
       const row = input.closest('.fld');
       return input.getBoundingClientRect().left - row.querySelector('.fld-prefix').getBoundingClientRect().right;
@@ -37,11 +39,12 @@ test('shape groups separate fill, transparency, outline and corners in both them
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'shape');
   const inspector = page.locator('#inspector');
-  for (const id of ['shape', 'color', 'behavior']) await openSection(page, id);
+  for (const id of ['shape', 'color']) await openSection(page, id);
   const panel = inspector;
+  // A shape has nothing that moves on its own: its rotation by a sensor is linked from Layout.
   expect(await panel.locator(':scope > [data-inspector-section]').evaluateAll(nodes => nodes.map(node => node.dataset.inspectorSection)))
-    .toEqual(['layout', 'shape', 'color', 'behavior']);
-  await expect(panel.locator('[data-section="transparency"]').getByRole('slider', { name: t('inspector.opacity'), exact: true })).toBeVisible();
+    .toEqual(['layout', 'shape', 'color']);
+  await expect(panel.locator('[data-section="transparency"]').getByRole('spinbutton', { name: t('inspector.opacity'), exact: true })).toBeVisible();
   await inspector.getByRole('button', { name: t('insp.cornersEach'), exact: true }).click();
   const corners = inspector.locator('.corner-radii');
   await expect(corners.getByRole('spinbutton')).toHaveCount(4);
@@ -66,8 +69,9 @@ test('membership stays visible across independent sections and changing a card k
   await clickAddWidget(page, t, 'card');
   await clickAddWidget(page, t, 'bar');
   const inspector = page.locator('#inspector');
+  await openSection(page, 'layout');
   const membership = inspector.locator('[data-section="membership"]');
-  const card = membership.getByRole('combobox', { name: t('widget.card'), exact: true });
+  const card = membership.getByRole('combobox', { name: t('inspector.membership'), exact: true });
   const parent = await card.inputValue();
   expect(parent).not.toBe('');
   for (const tab of ['look', 'data']) {

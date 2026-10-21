@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { test, expect, watchErrors, expectAccessible, dragTo, colorButton, setColor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, dragTo, colorButton, setColor, openSection, openInspectorTab } from './helpers.mjs';
 
 test('offline icons search, insert as SVG and undo in one step', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -24,12 +24,13 @@ test('offline icons search, insert as SVG and undo in one step', async ({ page, 
   await page.getByLabel(t('inspector.size'), { exact: true }).press('Tab');
   await page.locator('[data-icon="cpu"]').click();
   const detail = page.locator('#inspector');
-  // The picture is on the Data tab, its paint on Look: the file is read on either.
+  // The picture and its paint are in different sections: the file is read in either.
   const asset = detail.getByRole('combobox', { name: t('common.image'), exact: true, includeHidden: true });
   await expect(detail.getByRole('combobox', { name: t('common.image'), exact: true })).toHaveValue(/tabler-cpu.*\.svg$/);
+  await openSection(page, 'layout');
   await expect(page.getByRole('spinbutton', { name: t('inspector.width'), exact: true })).toHaveValue('96');
   const original = await asset.inputValue();
-  await detail.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
+  await openInspectorTab(page, t, 'inspector.tab.look');
   await setColor(page, t, detail, t('inspector.color'), '#ff0000');
   await expect(asset).not.toHaveValue(original);
   await expect(colorButton(detail, t('inspector.color'))).toHaveAttribute('data-color', /^#ff0000/);
@@ -83,7 +84,7 @@ test('electrical aliases and hardware pump icons remain editable and undoable', 
   const asset = detail.getByRole('combobox', { name: t('common.image'), exact: true, includeHidden: true });
   await expect(asset).toHaveValue(/mdi-water-pump.*\.svg$/);
   const original = await asset.inputValue();
-  await detail.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
+  await openInspectorTab(page, t, 'inspector.tab.look');
   await setColor(page, t, detail, t('inspector.color'), '#ff0000');
   await expect(asset).not.toHaveValue(original);
   await expect(detail.getByLabel(t('inspector.strokeWidth'), { exact: true })).toHaveCount(0);
