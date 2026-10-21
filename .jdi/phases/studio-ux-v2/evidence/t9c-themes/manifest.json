@@ -1,0 +1,32 @@
+[
+  {
+    "kind": "mock",
+    "scheme": "dark",
+    "artboard": "ThemesNew",
+    "file": "dark/mock/ThemesNew.png",
+    "mode": "static"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "ux2-themes",
+    "file": "dark/app/library/ux2-themes.png",
+    "detail": "dark/app/library/ux2-themes-detail.png"
+  },
+  {
+    "kind": "mock",
+    "scheme": "light",
+    "artboard": "ThemesNew",
+    "file": "light/mock/ThemesNew.png",
+    "mode": "static"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "ux2-themes",
+    "file": "light/app/library/ux2-themes.png",
+    "detail": "light/app/library/ux2-themes-detail.png"
+  }
+]

@@ -3,7 +3,9 @@
 **T-8 completata e integrata** (`c694a83`, vedi `SUMMARY-T-8.md`).
 **T-9a completata e integrata** (vedi `SUMMARY-T-9a.md`).
 **Assegnazioni (21 ottobre, decise dall'utente):** T-9c → **Codex/ChatGPT**
-(worktree `F:/dev/bezel-ux2-t9c`, branch `ux2/t9c`, base `bd08cc0`);
+(worktree `F:/dev/bezel-ux2-t9c`, branch `ux2/t9c`, base `34d950d`; **T-9c completata**:
+codice finale `fff89d4`, esportazione `.bezeltheme` confermata dall'utente, vedi `SUMMARY-T-9c.md`;
+nessun merge o push eseguito);
 T-9b → **Claude** (worktree `F:/dev/bezel-ux2-t9b`, branch `ux2/t9b`).
 Non prendere la task dell'altro. T-9d e T-11 restano libere.
 T-9c non tocca `index.html` né `app.js` (di T-9b): espone funzioni e annota

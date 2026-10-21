@@ -115,20 +115,23 @@ async function loadRecipes(area) {
 async function shootMocks(browser, mockUrl, artboards, scheme, out, design = DESIGN) {
   const canvasPath = join(design, 'canvas.json');
   const canvas = existsSync(canvasPath) ? JSON.parse(readFileSync(canvasPath, 'utf8')) : null;
+  const indexPath = join(design, 'index.json');
+  const index = existsSync(indexPath) ? JSON.parse(readFileSync(indexPath, 'utf8')) : {};
   const entries = [];
   for (const name of artboards) {
-    const preview = canvas ? null : JSON.parse(readFileSync(join(design, `${name}.dc.html`), 'utf8').match(/data-props='([^']+)'/)[1]).$preview;
+    const extension = existsSync(join(design, `${name}.html`)) ? 'html' : 'dc.html';
+    const preview = canvas ? null : extension === 'html' ? (index[name] ?? { width: 1280, height: 1000 }) : JSON.parse(readFileSync(join(design, `${name}.dc.html`), 'utf8').match(/data-props='([^']+)'/)[1]).$preview;
     const board = canvas?.boards[`${name}.dc.html`] ?? { w: preview.width, h: preview.height };
     const context = await browser.newContext({ viewport: { width: board.w, height: board.h }, colorScheme: scheme });
     await routeFonts(context);
     const page = await context.newPage();
-    const response = await page.goto(`${mockUrl}/${name}.dc.html`);
+    const response = await page.goto(`${mockUrl}/${name}.${extension}`);
     await page.evaluate(() => document.fonts.ready);
     const mode = response.headers()['x-dc-mode'] ?? 'static';
     const reason = response.headers()['x-dc-reason'];
     const file = join(out, scheme, 'mock', `${name}.png`);
     mkdirSync(dirname(file), { recursive: true });
-    await page.screenshot({ path: file });
+    await page.screenshot({ path: file, fullPage: extension === 'html' });
     await context.close();
     entries.push({ kind: 'mock', scheme, artboard: name, file, mode, reason: reason && decodeURIComponent(reason) });
     console.log(`mock ${scheme} ${name}${mode === 'static' ? ` STATIC (${decodeURIComponent(reason ?? '')})` : ''}`);

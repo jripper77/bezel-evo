@@ -1,0 +1,32 @@
+[
+  {
+    "kind": "mock",
+    "scheme": "dark",
+    "artboard": "ProfilesNew",
+    "file": "dark/mock/ProfilesNew.png",
+    "mode": "static"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "ux2-profiles",
+    "file": "dark/app/library/ux2-profiles.png",
+    "detail": "dark/app/library/ux2-profiles-detail.png"
+  },
+  {
+    "kind": "mock",
+    "scheme": "light",
+    "artboard": "ProfilesNew",
+    "file": "light/mock/ProfilesNew.png",
+    "mode": "static"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "ux2-profiles",
+    "file": "light/app/library/ux2-profiles.png",
+    "detail": "light/app/library/ux2-profiles-detail.png"
+  }
+]
