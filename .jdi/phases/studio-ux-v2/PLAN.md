@@ -210,7 +210,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Tavole:** ThemePixel, ThemeNebula, ThemePaper, ThemeNowPlaying
 - **Files:** `themes/<nome>/` (nuove cartelle, formato come i temi moderni esistenti), `crates/bezel-cli/tests/bundled_themes.rs`, asset in vettoriale se servono
 - **Acceptance:** quattro temi orizzontali 1920×480 fedeli alle tavole, solo widget nativi e font inclusi (Doto, IBM Plex Mono, ...); test dei temi inclusi verde.
-- **Dipendenze:** T-1…T-4 per le funzioni che usano (altrimenti versione senza e annotazione) · **Test:** G10 · **Status:** pending
+- **Dipendenze:** T-1…T-4 per le funzioni che usano (altrimenti versione senza e annotazione) · **Test:** G10 · **Status:** completed — quattro temi 1920×480 (Pixel, Nebula, Paper, Now Playing) di soli widget nativi e font inclusi, generati da script; test dei temi con dati presenti e assenti verde; dati senza sorgente rinviati per decisione dell'utente. Avviata da Codex, completata da Claude; vedi `SUMMARY-T-9d.md`.
 
 #### T-11: Video negli oggetti Immagine (dopo la Wave 2)
 - **Decisioni:** D-2026-10-21-studio-ux-v2-16 · **Tavole:** ImageInspectorOpen (file .mp4, Riproduzione, Velocità, Audio muto)
