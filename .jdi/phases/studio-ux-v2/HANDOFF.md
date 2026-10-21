@@ -1,8 +1,14 @@
 # Passaggio — Studio UX v2
 
 **T-8 completata e integrata** (`c694a83`, vedi `SUMMARY-T-8.md`).
-**T-9a completata e integrata** (vedi `SUMMARY-T-9a.md`). Restano libere
-T-9b/c/d e T-11.
+**T-9a completata e integrata** (vedi `SUMMARY-T-9a.md`).
+**Assegnazioni (21 ottobre, decise dall'utente):** T-9c → **Codex/ChatGPT**
+(worktree `F:/dev/bezel-ux2-t9c`, branch `ux2/t9c`, base `bd08cc0`);
+T-9b → **Claude** (worktree `F:/dev/bezel-ux2-t9b`, branch `ux2/t9b`).
+Non prendere la task dell'altro. T-9d e T-11 restano libere.
+T-9c non tocca `index.html` né `app.js` (di T-9b): espone funzioni e annota
+il collegamento nel SUMMARY. Se T-9c richiede Rust (▶ prova di 30 s del
+profilo), avvisare: Claude in T-9b non tocca crate Rust.
 
 21 ottobre 2026. T-0…T-7c completate; T-7c in `ux2/t7c`, con riepilogo
 in `SUMMARY-T-7c.md` e confronto visivo in `evidence/t7c/README.md`.
