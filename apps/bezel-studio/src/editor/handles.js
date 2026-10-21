@@ -134,10 +134,12 @@ export function propertyHandles(element, { fraction = .5, coverFrame = null, dat
   if (k.type === 'bar') {
     const vertical = ['bottomToTop', 'topToBottom'].includes(k.direction), reverse = ['bottomToTop', 'rightToLeft'].includes(k.direction);
     const value = reverse ? 1 - fraction : fraction;
-    add('trial-value', 'measure', 'insp.tryObject', '%', fraction * 100, { x: vertical ? center.x : f.x + f.width * value, y: vertical ? f.y + f.height * value : center.y }, p => {
+    add('trial-value', 'measure', 'shell.trialHold', '%', fraction * 100, { x: vertical ? center.x : f.x + f.width * value, y: vertical ? f.y + f.height * value : center.y }, p => {
       const at = clamp(vertical ? (p.y - f.y) / f.height : (p.x - f.x) / f.width, 0, 1);
       return { trial: reverse ? 1 - at : at, value: (reverse ? 1 - at : at) * 100 };
     });
+    // Five percent of the bar per arrow key.
+    result.at(-1).keyStep = { x: f.width / 20, y: f.height / 20 };
   }
   if (k.type === 'graph') {
     ['max', 'min'].forEach((key, i) => property(`scale-${key}`, 'point', `inspector.${key}`, '', k.binding[key], { x: f.x + f.width, y: f.y + f.height * i }, ['kind'], p => {

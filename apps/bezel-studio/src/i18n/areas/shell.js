@@ -9,6 +9,8 @@ export default {
   en: {
     'shell.guideDistance': 'Distance between aligned objects: {value}',
 
+    'shell.trialValues': 'Show trial values instead of the sensors',
+    'shell.trialHold': 'Trial value (not saved)',
     'shell.objectSensor': 'Linked sensor {key}: change it',
     'shell.editShapeImage': 'Shape image',
     'shell.imageEditHint': 'Drag to move · Wheel or +/− to scale · Escape to finish',
@@ -55,6 +57,8 @@ export default {
   'pt-BR': {
     'shell.guideDistance': 'Distância entre objetos alinhados: {value}',
 
+    'shell.trialValues': 'Mostrar valores de teste em vez dos sensores',
+    'shell.trialHold': 'Valor de teste (não é salvo)',
     'shell.objectSensor': 'Sensor vinculado {key}: alterar',
     'shell.editShapeImage': 'Imagem da forma',
     'shell.imageEditHint': 'Arraste para mover · Roda ou +/− para ampliar · Esc para concluir',
@@ -101,6 +105,8 @@ export default {
   it: {
     'shell.guideDistance': 'Distanza fra oggetti allineati: {value}',
 
+    'shell.trialValues': 'Mostra valori di prova invece dei sensori',
+    'shell.trialHold': 'Valore di prova (non salvato)',
     'shell.objectSensor': 'Sensore collegato {key}: cambia',
     'shell.editShapeImage': 'Immagine della forma',
     'shell.imageEditHint': 'Trascina per spostare · Rotella o +/− per scalare · Esc per terminare',

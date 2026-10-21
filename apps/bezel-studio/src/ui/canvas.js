@@ -35,7 +35,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -56,6 +56,9 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   let textEditor = null;
   let editingCard = null;
   let editingFill = null;
+  // Where each bar's trial handle was let go: the next drag starts there.
+  const trialFractions = new Map();
+  const handleOptions = e => ({ motion: handleMotion(), fraction: trialFractions.get(e.id) ?? .5 });
   const handleFormats = new Map();
   const handleText = (value, unit) => {
     const locale = handleLocale();
@@ -72,7 +75,15 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   };
 
   function applyProperty(element, id, position, options = {}) {
-    const next = editPropertyHandle(element, id, position, { motion: handleMotion(), ...options });
+    const next = editPropertyHandle(element, id, position, { ...handleOptions(element), ...options });
+    if (next && next.trial !== undefined) {
+      // A trial value is drawn, never stored: the document does not change.
+      trialFractions.set(element.id, next.trial);
+      onTrialHold({ element: element.id, fraction: next.trial });
+      handleReadout = { position, text: handleText(next.value, next.unit) };
+      onHandleEdit(next);
+      return;
+    }
     if (!next?.patch && !next?.kind) return;
     if (next.kind) store.dispatch('setKind', { id: element.id, kind: next.kind });
     else store.dispatch('patchElements', { patches: [{ id: element.id, patch: next.patch }] });
@@ -316,20 +327,20 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
     if (chosen.length === 1 && editable && !fill) {
       const e = chosen[0];
-      for (const handle of propertyHandles(e, { motion: handleMotion() }).filter(handle => handle.id !== 'trial-value')) {
+      for (const handle of propertyHandles(e, handleOptions(e))) {
         const title = handleLabel(handle.field, handle.fieldParams);
         nodes.push(el('button', { type: 'button', class: `property-handle ${handle.symbol}`, dataset: { propertyHandle: handle.id },
           title, 'aria-label': title, style: { left: px(handle.x), top: px(handle.y) },
           onkeydown: evt => {
             if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
             evt.preventDefault(); evt.stopPropagation();
-            const current = propertyHandles(e, { motion: handleMotion() }).find(h => h.id === handle.id);
+            const current = propertyHandles(e, handleOptions(e)).find(h => h.id === handle.id);
             // A discrete handle (the image anchor) moves one position per key.
             const step = current.keyStep ?? { x: evt.shiftKey ? 10 : 1, y: evt.shiftKey ? 10 : 1 };
             applyProperty(e, handle.id, { x: current.x + (evt.key === 'ArrowLeft' ? -step.x : evt.key === 'ArrowRight' ? step.x : 0), y: current.y + (evt.key === 'ArrowUp' ? -step.y : evt.key === 'ArrowDown' ? step.y : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
             drawOverlay(); overlay.querySelector(`[data-property-handle="${handle.id}"]`)?.focus();
           },
-          onblur: () => { if (!press) clearHandleValue(); },
+          onblur: () => { if (!press) { clearHandleValue(); if (handle.id === 'trial-value') onTrialHold(null); } },
         }));
       }
     }
@@ -587,6 +598,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     // can deliver dblclick to the same frame (capture also ends here).
     const redraw = press?.started || guides.length > 0 || marquee !== null;
     const picked = press?.mode === 'move' && !press.started && press.part != null ? press : null;
+    if (press?.mode === 'property' && press.handle === 'trial-value') onTrialHold(null);
     if (press?.started && press.mode !== 'marquee') store.endGesture();
     press = null;
     guides = [];

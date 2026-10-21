@@ -9,6 +9,7 @@ import { canFitContent } from './editor/fit-content.js';
 import { createCardTimers } from './editor/card-timer.js';
 import { createCardMotion } from './editor/card-motion.js';
 import { isShown } from './editor/cards.js';
+import { boundKey } from './editor/widgets.js';
 // An in-memory backend for demo mode: a simulated screen, sensors that move,
 // themes, media and an approximate renderer. Nothing here reaches hardware.
 import { DEMO_ACTIVITY, DEMO_BACK_FROM_DESKTOP, DEMO_LIBRARY, DEMO_LIVE_FPS, DEMO_LOCAL_FILES, DEMO_ORIGINALS, DEMO_ORIGINALS_FOLDER, DEMO_PANELS, DEMO_PICKED, DEMO_PICKED_VIDEO, DEMO_POSTER_URL, DEMO_STORAGE, DEMO_THEME_VIDEOS, SCENARIOS } from './demo-data.js';
@@ -25,7 +26,7 @@ import { pickLocale } from './i18n/index.js';
 import { liveScreenIn } from './live-screen.js';
 import { AXES, SCOPES } from './theme-filter.js';
 import { demoSampleDue, demoTransitionDue } from './value-transition.js';
-import { trialAt, TRIAL_FRAME_MS } from './inspector-trial.js';
+import { heldTrial, sceneTrialAt, trialAt, TRIAL_FRAME_MS } from './inspector-trial.js';
 
 /** Well-known demo sensors: key, category, label, quantity, base value, swing. */
 
@@ -1453,9 +1454,16 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       return { screen: key, theme: structuredClone(theme), location: null, minRefreshSeconds: DEMO_MIN_REFRESH };
     },
     /** The preview, like `render_preview`: a video background plays with `motion` (see the bridge). */
-    render: (next, { motion = true, cardRotation = true } = {}) => {
+    render: (next, { motion = true, cardRotation = true, trialMs = null, trialHold = null } = {}) => {
       const started = performance.now();
       const t = now();
+      // The canvas's trial values (render_preview's trialMs/trialHold): never live, never saved.
+      if (trialMs !== null || trialHold) {
+        const held = trialHold && next.elements.find(e => e.id === trialHold.element);
+        const trial = trialHold ? held && heldTrial(boundKey(held), trialHold.fraction) : sceneTrialAt(trialMs);
+        const frame = renderApprox(next, t, null, new Map(), 1, motion, trial || null);
+        return Promise.resolve({ ...frame, millis: performance.now() - started, nextMs: TRIAL_FRAME_MS });
+      }
       const playback = cardTimers.update(next, t * 1000, cardRotation, DEMO_ACTIVITY);
       const video = videoPicture(playback.theme, motion, t * 1000);
       const transitions = cards.update(playback.theme, t * 1000, motion);

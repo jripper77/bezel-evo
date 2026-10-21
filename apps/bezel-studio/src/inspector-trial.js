@@ -18,6 +18,30 @@ export function trialAt(element, elapsedMs, motion = true) {
   };
 }
 
+/** The canvas's trial values repeat every 24 s, like bezel-runtime SCENE_MS. */
+export const SCENE_TRIAL_MS = 24000;
+
+/**
+ * The whole scene's trial inputs `elapsedMs` into the canvas's trial values
+ * (bezel-runtime Trial::scene): every sensor sweeps its scale from minimum to
+ * maximum and back, clocks revolve, the weather visits its families.
+ */
+export function sceneTrialAt(elapsedMs) {
+  const ms = ((Math.floor(elapsedMs) % SCENE_TRIAL_MS) + SCENE_TRIAL_MS) % SCENE_TRIAL_MS;
+  return {
+    scene: true,
+    elapsedMs: ms,
+    pulse: (1 - Math.cos(2 * Math.PI * ms / TRIAL_MS)) / 2,
+    weatherCode: TRIAL_WEATHER_CODES[Math.floor(ms / 1000) % TRIAL_WEATHER_CODES.length],
+    clockOffsetSeconds: Math.floor(ms * 86400 / TRIAL_MS) % 86400,
+  };
+}
+
+/** One sensor held at `fraction` of its scale, the rest as read (a bar's trial handle). */
+export function heldTrial(key, fraction) {
+  return { scene: true, elapsedMs: 0, hold: { key, fraction: Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : 0 } };
+}
+
 /** One Try per inspector. Selection changes, completion and cancellation reset it. */
 export function createInspectorTrial({ now = () => performance.now() } = {}) {
   let active = null;

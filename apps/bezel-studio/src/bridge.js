@@ -379,10 +379,14 @@ function tauriBridge(invoke, tauri = {}) {
      * @param {{motion?: boolean}} [options]
      * @returns {Promise<PreviewFrameDto>}
      */
-    render: async (theme, { motion = true, cardRotation = true, maxSide } = {}) => {
+    render: async (theme, { motion = true, cardRotation = true, maxSide, trialMs = null, trialHold = null } = {}) => {
       const started = performance.now();
       const args = { theme, motion, cardRotation };
       if (maxSide !== undefined) args.max = maxSide;
+      // The canvas's trial values: the whole scene at trialMs of the trial, or
+      // one element's sensor held ({element, fraction}); never live, never saved.
+      if (trialMs !== null) args.trialMs = trialMs;
+      if (trialHold) args.trialHold = trialHold;
       const frame = parseFrame(await invoke('render_preview', args));
       return { ...frame, unchanged: frame.width === 0 && frame.height === 0, logicalWidth: theme.canvas?.width, logicalHeight: theme.canvas?.height, millis: frame.renderMillis ?? performance.now() - started };
     },

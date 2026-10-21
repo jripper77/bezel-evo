@@ -27,6 +27,7 @@ import { wireObjectMenu } from './ui/object-menu.js';
 import { shortcutFor } from './shortcuts.js';
 import { createRenderScheduler } from './render-scheduler.js';
 import { createPreviewAnimation } from './preview-animation.js';
+import { createTrialValues } from './ui/trial-values.js';
 import { errorText, sensorLabel } from './messages.js';
 import { backgroundFileDraft, backgroundOf, droppable, fileNameOf, videoFacts } from './editor/background.js';
 import { framingOf, framingPercents } from './editor/video-framing.js';
@@ -153,6 +154,7 @@ const canvasView = createCanvasView({
   onBarSensor: element => inspector.openSensor(element),
   onBarTry: () => inspector.tryElement(),
   onBarMenu: (button, onClose) => objectMenu.openAt(button, onClose),
+  onTrialHold: hold => trialValues.hold(hold),
   onFrameRequest: () => setFramingMode(true),
 });
 
@@ -473,6 +475,9 @@ const animation = createPreviewAnimation({
   enabled: () => !document.hidden && (bridge.mode === 'tauri' || motionAllowed()),
 });
 
+// "Trial values" in the canvas toolbar: trial inputs instead of the sensors, never saved.
+const trialValues = createTrialValues({ after: $('grid-toggle'), t: (key) => t(key), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
+
 async function drawPreview() {
   if (switchingScreen) return;
   const screen = state.screen;
@@ -482,7 +487,7 @@ async function drawPreview() {
     const editingCard = theme.elements.some(e => selection.includes(e.id) && (e.card || e.cardMember));
     const viewport = $('preview').getBoundingClientRect();
     const maxSide = Math.max(16, Math.min(2320, Math.ceil(Math.max(viewport.width, viewport.height) * (window.devicePixelRatio || 1))));
-    const work = bridge.render(theme, { motion: motionAllowed(), cardRotation: !editingCard, maxSide });
+    const work = bridge.render(theme, { motion: motionAllowed(), cardRotation: !editingCard, maxSide, ...trialValues.options() });
     previewWork = work.catch(() => {});
     const frame = await work;
     if (screen !== state.screen || switchingScreen) return;
@@ -506,6 +511,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) renderNow();
 });
 reducedMotion?.addEventListener?.('change', () => {
+  trialValues.retranslate();
   inspector.contextChanged();
   renderNow();
 });
@@ -1237,7 +1243,7 @@ bridge.onQuitRequested(async () => {
 
 // ---------------------------------------------------------- chrome -----
 // The editor's own controls bring it back from the storage manager.
-for (const id of ['undo', 'redo', 'grid-toggle', 'zoom-in', 'zoom-out', 'zoom-fit', 'orient-vertical', 'orient-horizontal', 'orient-turn']) {
+for (const id of ['undo', 'redo', 'grid-toggle', 'trial-values', 'zoom-in', 'zoom-out', 'zoom-fit', 'orient-vertical', 'orient-horizontal', 'orient-turn']) {
   $(id).addEventListener('click', () => {
     if (storageWide()) $('subtab-device').click();
   });
@@ -1321,6 +1327,7 @@ function setLocale(next) {
   if (canvasView.framing()) $('overlay').setAttribute('aria-label', t('framing.surface'));
   sensorStatus.close();
   memoryStatus.retranslate();
+  trialValues.retranslate();
   applyIcons(document, ICONS);
   refreshChrome('select');
   renderScreenSelect();

@@ -603,7 +603,8 @@ function drawElement(ctx, e, t, refresh = 1, motion = true, trial = null) {
 function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null) {
   if (e.kind.content?.type === 'spectrum') { drawSpectrum(ctx, trial ? { ...e, kind: { ...e.kind, content: { ...e.kind.content, demo: true } } } : e, trial ? trial.elapsedMs / 1000 : t); return; }
   let value = shownFraction(e, t, refresh, motion);
-  if (trial && boundKey(e)) value = (Number.isFinite(value) ? value : 0) + (Math.max(1, Number.isFinite(value) ? value : 0) - (Number.isFinite(value) ? value : 0)) * trial.pulse;
+  if (trial?.scene && boundKey(e)) value = trial.hold ? trial.hold.fraction : trial.pulse;
+  else if (trial && boundKey(e)) value = (Number.isFinite(value) ? value : 0) + (Math.max(1, Number.isFinite(value) ? value : 0) - (Number.isFinite(value) ? value : 0)) * trial.pulse;
   e = withValueColor(e, demoColorValue(e, value, key => demoSensorValue(key, Math.floor(t / refresh) * refresh)));
   const k = e.kind;
   const f = e.frame;
@@ -620,7 +621,7 @@ function drawUprightElement(ctx, e, t, refresh = 1, motion = true, trial = null)
   const frac = value;
   ctx.save();
   ctx.globalAlpha = e.opacity ?? 1;
-  const graphPoints = trial && k.type === 'graph' ? Array.from({ length: 60 }, (_, i) => .5 + .4 * Math.sin(i * .25 + trial.elapsedMs / 1000)) : null;
+  const graphPoints = trial && !trial.hold && k.type === 'graph' ? Array.from({ length: 60 }, (_, i) => .5 + .4 * Math.sin(i * .25 + trial.elapsedMs / 1000)) : null;
   if (drawVisualization(ctx,e,frac,k.type==='graph'?(graphPoints ?? demoGraphPoints(k,refresh,t,e.id)):null,k.type==='graph'&&e.visualization?.secondary?(graphPoints ?? demoGraphPoints({...k,binding:e.visualization.secondary},refresh,t,e.id+197)):null)) { ctx.restore(); return; }
   switch (k.type) {
     case 'text':
@@ -909,7 +910,11 @@ export function renderApprox(theme, t, video = null, transitions = new Map(), sc
     if (e.isGroup) continue;
     if (transitions.has(e.id)) { drawCardTransition(ctx, theme, e, transitions.get(e.id), t); continue; }
     if (transitions.has(e.cardMember?.parent) || !isShown(theme, e)) continue;
-    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, trial && e.kind.type === 'image' ? trial.elapsedMs / 1000 : t, theme.refreshSeconds, motion, trial?.elementId === e.id ? trial : null);
+    // The inspector's Try is one element's; the canvas's trial values the whole scene's, or one sensor's.
+    const own = !trial ? null : trial.hold ? (boundKey(e) === trial.hold.key ? trial : null) : trial.scene || trial.elementId === e.id ? trial : null;
+    // Images replay from the trial's start, members of a tried group too; a held sensor moves no clock.
+    const replay = trial && !trial.hold && e.kind.type === 'image';
+    drawElement(ctx, { ...e, opacity: effectiveOpacity(theme, e) }, replay ? trial.elapsedMs / 1000 : t, theme.refreshSeconds, motion, own);
   }
   return { width, height, rgba: ctx.getImageData(0, 0, width, height).data, textMs: textDue };
 }
