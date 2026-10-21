@@ -716,7 +716,10 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       const section = field.closest('.accordion-section');
       const toggle = section?.querySelector(':scope > .accordion-heading > button');
       if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click();
-      (field.closest('.fld, .number-control, .field') ?? field).classList.add('canvas-field-active');
+      const highlighted = field.closest('.fld, .number-control, .field') ?? field;
+      highlighted.classList.add('canvas-field-active');
+      const visible = root.getBoundingClientRect(), bounds = highlighted.getBoundingClientRect();
+      if (bounds.top < visible.top || bounds.bottom > visible.bottom) highlighted.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     },
     storageChanged(screen, overview) {
       if (background.updateListing(screen, overview) && !store.getState().selection.length) render(shown.assets);

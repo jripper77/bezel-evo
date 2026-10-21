@@ -22,6 +22,8 @@ test('clock hand tips edit real length fields with one Undo and keyboard access'
   await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2, { steps: 5 });
   await expect(page.locator('.handle-readout')).toBeVisible(); await expect(page.locator('.canvas-field-active')).toHaveCount(1);
   expect(Number(await length(page, t, 'hour').inputValue())).toBeGreaterThan(100);
+  const visible = await page.locator('#inspector').boundingBox(), active = await page.locator('.canvas-field-active').boundingBox();
+  expect(active.y).toBeGreaterThanOrEqual(visible.y); expect(active.y + active.height).toBeLessThanOrEqual(visible.y + visible.height + 1);
   await page.mouse.up(); await page.locator('#undo').click(); await expect(length(page, t, 'hour')).toHaveValue('100');
   await handle.focus(); await handle.press('Shift+ArrowRight'); await expect(handle).toBeFocused();
   expect(Number(await length(page, t, 'hour').inputValue())).toBeGreaterThan(100);

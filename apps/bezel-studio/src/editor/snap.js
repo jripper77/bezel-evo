@@ -69,3 +69,21 @@ export function snapEdge(value, axis, canvas, others, threshold = SNAP_DISTANCE)
   }
   return best === null ? { value, guide: null } : { value: best, guide: best };
 }
+
+
+/** The nearest positive gap along each alignment guide, in document pixels.
+ * Overlapping objects and canvas-only alignments have no inter-object gap.
+ */
+export function alignmentDistances(box, others, guides) {
+  return guides.flatMap(guide => {
+    const along = guide.axis === 'x' ? 'y' : 'x', across = guide.axis;
+    const span = guide.axis === 'x' ? 'height' : 'width', size = guide.axis === 'x' ? 'width' : 'height';
+    const aligned = others.filter(other => anchors(other[across], other[size]).some(value => Math.abs(value - guide.position) < .01));
+    const gaps = aligned.flatMap(other => {
+      const from = Math.min(box[along] + box[span], other[along] + other[span]);
+      const to = Math.max(box[along], other[along]);
+      return to > from ? [{ ...guide, from, to, distance: to - from }] : [];
+    }).sort((a, b) => a.distance - b.distance);
+    return gaps.slice(0, 1);
+  });
+}

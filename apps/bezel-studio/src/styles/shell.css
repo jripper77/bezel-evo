@@ -223,3 +223,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 
 .canvas-card-faces, .canvas-edit-tools { position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; max-width: min(600px, 80vw); overflow-x: auto; padding: 3px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--chrome); }
 .canvas-card-faces .segmented { flex: 0 0 auto; }
+
+.guide-distance { position: absolute; z-index: 2; padding: 2px 4px; border: 1px solid var(--guide); border-radius: var(--control-radius); color: var(--guide); background: var(--chrome); font-family: var(--font-mono); font-size: var(--fs-small); white-space: nowrap; pointer-events: none; }
+.guide-distance.x { transform: translate(6px, -50%); }
+.guide-distance.y { transform: translate(-50%, 6px); }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { boxFromPoints, contains, handlePoints, HANDLES, hitTest, intersects, isHorizontal, isTurned, marqueeSelect, MIN_SIZE, ORIENTATIONS, orientationOf, relayoutBox, resize, roundBox, unionBox } from '../../src/editor/geometry.js';
-import { snapEdge, snapMove, SNAP_DISTANCE } from '../../src/editor/snap.js';
+import { alignmentDistances, snapEdge, snapMove, SNAP_DISTANCE } from '../../src/editor/snap.js';
 import { boundKey, createWidget, defaultRange, textStyle, widgetOf, WIDGETS } from '../../src/editor/widgets.js';
 
 const box = (x, y, width, height) => ({ x, y, width, height });
@@ -100,4 +100,19 @@ test('relayoutBox turns a vertical stack into a horizontal row, sizes kept, insi
   assert.deepEqual(back, box(90, 902, 300, 100), 'a box that fits both ways comes back');
   const square = { width: 480, height: 480 };
   assert.deepEqual(relayoutBox(box(10, 20, 30, 40), square, square), box(25, 5, 30, 40), 'a square canvas mirrors across the diagonal');
+});
+
+
+test('alignment distances measure the nearest positive gap and omit overlaps or unshared guides', () => {
+  const moving = { x: 20, y: 100, width: 40, height: 30 }, original = structuredClone(moving);
+  const vertical = [{ axis: 'x', position: 20 }], horizontal = [{ axis: 'y', position: 100 }];
+  assert.deepEqual(alignmentDistances(moving, [], vertical), []);
+  assert.deepEqual(alignmentDistances(moving, [{ x: 20, y: 80, width: 40, height: 30 }], vertical), []);
+  assert.deepEqual(alignmentDistances(moving, [{ x: 21, y: 0, width: 40, height: 30 }], vertical), []);
+  const above = { x: 20, y: 10, width: 40, height: 30 }, below = { x: 20, y: 160, width: 40, height: 30 };
+  assert.deepEqual(alignmentDistances(moving, [above, below], vertical), [{ axis: 'x', position: 20, from: 130, to: 160, distance: 30 }]);
+  assert.deepEqual(alignmentDistances(moving, [above], vertical), [{ axis: 'x', position: 20, from: 40, to: 100, distance: 60 }]);
+  assert.deepEqual(alignmentDistances(moving, [{ x: 80, y: 100, width: 40, height: 30 }], horizontal), [{ axis: 'y', position: 100, from: 60, to: 80, distance: 20 }]);
+  assert.deepEqual(alignmentDistances(moving, [{ x: -50, y: 100, width: 30, height: 30 }], horizontal), [{ axis: 'y', position: 100, from: -20, to: 20, distance: 40 }]);
+  assert.deepEqual(moving, original);
 });

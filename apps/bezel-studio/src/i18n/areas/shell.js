@@ -7,6 +7,8 @@ export const PREFIXES = Object.freeze(['shell.']);
 
 export default {
   en: {
+    'shell.guideDistance': 'Distance between aligned objects: {value}',
+
     'shell.editShapeImage': 'Shape image',
     'shell.imageEditHint': 'Drag to move · Wheel or +/− to scale · Escape to finish',
     'shell.finishImage': 'Finish editing the shape image',
@@ -50,6 +52,8 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   'pt-BR': {
+    'shell.guideDistance': 'Distância entre objetos alinhados: {value}',
+
     'shell.editShapeImage': 'Imagem da forma',
     'shell.imageEditHint': 'Arraste para mover · Roda ou +/− para ampliar · Esc para concluir',
     'shell.finishImage': 'Concluir edição da imagem da forma',
@@ -93,6 +97,8 @@ export default {
     'shell.fps': ' · {fps} fps',
   },
   it: {
+    'shell.guideDistance': 'Distanza fra oggetti allineati: {value}',
+
     'shell.editShapeImage': 'Immagine della forma',
     'shell.imageEditHint': 'Trascina per spostare · Rotella o +/− per scalare · Esc per terminare',
     'shell.finishImage': 'Termina modifica dell’immagine della forma',

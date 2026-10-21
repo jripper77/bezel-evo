@@ -13,7 +13,7 @@ import { segmented, iconButton } from './fields.js';
 import { NATURAL_REPEATS } from './inspector/art.js';
 import { ICONS } from './icons.js';
 import { boxFromPoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
-import { snapEdge, snapMove } from '../editor/snap.js';
+import { alignmentDistances, snapEdge, snapMove } from '../editor/snap.js';
 import { applyFramingKey, createBurst, framingKey, framingOf, panned, pictureBox, reframed, resolvedRotation, wheelPixels, wheelZoom, zoomedAt } from '../editor/video-framing.js';
 
 const MIN_ZOOM = 0.05;
@@ -348,6 +348,11 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
     for (const g of guides) {
       nodes.push(el('div', { class: `guide ${g.axis}`, style: g.axis === 'x' ? { left: px(g.position) } : { top: px(g.position) } }));
+    }
+    if (guides.length && commonFrame) for (const gap of alignmentDistances(commonFrame, othersThan(chosen.map(e => e.id)), guides)) {
+      const text = handleText(gap.distance, 'px');
+      nodes.push(el('span', { class: `guide-distance ${gap.axis}`, role: 'status', 'aria-label': handleLabel('shell.guideDistance', { value: text }),
+        style: gap.axis === 'x' ? { left: px(gap.position), top: px((gap.from + gap.to) / 2) } : { top: px(gap.position), left: px((gap.from + gap.to) / 2) }, text }));
     }
     if (marquee) nodes.push(el('div', { class: 'marquee', style: boxStyle(marquee) }));
     if (handleReadout) nodes.push(el('span', { class: 'handle-readout', role: 'status', style: { left: `calc(${px(handleReadout.position.x)} + 14px)`, top: `calc(${px(handleReadout.position.y)} - 28px)` }, text: handleReadout.text }));

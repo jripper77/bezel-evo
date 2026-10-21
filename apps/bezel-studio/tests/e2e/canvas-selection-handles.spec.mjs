@@ -69,3 +69,20 @@ test('selected descendants transform once and inherited locks suppress all handl
   await select(page, [3, 2]); await expect(squares(page)).toHaveCount(0);
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+
+test('alignment guides show the real gap and disappear when the gesture ends', async ({ page, t }) => {
+  const errors = watchErrors(page); await open(page); await select(page, [1]);
+  const box = await page.locator('#overlay .sel-box[role="img"]').boundingBox();
+  const zoom = (await page.locator('#canvas-box').boundingBox()).width / 480;
+  const before = await boxes(page);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 60 * zoom, { steps: 5 });
+  const distance = page.locator('.guide-distance.y');
+  await expect(distance).toHaveText('60 px');
+  await expect(distance).toHaveAttribute('aria-label', t('shell.guideDistance', { value: '60 px' }));
+  await expect(page.locator('.guide.y')).toHaveCount(1); await page.mouse.up();
+  await expect(page.locator('.guide-distance, .guide')).toHaveCount(0);
+  await page.locator('#undo').click(); expect(await boxes(page)).toEqual(before);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});
