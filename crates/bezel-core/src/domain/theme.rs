@@ -1110,7 +1110,7 @@ impl Theme {
                 keys.extend(
                     e.visualization
                         .as_ref()
-                        .and_then(|v| v.secondary.as_ref())
+                        .and_then(|v| v.active_secondary())
                         .map(|b| b.key.clone()),
                 );
             }
@@ -1196,7 +1196,7 @@ impl Theme {
                     ..
                 } => {
                     let mut series = vec![SeriesId::graph(&binding.key, *interval_seconds)];
-                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.secondary.as_ref()) {
+                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.active_secondary()) {
                         series.push(SeriesId::graph(&b.key, *interval_seconds));
                     }
                     series
@@ -1215,7 +1215,7 @@ impl Theme {
                     binding, history, ..
                 } => {
                     let mut lengths = vec![(binding.key.clone(), usize::from(*history))];
-                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.secondary.as_ref()) {
+                    if let Some(b) = e.visualization.as_ref().and_then(|v| v.active_secondary()) {
                         lengths.push((b.key.clone(), usize::from(*history)));
                     }
                     lengths

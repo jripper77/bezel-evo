@@ -50,15 +50,16 @@ export function drawVisualization(ctx, e, fraction, points, secondaryPoints) {
       const coords=values.map((value,i)=>[area.x+area.width*i/(values.length-1),base+(reverse?1:-1)*value*area.height]);
       if(k.style==='bars') {
         const pitch=area.width/values.length,gap=Math.min(v.gap,pitch*.8);
-        values.forEach((value,i)=>box(area.x+i*pitch+gap/2,reverse?base:base-value*area.height,pitch-gap,value*area.height,(pitch-gap)/2,color));
+        const radius = v.roundedBars !== false ? (pitch-gap)/2 : 0;
+        values.forEach((value,i)=>box(area.x+i*pitch+gap/2,reverse?base:base-value*area.height,pitch-gap,value*area.height,radius,color));
       } else {
         if(k.style==='area'){ctx.globalAlpha*=.28;ctx.beginPath();ctx.moveTo(area.x,base);coords.forEach(([x,y])=>ctx.lineTo(x,y));ctx.lineTo(area.x+area.width,base);ctx.closePath();ctx.fill();ctx.globalAlpha/=.28;}
         ctx.beginPath();coords.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();
       }
     };
     if(v.style==='mirrored'){
-      const h=Math.max(0,(f.height-2)/2);graph(points,{...f,height:h},false,k.color);
-      if(v.secondary)graph(secondaryPoints,{...f,y:f.y+h+2,height:h},true,v.secondaryColor);
+      const gap=v.seriesGap ?? 2,h=Math.max(0,(f.height-gap)/2);graph(points,{...f,height:h},false,k.color);
+      if(v.secondary)graph(secondaryPoints,{...f,y:f.y+h+gap,height:h},true,v.secondaryColor);
     }else graph(points,f,false,k.color);
     return true;
   }

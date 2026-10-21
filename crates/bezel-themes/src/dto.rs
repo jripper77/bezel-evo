@@ -404,6 +404,15 @@ pub struct ElementDto {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct VisualizationDto {
+    /// Rounded bars independently of the mirrored-series choice.
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub rounded_bars: bool,
+    /// Distance between mirrored series; absent keeps the original two pixels.
+    #[serde(
+        default = "series_gap_default",
+        skip_serializing_if = "is_series_gap_default"
+    )]
+    pub series_gap: f32,
     /// matrix, pixel, dial, rounded or mirrored.
     pub style: String,
     /// Matrix columns.
@@ -426,6 +435,8 @@ pub struct VisualizationDto {
 impl Default for VisualizationDto {
     fn default() -> Self {
         Self {
+            rounded_bars: true,
+            series_gap: 2.,
             style: "matrix".into(),
             columns: 16,
             rows: 6,
@@ -449,6 +460,8 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
         _ => return err(format!("unknown visualization {:?}", d.style)),
     };
     let v = Visualization {
+        rounded_bars: d.rounded_bars,
+        series_gap: d.series_gap,
         style,
         columns: d.columns,
         rows: d.rows,
@@ -467,6 +480,8 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
 fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> VisualizationDto {
     use bezel_core::domain::visualization::VisualStyle;
     VisualizationDto {
+        rounded_bars: v.rounded_bars,
+        series_gap: v.series_gap,
         style: match v.style {
             VisualStyle::Matrix => "matrix",
             VisualStyle::Pixel => "pixel",
@@ -483,6 +498,47 @@ fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> Vi
         marker: v.marker,
         secondary: v.secondary.as_ref().map(binding_dto),
         secondary_color: to_hex(v.secondary_color),
+    }
+}
+
+fn series_gap_default() -> f32 {
+    2.
+}
+fn is_series_gap_default(value: &f32) -> bool {
+    *value == 2.
+}
+
+#[cfg(test)]
+mod graph_options_tests {
+    use super::*;
+    #[test]
+    fn mirrored_options_round_trip_and_defaults_add_no_fields() {
+        let legacy: VisualizationDto =
+            serde_json::from_value(serde_json::json!({"style":"mirrored"})).unwrap();
+        let original = serde_json::to_value(&legacy).unwrap();
+        let native = visualization(&legacy).unwrap();
+        assert!(native.rounded_bars);
+        assert_eq!(native.series_gap, 2.);
+        assert_eq!(
+            serde_json::to_value(visualization_dto(&native)).unwrap(),
+            original
+        );
+        for gap in [0., 12., 32.] {
+            let mut dto = legacy.clone();
+            dto.rounded_bars = false;
+            dto.series_gap = gap;
+            let written =
+                serde_json::to_value(visualization_dto(&visualization(&dto).unwrap())).unwrap();
+            assert_eq!(written["roundedBars"], false);
+            assert_eq!(written["seriesGap"], gap);
+        }
+        assert!(original.get("roundedBars").is_none());
+        assert!(original.get("seriesGap").is_none());
+        for gap in [-1., 33., f32::NAN] {
+            let mut dto = legacy.clone();
+            dto.series_gap = gap;
+            assert!(visualization(&dto).is_err());
+        }
     }
 }
 

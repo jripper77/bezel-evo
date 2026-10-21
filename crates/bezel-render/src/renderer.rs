@@ -2047,11 +2047,12 @@ fn draw_graph(layer: &mut Layer<'_>, element: &Element, context: &RenderContext<
     };
     let spec = GraphSpec {
         rounded: element.visualization.as_ref().is_some_and(|v| {
-            matches!(
-                v.style,
-                bezel_core::domain::visualization::VisualStyle::Rounded
-                    | bezel_core::domain::visualization::VisualStyle::Mirrored
-            )
+            v.rounded_bars
+                && matches!(
+                    v.style,
+                    bezel_core::domain::visualization::VisualStyle::Rounded
+                        | bezel_core::domain::visualization::VisualStyle::Mirrored
+                )
         }),
         gap: element.visualization.as_ref().map(|v| v.gap),
         reverse: false,
@@ -2073,11 +2074,11 @@ fn draw_graph(layer: &mut Layer<'_>, element: &Element, context: &RenderContext<
         .as_ref()
         .filter(|v| v.style == bezel_core::domain::visualization::VisualStyle::Mirrored)
     {
-        let half = (element.frame.height - 2.).max(0.) / 2.;
+        let half = (element.frame.height - v.series_gap).max(0.) / 2.;
         let top = BoxF::new(element.frame.x, element.frame.y, element.frame.width, half);
         let bottom = BoxF::new(
             element.frame.x,
-            element.frame.y + half + 2.,
+            element.frame.y + half + v.series_gap,
             element.frame.width,
             half,
         );

@@ -312,5 +312,67 @@ mod tests {
         }
         let both = render(&mut r, &t, &scene);
         assert!(count(&both, (0, 41, 100, 80), |p| p.r > 30) > 50);
+        let mut single = t.clone();
+        single.elements[0].visualization.as_mut().unwrap().style = VisualStyle::Rounded;
+        assert!(!single.sensor_keys().contains(&key("b")));
+        assert_eq!(single.history_lengths().len(), 1);
+        assert_eq!(single.graph_series().len(), 1);
+        assert!(
+            single.elements[0]
+                .visualization
+                .as_ref()
+                .unwrap()
+                .secondary
+                .is_some(),
+            "settings are retained for switching back"
+        );
+    }
+
+    #[test]
+    fn mirrored_bars_choose_square_or_rounded_corners_and_keep_the_series_gap() {
+        let mut e = element(
+            BoxF::new(0., 0., 100., 80.),
+            ElementKind::Graph {
+                binding: binding("a"),
+                history: 4,
+                interval_seconds: None,
+                style: GraphStyle::Bars,
+                color: Rgba::WHITE,
+                fill: None,
+                line_width: 2.,
+                autoscale: false,
+            },
+        );
+        let mut visual = Visualization::new(VisualStyle::Mirrored);
+        visual.series_gap = 12.;
+        visual.rounded_bars = false;
+        visual.secondary = Some(binding("b"));
+        e.visualization = Some(visual);
+        let mut theme = theme(100, 80, Background::Color(Rgba::BLACK), vec![e]);
+        let mut scene = Scene::empty();
+        scene.histories = Histories::new(&theme.graph_series());
+        for _ in 0..4 {
+            let mut sample = Snapshot::default();
+            sample.insert(key("a"), Reading::Value(80.));
+            sample.insert(key("b"), Reading::Value(60.));
+            scene.histories.push(&sample, Tick::Untimed);
+        }
+        let mut renderer = testkit::renderer();
+        let square = render(&mut renderer, &theme, &scene);
+        theme.elements[0]
+            .visualization
+            .as_mut()
+            .unwrap()
+            .rounded_bars = true;
+        let rounded = render(&mut renderer, &theme, &scene);
+        for image in [&square, &rounded] {
+            assert_eq!(count(image, (0, 34, 100, 46), |p| p != Rgba::BLACK), 0);
+            assert!(count(image, (0, 0, 100, 34), |p| p.r > 30) > 50);
+            assert!(count(image, (0, 46, 100, 80), |p| p.r > 30) > 50);
+        }
+        assert!(
+            count(&square, (0, 0, 100, 80), |p| p.r > 30)
+                > count(&rounded, (0, 0, 100, 80), |p| p.r > 30)
+        );
     }
 }
