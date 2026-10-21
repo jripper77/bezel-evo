@@ -143,7 +143,7 @@ export function segmented(label, value, options, onChange, { bare = false } = {}
 export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false } = {}) {
   const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
   for (const [v, text, name] of options) group.append(el('button', {
-    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), onclick: () => onChange(v),
+    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), dataset: { value: String(v) }, onclick: () => onChange(v),
   }, [name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null, iconOnly ? null : text]));
   return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
 }

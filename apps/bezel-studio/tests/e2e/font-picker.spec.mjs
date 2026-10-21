@@ -8,7 +8,18 @@ import { DEMO_FONT_CATALOG } from '../../src/demo-fonts.js';
 
 const fontButton = (page, t) => page.locator('#inspector').getByRole('button', { name: t('inspector.fontFamily'), exact: true });
 const picker = (page, t) => page.getByRole('dialog', { name: t('fontPicker.title'), exact: true });
-const faceSelect = (page, t) => page.locator('#inspector').getByRole('combobox', { name: t('inspector.style'), exact: true });
+// The Style control: a row of choices up to six faces, a list beyond (T-7b).
+// The object's font: its family, its face and the missing-font note (a clock's parts have their own pickers).
+const fontBlock = (page) => page.locator('#inspector [data-section="font"]').first();
+const faceSelect = (page, t) => fontBlock(page).getByRole('group', { name: t('inspector.style'), exact: true })
+  .or(fontBlock(page).getByRole('combobox', { name: t('inspector.style'), exact: true }));
+const faceValues = (page, t) => faceSelect(page, t).evaluate((n) => (n.tagName === 'SELECT' ? [...n.options] : [...n.querySelectorAll('button')]).map((o) => o.value || o.dataset.value));
+const faceShown = (page, t) => faceSelect(page, t).evaluate((n) => (n.tagName === 'SELECT' ? n.value : n.querySelector('button[aria-pressed="true"]')?.dataset.value ?? ''));
+async function pickFace(page, t, value) {
+  const control = faceSelect(page, t);
+  if (await control.evaluate((n) => n.tagName === 'SELECT')) await control.selectOption(value);
+  else await control.locator(`button[data-value="${value}"]`).click();
+}
 const familyOf = (locator) => locator.evaluate((n) => getComputedStyle(n).fontFamily);
 
 async function addText(page, t) {
@@ -27,7 +38,7 @@ test('search, keyboard pick, real faces, focus back and one undo step', async ({
   expect(await familyOf(button.locator('.font-button-name'))).toMatch(/^"?Inter"?,/);
   // Inter's faces in the demo catalogue: 400, 500, 600, 700, nothing else.
   const inter = DEMO_FONT_CATALOG.families.find((f) => f.name === 'Inter');
-  await expect(faceSelect(page, t).locator('option')).toHaveCount(inter.faces.length);
+  await expect.poll(() => faceValues(page, t)).toHaveLength(inter.faces.length);
 
   await button.click();
   const dialog = picker(page, t);
@@ -65,16 +76,16 @@ test('search, keyboard pick, real faces, focus back and one undo step', async ({
   await expect(fontButton(page, t)).toBeFocused();
   await expect(fontButton(page, t)).toContainText('Consolas');
   // Consolas has 400, 400 italic, 700 and 700 italic: exactly those.
-  const values = await faceSelect(page, t).locator('option').evaluateAll((o) => o.map((n) => n.value));
+  const values = await faceValues(page, t);
   expect(values).toEqual(['400', '400i', '700', '700i']);
   // A new text is Semibold (600): Consolas has no 600, its nearest is Bold.
-  await expect(faceSelect(page, t)).toHaveValue('700');
-  await faceSelect(page, t).selectOption('400i');
-  await expect(faceSelect(page, t)).toHaveValue('400i');
+  await expect.poll(() => faceShown(page, t)).toBe('700');
+  await pickFace(page, t, '400i');
+  await expect.poll(() => faceShown(page, t)).toBe('400i');
 
   // Each change is one undo step: the face, then the family.
   await page.locator('#undo').click();
-  await expect(faceSelect(page, t)).toHaveValue('700');
+  await expect.poll(() => faceShown(page, t)).toBe('700');
   await page.locator('#undo').click();
   await expect(fontButton(page, t)).toContainText('Inter');
 
@@ -98,7 +109,7 @@ test('filters, sections with counts, recent picks and a long list drawn as it sc
   const inTheme = dialog.getByRole('group', { name: new RegExp(`^${t('fontPicker.inTheme')}`) });
   const systemCount = DEMO_FONT_CATALOG.families.filter((f) => !f.bundled).length;
   await expect(system.locator('.count')).toHaveText(String(systemCount));
-  await expect(bundled.getByRole('option')).toHaveCount(2);
+  await expect(bundled.getByRole('option')).toHaveCount(DEMO_FONT_CATALOG.families.filter((f) => f.bundled).length);
   await expect(inTheme.getByRole('option', { name: /Inter/ })).toHaveCount(1);
   // Not every system family is drawn at once; scrolling draws the rest.
   const drawn = await system.getByRole('option').count();
@@ -145,6 +156,7 @@ test('a theme font the machine lacks is flagged with the font drawn instead', as
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.locator('#panel-themes').getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   await page.getByRole('group', { name: t('themes.scopeLabel') }).getByRole('button', { name: t('collection.filter.all') }).click();
   await page.locator('#theme-grid .theme-card').filter({ hasText: 'TURZX' }).click();
   await expect(page.locator('#theme-name')).toHaveValue('TURZX 3.5"');
@@ -155,12 +167,13 @@ test('a theme font the machine lacks is flagged with the font drawn instead', as
   await expect(button).toContainText('Digital-7');
   await expect(button).toContainText(t('fontPicker.missing'));
   const note = t('fontPicker.missingNote', { family: 'Digital-7', fallback: 'Inter' });
-  await expect(page.locator('#inspector .font-missing')).toHaveText(note);
+  // The note of this font button (a clock's parts have a font picker of their own).
+  await expect(fontBlock(page).locator('.font-missing')).toHaveText(note);
   await expect(button).toHaveAccessibleDescription(new RegExp(note.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   // The name is drawn in the fallback, as the screen draws it.
   expect(await familyOf(button.locator('.font-button-name'))).toMatch(/Inter/);
   // No family to read faces from: only the theme's own face.
-  await expect(faceSelect(page, t).locator('option')).toHaveCount(1);
+  await expect.poll(() => faceValues(page, t)).toHaveLength(1);
   await expectAccessible(page);
 
   await button.click();
@@ -171,7 +184,7 @@ test('a theme font the machine lacks is flagged with the font drawn instead', as
   await expect(button).toBeFocused();
   await expect(fontButton(page, t)).toContainText('Inter');
   await expect(page.locator('#inspector .font-missing')).toHaveCount(0);
-  await expect(faceSelect(page, t)).toHaveValue('700');
+  await expect.poll(() => faceShown(page, t)).toBe('700');
   expect(errors).toEqual([]);
 });
 
@@ -199,7 +212,7 @@ test('user fonts, licence cancellation, theme assets, face preservation and remo
   await dialog.getByRole('button', { name: t('fontPicker.include'), exact: true }).click();
   await licence.getByRole('button', { name: t('fontPicker.include'), exact: true }).click();
   await expect(fontButton(page, t)).toBeFocused();
-  await faceSelect(page, t).selectOption('400');
+  await pickFace(page, t, '400');
   await fontButton(page, t).click();
   const assets = dialog.getByRole('group', { name: new RegExp(`^${t('fontPicker.themeAssets')}`) });
   await expect(assets.getByRole('option', { name: /Bezel Local Demo/ })).toHaveCount(1);
