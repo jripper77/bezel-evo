@@ -1155,6 +1155,7 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
 export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   const profileSelection = createProfileSelection();
   let themeTrial = null;
+  const themeExports = new Map();
   let profileConfig = { profiles: [], automatic: true, manual: null, defaultProfile: null };
   const systemText = DEMO_SYSTEM_TEXT;
   const cards = createCardMotion();
@@ -1580,6 +1581,16 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       return Promise.resolve({ location });
     },
     listThemes: () => Promise.resolve(saved.map(listed)),
+    exportTheme: async location => {
+      const found = saved.find(entry => entry.location === location);
+      if (!found) throw Object.assign(new Error('not in theme library'), { code: 'notInLibrary', args: { location } });
+      const destination = hooks.chooseThemeExport ? await hooks.chooseThemeExport(listed(found)) : `demo://exports/${encodeURIComponent(found.theme.name)}.bezeltheme`;
+      if (destination == null) return null;
+      // Like saveTheme, the demo's filesystem is in memory; export the saved snapshot.
+      themeExports.set(destination, structuredClone(found.theme));
+      return destination;
+    },
+    exportedTheme: location => structuredClone(themeExports.get(location) ?? null),
     deleteTheme: async location => {
       const index = saved.findIndex(s => s.location === location);
       if (index < 0 || saved[index].bundled) throw Object.assign(new Error('not in user library'), { code: 'notInLibrary', args: { location } });

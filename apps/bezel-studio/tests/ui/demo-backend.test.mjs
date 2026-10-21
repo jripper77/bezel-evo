@@ -912,3 +912,15 @@ test('gallery deletion protects bundled, open and profile themes', async () => {
   await demo.deleteTheme(copy.location); assert.ok(!(await demo.listThemes()).some(e=>e.location===copy.location));
   await assert.rejects(demo.deleteTheme('outside'));
 });
+
+test('native-format demo export uses the saved selection, preserves the editor and can be cancelled', async () => {
+  const demo=createDemoBackend('turing88',fixed), entries=await demo.listThemes(), selected=entries.find(e=>e.name!=='Demo');
+  const before=await demo.session(), saved=await demo.openTheme(selected.location), count=entries.length;
+  const destination=await demo.exportTheme(selected.location);
+  assert.match(destination,/\.bezeltheme$/); assert.deepEqual(demo.exportedTheme(destination),saved);
+  assert.deepEqual(await demo.session(),before); assert.equal((await demo.listThemes()).length,count);
+  await assert.rejects(demo.exportTheme('outside'),e=>e.code==='notInLibrary');
+  const cancelled=createDemoBackend('turing88',fixed,{chooseThemeExport:()=>null});
+  assert.equal(await cancelled.exportTheme('demo://Demo'),null);
+  assert.equal(cancelled.exportedTheme('demo://exports/Demo.bezeltheme'),null);
+});

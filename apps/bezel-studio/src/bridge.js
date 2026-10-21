@@ -490,6 +490,7 @@ function tauriBridge(invoke, tauri = {}) {
      */
     duplicateTheme: (location, name) => invoke('duplicate_theme', { location, name }),
     deleteTheme: (location) => invoke('delete_theme', { location }),
+    exportTheme: (location) => invoke('export_theme', { location }),
     openTheme: (location) => invoke('open_theme', { location }),
     newTheme: (screen, name, orientation) => invoke('new_theme', { screen, name, orientation }),
     importTheme: () => invoke('import_theme'),

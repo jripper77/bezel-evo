@@ -43,11 +43,16 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     if (answer !== 'delete') return;
     await bridge.deleteTheme(entry.location); await refresh(); await facts();
   }
+  async function exportTheme(entry) {
+    message.textContent = '';
+    const location = await bridge.exportTheme(entry.location);
+    if (location !== null) message.textContent = t('themesPanel.exported', { name: entry.name });
+  }
   function menu(entry, anchor) {
     openMenuAt(anchor, { label: entry.name, items: [
       { label: t('themesPanel.openEditor'), run: () => { dialog.close(); openTheme(entry); } },
       { label: t('common.duplicate'), run: () => void run(() => duplicateTheme(entry)) },
-      { label: t('themesPanel.export'), disabled: !bridge.exportTheme, run: () => void run(() => bridge.exportTheme(entry.location)) },
+      { label: t('themesPanel.export'), run: () => void run(() => exportTheme(entry)) },
       { label: t('storage.deleteAction'), disabled: entry.bundled || !overview || used(entry).length > 0, run: () => void run(() => remove(entry)) },
     ] });
   }
@@ -80,7 +85,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
       el('div', { class: 'gallery-actions' }, [
         action(t('themesPanel.openEditor'), () => { dialog.close(); openTheme(entry); }, { class: 'primary-button' }),
         action(t('common.duplicate'), () => duplicateTheme(entry)),
-        action(t('themesPanel.export'), () => bridge.exportTheme(entry.location), { disabled: busy || !bridge.exportTheme }),
+        action(t('themesPanel.export'), () => exportTheme(entry)),
         action(t('storage.deleteAction'), () => remove(entry), { disabled: busy || entry.bundled || !overview || uses.length > 0, title: entry.bundled ? t('themes.bundled') : uses.length ? t('themesPanel.removeUses') : '' }),
       ]),
     ].filter(Boolean));

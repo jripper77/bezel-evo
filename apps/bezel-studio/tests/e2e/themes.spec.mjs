@@ -215,3 +215,15 @@ test('gallery previews contain the saved theme pixels from the demo renderer', a
   expect([same.width,same.height]).toEqual(same.expected); expect(Math.max(same.width,same.height)).toBeLessThanOrEqual(360); expect(same.equal).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('export selects the saved gallery theme without opening it in the editor', async ({page,t}) => {
+  const errors=watchErrors(page); await openThemes(page,t);
+  const before=await page.locator('#theme-name').inputValue();
+  await page.locator('#theme-gallery').click(); const dialog=page.locator('.themes-dialog');
+  await dialog.getByRole('group',{name:t('themes.scopeLabel'),exact:true}).getByRole('button',{name:t('collection.filter.all'),exact:true}).click();
+  const selected=dialog.locator('.theme-card').filter({hasText:'Midnight 5" horizontal'}); await selected.click();
+  await dialog.locator('.themes-gallery-detail').getByRole('button',{name:t('themesPanel.export'),exact:true}).click();
+  await expect(dialog.locator('.themes-gallery-message')).toHaveText(t('themesPanel.exported',{name:'Midnight 5" horizontal'}));
+  await expect(dialog).toBeVisible(); await expect(page.locator('#theme-name')).toHaveValue(before);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

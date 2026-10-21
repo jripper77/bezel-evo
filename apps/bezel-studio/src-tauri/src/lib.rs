@@ -330,6 +330,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::list_themes,
             commands::duplicate_theme,
             commands::delete_theme,
+            commands::export_theme,
             commands::open_theme,
             commands::new_theme,
             commands::import_theme,
