@@ -40,9 +40,13 @@ export function themeUses(entry, overview) {
 }
 export const recentThemes = entries => [...entries].sort((a, b) => (b.modifiedMs ?? 0) - (a.modifiedMs ?? 0) || a.name.localeCompare(b.name));
 
+// Rust omits empty/default fields; property order and omission cannot change rule identity.
+const ruleVersion = rule => !rule ? null : [rule.source, rule.app ?? '', rule.priority, rule.returnSeconds,
+  rule.key ?? '', rule.compare ?? null, rule.value ?? null, rule.forSeconds ?? 0,
+  rule.days ?? [], rule.from ?? '', rule.to ?? '', rule.minutes ?? 0];
 /** The UI's selected row never determines the active profile or rule state. */
 export function ruleNow(overview, id, index, draft) {
   const saved = overview?.config.profiles.find(p => p.id === id)?.rules[index];
-  if (draft && JSON.stringify(saved) !== JSON.stringify(draft)) return null;
+  if (draft && JSON.stringify(ruleVersion(saved)) !== JSON.stringify(ruleVersion(draft))) return null;
   return overview?.status?.rules?.[id]?.[index] ?? null;
 }

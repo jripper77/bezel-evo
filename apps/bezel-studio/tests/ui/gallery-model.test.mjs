@@ -33,3 +33,13 @@ test('thumbnails share one in-flight request per backend and revision, with fail
   await themePreview(bridge,{...entry,revision:'2'}); assert.equal(count,2);
   assert.equal(await themePreview(bridge,{location:'bad'}),null); await themePreview(bridge,{location:'bad'}); assert.equal(count,3);
 });
+
+test('native omission of optional defaults and object field order do not hide rule truth', () => {
+  const saved={source:'sensor',app:'',priority:10,returnSeconds:3,key:'cpu.temperature',compare:'above',value:70};
+  const overview={config:{profiles:[{id:'a',rules:[saved]}]},status:{rules:{a:[true]}}};
+  const draft={value:70,compare:'above',key:'cpu.temperature',returnSeconds:3,priority:10,source:'sensor',forSeconds:0};
+  assert.equal(ruleNow(overview,'a',0,draft),true);
+  assert.equal(ruleNow(overview,'a',0,{...draft,forSeconds:1}),null);
+  const time={source:'time',app:'',priority:10,returnSeconds:3,from:'09:00',to:'18:00'};
+  overview.config.profiles[0].rules=[time]; assert.equal(ruleNow(overview,'a',0,{...time,days:[]}),true);
+});
