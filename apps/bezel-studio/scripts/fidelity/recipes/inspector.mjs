@@ -12,6 +12,26 @@ async function standalone(app, kind) {
   for (const section of await app.page.locator('#inspector > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));
 }
 const inspector = (app) => app.page.locator('#inspector');
+async function linkedBoard(app, kind) {
+  await standalone(app, kind);
+  if (kind === 'needle') {
+    await inspector(app).getByRole('button', { name: t('insp.needle.center'), exact: true }).click();
+    await openSection(app.page, 'color');
+    await inspector(app).getByRole('button', { name: t('insp.needle.addZone'), exact: true }).click();
+    await openSection(app.page, 'behavior');
+    await inspector(app).getByRole('button', { name: t('insp.needle.peak'), exact: true }).click();
+  }
+  if (kind === 'graph') {
+    await inspector(app).getByRole('button', { name: t('insp.graphMirrored'), exact: true }).click();
+    await openSection(app.page, 'shape');
+    await inspector(app).getByRole('button', { name: t('insp.graphRounded'), exact: true }).click();
+    const width = inspector(app).getByRole('spinbutton', { name: t('insp.thickness'), exact: true });
+    await width.fill('3'); await width.press('Tab');
+  }
+  for (const section of await inspector(app).locator(':scope > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));
+  await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+  await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+}
 /** "Change background…", then one of its sources opened. */
 async function openChooser(app, sourceKey) {
   await inspector(app).getByRole('button', { name: t('insp.bgChange'), exact: true }).click();
@@ -27,6 +47,16 @@ export default {
   }],
   artboards: ['Main', 'GraphData', 'GraphLook', 'PlayerData', 'PlayerLook'],
   states: [
+    ...['value', 'text', 'bar', 'needle', 'graph'].map(kind => ({ name: `ux2-linked-${kind}`, capture: '#inspector', run: app => linkedBoard(app, kind) })),
+    { name: 'ux2-linked-multi', capture: '#inspector', run: async app => {
+      await standalone(app, null);
+      await app.page.locator('#grid-toggle').focus(); await app.page.keyboard.press('Control+a'); await app.page.keyboard.press('Delete');
+      await app.add('ring'); await app.add('bar'); await app.add('value');
+      await app.page.locator('#grid-toggle').focus(); await app.page.keyboard.press('Control+a');
+      await openSection(app.page, 'layout'); await openSection(app.page, 'data');
+      await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
+      await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+    } },
     { name: 'ux2-ring-closed', run: async app => { await standalone(app, 'ring'); await app.page.locator('#inspector [data-inspector-section="data"] .accordion-toggle').click({ modifiers: ['Alt'] }); } },
     { name: 'ux2-ring-open', run: async app => {
       await standalone(app, 'ring');
