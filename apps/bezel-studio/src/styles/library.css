@@ -17,8 +17,12 @@
 .library-panel > .panel-foot { margin-bottom: 0; }
 
 /* -------------------------------------------------------------- widgets -- */
-.widget-groups { display: grid; gap: 14px; }
-.widget-group .section-head { margin: 0 0 8px; }
+/* Widget groups: the shared accordion, flush with the panel's edges. */
+.widget-groups { display: grid; margin: 0 -16px; }
+.widget-group > .accordion-body { padding: 0 16px 14px; gap: 0; }
+.widget-group .accordion-toggle { min-height: 40px; padding: 0 16px; }
+.widget-group:first-child { border-top: 0; }
+.widget-group .accordion-toggle > .ic:last-child { margin-left: 8px; }
 .widget-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .widget-tile { width: 100%; min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2); cursor: grab; touch-action: none; user-select: none; font-size: var(--fs-compact); font-weight: 500; }
 .widget-tile .ic { color: var(--accent-ink); }

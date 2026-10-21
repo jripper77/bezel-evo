@@ -5,7 +5,8 @@
 // base.css); what the panels compute lives in library-model.js.
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
-import { chipButton, dashedHint, kindIcon, pill, searchField, screenThumb, sectionTitle, selectField } from './fields.js';
+import { accordionSection, chipButton, dashedHint, kindIcon, pill, searchField, screenThumb, sectionTitle, selectField } from './fields.js';
+import { createSectionMemory } from '../inspector-sections.js';
 import { makeDraggable } from './dragdrop.js';
 import { defaultRange, widgetOf, WIDGETS } from '../editor/widgets.js';
 import { canGroup } from '../editor/cards.js';
@@ -17,7 +18,7 @@ import { createIconPicker } from './icon-picker.js';
 import { createThemesDialog } from './themes-dialog.js';
 import { layerGroups } from '../editor/layers.js';
 import { wireLayerDrag } from './layer-drag.js';
-import { countLayers, createHistory, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
+import { WIDGET_GROUPS, countLayers, createHistory, filterLayers, layerMeta, mediaTotals, sensorDropTarget, sharedSource, sparkPath, updateSeconds, widgetGroups } from '../library-model.js';
 import { libreStatus } from '../libre-status.js';
 import { matchesSensor, probeOf, readingState } from '../sensor-probes.js';
 import { timeAgo } from '../relative-time.js';
@@ -152,6 +153,9 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
     return [before, el('kbd', { text: cap }), after];
   }
 
+  // Which groups of the Widgets panel are open (all at first), remembered.
+  const widgetMemory = createSectionMemory({ key: 'bezel.widgetGroups', ids: WIDGET_GROUPS.map(g => g.id), open: WIDGET_GROUPS.map(g => g.id) });
+
   // ------------------------------------------------------------- widgets --
   function widgetTile(w) {
     const label = t(`widget.${w}`);
@@ -191,16 +195,19 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   function renderWidgets() {
     const groups = widgetGroups((w) => t(`widget.${w}`), widgetQuery);
     $('widget-count').textContent = t('widgets.count', { count: groups.reduce((n, g) => n + g.widgets.length, 0) });
-    $('widget-groups').replaceChildren(...(groups.length
-      ? groups.map((g) => el('section', { class: 'widget-group', 'aria-labelledby': `widget-group-${g.id}` }, [
-        sectionTitle(t(`widgets.group.${g.id}`), { id: `widget-group-${g.id}` }),
-        el('ul', { class: 'widget-grid' }, g.widgets.map((w) => el('li', {}, [w === 'group' ? groupTile() : widgetTile(w)]))),
-      ]))
-      : [el('p', { class: 'empty-note', text: t('widgets.none') })]));
+    // A search shows every group it finds open; without one, each as it was left.
+    const sections = groups.map((g) => accordionSection({
+      id: g.id, title: t(`widgets.group.${g.id}`), icon: null, summary: String(g.widgets.length), keepSummary: true,
+      expanded: Boolean(widgetQuery.trim()) || widgetMemory.isOpen('widgets', g.id),
+      onToggle: ({ exclusive }) => { widgetMemory.toggle('widgets', g.id, { exclusive }); renderWidgets(); $('widget-groups').querySelector(`[data-inspector-section="${g.id}"] .accordion-toggle`)?.focus(); },
+      render: (body) => body.append(el('ul', { class: 'widget-grid' }, g.widgets.map((w) => el('li', {}, [w === 'group' ? groupTile() : widgetTile(w)])))),
+    }).element);
+    sections.forEach(section => section.classList.add('widget-group'));
+    $('widget-groups').replaceChildren(...(groups.length ? sections : [el('p', { class: 'empty-note', text: t('widgets.none') })]));
     $('widget-hint').replaceChildren(dashedHint(withKeyCap('widgets.hint', t('widgets.enterKey'))));
   }
 
-  mountSearch('widget-search', 'widgets.search', (q) => { widgetQuery = q; renderWidgets(); }, { id: 'widget-search-input' });
+  mountSearch('widget-search', 'widgets.search', (q) => { widgetQuery = q; renderWidgets(); }, { id: 'widget-search-input', placeholderKey: 'widgets.searchPlaceholder' });
 
   // ------------------------------------------------------------- sensors --
   /**

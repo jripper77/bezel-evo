@@ -8,12 +8,13 @@ import { test, expect, watchErrors, expectAccessible, dragTo, layers, libraryTab
 
 const tab = (page, t, name) => page.getByRole('tab', { name: t(libraryTabKey(name)), exact: true }).click();
 
-test('widgets come in three groups with a count, a search and the hint at the foot', async ({ page, t }) => {
+test('widgets come in four foldable groups with a count, a search and the hint at the foot', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const panel = page.locator('#panel-widgets');
   await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 14 }));
-  await expect(panel.locator('.section-title')).toHaveText([t('widgets.group.textData'), t('widgets.group.indicators'), t('widgets.group.mediaStructure')]);
+  await expect(panel.locator('.accordion-title')).toHaveText(['values', 'timeMedia', 'textShapes', 'containers'].map(id => t(`widgets.group.${id}`)));
+  await expect(panel.locator('.accordion-summary')).toHaveText(['5', '4', '3', '2']);
   await expect(panel.locator('.widget-tile')).toHaveCount(14);
   await expect(panel.locator('.dashed-hint kbd')).toHaveText(t('widgets.enterKey'));
   await expectAccessible(page);
@@ -21,13 +22,26 @@ test('widgets come in three groups with a count, a search and the hint at the fo
   const search = panel.getByRole('searchbox', { name: t('widgets.search'), exact: true });
   await search.fill(t('widget.needle').toUpperCase());
   await expect(panel.locator('.widget-tile')).toHaveCount(1);
-  await expect(panel.locator('.section-title')).toHaveText([t('widgets.group.indicators')]);
+  await expect(panel.locator('.accordion-title')).toHaveText([t('widgets.group.values')]);
   await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 1 }));
   await search.fill('zzzz');
   await expect(panel.locator('.widget-tile')).toHaveCount(0);
   await expect(panel).toContainText(t('widgets.none'));
   await search.fill('');
   await expect(panel.locator('.widget-tile')).toHaveCount(14);
+
+  // A group folds with its count still in sight, and stays folded after a reload.
+  const values = panel.getByRole('button', { name: t('widgets.group.values'), exact: true });
+  await values.click(); await expect(values).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.locator('.widget-tile:visible')).toHaveCount(9);
+  await expect(panel.locator('.accordion-summary').first()).toBeVisible();
+  await expectAccessible(page);
+  await page.reload();
+  await expect(values).toHaveAttribute('aria-expanded', 'false');
+  // A search opens every group it finds.
+  await search.fill(t('widget.ring'));
+  await expect(values).toHaveAttribute('aria-expanded', 'true');
+  await search.fill(''); await values.click(); await expect(values).toHaveAttribute('aria-expanded', 'true');
 
   // Enter on a focused tile adds it at the centre, as the hint says.
   await panel.getByRole('button', { name: t('library.addWidget', { name: t('common.text') }), exact: true }).focus();
@@ -52,7 +66,8 @@ test('the Group tile groups the selection and says why it cannot otherwise', asy
   await tab(page, t, 'widgets');
   await expect(group).toHaveAttribute('aria-disabled', 'false');
   await group.click();
-  await expect(page.locator('#inspector h2')).toHaveText(t('widget.group'));
+  // The inspector's heading names the new group (T-0 made it an editable name).
+  await expect(page.locator('#inspector .inspector-name')).toHaveValue(t('widget.group'));
   await tab(page, t, 'layers');
   await expect(page.locator('#layer-list [data-group-id]')).toHaveCount(1);
   expect(errors).toEqual([]);

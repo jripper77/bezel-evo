@@ -8,14 +8,15 @@ import { contains } from './editor/geometry.js';
 import { isShown, owners } from './editor/cards.js';
 
 /**
- * The Widgets panel's groups, in order (artboard Main): text and data,
- * indicators, media and structure. `group` is the Group tile: it groups the
- * selection instead of adding an object.
+ * The Widgets panel's groups, in order (D-2026-10-20-studio-ux-v2-14, board
+ * MainNew): values, time and media, text and shapes, containers. `group` is
+ * the Group tile: it groups the selection instead of adding an object.
  */
 export const WIDGET_GROUPS = Object.freeze([
-  Object.freeze({ id: 'textData', widgets: Object.freeze(['text', 'value', 'clock', 'weather']) }),
-  Object.freeze({ id: 'indicators', widgets: Object.freeze(['ring', 'bar', 'needle', 'graph']) }),
-  Object.freeze({ id: 'mediaStructure', widgets: Object.freeze(['image', 'player', 'spectrum', 'shape', 'card', 'group']) }),
+  Object.freeze({ id: 'values', widgets: Object.freeze(['value', 'ring', 'bar', 'needle', 'graph']) }),
+  Object.freeze({ id: 'timeMedia', widgets: Object.freeze(['clock', 'weather', 'player', 'spectrum']) }),
+  Object.freeze({ id: 'textShapes', widgets: Object.freeze(['text', 'image', 'shape']) }),
+  Object.freeze({ id: 'containers', widgets: Object.freeze(['card', 'group']) }),
 ]);
 
 /** How many tiles the Widgets panel has in all. */

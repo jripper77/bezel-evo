@@ -7,15 +7,16 @@ export const SECTION_ORDER = Object.freeze([
 
 export const SECTION_STORAGE_KEY = 'bezel.inspectorSections';
 const DEFAULT_OPEN = Object.freeze(['data', 'faces']);
-const validId = (id) => SECTION_ORDER.includes(id);
 const own = (object, key) => Object.hasOwn(object, key);
 
 /**
  * Section state by widget kind. Missing sections start with Data (or Card
  * Faces) open. Storage is optional and untrusted: denied access, invalid JSON
  * and obsolete entries must never stop editing. Pass null for session memory.
+ * Other panels pass their own section `ids`, those `open` at first and `key`.
  */
-export function createSectionMemory({ storage, key = SECTION_STORAGE_KEY } = {}) {
+export function createSectionMemory({ storage, key = SECTION_STORAGE_KEY, ids = SECTION_ORDER, open = DEFAULT_OPEN } = {}) {
+  const validId = (id) => ids.includes(id);
   if (storage === undefined) {
     try { storage = globalThis.localStorage; } catch { storage = null; }
   }
@@ -34,7 +35,7 @@ export function createSectionMemory({ storage, key = SECTION_STORAGE_KEY } = {})
   function isOpen(kind, id) {
     if (!validId(id)) return false;
     const state = states.get(kind);
-    return state && own(state, id) ? state[id] : DEFAULT_OPEN.includes(id);
+    return state && own(state, id) ? state[id] : open.includes(id);
   }
 
   return {
@@ -43,7 +44,7 @@ export function createSectionMemory({ storage, key = SECTION_STORAGE_KEY } = {})
     toggle(kind, id, { exclusive = false } = {}) {
       if (!validId(id)) return false;
       const next = exclusive
-        ? Object.fromEntries(SECTION_ORDER.map(section => [section, section === id]))
+        ? Object.fromEntries(ids.map(section => [section, section === id]))
         : { ...states.get(kind), [id]: !isOpen(kind, id) };
       states.set(kind, next);
       try { storage?.setItem(key, JSON.stringify(Object.fromEntries(states))); } catch { /* Session memory still works. */ }

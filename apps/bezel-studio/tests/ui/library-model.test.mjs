@@ -12,17 +12,17 @@ const labelOf = (w) => LABELS[w];
 
 test('the widget groups hold every widget once, plus the Group tile', () => {
   const all = WIDGET_GROUPS.flatMap((g) => g.widgets);
-  assert.deepEqual(WIDGET_GROUPS.map((g) => g.id), ['textData', 'indicators', 'mediaStructure']);
+  assert.deepEqual(WIDGET_GROUPS.map((g) => g.id), ['values', 'timeMedia', 'textShapes', 'containers']);
   assert.deepEqual([...all].sort(), [...WIDGETS, 'group'].sort());
   assert.equal(new Set(all).size, all.length);
   assert.equal(WIDGET_COUNT, 14);
 });
 
 test('the widget search matches names and ids, ignoring case and accents, and drops empty groups', () => {
-  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [4, 4, 6]);
-  assert.deepEqual(widgetGroups(labelOf, ' BARRA '), [{ id: 'indicators', widgets: ['bar'] }]);
-  assert.deepEqual(widgetGroups(labelOf, 'player'), [{ id: 'mediaStructure', widgets: ['player'] }]);
-  assert.deepEqual(widgetGroups(labelOf, 'media pl'), [{ id: 'mediaStructure', widgets: ['player'] }]);
+  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [5, 4, 3, 2]);
+  assert.deepEqual(widgetGroups(labelOf, ' BARRA '), [{ id: 'values', widgets: ['bar'] }]);
+  assert.deepEqual(widgetGroups(labelOf, 'player'), [{ id: 'timeMedia', widgets: ['player'] }]);
+  assert.deepEqual(widgetGroups(labelOf, 'media pl'), [{ id: 'timeMedia', widgets: ['player'] }]);
   assert.deepEqual(widgetGroups(labelOf, 'nothing'), []);
   assert.ok(matchesQuery('meteo', 'Météo'));
   assert.ok(matchesQuery('', 'anything'));
