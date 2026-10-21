@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createStore } from '../../src/editor/store.js';
-import { isShown } from '../../src/editor/cards.js';
+import { canvasTarget, isShown } from '../../src/editor/cards.js';
 import { DEMO_THEME } from '../../src/demo-theme.js';
 
 function setup() {
@@ -111,4 +111,26 @@ test('reordering and removing faces remaps rules with Undo',()=>{
  s.dispatch('reorderCardFace',{id:1,direction:-1});assert.deepEqual(element(s,1).card.triggers.map(r=>r.face),[0,1]);
  s.dispatch('removeCardFace',{id:1});assert.deepEqual(element(s,1).card.triggers.map(r=>r.face),[0]);
  s.undo();assert.deepEqual(element(s,1).card.triggers.map(r=>r.face),[0,1]);
+});
+
+
+test('canvas targeting enters Cards explicitly and keeps ordinary group selection', () => {
+  const frame = { x: 0, y: 0, width: 100, height: 100 };
+  const theme = { elements: [
+    { id: 1, frame, card: {} }, { id: 2, frame, cardMember: { parent: 1 } },
+    { id: 3, frame, isGroup: true, cardMember: { parent: 1 } }, { id: 4, frame, groupParent: 3 },
+    { id: 5, frame, card: {}, cardMember: { parent: 1 } }, { id: 6, frame, cardMember: { parent: 5 } },
+    { id: 7, frame },
+  ] };
+  assert.equal(canvasTarget(theme, null), null);
+  assert.equal(canvasTarget(theme, 99), 99);
+  assert.equal(canvasTarget(theme, 7), 7);
+  assert.equal(canvasTarget(theme, 2), 1);
+  assert.equal(canvasTarget(theme, 2, 1), 2);
+  assert.equal(canvasTarget(theme, 4), 1);
+  assert.equal(canvasTarget(theme, 4, 1), 3);
+  assert.equal(canvasTarget(theme, 6), 1);
+  assert.equal(canvasTarget(theme, 6, 1), 5);
+  assert.equal(canvasTarget(theme, 6, 5), 6);
+  assert.equal(canvasTarget(theme, 1, 1), 1);
 });

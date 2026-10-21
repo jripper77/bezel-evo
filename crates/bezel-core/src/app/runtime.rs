@@ -696,6 +696,11 @@ impl ThemeRuntime {
         &self.latest
     }
 
+    /// The graph histories the scene draws from.
+    pub fn histories(&self) -> &Histories {
+        &self.scene.histories
+    }
+
     /// What each sensor measures (the units of sensor text): from the last
     /// [`Self::use_catalog`], else from the catalog read at the first sample.
     pub fn quantities(&self) -> &Quantities {

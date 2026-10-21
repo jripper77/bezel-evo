@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PLAYER_PARTS, PROGRESS_DEFAULTS, barGeometry, barHeight, blockMetrics, blockRows, clockTime, coverShare, fitPlayer, knobDiameter,
+  PLAYER_PARTS, PROGRESS_DEFAULTS, barGeometry, barHeight, blockMetrics, blockRows, clockTime, coverFrame, coverShare, fitPlayer, knobDiameter,
   partPatch, partsOf, placeBlock, playerText, playerTimes, progressBlocks, progressOf, progressRadius, showsTime, widestTimes,
 } from '../../src/player-parts.js';
 
@@ -120,4 +120,16 @@ test('fit measures the visible parts only', () => {
   assert.deepEqual(fitPlayer(legacy, full, { width: 93, height: 51 }, { height: 4, minWidth: 0 }, old, 14), { width: Math.ceil(Math.max(93 + 59 + 4.2, 59 / 0.4)), height: 59 });
   assert.deepEqual(coverShare(cover, playerText(cover, media), 14), { fraction: 1, gap: 0 });
   assert.deepEqual(coverShare({ ...legacy, coverGap: 9 }, full, 14), { fraction: 0.4, gap: 9 });
+});
+
+test('the cover frame is the square both renderers draw at the top left', () => {
+  const frame = { x: 10, y: 20, width: 200, height: 100 };
+  assert.deepEqual(coverFrame(frame, { ...legacy, coverGap: 9 }, 14), { x: 10, y: 20, width: 80, height: 80, gap: 9, alone: false });
+  assert.deepEqual(coverFrame({ ...frame, width: 100 }, { ...legacy, coverGap: 95 }, 14), { x: 10, y: 20, width: 5, height: 5, gap: 95, alone: false });
+  assert.deepEqual(coverFrame({ ...frame, width: 4 }, { ...legacy, coverGap: 9 }, 14).gap, 4);
+  const alone = { type: 'player', showCover: true, showTitle: false, showArtist: false, showTime: false, showProgress: false };
+  assert.deepEqual(coverFrame(frame, alone, 14), { x: 10, y: 20, width: 100, height: 100, gap: 0, alone: true });
+  // A session without a duration shows no bar or times: a titleless cover is then alone.
+  assert.equal(coverFrame(frame, { ...alone, showProgress: true }, 14, { ...media, duration: 0 }).alone, true);
+  assert.equal(coverFrame(frame, { ...legacy, showCover: false }, 14), null);
 });

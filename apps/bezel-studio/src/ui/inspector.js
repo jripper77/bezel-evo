@@ -9,6 +9,8 @@ import { panel as themePanel, header as themeHeader, orientationField as themeOr
 import { sections as clockPanels } from './inspector/clock.js';
 import { sections as weatherPanels } from './inspector/weather.js';
 import { sections as valuePanels } from './inspector/value.js';
+import { pickPart } from './inspector/text.js';
+import { partPieces } from '../editor/handles.js';
 import { sections as ringPanels } from './inspector/ring.js';
 import { sections as barPanels } from './inspector/bar.js';
 import { sections as needlePanels } from './inspector/needle.js';
@@ -707,6 +709,48 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   }
 
   return { render, contextChanged, frameShown,
+    /** Opens the sensor picker of the selected element's linked sensor, as its card would. */
+    openSensor(element) {
+      const card = root.querySelector(`[data-sensor-key="${CSS.escape(boundKey(element) ?? '')}"]`);
+      if (!card) return;
+      const toggle = card.closest('.accordion-section')?.querySelector(':scope > .accordion-heading > button');
+      if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click();
+      const shown = root.querySelector(`[data-sensor-key="${CSS.escape(boundKey(element) ?? '')}"]`) ?? card;
+      shown.scrollIntoView({ block: 'nearest' }); shown.click();
+    },
+    /** The inspector's own Try: a detached trial in its preview, never saved. */
+    tryElement() {
+      root.querySelector('.inspector-try:not(:disabled)')?.click();
+    },
+    /** The parts of a value or a digital clock as they read now (null: none). */
+    partPieces(element) {
+      const key = boundKey(element);
+      return partPieces(element, { reading: key ? readingOf(key) : null, quantity: key ? sensors.catalog().find(sensor => sensor.key === key)?.quantity ?? null : null });
+    },
+    /** A click on a part on the canvas picks it in the parts row and shows that row. */
+    pickPart(element, scope, part) {
+      pickPart(store, element.id, scope, part);
+      render(shown.assets);
+      this.highlightField(scope === 'clock' ? 'insp.clock.parts' : 'insp.valueParts', undefined, { mark: false });
+    },
+    /** Opens and shows the field `key`; `mark` lights it while a handle drags. */
+    highlightField(key, params, { mark = true } = {}) {
+      root.querySelectorAll('.canvas-field-active').forEach(node => node.classList.remove('canvas-field-active'));
+      if (!key) return;
+      const label = t(key, params);
+      // A number field, or a choice group such as the image anchor.
+      const find = () => [...root.querySelectorAll('input, [role="group"]')].find(input => input.getAttribute('aria-label') === label || input.labels?.[0]?.textContent.trim() === label);
+      let field = find();
+      if (!field) return;
+      const section = field.closest('.accordion-section');
+      const toggle = section?.querySelector(':scope > .accordion-heading > button');
+      // Opening a section may draw the form again: find the field anew.
+      if (toggle?.getAttribute('aria-expanded') === 'false') { toggle.click(); field = find() ?? field; }
+      const highlighted = field.closest('.fld, .number-control, .field') ?? field;
+      if (mark) highlighted.classList.add('canvas-field-active');
+      const visible = root.getBoundingClientRect(), bounds = highlighted.getBoundingClientRect();
+      if (bounds.top < visible.top || bounds.bottom > visible.bottom) highlighted.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    },
     storageChanged(screen, overview) {
       if (background.updateListing(screen, overview) && !store.getState().selection.length) render(shown.assets);
     },

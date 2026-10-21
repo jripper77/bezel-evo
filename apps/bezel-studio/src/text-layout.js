@@ -121,7 +121,7 @@ export function layoutText(pieces, style, measure, { tabular = true, scale = 1 }
       if (i > 0) lines.push({ frags: [] });
       if (!chunk) return;
       const f = frag(chunk, face, measure, tabular, !!piece.wheels, count);
-      f.hidden = !!piece.hidden; f.wheels = piece.wheels ?? null;
+      f.hidden = !!piece.hidden; f.wheels = piece.wheels ?? null; f.id = piece.id ?? null;
       lines[lines.length - 1].frags.push(f);
     });
   }

@@ -1059,6 +1059,40 @@ impl Engine {
             next,
         ))
     }
+    /// The whole scene with trial inputs for the canvas
+    /// ([`inspector_trial::Trial::scene`]), its longest side at most `max`.
+    /// The live scene, its screens and the document are untouched.
+    pub fn trial_canvas(
+        &mut self,
+        key: &str,
+        max: u32,
+        motion: bool,
+        ms: u32,
+        hold: Option<inspector_trial::Hold>,
+    ) -> Result<Frame> {
+        let scene = self
+            .scenes
+            .get_mut(key)
+            .ok_or_else(|| invalid("unknown scene"))?;
+        self.renderer.set_scene(scene.id | (1 << 61));
+        self.renderer.set_motion(motion);
+        let trial = inspector_trial::Trial::scene(
+            scene.runtime.theme(),
+            scene.runtime.snapshot(),
+            scene.runtime.histories(),
+            (self.clock)(),
+            ms,
+            hold,
+        );
+        let (frame, _) = scene.runtime.preview_detached_sample(
+            self.renderer.as_mut(),
+            &trial.theme,
+            trial.time,
+            trial.animation,
+            Some((&trial.snapshot, &trial.histories)),
+        )?;
+        Ok(element_preview::fit_within(frame, max.clamp(16, 2320)))
+    }
     /// Measure through the same renderer without advancing the live scene.
     pub fn measure(&mut self, key: &str, id: ElementId) -> Result<Option<BoxF>> {
         let scene = self

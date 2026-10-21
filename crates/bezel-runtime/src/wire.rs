@@ -14,6 +14,14 @@ pub struct Options {
     pub ffmpeg: Option<String>,
 }
 
+/// The element a canvas trial holds still and the share of its scale.
+#[derive(Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TrialHold {
+    pub element: u32,
+    pub fraction: f64,
+}
+
 pub const MAX_JSON: usize = 4 * 1024 * 1024;
 pub const MAX_METADATA: usize = 65536;
 #[derive(Serialize, Deserialize)]
@@ -54,6 +62,17 @@ pub enum RuntimeOp {
     },
     Measure {
         element: u32,
+    },
+    /// The whole scene with trial inputs for the canvas's trial values, at
+    /// `ms` of the trial; with `hold`, one element's sensor held at
+    /// `fraction` of its scale instead. Never shown live, never saved.
+    Trial {
+        max: u32,
+        motion: bool,
+        #[serde(default)]
+        ms: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        hold: Option<TrialHold>,
     },
     Thumbnail,
     /// Tries a profile cover on every live screen without changing a theme
@@ -266,6 +285,7 @@ fn dispatch_inner(
         request.op,
         RuntimeOp::Draft { .. }
             | RuntimeOp::Inspect { .. }
+            | RuntimeOp::Trial { .. }
             | RuntimeOp::Measure { .. }
             | RuntimeOp::Cards { .. }
     ) {
@@ -331,6 +351,23 @@ fn dispatch_inner(
                 next.map_or(u32::MAX, |d| {
                     d.as_millis().min(u128::from(u32::MAX - 1)) as u32
                 }),
+            ))
+        }
+        RuntimeOp::Trial {
+            max,
+            motion,
+            ms,
+            hold,
+        } => {
+            let hold = hold.map(|h| crate::inspector_trial::Hold {
+                element: ElementId(h.element),
+                fraction: h.fraction,
+            });
+            let frame = engine.trial_canvas(key, max, motion, ms, hold)?;
+            Ok(image(
+                Some(frame),
+                0,
+                crate::inspector_trial::FRAME_MS as u32,
             ))
         }
         RuntimeOp::Measure { element } => {

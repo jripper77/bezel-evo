@@ -1,10 +1,16 @@
 # Passaggio — Studio UX v2
 
+**T-8 in corso, non integrata** — riprendere `F:/Dev/bezel-ux2-t8`, branch
+`ux2/t8`, dal checkpoint `CHECKPOINT-T-8.md`. 139 unitari mirati e 68 e2e verdi, motore puro al 100%; selezione multipla,
+Testo inline/Ctrl-SE, Card, immagine nelle Forme, lunghezze analogiche
+native/demo e guide con distanza verificati; completare l’elenco pendente prima del merge. Non avviare
+T-9a né ricreare la worktree T-8. La base integrata rimane `c66a247`.
+
 21 ottobre 2026. T-0…T-7c completate; T-7c in `ux2/t7c`, con riepilogo
 in `SUMMARY-T-7c.md` e confronto visivo in `evidence/t7c/README.md`.
 
-Prossima attività nell’ordine del piano: **T-8**, nuova worktree dal nuovo HEAD
-integrato di `windows-improvements`. T-0 e T-3, sue dipendenze, sono integrate.
+Attività corrente nell’ordine del piano: **T-8**, worktree già esistente
+`F:/Dev/bezel-ux2-t8`, branch `ux2/t8`. T-0 e T-3, sue dipendenze, sono integrate.
 T-11 resta separata per i video negli oggetti Immagine.
 
 D-21 conferma che la Rotazione della tavola Card è un errore di disegno:

@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-object-bar",
+    "file": "dark/app/shell/ux2-object-bar.png",
+    "detail": "dark/app/shell/ux2-object-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-object-bar",
+    "file": "light/app/shell/ux2-object-bar.png",
+    "detail": "light/app/shell/ux2-object-bar-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-player-cover",
+    "file": "dark/app/shell/ux2-player-cover.png",
+    "detail": "dark/app/shell/ux2-player-cover-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-player-cover",
+    "file": "light/app/shell/ux2-player-cover.png",
+    "detail": "light/app/shell/ux2-player-cover-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-value-part",
+    "file": "dark/app/shell/ux2-value-part.png",
+    "detail": "dark/app/shell/ux2-value-part-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-value-part",
+    "file": "light/app/shell/ux2-value-part.png",
+    "detail": "light/app/shell/ux2-value-part-detail.png"
+  }
+]

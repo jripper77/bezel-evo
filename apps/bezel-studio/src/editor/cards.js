@@ -70,6 +70,17 @@ export function groupTarget(theme, id) {
   return element?.id ?? id;
 }
 
+/** Normal canvas clicks select the enclosing Card; double-click enters one. */
+export function canvasTarget(theme, id, editingCard = null) {
+  const target = groupTarget(theme, id);
+  const element = theme.elements.find(e => e.id === target);
+  if (!element) return id;
+  const chain = owners(theme, element);
+  const boundary = chain.findIndex(e => e.id === editingCard);
+  const outside = boundary < 0 ? chain : chain.slice(0, boundary);
+  return outside.filter(e => e.card).at(-1)?.id ?? target;
+}
+
 export function transformCard(theme, id, frame) {
   const parent = theme.elements.find(e => e.id === id);
   const old = parent.frame;

@@ -1,5 +1,8 @@
-import { appliedRotation, canRotate, centerOf, rotatePoint, rotatedBounds, snapAngle, normalizeDegrees } from '../editor/rotation.js';
-import { groupTarget, selectionRoots, isShown, withChildren } from '../editor/cards.js';
+import { appliedRotation, canRotate, centerOf, toLocal, rotatePoint, rotatedBounds, snapAngle, normalizeDegrees } from '../editor/rotation.js';
+import { canvasTarget, groupTarget, selectionRoots, isShown, withChildren, owners } from '../editor/cards.js';
+import { editedFill, frameHandles, scaledFrames, scaledText, propertyHandles, editPropertyHandle, resetPropertyHandle, textPartAt } from '../editor/handles.js';
+import { canvasMeasure } from '../demo-render.js';
+import { boundKey } from '../editor/widgets.js';
 // The canvas: shows the rendered frame at a zoom level and handles direct
 // manipulation on a DOM overlay (selection, eight resize handles, snapping
 // guides, marquee). Everything is in canvas pixels until drawn. In framing
@@ -7,9 +10,12 @@ import { groupTarget, selectionRoots, isShown, withChildren } from '../editor/ca
 // (D-2026-10-01-video-background-framing-6): drag pans it, the wheel zooms
 // around the pointer, keys nudge, zoom, reset and leave; each drag or wheel
 // burst is one undo step, and no element can be selected meanwhile.
-import { el } from './dom.js';
-import { HANDLES, boxFromPoints, handlePoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
-import { snapEdge, snapMove } from '../editor/snap.js';
+import { el, icon } from './dom.js';
+import { segmented, iconButton } from './fields.js';
+import { NATURAL_REPEATS } from './inspector/art.js';
+import { ICONS } from './icons.js';
+import { boxFromPoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
+import { alignmentDistances, snapEdge, snapMove } from '../editor/snap.js';
 import { applyFramingKey, createBurst, framingKey, framingOf, panned, pictureBox, reframed, resolvedRotation, wheelPixels, wheelZoom, zoomedAt } from '../editor/video-framing.js';
 
 const MIN_ZOOM = 0.05;
@@ -29,7 +35,7 @@ const DRAG_THRESHOLD = 3;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '' }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {} }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -46,6 +52,44 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   let marquee = null;
   let hoverId = null;
   let press = null;
+  let handleReadout = null;
+  let textEditor = null;
+  let editingCard = null;
+  let editingFill = null;
+  // Where each bar's trial handle was let go: the next drag starts there.
+  const trialFractions = new Map();
+  const handleOptions = e => ({ motion: handleMotion(), fraction: trialFractions.get(e.id) ?? .5 });
+  const handleFormats = new Map();
+  const handleText = (value, unit) => {
+    const locale = handleLocale();
+    if (!handleFormats.has(locale)) handleFormats.set(locale, new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }));
+    return `${(Array.isArray(value) ? value : [value]).map(number => handleFormats.get(locale).format(number)).join(' · ')}${unit ? ` ${unit}` : ''}`;
+  };
+  const showHandleValue = (position, value, unit, field) => {
+    handleReadout = { position, text: handleText(value, unit) };
+    onHandleEdit({ field });
+  };
+  const clearHandleValue = () => {
+    handleReadout = null; onHandleEdit(null);
+    overlay.querySelector('.handle-readout')?.remove();
+  };
+
+  function applyProperty(element, id, position, options = {}) {
+    const next = editPropertyHandle(element, id, position, { ...handleOptions(element), ...options });
+    if (next && next.trial !== undefined) {
+      // A trial value is drawn, never stored: the document does not change.
+      trialFractions.set(element.id, next.trial);
+      onTrialHold({ element: element.id, fraction: next.trial });
+      handleReadout = { position, text: handleText(next.value, next.unit) };
+      onHandleEdit(next);
+      return;
+    }
+    if (!next?.patch && !next?.kind) return;
+    if (next.kind) store.dispatch('setKind', { id: element.id, kind: next.kind });
+    else store.dispatch('patchElements', { patches: [{ id: element.id, patch: next.patch }] });
+    handleReadout = { position, text: handleText(next.value, next.unit) };
+    onHandleEdit(next);
+  }
   // Framing mode: what Auto is, how the surface is named and described, and
   // how it is left (Esc, Enter); `null` while editing elements.
   let framing = null;
@@ -53,6 +97,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   const theme = () => store.getState().theme;
   const selection = () => store.getState().selection;
   // A burst of wheel turns is one gesture: one undo step.
+  const fillBurst = createBurst({ begin: () => store.beginGesture(), end: () => store.endGesture() });
   const wheelBurst = createBurst({ begin: () => store.beginGesture(), end: () => store.endGesture() });
 
   /** The video background's framing and what it is drawn against, or `null` without a video. */
@@ -148,6 +193,19 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
     }
+    updateClockTips();
+  }
+
+  /** Only clock tip positions follow a new frame; keep native button focus alive. */
+  function updateClockTips() {
+    const selected = selection();
+    if (selected.length !== 1) return;
+    const element = theme().elements.find(e => e.id === selected[0]);
+    if (element?.kind?.content?.type !== 'clock' || !element.kind.content.analog) return;
+    for (const handle of propertyHandles(element, { motion: handleMotion() })) {
+      const node = overlay.querySelector(`[data-property-handle="${handle.id}"]`);
+      if (node) Object.assign(node.style, { left: px(handle.x), top: px(handle.y) });
+    }
   }
 
   /** Canvas coordinates of a client point. */
@@ -157,7 +215,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   }
 
   /** What keeps the wheel for itself over the stage: its floating bars and form controls. */
-  const WHEEL_KEEPERS = ['.stage-tools', '.stage-zoom', 'input', 'select', 'textarea'].join();
+  const WHEEL_KEEPERS = ['.canvas-edit-tools', '.canvas-card-faces', '.canvas-object-bar', '.stage-tools', '.stage-zoom', 'input', 'select', 'textarea'].join();
 
   function containsClient(clientX, clientY) {
     const r = box.getBoundingClientRect();
@@ -193,6 +251,11 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       drawFramingOverlay();
       return;
     }
+    if (textEditor) {
+      const current = theme().elements.find(e => e.id === textEditor.id);
+      if (selection().length === 1 && selection()[0] === textEditor.id && current?.kind?.content?.type === 'static' && !owners(theme(), current).some(e => e.locked)) return;
+      finishTextEdit(false);
+    }
     const t = theme();
     const sel = new Set(selection());
     const nodes = [];
@@ -208,33 +271,127 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     for (const e of chosen) {
       nodes.push(el('div', { class: `sel-box${e.locked ? ' locked' : ''}`, style: { ...boxStyle(e.frame), transform: `rotate(${appliedRotation(e)}deg)` }, role: 'img', 'aria-label': describe(e.name) }));
     }
-    if (chosen.length === 1 && !chosen[0].locked) {
-      const e = chosen[0], angle = appliedRotation(e), center = centerOf(e.frame);
-      const pts = Object.fromEntries(Object.entries(handlePoints(e.frame)).map(([h, [x, y]]) => {
-        const p = rotatePoint({ x, y }, center, angle); return [h, [p.x, p.y]];
+    const entered = t.elements.find(e => e.id === editingCard && e.card);
+    if (editingCard !== null && (!entered || !isShown(t, entered) || !chosen.length || chosen.some(e => !owners(t, e).some(p => p.id === editingCard)))) editingCard = null;
+    const card = editingCard !== null ? entered : chosen.length === 1 && chosen[0].card ? chosen[0] : null;
+    if (card) {
+      if (editingCard !== null) nodes.push(el('div', { class: 'hover-box card-edit-boundary', style: boxStyle(card.frame) }));
+      const locked = owners(t, card).some(e => e.locked);
+      const choices = segmented(handleLabel('card.tab.faces'), card.card.activeFace, card.card.faces.map((name, face) => [face, name]), face => {
+        if (face !== card.card.activeFace) store.dispatch('cardFace', { id: card.id, face });
+        overlay.querySelector(`[data-canvas-face="${face}"]`)?.focus();
+      }, { bare: true });
+      [...choices.querySelectorAll('button')].forEach((button, face) => { button.dataset.canvasFace = String(face); button.disabled = locked; });
+      nodes.push(el('div', { class: 'canvas-card-faces', style: { left: px(card.frame.x), top: `calc(${px(card.frame.y + card.frame.height)} + 14px)` } }, [
+        choices,
+        iconButton(handleLabel('card.addFace'), ICONS.plus, () => {
+          const face = card.card.faces.length;
+          store.dispatch('addCardFace', { id: card.id, name: handleLabel('card.faceName', { number: face + 1 }) });
+          overlay.querySelector(`[data-canvas-face="${face}"]`)?.focus();
+        }, { disabled: locked || card.card.faces.length >= 16 }),
+        editingCard !== null && iconButton(handleLabel('shell.exitCard'), ICONS.arrowLeft, leaveCard),
+      ]));
+    }
+    const fill = chosen.length === 1 && chosen[0].id === editingFill && isShown(t, chosen[0]) && NATURAL_REPEATS.includes(chosen[0].kind.image?.repeat) && !owners(t, chosen[0]).some(e => e.locked) ? chosen[0] : null;
+    if (editingFill !== null && !fill) { editingFill = null; fillBurst.flush(); }
+    if (fill) nodes.push(el('div', { class: 'canvas-edit-tools', style: { left: px(fill.frame.x), top: `calc(${px(fill.frame.y + fill.frame.height)} + 14px)` } }, [
+      el('span', { text: handleLabel('shell.editShapeImage'), title: handleLabel('shell.imageEditHint') }),
+      iconButton(handleLabel('shell.finishImage'), ICONS.close, leaveFill),
+    ]));
+    const roots = selectionRoots(t, chosen.map(e => e.id));
+    const editable = chosen.length > 0 && chosen.every(e => !owners(t, e).some(owner => owner.locked));
+    const common = editable && !fill ? frameHandles(roots, zoom) : [];
+    const commonFrame = unionBox(roots.map(e => e.frame));
+    const angle = roots.length === 1 ? appliedRotation(roots[0]) : 0;
+    if (chosen.length > 1) nodes.push(el('div', { class: 'sel-box selection-union', style: boxStyle(commonFrame) }));
+    for (const handle of common.filter(handle => handle.symbol === 'size')) {
+      const h = handle.id;
+      nodes.push(el('button', { type: 'button', class: 'handle', 'aria-label': handleLabel(`shell.handle.resize.${h}`), dataset: { h }, style: { left: px(handle.x), top: px(handle.y), transform: `rotate(${angle}deg)` },
+        onkeydown: evt => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
+          evt.preventDefault(); evt.stopPropagation();
+          const step = evt.shiftKey ? 10 : 1;
+          const dx = evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0;
+          const dy = evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0;
+          const frame = resize(commonFrame, h, dx, dy, roots.length > 1, angle);
+          const text = chosen.length === 1 && h === 'se' && evt.ctrlKey && scaledText(chosen[0], frame);
+          if (text) {
+            store.dispatch('patchElements', { patches: [{ id: chosen[0].id, patch: text }] });
+            showHandleValue(handle, text.kind.style.size, 'px', 'inspector.size');
+          } else applyFrames(roots, commonFrame, frame, angle);
+          if (!text) showHandleValue(handle, [frame.width, frame.height], 'px', h.includes('e') || h.includes('w') ? 'inspector.width' : 'inspector.height');
+          drawOverlay(); overlay.querySelector(`[data-h="${h}"]`)?.focus();
+        },
+        onblur: () => { if (!press) clearHandleValue(); },
       }));
-      for (const h of HANDLES) {
-        nodes.push(el('div', { class: 'handle', dataset: { h }, style: { left: px(pts[h][0]), top: px(pts[h][1]), transform: `rotate(${angle}deg)` } }));
-      }
-      if (canRotate(t, e)) {
-        const p = rotatePoint({ x: center.x, y: e.frame.y - 24 / zoom }, center, angle);
-        nodes.push(el('button', { type: 'button', class: 'rotate-handle', dataset: { rotate: e.id }, title: rotationLabel(), 'aria-label': rotationLabel(),
-          style: { left: px(p.x), top: px(p.y), transform: `rotate(${angle}deg)` },
+    }
+    if (chosen.length === 1 && editable && !fill) {
+      const e = chosen[0];
+      for (const handle of propertyHandles(e, handleOptions(e))) {
+        const title = handleLabel(handle.field, handle.fieldParams);
+        nodes.push(el('button', { type: 'button', class: `property-handle ${handle.symbol}`, dataset: { propertyHandle: handle.id },
+          title, 'aria-label': title, style: { left: px(handle.x), top: px(handle.y) },
           onkeydown: evt => {
-            if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(evt.key)) return;
+            if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.key)) return;
             evt.preventDefault(); evt.stopPropagation();
-            const delta = ['ArrowLeft', 'ArrowDown'].includes(evt.key) ? -1 : 1;
-            store.dispatch('rotate', { id: e.id, rotation: evt.key === 'Home' ? 0 : angle + delta * (evt.shiftKey ? 15 : 1) });
-            overlay.querySelector('[data-rotate]')?.focus();
+            const current = propertyHandles(e, handleOptions(e)).find(h => h.id === handle.id);
+            // A discrete handle (the image anchor) moves one position per key.
+            const step = current.keyStep ?? { x: evt.shiftKey ? 10 : 1, y: evt.shiftKey ? 10 : 1 };
+            applyProperty(e, handle.id, { x: current.x + (evt.key === 'ArrowLeft' ? -step.x : evt.key === 'ArrowRight' ? step.x : 0), y: current.y + (evt.key === 'ArrowUp' ? -step.y : evt.key === 'ArrowDown' ? step.y : 0) }, { shift: evt.shiftKey, alt: evt.altKey });
+            drawOverlay(); overlay.querySelector(`[data-property-handle="${handle.id}"]`)?.focus();
           },
+          onblur: () => { if (!press) { clearHandleValue(); if (handle.id === 'trial-value') onTrialHold(null); } },
         }));
       }
     }
+    const rotationHandle = common.find(handle => handle.symbol === 'rotation');
+    if (rotationHandle && chosen.every(e => canRotate(t, e))) {
+      nodes.push(el('button', { type: 'button', class: 'rotate-handle', dataset: { rotate: 'selection' }, title: rotationLabel(), 'aria-label': rotationLabel(),
+        style: { left: px(rotationHandle.x), top: px(rotationHandle.y), transform: `rotate(${angle}deg)` },
+        onkeydown: evt => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(evt.key)) return;
+          evt.preventDefault(); evt.stopPropagation();
+          const delta = ['ArrowLeft', 'ArrowDown'].includes(evt.key) ? -1 : 1;
+          const rotation = evt.key === 'Home' ? 0 : appliedRotation(chosen[0]) + delta * (evt.shiftKey ? 15 : 1);
+          store.dispatch('rotateSelection', { ids: chosen.map(e => e.id), rotation });
+          showHandleValue(rotationHandle, normalizeDegrees(rotation), '\u00b0', 'insp.rotation'); drawOverlay();
+          overlay.querySelector('[data-rotate]')?.focus();
+        },
+        onblur: () => { if (!press) clearHandleValue(); },
+      }));
+    }
+    if (chosen.length && !fill && !press?.started) nodes.push(objectBar(chosen, roots));
     for (const g of guides) {
       nodes.push(el('div', { class: `guide ${g.axis}`, style: g.axis === 'x' ? { left: px(g.position) } : { top: px(g.position) } }));
     }
+    if (guides.length && commonFrame) for (const gap of alignmentDistances(commonFrame, othersThan(chosen.map(e => e.id)), guides)) {
+      const text = handleText(gap.distance, 'px');
+      nodes.push(el('span', { class: `guide-distance ${gap.axis}`, role: 'status', 'aria-label': handleLabel('shell.guideDistance', { value: text }),
+        style: gap.axis === 'x' ? { left: px(gap.position), top: px((gap.from + gap.to) / 2) } : { top: px(gap.position), left: px((gap.from + gap.to) / 2) }, text }));
+    }
     if (marquee) nodes.push(el('div', { class: 'marquee', style: boxStyle(marquee) }));
+    if (handleReadout) nodes.push(el('span', { class: 'handle-readout', role: 'status', style: { left: `calc(${px(handleReadout.position.x)} + 14px)`, top: `calc(${px(handleReadout.position.y)} - 28px)` }, text: handleReadout.text }));
     overlay.replaceChildren(...nodes);
+  }
+
+  /**
+   * The bar over the selection (D-2026-10-20-studio-ux-v2-10): its linked
+   * sensor, Try, Duplicate and the object menu. Every action is an existing
+   * command; Try plays the inspector's detached trial and saves nothing.
+   */
+  function objectBar(chosen, roots) {
+    const top = unionBox(roots.map(e => rotatedBounds(e.frame, appliedRotation(e))));
+    const single = chosen.length === 1 ? chosen[0] : null, key = single && boundKey(single);
+    const refocus = name => overlay.querySelector(`[data-object-bar="${name}"]`)?.focus();
+    const tag = (node, name) => { node.dataset.objectBar = name; return node; };
+    return el('div', { class: 'canvas-object-bar', role: 'toolbar', 'aria-label': handleLabel('menu.title'),
+      style: { left: px(top.x + top.width / 2), top: `calc(${px(top.y)} - 36px)` } }, [
+      key && tag(el('button', { type: 'button', class: 'canvas-object-sensor', title: handleLabel('shell.objectSensor', { key }), 'aria-label': handleLabel('shell.objectSensor', { key }),
+        onclick: () => onBarSensor(single) }, [icon(ICONS.bolt, 14), el('span', { text: key })]), 'sensor'),
+      single && tag(iconButton(handleLabel('insp.tryObject'), ICONS.play, () => onBarTry(single), { class: 'quiet', disabled: !handleMotion() }), 'try'),
+      tag(iconButton(handleLabel('common.duplicate'), ICONS.copy, () => { store.dispatch('duplicate', { ids: chosen.map(e => e.id) }); refocus('duplicate'); }, { class: 'quiet' }), 'duplicate'),
+      tag(iconButton(handleLabel('menu.title'), ICONS.more, evt => onBarMenu(evt.currentTarget, () => refocus('menu')), { class: 'quiet', 'aria-haspopup': 'menu', 'aria-expanded': 'false' }), 'menu'),
+    ]);
   }
 
   // ------------------------------------------------------ interactions ----
@@ -262,7 +419,9 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
   }
 
   function onPointerDown(evt) {
-    if (evt.button !== 0 || press) return;
+    if (evt.button !== 0 || press || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools, .canvas-object-bar')) return;
+    if (textEditor?.node.contains(evt.target)) return;
+    if (textEditor) finishTextEdit(true);
     const viewport = scroll.getBoundingClientRect();
     if (evt.clientX >= viewport.left + scroll.clientWidth || evt.clientY >= viewport.top + scroll.clientHeight) return;
     if (framing && !containsClient(evt.clientX, evt.clientY)) return;
@@ -278,22 +437,41 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     const start = point(evt.clientX, evt.clientY);
     const handle = evt.target?.dataset?.h;
     const state = store.getState();
-    if (evt.target?.dataset?.rotate && state.selection.length === 1) {
-      const e = state.theme.elements.find(x => x.id === state.selection[0]);
-      if (!canRotate(state.theme, e) || e.locked) return;
-      const center = centerOf(e.frame);
-      press = { mode: 'rotate', id: e.id, center, angle: appliedRotation(e),
+    if (editingFill !== null) {
+      const element = state.theme.elements.find(e => e.id === editingFill);
+      const local = toLocal(element.frame, appliedRotation(element), start);
+      const f = element.frame;
+      if (local.x >= f.x && local.y >= f.y && local.x <= f.x + f.width && local.y <= f.y + f.height) {
+        fillBurst.flush();
+        press = { mode: 'fill', element: structuredClone(element), start: local, client: [evt.clientX, evt.clientY], started: false };
+        return;
+      }
+      leaveFill();
+    }
+    const property = evt.target.closest?.('[data-property-handle]')?.dataset.propertyHandle;
+    if (property && state.selection.length === 1) {
+      const element = state.theme.elements.find(e => e.id === state.selection[0]);
+      press = { mode: 'property', element: structuredClone(element), handle: property, client: [evt.clientX, evt.clientY], started: false };
+      return;
+    }
+    const chosen = state.theme.elements.filter(e => state.selection.includes(e.id));
+    const editable = chosen.length > 0 && chosen.every(e => !owners(state.theme, e).some(owner => owner.locked));
+    const roots = selectionRoots(state.theme, state.selection);
+    if (evt.target?.dataset?.rotate && editable && chosen.every(e => canRotate(state.theme, e))) {
+      const center = centerOf(unionBox(roots.map(e => e.frame)));
+      press = { mode: 'rotate', ids: chosen.map(e => e.id), center, angle: appliedRotation(chosen[0]),
         pointerAngle: Math.atan2(start.y - center.y, start.x - center.x) * 180 / Math.PI,
         client: [evt.clientX, evt.clientY], started: false };
       return;
     }
-    if (handle && state.selection.length === 1) {
-      const e = state.theme.elements.find((x) => x.id === state.selection[0]);
-      press = { mode: 'resize', id: e.id, rotation: appliedRotation(e), handle, frame: { ...e.frame }, start, client: [evt.clientX, evt.clientY], started: false };
+    if (handle && editable) {
+      press = { mode: 'resize', elements: structuredClone(roots), rotation: roots.length === 1 ? appliedRotation(roots[0]) : 0,
+        scaleText: chosen.length === 1 && handle === 'se' && evt.ctrlKey && !!scaledText(chosen[0], chosen[0].frame),
+        handle, frame: unionBox(roots.map(e => e.frame)), start, client: [evt.clientX, evt.clientY], started: false };
       return;
     }
     let id = hitTest(state.theme.elements.filter(e => isShown(state.theme, e)), start.x, start.y);
-    if (id !== null && !evt.ctrlKey && !evt.metaKey && !state.selection.includes(id)) id = groupTarget(state.theme, id);
+    if (id !== null && !evt.ctrlKey && !evt.metaKey && !state.selection.includes(id)) id = canvasTarget(state.theme, id, editingCard);
     if (id === null) {
       if (!evt.shiftKey && !evt.ctrlKey && !evt.metaKey) store.select([]);
       press = { mode: 'marquee', start, base: evt.shiftKey || evt.ctrlKey || evt.metaKey ? [...state.selection] : [], client: [evt.clientX, evt.clientY], started: false };
@@ -307,8 +485,10 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       sel = [id];
       store.select(sel);
     }
+    // A plain click on the one selected value or clock may pick the part under it.
+    const part = !evt.shiftKey && !evt.ctrlKey && !evt.metaKey && state.selection.length === 1 && state.selection[0] === id ? id : null;
     const movable = selectionRoots(state.theme, sel).filter((e) => sel.includes(e.id) && !e.locked && (!e.cardMember || isShown(state.theme, e)));
-    press = { mode: 'move', ids: movable.map((e) => e.id), frames: movable.map((e) => ({ ...e.frame })), start, applied: { x: 0, y: 0 }, client: [evt.clientX, evt.clientY], started: false };
+    press = { mode: 'move', ids: movable.map((e) => e.id), frames: movable.map((e) => ({ ...e.frame })), start, applied: { x: 0, y: 0 }, part, client: [evt.clientX, evt.clientY], started: false };
   }
 
   function beginIfMoved(evt) {
@@ -336,11 +516,22 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     }
   }
 
+  function applyFrames(elements, from, to, rotation) {
+    if (elements.length === 1) store.dispatch('setFrame', { id: elements[0].id, frame: to, precise: !!rotation });
+    else store.dispatch('patchElements', { patches: scaledFrames(elements, from, to) });
+  }
+
   function onResize(evt, p) {
-    let next = resize(press.frame, press.handle, p.x - press.start.x, p.y - press.start.y, evt.shiftKey, press.rotation);
+    let next = resize(press.frame, press.handle, p.x - press.start.x, p.y - press.start.y, evt.shiftKey || press.elements.length > 1, press.rotation);
     guides = [];
-    if (!evt.altKey && !press.rotation) {
-      const others = othersThan([press.id]);
+    if (press.scaleText) {
+      const patch = scaledText(press.elements[0], next);
+      store.dispatch('patchElements', { patches: [{ id: press.elements[0].id, patch }] });
+      showHandleValue(p, patch.kind.style.size, 'px', 'inspector.size');
+      return;
+    }
+    if (!evt.altKey && !press.rotation && !(press.elements.length > 1 && press.handle.length === 2)) {
+      const others = othersThan(press.elements.map(e => e.id));
       const h = press.handle;
       const snapX = (edge) => snapEdge(edge, 'x', size, others);
       const snapY = (edge) => snapEdge(edge, 'y', size, others);
@@ -363,13 +554,14 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
         if (s.guide !== null) guides.push({ axis: 'y', position: s.guide });
       }
     }
-    store.dispatch('setFrame', { id: press.id, frame: next, precise: !!press.rotation });
+    applyFrames(press.elements, press.frame, next, press.rotation);
+    showHandleValue(p, [next.width, next.height], 'px', press.handle.includes('e') || press.handle.includes('w') ? 'inspector.width' : 'inspector.height');
   }
 
   function onPointerMove(evt) {
     const p = point(evt.clientX, evt.clientY);
     if (!press) {
-      const id = framing ? null : hitTest(theme().elements.filter(e => isShown(theme(), e)), p.x, p.y);
+      const id = framing ? null : canvasTarget(theme(), hitTest(theme().elements.filter(e => isShown(theme(), e)), p.x, p.y), editingCard);
       if (id !== hoverId) {
         hoverId = id;
         drawOverlay();
@@ -380,15 +572,23 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     if (press.mode === 'frame') onFrame(evt);
     else if (press.mode === 'move') onMove(evt, p);
     else if (press.mode === 'resize') onResize(evt, p);
+    else if (press.mode === 'fill') {
+      const local = toLocal(press.element.frame, appliedRotation(press.element), p);
+      const next = editedFill(press.element.kind.image, { dx: local.x - press.start.x, dy: local.y - press.start.y });
+      applyFill(press.element, next);
+      showHandleValue(p, [next.offsetX, next.offsetY], 'px', 'shape.imageOffsetX');
+    }
+    else if (press.mode === 'property') applyProperty(press.element, press.handle, p, { shift: evt.shiftKey, alt: evt.altKey });
     else if (press.mode === 'rotate') {
       const pointerAngle = Math.atan2(p.y - press.center.y, p.x - press.center.x) * 180 / Math.PI;
       const angle = normalizeDegrees(press.angle + pointerAngle - press.pointerAngle);
-      store.dispatch('rotate', { id: press.id, rotation: evt.shiftKey ? snapAngle(angle, 15) : angle });
+      store.dispatch('rotateSelection', { ids: press.ids, rotation: evt.shiftKey ? snapAngle(angle, 15) : angle });
+      showHandleValue(p, evt.shiftKey ? snapAngle(angle, 15) : angle, '°', 'insp.rotation');
     }
     else {
       marquee = boxFromPoints(press.start.x, press.start.y, p.x, p.y);
       const hits = marqueeSelect(theme().elements.filter(e => isShown(theme(), e)), marquee);
-      store.select([...new Set([...press.base, ...hits.map(id => groupTarget(theme(), id))])]);
+      store.select([...new Set([...press.base, ...hits.map(id => canvasTarget(theme(), id, editingCard))])]);
     }
     drawOverlay();
   }
@@ -397,12 +597,17 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     // Keep the handle DOM alive across two stationary clicks so the browser
     // can deliver dblclick to the same frame (capture also ends here).
     const redraw = press?.started || guides.length > 0 || marquee !== null;
+    const picked = press?.mode === 'move' && !press.started && press.part != null ? press : null;
+    if (press?.mode === 'property' && press.handle === 'trial-value') onTrialHold(null);
     if (press?.started && press.mode !== 'marquee') store.endGesture();
     press = null;
     guides = [];
     marquee = null;
+    handleReadout = null;
+    onHandleEdit(null);
     overlay.classList.remove('grabbing');
     if (redraw) drawOverlay();
+    if (picked) pickTextPart(picked.part, picked.start);
   }
 
   /** The wheel in framing mode zooms the video around the pointer (Ctrl+wheel still zooms the view). */
@@ -505,10 +710,77 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     if (fv) applyFraming(applyFramingKey(fv.framing, action, fv.view));
   }
 
+  const partMeasure = canvasMeasure(new OffscreenCanvas(1, 1).getContext('2d'));
+  function pickTextPart(id, at) {
+    const element = theme().elements.find(e => e.id === id);
+    const parts = element && textParts(element);
+    const part = parts && textPartAt(element, parts.pieces, at, partMeasure);
+    if (part) onTextPart(element, parts.scope, part);
+  }
+
+  function applyFill(element, image) {
+    store.dispatch('patchElements', { patches: [{ id: element.id, patch: { kind: { image } } }] });
+  }
+
+  function leaveFill() {
+    editingFill = null; fillBurst.flush(); clearHandleValue(); drawOverlay();
+    scroll.focus({ preventScroll: true });
+  }
+
+  function onFillWheel(evt) {
+    if (editingFill === null || evt.ctrlKey || evt.target.closest?.(WHEEL_KEEPERS)) return;
+    evt.preventDefault();
+    const element = theme().elements.find(e => e.id === editingFill);
+    fillBurst.touch();
+    const image = editedFill(element.kind.image, { scale: Math.exp(-wheelPixels(evt) / 500) });
+    applyFill(element, image);
+    showHandleValue(point(evt.clientX, evt.clientY), image.scale * 100, '%', 'shape.imageScale'); drawOverlay();
+  }
+
+  function leaveCard() {
+    const id = editingCard;
+    editingCard = null;
+    if (id !== null && theme().elements.some(e => e.id === id)) store.select([id]);
+    drawOverlay(); scroll.focus({ preventScroll: true });
+  }
+
+  function finishTextEdit(commit) {
+    if (!textEditor) return;
+    const { id, node, original } = textEditor;
+    textEditor = null;
+    node.remove();
+    if (commit && node.value !== original) store.dispatch('patchElements', { patches: [{ id, patch: { kind: { content: { text: node.value } } } }] });
+    drawOverlay();
+  }
+
+  function editText(element) {
+    const original = element.kind.content.text;
+    const node = el('textarea', { class: 'canvas-text-editor', text: original, 'aria-label': handleLabel('common.text'),
+      title: handleLabel('shell.textEditHint'), spellcheck: false,
+      style: { ...boxStyle(element.frame), transform: `rotate(${appliedRotation(element)}deg)`, fontSize: px(element.kind.style.size) },
+      onkeydown: evt => {
+        if (evt.key === 'Escape' || evt.key === 'Enter' && (evt.ctrlKey || evt.metaKey)) {
+          evt.preventDefault(); evt.stopPropagation(); finishTextEdit(evt.key === 'Enter'); scroll.focus({ preventScroll: true });
+        } else if (evt.key.toLowerCase() === 's' && (evt.ctrlKey || evt.metaKey)) finishTextEdit(true);
+      },
+      onblur: () => finishTextEdit(true),
+    });
+    textEditor = { id: element.id, node, original };
+    overlay.replaceChildren(node); node.focus({ preventScroll: true }); node.select();
+  }
+
   /** A double click on the video background, off any element, asks for framing mode. */
   function onDoubleClick(evt) {
+    if (textEditor?.node.contains(evt.target) || evt.target.closest?.('.canvas-card-faces, .canvas-edit-tools, .canvas-object-bar')) return;
     if (framing) return;
     const state = store.getState();
+    const property = evt.target.closest?.('[data-property-handle]')?.dataset.propertyHandle;
+    if (property) {
+      const element = state.theme.elements.find(e => e.id === state.selection[0]);
+      const patch = resetPropertyHandle(element, property);
+      if (patch) store.dispatch('patchElements', { patches: [{ id: element.id, patch }] });
+      return;
+    }
     if (state.selection.length === 1) {
       const e = theme().elements.find(e => e.id === state.selection[0]);
       const p = point(evt.clientX, evt.clientY), f = e?.frame;
@@ -522,8 +794,22 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
         return;
       }
     }
-    if (theme().background.type !== 'video' || !containsClient(evt.clientX, evt.clientY)) return;
     const p = point(evt.clientX, evt.clientY);
+    const hit = hitTest(state.theme.elements.filter(e => isShown(state.theme, e)), p.x, p.y);
+    const element = state.theme.elements.find(e => e.id === hit);
+    const target = state.theme.elements.find(e => e.id === canvasTarget(state.theme, hit, editingCard));
+    if (target?.card && !owners(state.theme, target).some(e => e.locked)) {
+      editingCard = target.id;
+      const member = hit !== target.id && owners(state.theme, element).some(e => e.id === target.id);
+      store.select([member ? groupTarget(state.theme, hit) : target.id]); drawOverlay(); return;
+    }
+    if (element?.kind.type === 'shape' && element.kind.image?.asset && NATURAL_REPEATS.includes(element.kind.image.repeat) && !owners(state.theme, element).some(e => e.locked)) {
+      store.select([element.id]); editingFill = element.id; drawOverlay(); return;
+    }
+    if (element?.kind.type === 'text' && element.kind.content.type === 'static' && !owners(state.theme, element).some(e => e.locked)) {
+      store.select([element.id]); editText(element); return;
+    }
+    if (theme().background.type !== 'video' || !containsClient(evt.clientX, evt.clientY)) return;
     if (hitTest(theme().elements.filter(e => isShown(theme(), e)), p.x, p.y) === null) onFrameRequest();
   }
 
@@ -535,6 +821,8 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
    * @param {{auto: () => {rotation: number, size: {width: number, height: number}|null}|null, label: string, describedBy: string, onLeave: () => void}|null} mode
    */
   function setFraming(mode) {
+    finishTextEdit(true);
+    editingFill = null; fillBurst.flush();
     if (wheelFrame !== null) cancelAnimationFrame(wheelFrame);
     wheelFrame = null;
     wheelDelta = 0;
@@ -574,8 +862,27 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       drawOverlay();
     }
   });
+  scroll.addEventListener('wheel', onFillWheel, { passive: false });
   overlay.addEventListener('wheel', onFramingWheel, { passive: false });
   overlay.addEventListener('keydown', onFramingKey);
+  document.addEventListener('pointerdown', () => fillBurst.flush(), { capture: true });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) fillBurst.flush(); });
+  scroll.addEventListener('keydown', evt => {
+    if (evt.ctrlKey || evt.metaKey) fillBurst.flush();
+    if (editingFill !== null && !evt.ctrlKey && !evt.metaKey) {
+      if (['Enter', 'Escape'].includes(evt.key)) { evt.preventDefault(); evt.stopPropagation(); leaveFill(); return; }
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-'].includes(evt.key)) {
+        evt.preventDefault(); evt.stopPropagation(); fillBurst.flush();
+        const element = theme().elements.find(e => e.id === editingFill), step = evt.shiftKey ? 10 : 1;
+        const image = editedFill(element.kind.image, { dx: evt.key === 'ArrowLeft' ? -step : evt.key === 'ArrowRight' ? step : 0,
+          dy: evt.key === 'ArrowUp' ? -step : evt.key === 'ArrowDown' ? step : 0, scale: ['+', '='].includes(evt.key) ? 1.1 : evt.key === '-' ? 1 / 1.1 : 1 });
+        applyFill(element, image);
+        showHandleValue(centerOf(element.frame), evt.key.startsWith('Arrow') ? [image.offsetX, image.offsetY] : image.scale * 100, evt.key.startsWith('Arrow') ? 'px' : '%', evt.key.startsWith('Arrow') ? 'shape.imageOffsetX' : 'shape.imageScale');
+        drawOverlay(); return;
+      }
+    }
+    if (evt.key === 'Escape' && editingCard !== null && !textEditor) { evt.preventDefault(); evt.stopPropagation(); leaveCard(); }
+  });
   scroll.addEventListener('dblclick', onDoubleClick);
   scroll.addEventListener('wheel', onViewWheel, { passive: false });
   new ResizeObserver(() => { if (fitting) fit(); }).observe(scroll);

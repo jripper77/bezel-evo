@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createInspectorTrial, trialAt, trialDuration, TRIAL_FRAME_MS } from '../../src/inspector-trial.js';
+import { createInspectorTrial, trialAt, trialDuration, TRIAL_FRAME_MS, sceneTrialAt, heldTrial, SCENE_TRIAL_MS } from '../../src/inspector-trial.js';
 import { weatherIconPaths } from '../../src/weather-icon.js';
 import { weatherFamily } from '../../src/weather-format.js';
 
@@ -60,4 +60,15 @@ test('all static weather families have distinct native geometry in monochrome an
   assert.match(weatherIconPaths(0)[0].path, /^M16 10A4 4/);
   assert.equal(weatherIconPaths(3, true)[0].path, 'M5 16C-1 16 1 8 7 10C8 3 19 5 18 11C24 10 24 16 19 16L5 16');
   assert.equal(weatherIconPaths(999, true)[0].fill, false);
+});
+
+test('the canvas trial values sweep from the minimum, repeat every 24 s and hold one sensor', () => {
+  const start = sceneTrialAt(0), top = sceneTrialAt(1500);
+  assert.equal(start.scene, true); assert.equal(start.pulse, 0); assert.equal(top.pulse, 1);
+  assert.equal(top.clockOffsetSeconds, 43200);
+  assert.deepEqual(sceneTrialAt(SCENE_TRIAL_MS + 1500), top);
+  assert.deepEqual(sceneTrialAt(-SCENE_TRIAL_MS + 1500), top, 'never a negative clock');
+  assert.deepEqual([0, 7000, 8000, 9000].map(ms => sceneTrialAt(ms).weatherCode), [0, 999, 0, 2]);
+  assert.deepEqual(heldTrial('cpu.usage', .25), { scene: true, elapsedMs: 0, hold: { key: 'cpu.usage', fraction: .25 } });
+  assert.deepEqual([heldTrial('k', 2).hold.fraction, heldTrial('k', -1).hold.fraction, heldTrial('k', NaN).hold.fraction], [1, 0, 0]);
 });

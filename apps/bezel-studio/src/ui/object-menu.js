@@ -1,5 +1,5 @@
 import {canFitContent} from '../editor/fit-content.js';
-import {SEPARATOR,closeMenu,openMenu} from './menu.js';
+import {SEPARATOR,closeMenu,openMenu,openMenuAt} from './menu.js';
 import {canGroup,groupTarget,isShown,owners} from '../editor/cards.js';
 import {hitTest} from '../editor/geometry.js';
 
@@ -20,7 +20,9 @@ export function wireObjectMenu({store,canvasView,stage,layers,t,fitContent=()=>{
  }
  for(const target of [stage,layers]){target.addEventListener('contextmenu',evt=>open(evt));target.addEventListener('keydown',evt=>{if(evt.key==='ContextMenu'||evt.shiftKey&&evt.key==='F10')open(evt,true);});}
  stage.addEventListener('scroll',()=>closeMenu());
- return {close:closeMenu};
+ /** The canvas bar's ⋯: the same items under its button. */
+ function openAt(button,onClose=()=>{}){openMenuAt(button,{label:t('menu.title'),items:objectMenuItems({store,t,fitContent}),onClose:reason=>{if(reason==='escape'||reason==='item')onClose();}});}
+ return {close:closeMenu,openAt};
 }
 
 /** The same actions in the canvas, layers and inspector. */

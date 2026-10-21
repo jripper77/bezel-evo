@@ -1,0 +1,66 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-selection",
+    "file": "dark/app/shell/ux2-handles-selection.png",
+    "detail": "dark/app/shell/ux2-handles-selection-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-selection",
+    "file": "light/app/shell/ux2-handles-selection.png",
+    "detail": "light/app/shell/ux2-handles-selection-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-text-inline",
+    "file": "dark/app/shell/ux2-text-inline.png",
+    "detail": "dark/app/shell/ux2-text-inline-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-text-inline",
+    "file": "light/app/shell/ux2-text-inline.png",
+    "detail": "light/app/shell/ux2-text-inline-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-card-entry",
+    "file": "dark/app/shell/ux2-card-entry.png",
+    "detail": "dark/app/shell/ux2-card-entry-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-card-entry",
+    "file": "light/app/shell/ux2-card-entry.png",
+    "detail": "light/app/shell/ux2-card-entry-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-shape-image-entry",
+    "file": "dark/app/shell/ux2-shape-image-entry.png",
+    "detail": "dark/app/shell/ux2-shape-image-entry-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-shape-image-entry",
+    "file": "light/app/shell/ux2-shape-image-entry.png",
+    "detail": "light/app/shell/ux2-shape-image-entry-detail.png"
+  }
+]

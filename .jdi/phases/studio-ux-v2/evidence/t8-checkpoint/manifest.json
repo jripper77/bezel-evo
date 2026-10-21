@@ -1,0 +1,18 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-handles-ring",
+    "file": "dark/app/shell/ux2-handles-ring.png",
+    "detail": "dark/app/shell/ux2-handles-ring-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-handles-ring",
+    "file": "light/app/shell/ux2-handles-ring.png",
+    "detail": "light/app/shell/ux2-handles-ring-detail.png"
+  }
+]

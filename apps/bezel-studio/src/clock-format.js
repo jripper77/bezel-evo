@@ -57,6 +57,17 @@ export function clockParts(pattern, date = new Date(), language = null, casing =
   return out;
 }
 
+/** Original tip lengths in the native renderer's 64-unit dial. */
+export const HAND_LENGTHS = Object.freeze({ hour: 11.7, minute: 20.9, second: 23 });
+
+/** Relative hand size, bounded like AnalogDto; the original size is never saved. */
+export function withHandLength(analog, hand, value) {
+  const next = { ...analog }, key = `${hand}Length`;
+  const length = Number.isFinite(value) ? Math.max(.1, Math.min(2, value)) : 1;
+  if (length === 1) delete next[key]; else next[key] = length;
+  return next;
+}
+
 /**
  * An analog clock's settings with every absent field at the backend's
  * default (D-2026-10-20-studio-ux-v2-07): hour marks, no numbers, three
@@ -64,11 +75,16 @@ export function clockParts(pattern, date = new Date(), language = null, casing =
  * no date.
  */
 export function analogOf(analog) {
-  return {
+  const result = {
     ticks: 'hours', numbers: 'none', hourHand: true, minuteHand: true, secondHand: true, handShape: 'rounded', border: 2,
     face: '#0b0d0fff', marks: '#aeb5bdff', hourColor: '#e8eaedff', minuteColor: '#e8eaedff', secondColor: '#ff9248ff',
     sweep: false, date: 'none', ...(analog ?? {}),
   };
+  for (const hand of Object.keys(HAND_LENGTHS)) {
+    const key = `${hand}Length`, value = result[key];
+    result[key] = Number.isFinite(value) ? Math.max(.1, Math.min(2, value)) : 1;
+  }
+  return result;
 }
 
 /** Where the hands point at `date`, degrees clockwise from 12, like the backend's; `sweep` (with motion) moves the seconds between seconds. */

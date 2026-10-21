@@ -86,6 +86,14 @@ body.resizing { cursor: col-resize; user-select: none; }
 .sel-box { position: absolute; border: 1.5px solid var(--select); box-shadow: 0 0 0 1px rgb(0 0 0 / 35%); pointer-events: none; }
 .sel-box.locked { border-style: dashed; }
 .handle { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: var(--handle); border: 1.5px solid var(--select); border-radius: 2px; pointer-events: auto; }
+.handle { padding: 0; }
+.property-handle { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; padding: 0; border: 2px solid var(--select); background: var(--handle); pointer-events: auto; cursor: grab; }
+.property-handle.point { border-radius: 50%; }
+.property-handle.measure { width: 10px; height: 10px; margin: -5px 0 0 -5px; transform: rotate(45deg); border-radius: 1px; }
+.property-handle:active { cursor: grabbing; }
+.handle, .property-handle, .rotate-handle { background: var(--chrome); }
+.handle-readout { position: absolute; z-index: 3; padding: 4px 7px; border-radius: var(--control-radius); background: var(--accent); color: var(--accent-text); font-family: var(--font-mono); font-size: var(--fs-small); white-space: nowrap; pointer-events: none; }
+.canvas-field-active { outline: 2px solid var(--select); outline-offset: 2px; }
 .handle[data-h="n"], .handle[data-h="s"] { cursor: ns-resize; }
 .handle[data-h="e"], .handle[data-h="w"] { cursor: ew-resize; }
 .handle[data-h="nw"], .handle[data-h="se"] { cursor: nwse-resize; }
@@ -209,3 +217,19 @@ body.resizing { cursor: col-resize; user-select: none; }
 .rotate-handle { position: absolute; width: 12px; height: 12px; padding: 0; margin: -6px 0 0 -6px; background: var(--handle); border: 1.5px solid var(--select); border-radius: 50%; pointer-events: auto; cursor: grab; }
 .rotate-handle:active { cursor: grabbing; }
 .rotate-handle:focus-visible { outline: 2px solid var(--select); outline-offset: 3px; }
+
+/* Inline text entry keeps the native multiline editor and document geometry. */
+.canvas-text-editor { position: absolute; z-index: 4; margin: 0; padding: 0; min-height: 0; min-width: 0; resize: none; border: 2px solid var(--select); border-radius: 0; background: var(--chrome); color: var(--text); }
+
+.canvas-card-faces, .canvas-edit-tools { position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; max-width: min(600px, 80vw); overflow-x: auto; padding: 3px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--chrome); }
+.canvas-card-faces .segmented { flex: 0 0 auto; }
+
+/* The bar over the selection: centred above it, clear of the rotation handle. */
+.canvas-object-bar { position: absolute; z-index: 3; display: flex; align-items: center; gap: 2px; padding: 3px; transform: translate(-50%, -100%); border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--chrome); box-shadow: var(--shadow); white-space: nowrap; }
+.canvas-object-sensor { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: var(--control-radius); background: transparent; color: var(--accent-ink); font-family: var(--font-mono); font-size: var(--fs-small); cursor: pointer; }
+.canvas-object-sensor:hover { background: var(--surface-3); }
+.canvas-object-sensor:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+
+.guide-distance { position: absolute; z-index: 2; padding: 2px 4px; border: 1px solid var(--guide); border-radius: var(--control-radius); color: var(--guide); background: var(--chrome); font-family: var(--font-mono); font-size: var(--fs-small); white-space: nowrap; pointer-events: none; }
+.guide-distance.x { transform: translate(6px, -50%); }
+.guide-distance.y { transform: translate(-50%, 6px); }

@@ -133,23 +133,38 @@ pub(crate) fn draw(
     }
     let angles = clock.angles(time, sweep);
     let hands = [
-        (clock.hour_hand, HOUR_HAND, angles.hour, clock.hour_color),
+        (
+            clock.hour_hand,
+            HOUR_HAND,
+            angles.hour,
+            clock.hour_color,
+            clock.hour_length,
+        ),
         (
             clock.minute_hand,
             MINUTE_HAND,
             angles.minute,
             clock.minute_color,
+            clock.minute_length,
         ),
         (
             clock.second_hand,
             SECOND_HAND,
             angles.second,
             clock.second_color,
+            clock.second_length,
         ),
     ];
-    for (shown, hand, angle, color) in hands {
+    for (shown, hand, angle, color, length) in hands {
         if shown {
-            draw_hand(layer, dial, hand, angle, color, clock.hand_shape);
+            draw_hand(
+                layer,
+                dial,
+                (hand.0 * length, hand.1, hand.2),
+                angle,
+                color,
+                clock.hand_shape,
+            );
         }
     }
     let hub = [

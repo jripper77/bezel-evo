@@ -7,6 +7,15 @@ import { VALUE_PARTS, OVERFLOWS } from '../../text-layout.js';
 import { partStylePatch } from '../../inspector-edit.js';
 
 const selected = new WeakMap();
+const partMemory = store => {
+  if (!selected.has(store)) selected.set(store, new Map());
+  return selected.get(store);
+};
+
+/** Picks `part` in the parts row of element `id` (`scope`: value or clock), as a click on it would. */
+export function pickPart(store, id, scope, part) {
+  partMemory(store).set(`${id}:${scope}`, part);
+}
 
 export function valueFormatFields(ctx, element, content, setContent) {
   const { t } = ctx, format = content.format ?? {};
@@ -27,8 +36,7 @@ export function textStyleFields(ctx, element, { style = element.kind.style, setS
   const { t } = ctx;
   const fields = ctx.fontFields(element, { style, setStyle, compact: true });
   if (parts) {
-    if (!selected.has(ctx.store)) selected.set(ctx.store, new Map());
-    const memory = selected.get(ctx.store), key = `${element.id}:${scope}`;
+    const memory = partMemory(ctx.store), key = `${element.id}:${scope}`;
     const current = partIds.includes(memory.get(key)) ? memory.get(key) : partIds.includes('number') ? 'number' : partIds[0];
     const editPart = part => {
       const value = style.parts?.[part] ?? {};

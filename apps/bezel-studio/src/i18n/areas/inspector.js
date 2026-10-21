@@ -7,6 +7,10 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.clock.hourLength': 'Hour hand length',
+    'insp.clock.minuteLength': 'Minute hand length',
+    'insp.clock.secondLength': 'Second hand length',
+
     "insp.theme.actions": "Theme actions",
     "insp.theme.turn": "Rotate by 180°",
     "insp.theme.selectHint": "Select an object on the canvas or in Layers to see its properties here.",
@@ -345,6 +349,10 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.clock.hourLength': 'Comprimento do ponteiro das horas',
+    'insp.clock.minuteLength': 'Comprimento do ponteiro dos minutos',
+    'insp.clock.secondLength': 'Comprimento do ponteiro dos segundos',
+
     "insp.theme.actions": "Ações do tema",
     "insp.theme.turn": "Girar 180°",
     "insp.theme.selectHint": "Selecione um objeto na tela ou em Camadas para ver suas propriedades aqui.",
@@ -683,6 +691,10 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.clock.hourLength': 'Lunghezza lancetta delle ore',
+    'insp.clock.minuteLength': 'Lunghezza lancetta dei minuti',
+    'insp.clock.secondLength': 'Lunghezza lancetta dei secondi',
+
     "insp.theme.actions": "Azioni sul tema",
     "insp.theme.turn": "Ruota di 180°",
     "insp.theme.selectHint": "Seleziona un oggetto nel canvas o in Livelli per vederne le proprietà qui.",
