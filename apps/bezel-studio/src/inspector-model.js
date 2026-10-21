@@ -1,11 +1,11 @@
 // Canonical groups of the existing controls. Unknown controls stay visible.
 const GROUPS = {
   layout: ['position', 'membership', 'actions', 'rotation-binding'],
-  data: ['source', 'content', 'scale', 'series', 'window', 'secondary-source', 'spectrum-source', 'apps', 'time'],
-  shape: ['show', 'shape', 'visualization', 'style', 'spectrum-bars', 'spectrum-bands', 'arc', 'scale-marks', 'needle-shape', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance', 'picture'],
+  data: ['source', 'content', 'scale', 'series', 'window', 'secondary-source', 'spectrum-source', 'spectrum-bands', 'apps', 'time', 'stopped'],
+  shape: ['show', 'shape', 'visualization', 'style', 'clock-dial', 'clock-parts', 'cover-fade', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance'],
   text: ['font'],
-  color: ['color', 'spectrum-paint', 'fill', 'track', 'shadow', 'transparency', 'visibility', 'background'],
-  behavior: ['transition', 'sensor-motion', 'stopped', 'preview', 'refresh', 'overflow', 'peak'],
+  color: ['picture', 'color', 'spectrum-paint', 'fill', 'track', 'shadow', 'transparency', 'visibility', 'background'],
+  behavior: ['clock-seconds', 'clock-blink', 'weather-motion', 'image-playback', 'spectrum-motion', 'transition', 'sensor-motion', 'preview', 'refresh', 'overflow', 'peak'],
 };
 export function sectionFor(key, fallback = 'data') {
   return Object.entries(GROUPS).find(([, keys]) => keys.includes(key))?.[0] ?? fallback;

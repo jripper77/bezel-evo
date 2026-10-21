@@ -1,12 +1,13 @@
+import { gaugeFillFields } from './paint.js';
 import { describeSections } from './sections.js';
 // Existing shape controls, isolated from inspector navigation.
 import { el } from '../dom.js';
-import { imageField, numberField, rangeField, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
+import { imageField, numberField, iconChoice, propertySection as section, segmented, toggleField as switchRow } from '../fields.js';
 import { cornerValue } from '../../corner-radii.js';
 import { ART, IMAGE_REPEATS, REPEAT_KEYS, NATURAL_REPEATS } from './art.js';
 
 export function panels(ctx) {
-  const { t, update, colorField, video, cornersSection, fadeFields, button, optionTiles } = ctx;
+  const { t, update, colorField, video, cornersSection, fadeFields, button } = ctx;
   function shapePicture(e, assets) {
     const k = e.kind;
     const image = k.image ?? null;
@@ -23,15 +24,14 @@ export function panels(ctx) {
     if (!image) return section('picture', t('common.image'), [pick]);
     const repeat = IMAGE_REPEATS.includes(image.repeat) ? image.repeat : 'cover';
     const art = (value) => ART[`repeat${value[0].toUpperCase()}${value.slice(1)}`];
-    const tiles = IMAGE_REPEATS.map((value) => ({ text: t(REPEAT_KEYS[value]), art: art(value), pressed: repeat === value, onClick: () => repeat !== value && set({ repeat: value }) }));
     const natural = NATURAL_REPEATS.includes(repeat);
     return section('picture', t('common.image'), [
       pick,
-      optionTiles(t('shape.repeat'), tiles),
+      iconChoice(t('shape.repeat'), repeat, IMAGE_REPEATS.map(value => [value, t(REPEAT_KEYS[value]), art(value)]), repeat => set({ repeat }), { wide: true, iconOnly: true }),
       natural && numberField(t('shape.imageScale'), Math.round((image.scale ?? 1) * 100), (v) => set({ scale: Math.max(5, Math.min(1000, v)) / 100 }), { min: 5, max: 1000, unit: '%' }),
       natural && numberField(t('shape.imageOffsetX'), image.offsetX ?? 0, (v) => set({ offsetX: v }), { unit: 'px' }),
       natural && numberField(t('shape.imageOffsetY'), image.offsetY ?? 0, (v) => set({ offsetY: v }), { unit: 'px' }),
-      rangeField(t('shape.imageOpacity'), Math.round((image.opacity ?? 1) * 100), (v) => set({ opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, format: (v) => `${v}%` }),
+      numberField(t('shape.imageOpacity'), Math.round((image.opacity ?? 1) * 100), v => set({ opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%' }),
       el('p', { class: 'hint', text: t('shape.imageHint') }),
     ]);
   }
@@ -42,7 +42,7 @@ export function panels(ctx) {
       segmented(t('common.shape'), k.shape, [['rect', t('shape.rect')], ['ellipse', t('shape.ellipse')]], (v) => update(e.id, { kind: { shape: v } })),
       switchRow(t('shape.videoWindow'), Boolean(k.videoWindow), (videoWindow) => update(e.id, { kind: { videoWindow } })),
     ]), section('color', t('inspector.color'), [
-      k.videoWindow ? el('div', {}, [el('p', { class: 'hint', text: t('shape.videoWindowHint') }), button(t('deviceVideo.choose'), () => video.openStorage())]) : colorField(t('inspector.fill'), typeof k.fill === 'string' ? k.fill : '#1e293bff', (v) => update(e.id, { kind: { fill: v } })),
+      k.videoWindow ? el('div', {}, [el('p', { class: 'hint', text: t('shape.videoWindowHint') }), button(t('deviceVideo.choose'), () => video.openStorage())]) : el('div', {}, gaugeFillFields(ctx, e)),
     ]), k.videoWindow ? null : shapePicture(e, assets),
     section('transparency', t('fade.mode'), fadeFields(e)),
     section('outline', t('insp.outline'), [

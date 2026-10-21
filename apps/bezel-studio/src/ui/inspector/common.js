@@ -220,8 +220,8 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     ]);
   }
 
-  function fadeFields(e) {
-    return [fadeField({ mode: t('fade.mode'), none: t('fade.none'), linear: t('fade.linear'), radial: t('fade.radial'), centerX: t('fade.centerX'), centerY: t('fade.centerY'), extent: t('fade.extent'), angle: t('shape.fadeAngle'), midpoint: t('fade.midpoint'), start: t('shape.fadeStart'), end: t('shape.fadeEnd') }, e.kind.fade, fade => update(e.id, { kind: { fade } }))];
+  function fadeFields(e, { value = e.kind.fade, set = fade => update(e.id, { kind: { fade } }) } = {}) {
+    return [fadeField({ mode: t('fade.mode'), none: t('fade.none'), linear: t('fade.linear'), radial: t('fade.radial'), centerX: t('fade.centerX'), centerY: t('fade.centerY'), extent: t('fade.extent'), angle: t('shape.fadeAngle'), midpoint: t('fade.midpoint'), start: t('shape.fadeStart'), end: t('shape.fadeEnd') }, value, set)];
   }
 
   /** How a duration of `seconds` is written ("30 s", "5 min", "1 h"). */

@@ -270,3 +270,8 @@
 .inspector-linked .multi-preview canvas { width: 48px; height: 48px; object-fit: contain; }
 .inspector-linked .multi-preview canvas + canvas { margin-left: -30px; }
 .inspector-linked .multi-objects { margin: 0 12px 12px; }
+
+.inspector-linked .image-anchor .segmented { display: grid; grid-template-columns: repeat(3, 28px); width: max-content; gap: 3px; border: 0; background: none; padding: 0; }
+.inspector-linked .image-anchor button { min-height: 28px; border: 1px solid var(--border); border-radius: var(--control-radius); }
+
+.inspector-linked .player-part-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }

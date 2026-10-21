@@ -67,13 +67,13 @@ export function adoptControl(current, fresh) {
 }
 
 /** A labelled number input. `step` 1 rounds to integers. */
-export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false } = {}) {
+export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false, placeholder } = {}) {
   if (prefix !== undefined) {
-    const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName, nullable });
+    const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName, nullable, placeholder });
     return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
   }
   const id = fieldId();
-  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange, nullable);
+  const input = numberInput({ id, value: String(value ?? ''), min, max, placeholder, 'aria-label': label }, step, onChange, nullable);
   const field = el('label', { class: 'field number-field', for: id }, [
     el('span', { class: 'field-label' }, [iconName ? icon(ICONS[iconName], 16) : null, label]),
     el('span', { class: 'number-control' }, [input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
@@ -144,14 +144,14 @@ export function iconChoice(label, value, options, onChange, { wide = false, icon
   const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
   for (const [v, text, name] of options) group.append(el('button', {
     type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), onclick: () => onChange(v),
-  }, [name ? icon(ICONS[name], 18) : null, iconOnly ? null : text]));
+  }, [name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null, iconOnly ? null : text]));
   return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
 }
 
 /** The same preview tile in every widget. */
 export function previewChoice(label, tiles) {
-  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label }, tiles.map(({ text, art, pressed, onClick }) =>
-    el('button', { type: 'button', class: 'option-tile', 'aria-pressed': String(pressed), onclick: onClick }, [icon(art, 32), el('span', { text })])));
+  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label }, tiles.map(({ text, art, preview, pressed, onClick }) =>
+    el('button', { type: 'button', class: 'option-tile', 'aria-pressed': String(pressed), onclick: onClick }, [preview ?? icon(art, 32), el('span', { text })])));
 }
 
 /** Inspector toggles use native buttons with a visible state and accessible name. */
@@ -229,9 +229,9 @@ export function fadeField(texts, value, onChange) {
  * @param {string} label the accessible name, e.g. "X (px)"
  * @param {{min?: number, max?: number, step?: number|'any', unit?: string}} [opts]
  */
-export function prefixedField(prefix, label, value, onChange, { min, max, step = 1, unit, iconName, nullable = false } = {}) {
+export function prefixedField(prefix, label, value, onChange, { min, max, step = 1, unit, iconName, nullable = false, placeholder } = {}) {
   const id = fieldId();
-  const input = numberInput({ id, value: String(value ?? ''), min, max, 'aria-label': label }, step, onChange, nullable);
+  const input = numberInput({ id, value: String(value ?? ''), min, max, placeholder, 'aria-label': label }, step, onChange, nullable);
   return el('label', { class: 'fld', for: id }, [
     iconName ? icon(ICONS[iconName], 16) : null,
     el('span', { class: 'fld-prefix', 'aria-hidden': 'true', text: prefix }),
@@ -444,7 +444,7 @@ export function listCard({ icon: name = null, title, subtitle = null, value = nu
   const chevron = icon(ICONS.chevronDown, 14);
   chevron.classList.add('list-card-chevron');
   return el('button', { type: 'button', class: 'list-card', 'aria-label': label, 'aria-pressed': pressed === null ? null : String(pressed), onclick: onClick }, [
-    name ? icon(ICONS[name], 18) : null,
+    name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null,
     el('span', { class: 'list-card-text' }, [
       el('span', { class: 'list-card-title', text: title }),
       subtitle ? el('span', { class: 'list-card-sub', text: subtitle }) : null,
