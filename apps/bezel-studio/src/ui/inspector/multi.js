@@ -68,9 +68,13 @@ export function header({ ids, t, store, host, video }) {
 function commonPanels({ ids, t, store, colorField, sensors, host }) {
   const elements = store.getState().theme.elements.filter(e => ids.includes(e.id));
   const shared = commonSelection(elements);
-  const edit = (field, value) => { if (value !== null) store.dispatch('patchElements', { patches: selectionPatches(elements, field, value) }); };
+  const edit = (field, value) => {
+    if (value === null) return;
+    if (field === 'rotation') store.dispatch('rotateSelection', { ids, rotation: value });
+    else store.dispatch('patchElements', { patches: selectionPatches(elements, field, value) });
+  };
   const numeric = (key, label, value, scale = 1) => {
-    const field = numberField(t(label), value === MIXED ? null : value * scale, value => edit(key, value === null ? null : value / scale), { nullable: true, unit: key === 'opacity' ? '%' : 'px', ...(key === 'opacity' ? { min: 0, max: 100 } : {}) });
+    const field = numberField(t(label), value === MIXED ? null : value * scale, value => edit(key, value === null ? null : value / scale), { nullable: true, unit: key === 'opacity' ? '%' : key === 'rotation' ? '°' : 'px', ...(key === 'opacity' ? { min: 0, max: 100 } : {}) });
     if (value === MIXED) field.querySelector('input').placeholder = t('insp.mixed');
     return field;
   };
@@ -87,6 +91,7 @@ function commonPanels({ ids, t, store, colorField, sensors, host }) {
     geometry: section('position', t('inspector.position'), [
       fieldGrid(['x', 'y'].map(key => numeric(key, `inspector.${key}`, shared.frame[key]))),
       fieldGrid(['width', 'height'].map(key => numeric(key, `inspector.${key}`, shared.frame[key]))),
+      shared.rotation !== null && numeric('rotation', 'insp.rotation', shared.rotation),
     ]),
     data: [section('content', t('insp.commonProperties'), [
       shared.sensor !== null && sensorPicker({ t, key: shared.sensor === MIXED ? '' : shared.sensor, label: t('inspector.sensor'), catalog: () => sensors.catalog(), readings: () => host.lastSample()?.readings,

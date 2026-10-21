@@ -288,6 +288,15 @@ export const commands = {
     return { theme: next };
   },
 
+  /** The same individual rotation for an eligible selection, in one undo step. */
+  rotateSelection(theme, { ids, rotation }) {
+    const elements = ids.map(id => theme.elements.find(e => e.id === id));
+    if (!elements.length || !elements.every(e => canRotate(theme, e))) return { theme };
+    let next = theme;
+    for (const id of ids) next = commands.rotate(next, { id, rotation }).theme;
+    return { theme: next };
+  },
+
   /** Moves one element to `index` in the z-order (0 = bottom). */
   reorder(theme, { id, index }) {
     const from = theme.elements.findIndex((e) => e.id === id);
