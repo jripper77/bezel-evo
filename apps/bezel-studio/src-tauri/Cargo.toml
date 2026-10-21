@@ -57,6 +57,7 @@ image = { version = "0.25.10", default-features = false, features = ["png", "jpe
 # tree: identifiers (raw ones and those inside macro calls included), not
 # text. Both are already in `Cargo.lock` through the proc macros.
 [dev-dependencies]
+tempfile = "3.27.0"
 proc-macro2 = "1.0.107"
 syn = { version = "2.0.119", features = ["full", "visit"] }
 

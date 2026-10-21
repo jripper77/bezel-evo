@@ -411,6 +411,10 @@ pub struct SessionDto {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemeEntryDto {
+    /// Sensor keys actually used by this theme.
+    pub sensors: Vec<String>,
+    /// Number of objects in the saved theme.
+    pub objects: usize,
     /// Display name.
     pub name: String,
     /// Where it lives.
@@ -438,6 +442,13 @@ impl From<&ThemeEntry> for ThemeEntryDto {
     fn from(e: &ThemeEntry) -> Self {
         let models = fitting_models(&e.theme);
         Self {
+            sensors: e
+                .theme
+                .sensor_keys()
+                .into_iter()
+                .map(|key| key.to_string())
+                .collect(),
+            objects: e.theme.elements.len(),
             name: e.theme.name.clone(),
             location: e.location.0.clone(),
             canvas: SizeDto {

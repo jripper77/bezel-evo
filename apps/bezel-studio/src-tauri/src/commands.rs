@@ -430,6 +430,12 @@ pub async fn duplicate_theme(
     blocking(&state, move |b| b.duplicate_theme(&location, &name)).await
 }
 
+/// Removes an unused personal theme from the library.
+#[tauri::command]
+pub async fn delete_theme(state: State<'_, Shared>, location: String) -> UiResult<()> {
+    blocking(&state, move |b| b.delete_theme(&location)).await
+}
+
 /// The thumbnail of a library theme as a PNG `data:` URL, drawn off the
 /// session's lock when it is not kept yet; `None` when the theme cannot be
 /// drawn (the gallery shows its placeholder).
@@ -714,6 +720,16 @@ pub async fn save_profiles(
         menu.refresh_profiles(&app);
     }
     Ok(())
+}
+
+/// Show saved themes for thirty seconds without modifying the open editor document.
+#[tauri::command]
+pub async fn try_themes(
+    state: State<'_, Shared>,
+    themes: std::collections::BTreeMap<String, String>,
+    profile: Option<String>,
+) -> UiResult<usize> {
+    blocking(&state, move |backend| backend.try_themes(themes, profile)).await
 }
 
 /// Plays a profile transition once on the live screens, unsaved.
