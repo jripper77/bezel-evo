@@ -1,0 +1,74 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "unsaved",
+    "file": "dark/app/shell/unsaved.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "unsaved",
+    "file": "light/app/shell/unsaved.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-drag",
+    "file": "dark/app/shell/ux2-status-drag.png",
+    "detail": "dark/app/shell/ux2-status-drag-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-drag",
+    "file": "light/app/shell/ux2-status-drag.png",
+    "detail": "light/app/shell/ux2-status-drag-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-sensors",
+    "file": "dark/app/shell/ux2-status-sensors.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-sensors",
+    "file": "light/app/shell/ux2-status-sensors.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-bezel",
+    "file": "dark/app/shell/ux2-status-bezel.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-bezel",
+    "file": "light/app/shell/ux2-status-bezel.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-screen",
+    "file": "dark/app/shell/ux2-status-screen.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-screen",
+    "file": "light/app/shell/ux2-status-screen.png"
+  }
+]
