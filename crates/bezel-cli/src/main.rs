@@ -63,6 +63,9 @@ fn sensor_source(fake: bool, settings: Option<&SensorSettings>) -> Box<dyn Senso
     {
         options.ping_host.clone_from(host);
     }
+    if let Some(settings) = settings {
+        options.presentmon_path.clone_from(&settings.presentmon_path);
+    }
     Box::new(SystemSensors::with_options(options))
 }
 

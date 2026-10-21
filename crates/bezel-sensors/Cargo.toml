@@ -32,7 +32,7 @@ windows-core = "0.62.2"
 image = { version = "0.25.9", default-features = false, features = ["png", "jpeg"] }
 # gpu.fps: RivaTuner Statistics Server's named shared memory, opened and
 # copied read-only (D-2026-09-30-release-polish-4).
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Power", "Win32_System_Memory", "Win32_System_SystemInformation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_Security", "Wdk_System_SystemServices"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Power", "Win32_System_Memory", "Win32_System_SystemInformation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_Security", "Wdk_System_SystemServices", "Win32_System_JobObjects"] }
 
 [lints]
 workspace = true
