@@ -68,7 +68,7 @@ Windows and NVML do not expose a restart action. Filters continue checking their
 scope so a recovered sensor leaves the unavailable view automatically.
 **Open Sensors** clears the filters and opens the whole catalog.
 
-![Sensors with probe and status filters and the compact probe summary](../images/studio-sensor-probes.png)
+![Sensors grouped by category, and the sensor chip popover with per-probe counts and Restart](../images/studio-sensor-probes.png)
 
 ## When a value is unavailable
 

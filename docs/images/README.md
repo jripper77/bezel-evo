@@ -17,14 +17,14 @@ are simulated, not measurements.
 | `studio-card-faces.png` | Dark Studio: a two-face Card, its faces list, shared background and one transition |
 | `studio-player.png` | Dark Studio: media player parts and a segmented progress bar with knob and side times |
 | `studio-background.png` | Dark Studio: Media panel and the "Change background" chooser |
-| `studio-sensor-probes.png` | Sensors panel with probe/status filters and per-probe availability counts; built-in Demo theme, captured by `tests/e2e/libre.spec.mjs` at 1280x800 with the live simulated clock |
+| `studio-sensor-probes.png` | Dark Studio: Sensors by category with small graphs and the sensor chip's popover, with per-probe counts and Restart; one simulated unavailable LibreHardwareMonitor sensor |
 | `studio-sensors.png` | Dark Studio: Sensors panel and the sensor status popover, with one simulated missing device |
 | `studio-themes.png` | Dark Studio: the Themes gallery with every demo theme and Ember selected |
 | `studio-profiles.png` | Dark Studio: Profiles and automation with two example profiles (Night by schedule, Music when media plays) created in the page only, and the Curtain transition |
 | `studio-light.png` | Light Studio: Layers with a Card, the ring's colour-by-value thresholds |
 | `screen-render.png` | Generic illustrative device, composed with HTML/CSS around the exact demo canvas frame; not a product photograph or hardware validation |
 
-Except for the probe overview above, capture at 1440 x 900 (Studio) and 1200 x 900 (device illustration), English UI,
+Capture at 1440 x 900 (Studio) and 1200 x 900 (device illustration), English UI,
 UTC, dark/light system theme, with a fixed demo clock. The only device shown is
 the demo's Turing Smart Screen 8.8"; addresses in the UI are the demo fixtures,
 shown as Windows ports (COM5, COM4) by the capture script. The example uses

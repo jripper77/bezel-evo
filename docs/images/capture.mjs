@@ -141,9 +141,16 @@ const SHOTS = [
   } },
   { name: 'studio-background', run: async page => {
     await page.locator('#tab-media').click();
+    await openSections(page, 'color');
     await inspector(page).getByRole('button', { name: t('insp.bgChange'), exact: true }).click();
     const head = inspector(page).locator('.bg-source-head').filter({ hasText: t('insp.bgComputer') });
     if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
+  } },
+  { name: 'studio-sensor-probes', query: '&libre=partial', run: async page => {
+    await page.locator('#tab-sensors').click();
+    await page.waitForTimeout(2500);
+    await page.locator('#status-libre-toggle').click();
+    await page.locator('#libre-popover').waitFor();
   } },
   { name: 'studio-sensors', query: '&libre=partial', run: async page => {
     await page.locator('#tab-sensors').click();
