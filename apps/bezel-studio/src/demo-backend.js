@@ -1,3 +1,4 @@
+import { DEMO_IMAGE } from './demo-image.js';
 import { themeSensorKeys } from './gallery-model.js';
 import { createProfileSelection } from './profile-selection.js';
 import { appliedRotation, rotatedBounds } from './editor/rotation.js';
@@ -1651,7 +1652,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       return Promise.resolve(true);
     },
     assets: () => Promise.resolve([
-      ...images.map((ref) => ({ ref, kind: 'image' })),
+      ...images.map((ref) => ({ ref, kind: 'image', ...(/^assets\/image-\d+\.png$/.test(ref) ? DEMO_IMAGE : {}) })),
       ...[...posters].map(([ref, dataUrl]) => ({ ref, kind: 'image', dataUrl, bytes: 184_320, iconSvg: dataUrl.startsWith('data:image/svg+xml,') ? decodeURIComponent(dataUrl.split(',', 2)[1]) : null })),
       ...[...videos.values()].map((v) => ({ ...v })),
     ].filter((a) => !removedAssets.has(a.ref) || JSON.stringify(theme).includes(JSON.stringify(a.ref)))),

@@ -1,3 +1,4 @@
+import { DEMO_IMAGE } from '../../src/demo-image.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEMO_AWAY_SAMPLES, DEMO_DAY_S, DEMO_THEME_AGE_S, DEMO_IMPORT_WARNINGS, DEMO_SENSORS, createDemoBackend, demoElementSide, demoFits, demoIsolate, demoFormat, demoNextChange, demoOrientation, demoThumbnail, demoValue } from '../../src/demo-backend.js';
@@ -181,7 +182,7 @@ test('images, live mode and fonts', async () => {
   assert.deepEqual(await demo.listDevices(), { screens: [], desktopMode: [] });
   assert.deepEqual(await demo.assets(), []);
   await demo.addImage();
-  assert.deepEqual(await demo.assets(), [{ ref: 'assets/image-1.png', kind: 'image' }]);
+  assert.deepEqual(await demo.assets(), [{ ref: 'assets/image-1.png', kind: 'image', ...DEMO_IMAGE }]);
   assert.equal(demo.isLive(), false);
   await demo.setLive(true, 'k');
   assert.equal(demo.isLive(), true);

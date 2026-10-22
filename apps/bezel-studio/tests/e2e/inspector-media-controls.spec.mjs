@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection, setPanelWidths } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection, setPanelWidths, addMedia } from './helpers.mjs';
 
 test('fade preview commits one drag as one Undo and supports radial keyboard editing', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -54,4 +54,19 @@ test('image asset card shows actual dimensions and reuses Media for browsing', a
   await card.getByRole('button', { name: t('insp.image.media'), exact: true }).click();
   await expect(page.locator('#tab-media')).toHaveAttribute('aria-selected', 'true');
   await expectAccessible(page); expect(errors).toEqual([]);
+});
+
+
+test('the demo raster import exposes a decoded PNG and its real dimensions', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await page.goto('/index.html?demo=turing88'); await page.locator('#tab-media').click();
+  await addMedia(page, t, 'image');
+  const item = page.locator('.media-item').first(); await item.hover();
+  await item.getByRole('button', { name: t('media.addImage'), exact: true }).click();
+  await openSection(page, 'data');
+  const card = page.locator('#inspector .asset-field-card'), image = card.locator('img');
+  await expect(image).toBeVisible(); await expect(image).toHaveAttribute('src', /^data:image\/png;base64,/);
+  await expect.poll(() => image.evaluate(node => [node.naturalWidth, node.naturalHeight])).toEqual([96, 96]);
+  await expect(card.locator('.asset-field-meta')).toContainText('96×96');
+  expect(errors).toEqual([]);
 });
