@@ -1,19 +1,17 @@
 # JDI — Instrucoes Claude Code
 
-## Ripresa operativa — 20 ottobre 2026 (sera)
+## Ripresa operativa — 22 ottobre 2026 (notte)
 
 Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
-Versioni: pubblicata **0.1.63** (Latest su GitHub, tag `v0.1.63`, con i font Doto,
-Doto Rounded e IBM Plex Mono inclusi); installata sul PC **0.1.64** (locale, non
-pubblicata: immagine di sfondo nelle forme con ripetizione). Push e release solo su richiesta.
-Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p (redesign Studio,
-logo Pixel, sfondo, profili, schermata di accensione, 4 temi predefiniti 1920×480);
-stato e decisioni nella sezione «Design» del passaggio.
-Aperti: prova visiva su 8,8/3,5, stato «attivo ora»
-non esposto dal runtime, nomi tagliati nelle righe Sensori e facce Card, avvio dell'8,8
-dalla flash interna, temi predefiniti da realizzare. ChatGPT può lavorare in parallelo
-nello stesso repository: controllare `git log` prima di formattare o fare commit ampi.
-Ripresa in `F:\Dev\bezel`.
+Versioni: pubblicata e installata **0.2.0** (Latest su GitHub, tag `v0.2.0`, fase
+studio-ux-v2 chiusa). Solo locale: correzione distanza copertina Player (Unreleased).
+I tag di upstream stanno in `refs/tags/upstream/*` (`remote.upstream.tagOpt --no-tags`):
+i `v0.x` appartengono a Bezel Evo. Push e release solo su richiesta.
+Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p.
+Aperti: avvio dell'8,8 dalla flash interna, nomi tagliati nelle righe Sensori e facce
+Card, anteprima immagini nel demo, stato «attivo ora» non esposto dal runtime.
+ChatGPT può lavorare in parallelo nello stesso repository: controllare `git log` prima
+di formattare o fare commit ampi. Ripresa in `F:\Devezel`.
 
 Este projeto usa o JDI (Just Do It) como workflow de desenvolvimento. JDI eh um workflow enxuto: 6 comandos no loop principal, 5 agents core + 2 per-project specialists.
 
