@@ -421,7 +421,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
 
   /** The preview: "Preview · live", the value its sensor reads now, the object alone, and a graph's time axis. */
   function preview(e) {
-    return el('figure', { class: 'inspector-preview', dataset: { elementId: String(e.id) } }, [
+    return el('figure', { class: 'inspector-preview', dataset: { elementId: String(e.id), kind: e.kind.type } }, [
       el('div', { class: 'inspector-preview-stage' }, [
         el('canvas', { width: 1, height: 1, role: 'img', 'aria-label': t('inspector.previewOf', { name: e.name }) }),
         el('p', { class: 'hint inspector-preview-off', hidden: true, text: t('insp.previewNone') }),
