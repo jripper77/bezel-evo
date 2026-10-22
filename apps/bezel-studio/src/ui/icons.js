@@ -11,6 +11,10 @@ const rect = (x, y, w, h, r = 0) => (r
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
 
 export const ICONS = Object.freeze({
+  'corners-all': ['M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5'],
+  'ends-round': ['M8 9h8a3 3 0 0 1 0 6H8a3 3 0 0 1 0-6z'],
+  'ends-flat': ['M5 9h14v6H5z'],
+  'blocks': ['M3 9h4v6H3zM10 9h4v6h-4zM17 9h4v6h-4z'],
   textLeft: ['M4 6h16M4 12h10M4 18h13'],
   textCenter: ['M4 6h16M7 12h10M5.5 18h13'],
   textRight: ['M4 6h16M10 12h10M7 18h13'],

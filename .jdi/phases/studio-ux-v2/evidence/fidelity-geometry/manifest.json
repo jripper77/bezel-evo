@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-ring-open",
+    "file": "dark/app/inspector/ux2-ring-open.png",
+    "detail": "dark/app/inspector/ux2-ring-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-ring-open",
+    "file": "light/app/inspector/ux2-ring-open.png",
+    "detail": "light/app/inspector/ux2-ring-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-shape",
+    "file": "dark/app/inspector/ux2-media-shape.png",
+    "detail": "dark/app/inspector/ux2-media-shape-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-shape",
+    "file": "light/app/inspector/ux2-media-shape.png",
+    "detail": "light/app/inspector/ux2-media-shape-detail.png"
+  }
+]
