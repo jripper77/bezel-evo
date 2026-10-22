@@ -50,11 +50,24 @@ test('the bars corners switch between one radius and four, under their own title
   const errors=watchErrors(page), inspector=await setup(page,t);await tab(page,t,'inspector.tab.look');
   await expect(inspector.getByRole('heading',{name:t('insp.cornersTitle'),exact:true})).toBeVisible();
   await expect(inspector.getByRole('heading',{name:t('insp.corners'),exact:true})).toHaveCount(0);
-  const same=inspector.getByRole('button',{name:t('insp.cornersSame'),exact:true}), each=inspector.getByRole('button',{name:t('insp.cornersEach'),exact:true});
+  const each=inspector.getByRole('button',{name:t('insp.cornersEach'),exact:true});
   const control=inspector.locator('.corner-radii');
-  await expect(same).toHaveAttribute('aria-pressed','true');await expect(control.getByRole('spinbutton')).toHaveCount(1);
-  await each.click();await expect(each).toHaveAttribute('aria-pressed','true');await expect(control.getByRole('spinbutton')).toHaveCount(4);
-  await same.click();await expect(same).toHaveAttribute('aria-pressed','true');await expect(control.getByRole('spinbutton')).toHaveCount(1);
+  await expect(each).toHaveAttribute('aria-pressed','false');await expect(control.getByRole('spinbutton')).toHaveCount(1);
+  await expect(control.getByRole('button')).toHaveCount(1);
+  await expect(control.locator('.corner-drawing')).toHaveCount(0);
+  const radius=control.getByRole('spinbutton');
+  const previous=await radius.inputValue();
+  await radius.fill('7');await radius.press('Tab');await expect(radius).toHaveValue('7');
+  await page.locator('#undo').click();await expect(radius).toHaveValue(previous);
+  await each.focus();await page.keyboard.press('Space');await expect(each).toHaveAttribute('aria-pressed','true');await expect(control.getByRole('spinbutton')).toHaveCount(4);
+  await expect(control.locator('.corner-drawing')).toBeVisible();
+  for(const field of await control.getByRole('spinbutton').all())await expect(field).toHaveValue(previous);
+  // Spectrum stores four radii in either mode; its chosen editing mode is UI
+  // memory. Undo restores a corner value while retaining that editing mode.
+  const topLeft=control.getByRole('spinbutton',{name:t('inspector.topLeft'),exact:true});
+  await topLeft.fill('7');await topLeft.press('Tab');await expect(topLeft).toHaveValue('7');
+  await page.locator('#undo').click();await expect(topLeft).toHaveValue(previous);await expect(each).toHaveAttribute('aria-pressed','true');
+  await each.click();await expect(each).toHaveAttribute('aria-pressed','false');await expect(control.getByRole('spinbutton')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 test('each style shows only its own fields, one Undo step per change (D-AS-11)',async({page,t})=>{
