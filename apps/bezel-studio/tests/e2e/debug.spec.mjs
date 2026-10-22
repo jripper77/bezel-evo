@@ -1,10 +1,10 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openPreferences } from './helpers.mjs';
 
 test('Debug owns logging and its screen-readings suboption independently', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const logs = page.getByRole('region', { name: t('prefs.logsTitle'), exact: true });
   const openLogs = logs.getByRole('button', { name: t('prefs.openLogs'), exact: true });
   await expect(openLogs).toBeVisible();
@@ -26,7 +26,7 @@ test('Debug owns logging and its screen-readings suboption independently', async
     await expect(corner).toHaveValue(value);
   }
   await page.getByRole('button', { name: t('common.done') }).click();
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   await expect(debug).toBeChecked();
   await expect(overlay).toBeChecked();
   await expect(corner).toHaveValue('bottom-right');

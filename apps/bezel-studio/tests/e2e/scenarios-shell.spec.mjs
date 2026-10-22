@@ -5,7 +5,7 @@
 // theme, closing the window, quitting from the tray), the screen turns
 // between vertical and horizontal, and the preferences switch the language,
 // set the sensors and keep the Light switch.
-import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey, openSection, themeSize, sizeText } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey, openSection, themeSize, sizeText, openPreferences } from './helpers.mjs';
 import { translator } from '../../src/i18n/index.js';
 
 test('the editor opens the demo theme', async ({ page, t, lang }) => {
@@ -43,7 +43,7 @@ test('every panel reads in one language, with no key or placeholder showing', as
   await page.getByRole('tab', { name: t('screen.storageTab') }).click();
   await expect(page.getByRole('region', { name: t('storage.medium.internal') })).toBeVisible();
   expect(await page.locator('body').innerText()).not.toMatch(leftovers);
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   await expect(page.getByRole('dialog', { name: t('prefs.title') })).toBeVisible();
   expect(await page.locator('body').innerText()).not.toMatch(leftovers);
   expect(errors).toEqual([]);
@@ -313,7 +313,7 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await expect(html).toHaveAttribute('lang', lang);
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const language = dialog.getByRole('combobox', { name: t('prefs.language') });
   await expect(language).toBeFocused();
@@ -331,10 +331,10 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await expectAccessible(page);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: u('prefs.title') })).toBeFocused();
+  await expect(page.locator('#more-menu')).toBeFocused();
 
   // Back to the system's.
-  await page.getByRole('button', { name: u('prefs.title') }).click();
+  await openPreferences(page, u);
   await page.getByRole('dialog').getByRole('combobox', { name: u('prefs.language') }).selectOption('');
   await expect(html).toHaveAttribute('lang', lang);
   await page.getByRole('dialog').getByRole('button', { name: t('common.done') }).click();
@@ -346,7 +346,7 @@ test('the ping target is set in the preferences', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const host = dialog.getByRole('textbox', { name: t('prefs.pingHost') });
   await expect(host).toHaveValue('8.8.8.8');
@@ -374,7 +374,7 @@ test('closing always hands over to Light and protects unsaved live edits', async
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   // No close preference: Light always keeps the screen once Studio closes.
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const prefs = page.getByRole('dialog', { name: t('prefs.title') });
   await expect(prefs.getByRole('switch', { name: t('prefs.debugEnable') })).toBeVisible();
   await expect(prefs.locator('#prefs-light-on-close')).toHaveCount(0);

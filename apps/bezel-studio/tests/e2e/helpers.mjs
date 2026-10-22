@@ -192,3 +192,9 @@ export async function sendFileTo(page, t, medium) {
   await page.getByRole('button', { name: t('storagePanel.sendFile'), exact: true }).click();
   await page.getByRole('menuitem', { name: t(`storage.medium.${medium}`), exact: true }).click();
 }
+
+/** Opens Preferences from the top bar's ⋯ menu (`t` may be another language's translator). */
+export async function openPreferences(page, t) {
+  await page.locator('#more-menu').click();
+  await page.getByRole('menuitem', { name: t('prefs.title'), exact: true }).click();
+}

@@ -11,8 +11,8 @@ every editing tool of Bezel Studio.
   (Design) and **Screen** (Device). The library panel shows the one you pick.
 - **Top bar.** The theme's name, with a pencil to rename it, and under it
   whether everything is saved (*● unsaved changes · last saved 4 min ago*);
-  the screen selector, **Preferences** (the sliders icon), **Live**, **Save**
-  (**Ctrl+S**) and **⋯**, with Preferences again and the version of Studio.
+  the screen selector, **Live**, **Save** (**Ctrl+S**) and **⋯**, with
+  **Preferences** and the version of Studio.
 - **Canvas bars.** At the top: **Vertical** / **Horizontal**, rotate 180°, undo,
   redo, **Show guides and grid** and
   [**Trial values**](#trial-values). At the bottom: zoom out, the zoom level,
@@ -463,8 +463,7 @@ when saving.
 
 ## Preferences
 
-The sliders icon in the top bar, or **⋯ → Preferences**, opens
-**Preferences**:
+**⋯ → Preferences**, in the top bar, opens **Preferences**:
 
 - **Language** of Studio and of Light's tray menu;
 - **Debug**: diagnostic logs and on-screen readings, for reporting a problem;

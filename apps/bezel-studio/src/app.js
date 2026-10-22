@@ -1334,7 +1334,8 @@ showGrid((() => { try { return localStorage.getItem(GRID_KEY) === '1'; } catch {
 $('grid-toggle').addEventListener('click', () => showGrid($('grid-toggle').getAttribute('aria-pressed') !== 'true'));
 // ⋯: the preferences and which Bezel this is (D-2026-10-20-studio-ux-v2-11).
 $('more-menu').addEventListener('click', (evt) => openMenuAt(evt.currentTarget, { label: t('shell.more'), items: [
-  { label: t('prefs.title'), run: () => preferences.open() },
+  // The menu is gone when an item runs: the dialog gives the focus back to ⋯.
+  { label: t('prefs.title'), run: () => { $('more-menu').focus(); preferences.open(); } },
   { label: t('app.version', { version: appVersion }), run: () => {}, disabled: true },
 ] }));
 // The side panels' widths (D-...-fidelity-7): separators to drag or key, remembered.
@@ -1405,7 +1406,6 @@ function setLocale(next) {
 }
 
 const preferences = createPreferences({ t, bridge, onLanguage: setLocale, notify: toast });
-$('preferences').addEventListener('click', () => preferences.open());
 const profiles = createProfilesDialog({ t, bridge, notify: toast });
 $('theme-profiles').addEventListener('click', () => profiles.open());
 const openRequestedProfiles = async () => { if (await bridge.profilesRequested()) await profiles.open(); };
