@@ -1,3 +1,4 @@
+import { headerParts } from '../../src/inspector-model.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sectionFor, summaryParts, resizedFrame } from '../../src/inspector-model.js';
@@ -38,4 +39,13 @@ test('linked resize preserves aspect ratio without storing it in the theme', () 
 test('needle centre and optional picture belong to its Shape controls', () => {
   assert.equal(sectionFor('needle-center'), 'shape');
   assert.equal(sectionFor('needle-picture'), 'shape');
+});
+
+
+test('header details use content and geometry without repeating the layer number', () => {
+  assert.deepEqual(headerParts({ kind: { type: 'text', content: { type: 'literal', text: 'Workstation' } }, frame: { width: 300, height: 40 } }), ['Workstation']);
+  assert.deepEqual(headerParts({ kind: { type: 'shape', shape: 'rect' }, frame: { width: 300, height: 40 } }), [{ key: 'shape.rect' }]);
+  assert.deepEqual(headerParts({ kind: { type: 'text', content: { type: 'clock', pattern: 'HH:mm' } } }), ['HH:mm']);
+  assert.deepEqual(headerParts({ frame: { width: 240, height: 180 } }), ['240 × 180']);
+  assert.deepEqual(headerParts(null), []);
 });

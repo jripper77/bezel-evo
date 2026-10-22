@@ -1,3 +1,5 @@
+import { headerParts } from '../inspector-model.js';
+import { summaryOf } from '../inspector-sections.js';
 import { orderField } from './inspector/order.js';
 import { resizedFrame } from '../inspector-model.js';
 import { createSectionMemory } from '../inspector-sections.js';
@@ -507,7 +509,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     const key = e.isGroup || e.card ? null : boundKey(e);
     const subtitle = el('span', { class: 'inspector-sub' }, [
       e.card ? t('cardInsp.facePosition', { number: e.card.activeFace + 1, total: e.card.faces.length }) : key ? el('span', { text: sensors.catalog().find(sensor => sensor.key === key)?.label ?? key }) : t(`widget.${widget}`),
-      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` \u00b7 ${e.card ? e.card.faces[e.card.activeFace] : where}`,
+      key ? el('span', { class: 'inspector-preview-value', dataset: { liveKey: key }, text: shownValue(key) }) : ` · ${e.card ? e.card.faces[e.card.activeFace] : summaryOf(headerParts(e, document.documentElement.lang).map(part => part?.key ? t(part.key) : part), { locale: document.documentElement.lang })}`,
     ]);
     const head = objectHeader({ preview: preview(e), name, subtitle,
       live: el('span', { class: 'inspector-live', text: t('insp.live') }),

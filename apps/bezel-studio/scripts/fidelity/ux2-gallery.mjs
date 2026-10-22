@@ -23,14 +23,16 @@ const AREAS = {
     'ux2-card', 'ux2-theme-open', 'ux2-theme-closed'],
   shell: ['ux2-handles-ring', 'ux2-handles-selection', 'ux2-handles-needle', 'ux2-handles-bar', 'ux2-handles-graph', 'ux2-handles-image', 'ux2-handles-spectrum',
     'ux2-text-inline', 'ux2-value-part', 'ux2-card-entry', 'ux2-shape-image-entry', 'ux2-clock-length', 'ux2-alignment-distance', 'ux2-player-cover', 'ux2-object-bar',
-    'ux2-trial-values', 'ux2-status-drag', 'ux2-status-sensors', 'ux2-status-bezel', 'ux2-status-screen'],
-  library: ['widgets', 'sensors-libre', 'layers-selection', 'media-filled', 'ux2-profiles', 'ux2-themes'],
+    'logo', 'no-screen', 'ux2-trial-values', 'ux2-status-drag', 'ux2-status-sensors', 'ux2-status-bezel', 'ux2-status-screen'],
+  library: ['widgets', 'sensors-libre', 'layers-selection', 'media-filled', 'ux2-profiles', 'ux2-profiles-ready', 'ux2-profiles-manual', 'ux2-themes'],
   screen: ['ux2-settings', 'ux2-storage'],
 };
 
 /** Each board and the captures that answer it (area/state). */
 const PAIRS = {
   MainNew: ['inspector/ux2-main', 'library/widgets'],
+  Logo: ['shell/logo'],
+  Connect: ['shell/no-screen'],
   InspectorComponents: ['inspector/ux2-ring-closed', 'inspector/ux2-ring-open'],
   RingInspectorOpen: ['inspector/ux2-ring-open'],
   ValueInspectorOpen: ['inspector/ux2-linked-value', 'inspector/ux2-linked-text'],
@@ -52,7 +54,7 @@ const PAIRS = {
     'shell/ux2-alignment-distance', 'shell/ux2-player-cover', 'shell/ux2-object-bar', 'shell/ux2-trial-values'],
   StatusBarNew: ['shell/ux2-status-drag', 'shell/ux2-status-sensors', 'shell/ux2-status-bezel', 'shell/ux2-status-screen'],
   LibraryPanelsNew: ['library/widgets', 'library/sensors-libre', 'library/layers-selection', 'library/media-filled'],
-  ProfilesNew: ['library/ux2-profiles'],
+  ProfilesNew: ['library/ux2-profiles', 'library/ux2-profiles-ready', 'library/ux2-profiles-manual'],
   ThemesNew: ['library/ux2-themes'],
   ScreenPanelsOpen: ['screen/ux2-settings', 'screen/ux2-storage'],
 };
@@ -88,6 +90,19 @@ const capture = (scheme, key) => {
   }
   return null;
 };
+const NOTES = {
+  MainNew: 'Salva resta secondario per D-2026-10-09-studio-redesign-fidelity-6. Dati, nomi e stato live provengono dal bridge.',
+  CardInspectorOpen: 'La Rotazione del disegno è un errore già rettificato: Card, gruppi e membri non ruotano (D-21).',
+  MultiInspectorOpen: 'Ordine nella Disposizione; Duplica/Elimina nei menu condivisi, secondo T-12. Rotazione solo se tutti gli oggetti la consentono.',
+  WeatherAnimations: 'Il PNG documenta i controlli. Le otto famiglie e il movimento sono verificati dai test del motore/demo documentati in T-4, non da una fotografia statica.',
+  ImageInspectorOpen: 'Raster, GIF e SVG sono casi distinti. La miniatura del file raster è reale; il renderer demo del canvas non decodifica ancora le immagini, quindi l’anteprima dell’oggetto può restare vuota. Video negli oggetti rinviati a T-11 per decisione dell’utente.',
+  ShapeInspectorOpen: 'Il demo usa ancora una scacchiera al posto dell’immagine nella Forma. Ritaglio e controlli sono verificati; non è una prova dei pixel della texture nativa.',
+  ProfilesNew: 'Stati Automatico attivo, Pronto e Manuale separati. Conservati tutti e cinque gli effetti supportati dal runtime e le assegnazioni native; i nomi e le miniature dipendono dai temi reali.',
+  ThemesNew: 'Esporta usa .bezeltheme (rettifica dell’utente); anteprime reali contenute, anche per temi verticali. Le miniature mancanti sono dichiarate, non inventate.',
+  ScreenPanelsOpen: 'Stato dei supporti e porte reali del demo; conferme e timer già decisi conservati. Nessuna nuova prova del dispositivo fisico.',
+  Connect: 'Riferimento di stile: il prodotto conserva il dialogo sull’editor; nessun nuovo onboarding e nessuna istruzione Linux.',
+  Logo: 'Marchio esistente conservato.',
+};
 const missing = [];
 const figure = (src, caption) => src ? `<figure><a href="${src}"><img loading="lazy" src="${src}" alt="${esc(caption)}"></a><figcaption>${esc(caption)}</figcaption></figure>` : '';
 const sections = Object.entries(PAIRS).map(([name, keys]) => {
@@ -96,20 +111,22 @@ const sections = Object.entries(PAIRS).map(([name, keys]) => {
     if (!src) missing.push(`${scheme}/${key}`);
     return figure(src, `${key.split('/')[1]} · ${scheme === 'dark' ? 'scuro' : 'chiaro'}`);
   }));
-  return `<section id="${name}"><h2>${name}</h2><div class="pair"><div class="board">${figure(board(name), 'tavola')}</div><div class="app">${shotsOf.join('')}</div></div></section>`;
+  return `<section id="${name}"><h2>${name}</h2>${NOTES[name] ? `<p>${esc(NOTES[name])}</p>` : ''}<div class="pair"><div class="board">${figure(board(name), 'tavola')}</div><div class="app">${shotsOf.join('')}</div></div></section>`;
 });
 const t9d = join(PHASE, 'evidence/t9d');
 for (const [name, slug] of Object.entries(TEMPLATES)) {
   const files = existsSync(t9d) ? walk(t9d).filter((f) => f.includes(slug) && f.endsWith('.png')) : [];
   if (!files.length) missing.push(`t9d/${slug}`);
-  sections.push(`<section id="${name}"><h2>${name}</h2><div class="pair"><div class="board">${figure(board(name), 'tavola')}</div><div class="app">${files.map((f) => figure(rel(f), relative(t9d, f).replaceAll('\\', '/'))).join('')}</div></div></section>`);
+  sections.push(`<section id="${name}"><h2>${name}</h2>${NOTES[name] ? `<p>${esc(NOTES[name])}</p>` : ''}<div class="pair"><div class="board">${figure(board(name), 'tavola')}</div><div class="app">${files.map((f) => figure(rel(f), relative(t9d, f).replaceAll('\\', '/'))).join('')}</div></div></section>`);
 }
 
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(join(dir, d.name)) : [join(dir, d.name)]));
 }
 
-const nav = [...Object.keys(PAIRS), ...Object.keys(TEMPLATES)].map((name) => `<a href="#${name}">${name}</a>`).join(' ');
+sections.push(`<section id="DeviceBoot"><h2>DeviceBoot</h2><p>Riferimento del display fisico, fuori dalla revisione dei pannelli Studio. Nessuna nuova cattura hardware eseguita.</p>${figure(board('DeviceBoot'), 'tavola del display')}</section>`);
+
+const nav = [...Object.keys(PAIRS), ...Object.keys(TEMPLATES), 'DeviceBoot'].map((name) => `<a href="#${name}">${name}</a>`).join(' ');
 writeFileSync(join(out, 'index.html'), `<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Studio UX v2 · confronto finale</title>
@@ -126,7 +143,7 @@ figure { margin: 0; } img { max-width: 100%; height: auto; border: 1px solid var
 @media (max-width: 800px) { .pair { grid-template-columns: 1fr; } }
 </style></head><body>
 <h1>Studio UX v2 · confronto finale con le tavole</h1>
-<p>Catture aggiornate dell'app in italiano, scuro e chiaro, accanto alla tavola. Le differenze residue sono registrate in REVIEW.md e nei riepiloghi delle attività. Clic su un'immagine per vederla intera.${missing.length ? ` Mancano: ${esc(missing.join(', '))}.` : ''}</p>
+<p>Catture aggiornate dell'app in italiano, scuro e chiaro, accanto alla tavola. Le differenze residue sono registrate in REVIEW.md e nei riepiloghi delle attività. Clic su un'immagine per vederla intera. Tutte le 30 tavole sono censite; Connect e DeviceBoot mantengono i limiti descritti nelle rispettive sezioni. I quattro temi mantengono le sostituzioni dei dati approvate dall’utente.${missing.length ? ` Mancano: ${esc(missing.join(', '))}.` : ''}</p>
 <nav>${nav}</nav>
 ${sections.join('\n')}
 </body></html>

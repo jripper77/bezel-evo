@@ -153,7 +153,7 @@
 
 .inspector .number-field { display: grid; grid-template-columns: minmax(0, max-content) 112px; justify-content: start; align-items: center; gap: 10px; }
 .inspector .field input[type="text"], .inspector .field select, .inspector .color-button, .inspector .font-button { min-height: var(--control-height); border-radius: var(--control-radius); }
-.inspector .number-field > .field-label { font-size: var(--fs-field); line-height: 1.4; color: var(--text-2); }
+.inspector .number-field > .field-label { font-size: var(--fs-small); line-height: 1.4; color: var(--muted); }
 .inspector .field-row .number-field { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .inspector .value-color { display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; background: transparent; }
 .inspector .value-color > .switch-row { font-size: var(--fs-small); }

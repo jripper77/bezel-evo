@@ -1,3 +1,7 @@
+# Stato del registro — revisione finale del 22 ottobre
+
+Le righe di baseline sotto sono storiche. Le correzioni dei blocchi sono concluse e la galleria canonica è rigenerata: `evidence/final/index.html`. Riepilogo delle 30 tavole, test ed eccezioni in `SUMMARY-FIDELITY-FINAL.md`; approvazione visiva all’utente, non automatica. Il limite di decodifica immagini del renderer demo resta esplicito, da pianificare separatamente. Nessuna nuova prova hardware o suite generale dichiarata.
+
 ## Aggiornamento — Profili/Galleria, 22 ottobre
 
 Blocco in `f5c7653` e `7e1ea7c`, verifica in `SUMMARY-FIDELITY-DIALOGS.md`.

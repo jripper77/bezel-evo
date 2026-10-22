@@ -26,6 +26,11 @@ test('multi selection uses compact distribution and grouping commands with compl
   await page.locator('#grid-toggle').focus(); await page.keyboard.press('Control+a');
   const root = page.locator('#inspector'); await openSection(page, 'layout');
   await expect(root.getByRole('heading', { name: t('inspector.multi', { count: 3 }), exact: true })).toHaveCSS('text-transform', 'none');
+  await expect(root.locator('.multi-objects button')).toHaveCount(3);
+  await expect(root.locator('.multi-objects svg')).toHaveCount(3);
+  await root.locator('.multi-objects button').nth(1).click();
+  await expect(root.getByRole('heading', { name: t('inspector.multi', { count: 2 }), exact: true })).toBeVisible();
+  await page.locator('#grid-toggle').focus(); await page.keyboard.press('Control+a');
   const distribution = root.getByRole('group', { name: t('insp.distribute'), exact: true });
   const boxes = await distribution.getByRole('button').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().y));
   expect(Math.max(...boxes) - Math.min(...boxes)).toBeLessThan(2);

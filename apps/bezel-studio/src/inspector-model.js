@@ -36,3 +36,13 @@ export function resizedFrame(frame, patch, linked) {
   if (patch.height != null) return { ...patch, width: Math.max(4, Math.round(frame.width * patch.height / frame.height)) };
   return patch;
 }
+
+/** Header details describe the content/geometry; layer position belongs to Order. */
+export function headerParts(element, locale = 'en') {
+  const data = summaryParts('data', element, locale).filter(part => typeof part === 'string' && part.trim());
+  if (data.length) return data;
+  const shape = summaryParts('shape', element, locale).filter(part => part != null);
+  if (shape.length) return shape;
+  const frame = element?.frame;
+  return frame ? [`${frame.width} × ${frame.height}`] : [];
+}

@@ -1,10 +1,21 @@
 # Studio UX v2 — verifica della fase (T-10)
 
-**22 ottobre — correzioni di fedeltà in corso:** quattro blocchi implementati e
-verificati, commit e prossimi interventi in HANDOFF.md. Non usare ancora
-`evidence/final/` per approvare queste correzioni: è la galleria di T-12, da
-rigenerare quando il riallineamento sarà completo. L’utente riprenderà le
-verifiche manuali dopo la chiusura dei residui del registro.
+## Aggiornamento fedeltà — 22 ottobre, ChatGPT
+
+**Punto 5: pronto per la verifica visiva dell’utente.** Galleria canonica aggiornata:
+[evidence/final/index.html](evidence/final/index.html). Non usare le vecchie catture dei blocchi come stato attuale.
+
+Completati i blocchi di riallineamento di inspector, shell/pannelli e dialoghi. Ultime correzioni in `c0797d9`, `321a295`, `761bc03`, ricette `576ca55`; riepilogo, test e registro delle 30 tavole in [SUMMARY-FIDELITY-FINAL.md](SUMMARY-FIDELITY-FINAL.md).
+La galleria comprende **108 stati italiani** chiari/scuri, **208 PNG** validi e tutte le **30 tavole**. Collegamenti e integrità controllati; inventario in `evidence/final/verification.json`.
+
+Differenze visibili mantenute: Angoli D-22; Rotazione su riga propria, assente su Card/gruppi/membri; Duplica/Elimina nei menu; Salva secondario D-6; cinque effetti supportati dai profili; dissolvenza meteo D-09; dati dei quattro temi sostituiti come approvato; esportazione .bezeltheme. Controlli e avvisi funzionali esistenti conservati.
+
+**Limite ancora aperto:** nel demo la scheda file ha miniatura/metadati reali, ma il renderer del canvas rappresenta le immagini con contorno/scacchiera. Non è una prova dei pixel nativi delle texture; vedi [attività da pianificare](../../todos/2026-10-22-demo-image-preview-parity.md). Nessun fulmine fittizio per legare Opacità, non esposto dal modello. Connect/DeviceBoot mantengono i limiti di ambito descritti nella galleria; nessuna nuova prova hardware.
+
+I test mirati delle correzioni sono verdi (dettagli nei SUMMARY). I gate generali T-10 sotto sono **storici**, non una nuova esecuzione della suite completa su questa revisione. Nessuna build, installazione, pubblicazione o push. L’approvazione manuale e le prove fisiche restano dell’utente; la fase non viene chiusa automaticamente.
+
+## Verifica T-10 precedente
+
 
 21–22 ottobre 2026, Claude. Branch `ux2/t10`, worktree `F:/dev/bezel-ux2-t10`, base
 `717451f` (Wave 2 integrata, T-11 rinviata). Nessun push, build, setup o installazione.
