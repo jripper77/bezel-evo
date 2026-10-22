@@ -1,5 +1,13 @@
 # Passaggio — Studio UX v2
 
+**T-12 completata, ChatGPT (22 ottobre):** branch `ux2/t12`, worktree
+`F:/dev/bezel-ux2-t12`, base `fb6b42f`, pronta per l'integrazione. Codice
+`0a94011`, `6efc7bf`, `d36310f`, `13361fc`, `ee50b37`; test e galleria in
+`SUMMARY-T-12.md`. Nessun merge, push, build o installazione eseguito.
+**Il riallineamento generale resta aperto:** seguire `PLAN-FIDELITY-FOLLOWUP.md`
+e il registro `AUDIT-FIDELITY-2026-10-22.md`, senza chiedere all'utente di individuare
+i singoli difetti. La fase aspetta ancora l'approvazione manuale.
+
 **T-8 completata e integrata** (`c694a83`, vedi `SUMMARY-T-8.md`).
 **T-9a completata e integrata** (vedi `SUMMARY-T-9a.md`).
 **Assegnazioni (21 ottobre, decise dall'utente):** T-9c → **Codex/ChatGPT**

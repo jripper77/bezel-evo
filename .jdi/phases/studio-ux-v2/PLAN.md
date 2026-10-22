@@ -228,6 +228,15 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
   delle prove a vista per l'utente (DoD 6).
 - **Dipendenze:** tutte tranne T-11 (rinviata) · **Status:** completed — pulizia (schede, re-export, 42+11 chiavi orfane), spec e2e portate sull'interfaccia nuova (1092 verdi), sei difetti veri corretti, scelte dell'utente su Preferenze/rotazione/standby/temi 3,5″, guida e CHANGELOG, suite completa e copertura verdi, galleria finale in `evidence/final/`. In attesa: approvazione della galleria e prove a vista dell'utente. Vedi `REVIEW.md`.
 
+### Follow-up prima dell'approvazione manuale
+
+#### T-12: Ordine nella Disposizione e azioni nel menu condiviso
+- **Base e worktree:** `fb6b42f`, `ux2/t12`, `F:/dev/bezel-ux2-t12`.
+- **Richiesta dell'utente:** riga Ordine dopo «Fa parte di», livello da `layerFacts` solo per una selezione; quattro comandi nel primitivo condiviso, limiti/blocchi rispettati e un Undo anche su più oggetti. Duplica/Elimina nei menu esistenti; passi singoli nel gruppo piatto dell'ordine, nessuna scorciatoia nuova.
+- **Estensioni di fedeltà richieste durante la task:** header, Tipo, Allinea, Direzione, Colore e Comportamento. Il riallineamento completo delle aree emerse successivamente è censito in `AUDIT-FIDELITY-2026-10-22.md` e nel piano di follow-up, senza considerarlo già completato da T-12.
+- **Verifiche:** unitari dello store/moduli, unitari UI, i18n/guardie statiche; spec dell'area in chiaro/scuro, en/pt; confronto it e galleria rigenerata. Nessuna build, installazione o push.
+- **Status:** completed — Ordine nella Disposizione, menu piatto condiviso, passi multipli atomici e ambiti/blocchi verificati; componenti comuni riallineati. 686 unitari UI verdi, 372 esecuzioni e2e distinte dell'area coperte da esiti verdi con rilanci mirati, guardie/i18n verdi e galleria it chiaro/scuro aggiornata. Codice `0a94011`, `6efc7bf`, `d36310f`, `13361fc`, `ee50b37`; vedi `SUMMARY-T-12.md`. Il registro generale di fedeltà rimane aperto, nessun via libera finale della fase.
+
 ## Ordine consigliato e parallelismo
 - Wave 1: T-0 (UI) in parallelo con T-1…T-6 (Rust + demo), fino a 4 agenti alla volta. T-0 è la più urgente perché sblocca la Wave 2.
 - Wave 2: T-7a/b/c, T-8, T-9a/b/c/d in parallelo, ognuna con i propri file (vedi **Files**). `src/index.html` è solo di T-9b;

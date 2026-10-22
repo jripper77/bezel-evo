@@ -67,16 +67,16 @@ export function adoptControl(current, fresh) {
 }
 
 /** A labelled number input. `step` 1 rounds to integers. */
-export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false, placeholder } = {}) {
+export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false, placeholder, compact = false } = {}) {
   if (prefix !== undefined) {
     const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName, nullable, placeholder });
     return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
   }
   const id = fieldId();
   const input = numberInput({ id, value: String(value ?? ''), min, max, placeholder, 'aria-label': label }, step, onChange, nullable);
-  const field = el('label', { class: 'field number-field', for: id }, [
-    el('span', { class: 'field-label' }, [iconName ? icon(ICONS[iconName], 16) : null, label]),
-    el('span', { class: 'number-control' }, [input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
+  const field = el('label', { class: `field number-field${compact ? ' is-compact' : ''}`, for: id }, [
+    el('span', { class: 'field-label' }, [!compact && iconName ? icon(ICONS[iconName], 16) : null, label]),
+    el('span', { class: 'number-control' }, [compact && iconName ? icon(ICONS[iconName], 16) : null, input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
   ]);
   return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
 }
@@ -140,12 +140,12 @@ export function segmented(label, value, options, onChange, { bare = false } = {}
 }
 
 /** Native pressed choices. Each option is [value, translated label, icon name]. */
-export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false } = {}) {
+export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false, actions = false, detail = null, caption = label } = {}) {
   const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
-  for (const [v, text, name] of options) group.append(el('button', {
-    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), dataset: { value: String(v) }, onclick: () => onChange(v),
-  }, [name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null, iconOnly ? null : text]));
-  return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
+  for (const [v, text, name, option = {}] of options) group.append(el('button', {
+    type: 'button', title: option.description ?? text, 'aria-label': text, ...(option.description ? { 'aria-description': option.description } : {}), ...(actions ? {} : { 'aria-pressed': String(v === value) }), disabled: Boolean(option.disabled), dataset: { value: String(v) }, onclick: () => onChange(v),
+  }, [option.leading ?? (name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null), (option.iconOnly ?? iconOnly) ? null : (option.text ?? text)]));
+  return bare ? group : el('div', { class: 'field' }, [el('span', { class: 'field-label' }, [caption, detail ? el('span', { class: 'hint', text: detail }) : null]), group]);
 }
 
 /** The same preview tile in every widget. */
@@ -170,13 +170,15 @@ export function bindButton(label, connected, onClick) {
 /** A compact header, whose preview comes from the renderer rather than an example. */
 export function objectHeader({ preview, name, subtitle, live, tryButton, menuButton }) {
   return el('div', { class: 'object-header' }, [preview,
-    el('div', { class: 'object-heading' }, [name, subtitle]),
-    el('div', { class: 'object-tools' }, [tryButton, menuButton, live]),
+    el('div', { class: 'object-heading' }, [
+      el('div', { class: 'object-heading-row' }, [name, el('div', { class: 'object-tools' }, [tryButton, menuButton])]),
+      el('div', { class: 'object-detail-row' }, [subtitle, live]),
+    ]),
   ]);
 }
 
 export function typeRow(label, value, options, onChange) {
-  const row = iconChoice(label, value, options, onChange, { iconOnly: true, wide: true });
+  const row = iconChoice(label, value, options, onChange, { iconOnly: true });
   row.classList.add('inspector-type');
   return row;
 }
@@ -350,11 +352,11 @@ const SECTION_ICONS = Object.freeze({
   motion: 'play', triggers: 'sliders', actions: 'more', refresh: 'refresh',
 });
 
-export function propertySection(key, label, nodes, { count: n = null, tool = null } = {}) {
+export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true } = {}) {
   const contents = nodes.filter(Boolean);
   if (!contents.length) return null;
   const head = sectionTitle(label, { count: n });
-  head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
+  if (showIcon) head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
   if (tool) head.append(tool);
   return el('section', { class: 'property-section', dataset: { section: key } }, [head, el('div', { class: 'property-section-body' }, contents)]);
 }
@@ -710,9 +712,13 @@ function openFontList(button, texts, value, onChange, source) {
 }
 
 /** The colour of a swatch chip, for its CSS (`--swatch`). */
-function swatchChip(hex, extra = '') {
+export function swatchChip(hex, extra = '', end = undefined) {
   const chip = el('span', { class: `swatch ${extra}`.trim(), 'aria-hidden': 'true' });
   chip.style.setProperty('--swatch', normalizeHex(hex) ?? '#ffffffff');
+  if (end !== undefined) {
+    chip.dataset.gradient = '';
+    if (end !== null) chip.style.setProperty('--swatch-end', normalizeHex(end) ?? '#ffffffff');
+  }
   return chip;
 }
 
@@ -733,7 +739,7 @@ function swatchChip(hex, extra = '') {
  *   where nothing is saved; `alpha` false for an opaque colour; `live`
  *   false hands a drag's colour over only when it ends (a change that is costly)
  */
-export function colorPicker(label, hex, onChange, { texts, source, alpha = true, gesture = null, live = true }) {
+export function colorPicker(label, hex, onChange, { texts, source, alpha = true, gesture = null, live = true, hideLabel = false }) {
   const value = normalizeHex(hex) ?? '#ffffffff';
   const id = fieldId();
   const readout = el('span', { class: 'color-button-value', id: `${id}-v` }, [
@@ -748,7 +754,7 @@ export function colorPicker(label, hex, onChange, { texts, source, alpha = true,
     if (button.getAttribute('aria-expanded') === 'true') return;
     openColorPanel(button, label, value, onChange, { texts, source, alpha, gesture, live });
   });
-  return el('div', { class: 'field color-field' }, [el('label', { for: id, text: label }), button]);
+  return el('div', { class: 'field color-field' }, [hideLabel ? null : el('label', { for: id, text: label }), button]);
 }
 
 /** A slider of the colour panel (area or bar) with its keyboard. */

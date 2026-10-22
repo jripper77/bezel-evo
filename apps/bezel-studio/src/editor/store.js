@@ -8,7 +8,7 @@ import { normalizeCardTheme } from '../card-config.js';
 import { ORIENTATIONS, isHorizontal, relayoutBox, roundBox, unionBox } from './geometry.js';
 import { createWidget, widgetOf } from './widgets.js';
 import { withChildren, transformCard, selectionRoots, owners, syncGroupBounds, canGroup } from './cards.js';
-import { layerDropIndex, layerPlacement } from './layers.js';
+import { orderLayers, layerDropIndex, layerPlacement } from './layers.js';
 
 /** Most undo steps kept. */
 export const HISTORY_LIMIT = 200;
@@ -341,11 +341,8 @@ export const commands = {
     return {theme:{...theme,elements},...(changed?{selection:roots}:{})};
   },
   updateSelection(theme,{ids,patch}) { return {theme:mapElements(theme,ids,e=>merge(e,patch))}; },
-  orderSelection(theme,{ids,front}) {
-    let next=theme;
-    const roots=selectionRoots(theme,ids);for(const e of front?roots:[...roots].reverse())next=commands.reorder(next,{id:e.id,index:front?next.elements.length:0}).theme;
-    return {theme:next};
-  },
+  orderSelection(theme, { ids, front }) { return { theme: orderLayers(theme, ids, { front }) }; },
+  stepSelection(theme, { ids, step }) { return { theme: orderLayers(theme, ids, { step }) }; },
   /** Aligns to the first selected root, which stays fixed; a lone root uses the canvas. */
   align(theme, { ids, edge }) {
     const order = new Map(ids.map((id, i) => [id, i]));

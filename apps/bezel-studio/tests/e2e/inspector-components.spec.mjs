@@ -1,3 +1,4 @@
+import { openInspectorMenu } from './helpers.mjs';
 import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection } from './helpers.mjs';
 
 test.describe('Italian numeric fields', () => {
@@ -60,7 +61,8 @@ test('theme and multi selection keep their complete controls in canonical sectio
   await openSection(page, 'layout');
   await expect(inspector.getByRole('heading', { name: t('inspector.multi', { count: 2 }), exact: true })).toBeVisible();
   await expect(inspector.getByRole('button', { name: t('group.create'), exact: true })).toBeVisible();
-  await expect(inspector.getByRole('button', { name: t('common.duplicate'), exact: true })).toBeVisible();
+  await expect((await openInspectorMenu(page)).getByRole('menuitem', { name: t('common.duplicate'), exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 

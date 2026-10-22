@@ -116,7 +116,7 @@
 /* An object (artboards Main, GraphData/Look, PlayerData/Look): its head
    (kind, name, layer, eye, lock, more), its preview, the tabs, position
    and size, then the sections of the open tab. */
-.inspector-name { width: 100%; min-width: 0; padding: 1px 4px; margin-left: -5px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: var(--fs-heading); font-weight: 600; text-overflow: ellipsis; }
+.inspector-name { width: 100%; min-width: 0; padding: 1px 4px; margin-left: -5px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: var(--fs-title); font-weight: 600; text-overflow: ellipsis; }
 .inspector-name:hover { border-color: var(--border); }
 .inspector-name:focus { border-color: var(--accent); background: var(--well); }
 .inspector-sub { margin: 0; color: var(--muted); font-size: var(--fs-small); overflow-wrap: anywhere; line-height: 1.35; }
@@ -127,17 +127,19 @@
 
 /* The preview: the object rendered alone (D-8), on the screen's black. */
 /* The 72px isolated preview in the common object header. */
-.inspector-preview { width: 72px; height: 72px; margin: 0; padding: 0; border-radius: 10px; background: var(--screen-thumb); color: var(--screen-thumb-ink); overflow: hidden; }
+.inspector-preview { width: 72px; height: 72px; margin: 0; padding: 0; border-radius: 10px; background: var(--screen-tile); color: var(--screen-thumb-ink); overflow: hidden; }
 .inspector-preview-stage { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; }
 .inspector-preview-stage canvas { display: block; max-width: 100%; }
 .inspector-preview-stage .inspector-preview-off { margin: 0; font-size: var(--fs-tiny); color: var(--screen-thumb-ink); }
 .inspector > .accordion-section { margin-inline: -12px; }
 .inspector .accordion-body > .property-section { margin: 0; }
 .inspector .accordion-body .section-head { margin-top: 0; }
-.inspector-type { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; margin: 16px 0; }
-.inspector-sub { display: flex; flex-direction: column; min-width: 0; }
+.inspector-type { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; margin: 0 -12px; border-top: 1px solid var(--line); }
+.inspector-type .field-choice button { width: 40px; height: 36px; padding: 0; }
+.inspector-type .field-choice { flex-wrap: nowrap; }
+.inspector-sub { font-size: var(--fs-field); display: flex; flex-direction: column; min-width: 0; }
 .inspector-sub > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inspector-live { grid-column: 1 / -1; text-align: right; font-size: var(--fs-tiny); color: var(--muted); white-space: nowrap; }
+.inspector-live { grid-column: 1 / -1; text-align: right; font-size: var(--fs-small); color: var(--ok-ink); white-space: nowrap; }
 
 
 /* Independent navigation, separated from the geometry toolbar above it. */
@@ -149,7 +151,7 @@
 .inspector .section-title { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: var(--fs-field); line-height: 1.3; text-transform: none; letter-spacing: 0; }
 .inspector .section-head { align-items: center; }
 .inspector .section-title > .ic { color: var(--text-3); }
-.inspector .segmented button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); box-shadow: none; }
+
 .inspector .number-field { display: grid; grid-template-columns: minmax(0, max-content) 112px; justify-content: start; align-items: center; gap: 10px; }
 .inspector .field input[type="text"], .inspector .field select, .inspector .color-button, .inspector .font-button { min-height: var(--control-height); border-radius: var(--control-radius); }
 .inspector .number-field > .field-label { font-size: var(--fs-field); line-height: 1.4; color: var(--text-2); }
@@ -297,3 +299,10 @@
 .inspector-theme .bg-current[data-kind="color"] .bg-change { grid-column: 2; grid-row: 1; }
 .inspector-theme .bg-current[data-kind="color"] .color-field { grid-column: 1 / -1; grid-row: 2; }
 .inspector-theme .bg-current[data-kind="color"] .hint { grid-column: 1 / -1; }
+
+.inspector [data-section="transition"] > .section-head h3 { font-size: var(--fs-small); color: var(--muted); font-weight: 400; }
+
+.inspector-type button[aria-pressed="true"] { color: var(--accent-ink); }
+
+.inspector [data-section="transition"] .fld-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inspector .number-field.is-compact { grid-template-columns: minmax(0, 1fr); }

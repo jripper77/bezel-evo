@@ -134,6 +134,14 @@ export const ICONS = Object.freeze({
   down: ['M12 5v14', 'M6 13l6 6 6-6'],
 
   // ----------------------------------------------------------- alignment --
+  'transition-jump': ["M3 17h8V7h10"],
+  'transition-smooth': ["M3 17c6 0 6-10 18-10"],
+  'transition-inertia': ["M3 17c4 0 5-13 10-10s3 3 8 3"],
+  'transition-roll': ["M4 12h16M12 4v16"],
+  'transition-count': ['M4 18V6h4v12M12 18V9h4v9M20 18V3'],
+  timer: ['M12 13m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'M12 9v4l2 2', 'M10 2h4'],
+  'order-front': ['M12 19V7', 'M6 11l6-6 6 6', 'M5 3h14'],
+  'order-back': ['M12 5v12', 'M6 13l6 6 6-6', 'M5 21h14'],
   alignLeft: ['M4 3v18', 'M8 7h10', 'M8 15h6'],
   alignCenterX: ['M12 3v18', 'M6 7h12', 'M8 15h8'],
   alignRight: ['M20 3v18', 'M6 7h10', 'M10 15h6'],

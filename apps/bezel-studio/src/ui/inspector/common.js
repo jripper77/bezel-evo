@@ -212,12 +212,13 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     const modes = ['none', 'smooth', 'inertia', ...(isValue ? ['count', 'roll'] : [])];
     if (!modes.includes(mode)) modes.push(mode);
     const set = (change) => update(e.id, { valueTransition: { ...transitionPatch(e, change), ...(change.average === 1 ? { average: 1 } : {}) } });
-    return section('transition', t('insp.transition'), [
-      segmented(t('insp.transition'), mode, modes.map(value => [value, t(value === 'none' ? 'fade.none' : `insp.transition${value[0].toUpperCase()}${value.slice(1)}`)]), (next) => set({ mode: next }), { bare: true }),
-      mode !== 'none' && numberField(t(mode === 'inertia' ? 'insp.transitionSettling' : 'card.duration'), durationMs, durationMs => set({ durationMs }), { ...TRANSITION_RANGE, unit: 'ms' }),
-      el('p', { class: 'hint', text: t(mode === 'inertia' ? 'insp.transitionInertiaHint' : 'insp.transitionHint') }),
-      isValue && numberField(t('insp.averageReadings'), averageOf(e), average => set({ average: Math.max(AVERAGE_RANGE.min, Math.min(AVERAGE_RANGE.max, average)) }), AVERAGE_RANGE),
-    ]);
+    return section('transition', t('insp.onReading'), [
+      iconChoice(t('insp.onReading'), mode, modes.map(value => [value, t(value === 'none' ? 'insp.transitionJump' : `insp.transition${value[0].toUpperCase()}${value.slice(1)}`), `transition-${({ none: 'jump', smooth: 'smooth', inertia: 'inertia', count: 'count', roll: 'roll' })[value] ?? 'jump'}`, value === 'inertia' ? { description: t('insp.transitionInertiaHint') } : {}]), next => set({ mode: next }), { bare: true, wide: true }),
+      (mode !== 'none' || isValue) && fieldGrid([
+        mode !== 'none' && numberField(t(mode === 'inertia' ? 'insp.transitionSettling' : 'card.duration'), durationMs, durationMs => set({ durationMs }), { ...TRANSITION_RANGE, unit: 'ms', iconName: 'timer', compact: true }),
+        isValue && numberField(t('insp.averageReadings'), averageOf(e), average => set({ average: Math.max(AVERAGE_RANGE.min, Math.min(AVERAGE_RANGE.max, average)) }), { ...AVERAGE_RANGE, compact: true }),
+      ].filter(Boolean)),
+    ], { showIcon: false });
   }
 
   function fadeFields(e, { value = e.kind.fade, set = fade => update(e.id, { kind: { fade } }) } = {}) {
