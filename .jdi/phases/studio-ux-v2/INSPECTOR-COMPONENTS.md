@@ -89,9 +89,9 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 
 ## Estensioni condivise di T-12
 
-- `iconChoice`: modalit? `actions` per comandi momentanei (senza `aria-pressed`),
+- `iconChoice`: modalità `actions` per comandi momentanei (senza `aria-pressed`),
   `detail` per un dato secondario nella didascalia e `caption` per il testo visibile
-  quando il nome accessibile conserva un contesto pi? esteso; quarta voce opzionale della
+  quando il nome accessibile conserva un contesto più esteso; quarta voce opzionale della
   scelta `{disabled, iconOnly, text, leading, description}`. Stesso riquadro e stile condiviso,
   nessuna seconda toolbar per Ordine o Allinea. Le scelte testuali possono andare
   a capo; Tipo resta compatto su una riga.

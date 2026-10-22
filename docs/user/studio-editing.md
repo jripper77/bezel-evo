@@ -138,11 +138,11 @@ the [background](#the-background) and how often it refreshes (quick values 0.5,
 
 With an object selected, it shows from top to bottom:
 
-- a **header** with the object's name and content, **? Try** and **?**. The menu
-  contains **Duplicate**, **Delete**, visibility, locking and the other object actions;
-- a **live preview** of the object on its own, drawn by the same renderer as the
-  screen, with its real readings: you see each change at once, even when the
-  object is small on the canvas. **▶ Try** plays it with trial values: a value
+- a **header** with a 72 px **live preview**, the object's name and content,
+  **▶ Try** and **⋯**. The preview draws the object on its own with the same
+  renderer and real readings as the screen. The menu contains **Duplicate**,
+  **Delete**, visibility, locking and the other object actions.
+  **▶ Try** plays it with trial values: a value
   climbs to its maximum and back, a clock runs through a day, the weather shows
   each condition, a Card shows its next face. Nothing is saved;
 - the **sections**, in this order, each only when the object has something in
@@ -164,7 +164,7 @@ move to the ends of the current layer list; the arrows move one step. Members
 stay inside their group or Card face. Each command is one undo step, including
 a multiple selection, whose relative order is preserved. Commands at the edge
 or on locked objects or containers are disabled. The layer number appears only
-for one selected object. **Duplicate** and **Delete** are in the shared **?**
+for one selected object. **Duplicate** and **Delete** are in the shared **⋯**
 menu in the header and floating bar, and in the right-click menu.
 
 Number fields take the arrow keys and keep their focus while you step.

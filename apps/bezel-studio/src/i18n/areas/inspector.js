@@ -444,7 +444,7 @@ export default {
     "insp.insertSensor": "Valor de um sensor…",
     "insp.order": "Ordem",
     "insp.onReading": "Quando chega uma nova leitura",
-    "insp.solid": "S?lido",
+    "insp.solid": "Sólido",
     "insp.memberOf": "Faz parte de",
     "insp.transitionJump": "Saltar",
     "insp.orderFront": "Frente",
