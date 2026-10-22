@@ -21,7 +21,7 @@ export function panels(ctx) {
     ];
     const look = [
       section('color', t('inspector.color'), gaugeFillFields(ctx, e)),
-      section('track', t('inspector.track'), trackFields(e)),
+      section('track', t('inspector.track'), trackFields(e), { caption: true }),
       section('segments', t('inspector.segments'), segmentsFields(e)),
       section('preview', t('common.preview'), [
         switchRow(t('ring.testFull'), Boolean(k.testFull), (v) => update(e.id, { kind: { testFull: v } })),

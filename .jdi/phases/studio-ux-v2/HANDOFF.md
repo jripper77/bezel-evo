@@ -1,5 +1,11 @@
 # Passaggio — Studio UX v2
 
+**Ripresa fedeltà, 22 ottobre:** T-12 integrata in `593fc81`. Primo blocco Colore
+completato su `fid/inspector-paint`; vedi `SUMMARY-FIDELITY-PAINT.md`. L’utente ha
+autorizzato tutte le correzioni del registro prima delle proprie verifiche.
+Prossimi blocchi: testo/misure, composizioni specifiche, shell e dialoghi.
+Le note sotto su T-12 «pronta per integrazione» sono il passaggio precedente.
+
 **T-12 completata, ChatGPT (22 ottobre):** branch `ux2/t12`, worktree
 `F:/dev/bezel-ux2-t12`, base `fb6b42f`, pronta per l'integrazione. Codice
 `0a94011`, `6efc7bf`, `d36310f`, `13361fc`, `ee50b37`; test e galleria in

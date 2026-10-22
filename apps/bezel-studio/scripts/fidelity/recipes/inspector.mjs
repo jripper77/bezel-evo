@@ -1,6 +1,6 @@
 // The inspector (artboards Main's right panel, GraphData/Look, PlayerData/Look).
 import { fileURLToPath } from 'node:url';
-import { addMedia, openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { setColor, choose, addMedia, openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 
 const t = translator('it');
@@ -98,6 +98,9 @@ export default {
     { name: 'ux2-ring-closed', run: async app => { await standalone(app, 'ring'); await app.page.locator('#inspector [data-inspector-section="data"] .accordion-toggle').click({ modifiers: ['Alt'] }); } },
     { name: 'ux2-ring-open', run: async app => {
       await standalone(app, 'ring');
+      await choose(inspector(app), t('ring.fillMode'), 'gradient');
+      await setColor(app.page, t, inspector(app), t('ring.endColor'), '#a78bfa');
+      await inspector(app).evaluate(() => document.activeElement?.blur());
       for (const id of ['layout', 'data', 'shape', 'color', 'behavior']) await openSection(app.page, id);
       await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
       await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });

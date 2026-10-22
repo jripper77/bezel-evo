@@ -107,3 +107,10 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
   didascalia nella tavola, senza un'icona generica inventata.
 - `inspector/order.js` riusa `iconChoice` e `layerOrderAvailability`, comune allo
   store e al menu oggetto esistente; il livello viene da `layerFacts`.
+
+## Riallineamento Colore
+
+- `fieldAction(field, action)` affianca un’azione al controllo sotto la didascalia, usando `.bound-field`.
+- `gradientField(start, end, {stops, midpoint, onMidpoint, label})` compone i picker esistenti, una barra e il range nativo; il numero esatto e il cursore modificano lo stesso valore.
+- `colorPicker`: `swatchOnly` nasconde soltanto il readout visivo, conservando nome e descrizione accessibili del pulsante.
+- `propertySection`: `caption` per le didascalie semplici delle tavole, senza un’icona interna inventata.
