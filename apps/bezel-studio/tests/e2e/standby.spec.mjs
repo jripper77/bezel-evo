@@ -31,7 +31,8 @@ async function openSettings(page, t, scenario) {
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('tab', { name: t('library.screen') }).click();
   await expect(page.getByRole('tab', { name: t('screen.settingsTab') })).toHaveAttribute('aria-selected', 'true');
-  const section = page.getByRole('region', { name: t('standby.summary.atShutdown') });
+  // The standby panel itself (its foldable section is a region of the same name).
+  const section = page.locator('#standby-panel');
   await expect(section.getByRole('radiogroup', { name: t('standby.summary.atShutdown') })).toBeVisible();
   return section;
 }
@@ -45,7 +46,6 @@ async function letGo(page) {
 const radio = (section, t, choice) => section.getByRole('radio', { name: t(`standby.choice.${choice}`), exact: true });
 
 /** "About “<choice>”": the name of a choice's "?" and of its popover. */
-const aboutOf = (t, choice) => t('standby.helpFor', { choice: t(`standby.choice.${choice}`) });
 
 /** The text of `count` minutes. */
 const minutes = (t, count) => (count === 1 ? t('standby.minuteOne') : t('standby.minutes', { count }));
@@ -74,34 +74,14 @@ test.describe('standby', () => {
     await expect(radio(section, t, 'keep')).toBeChecked();
     for (const choice of CHOICES.slice(1)) await expect(radio(section, t, choice)).not.toBeChecked();
 
-    // Each "?" opens its explanation in a popover, not on the page; Esc
-    // closes it and gives the focus back to the "?".
-    for (const choice of CHOICES) {
-      const help = section.getByRole('button', { name: aboutOf(t, choice) });
-      const popover = section.getByRole('group', { name: aboutOf(t, choice) });
-      await expect(popover).toBeHidden();
-      await expect(section.getByText(t(`standby.explain.${choice}`))).toBeHidden();
-      await help.click();
-      await expect(help).toHaveAttribute('aria-expanded', 'true');
-      await expect(popover).toBeVisible();
-      await expect(popover).toBeFocused();
-      await expect(popover).toContainText(t(`standby.explain.${choice}`));
-      if (choice === 'video') await expectAccessible(page);
-      await page.keyboard.press('Escape');
-      await expect(popover).toBeHidden();
-      await expect(help).toHaveAttribute('aria-expanded', 'false');
-      await expect(help).toBeFocused();
-    }
-    // One at a time; a click outside closes it, and the section's own "?" says what it is about.
-    const about = section.getByRole('button', { name: t('standby.help') });
-    await section.getByRole('button', { name: aboutOf(t, 'album') }).click();
-    await expect(section.getByRole('group', { name: aboutOf(t, 'album') })).toBeVisible();
-    await about.click();
-    await expect(section.getByRole('group', { name: aboutOf(t, 'album') })).toBeHidden();
-    await expect(section.getByRole('group', { name: t('standby.help') })).toContainText(t('standby.helpText'));
-    await section.getByRole('heading', { name: t('standby.summary.atShutdown') }).click();
-    await expect(section.getByRole('group', { name: t('standby.help') })).toBeHidden();
-    await expect(about).toBeFocused();
+    // Each choice is described to assistive technology; the chosen one is
+    // explained in the box under the tiles (T-7c).
+    for (const [i] of CHOICES.entries()) await expect(radios.nth(i)).toHaveAccessibleDescription(/\S/);
+    const current = section.locator('.standby-current');
+    await expect(current.locator('strong')).toHaveText(t('standby.choice.keep'));
+    await expect(current.locator('.hint').first()).not.toBeEmpty();
+    await expectAccessible(page);
+    // The "?" popovers are hidden in the compact panel (T-7c): see REVIEW.md.
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // The arrows move the focus along the group without choosing; Home and End go to the ends.
@@ -121,9 +101,9 @@ test.describe('standby', () => {
     await expect(radio(section, t, 'keep')).toBeChecked();
     await expect(radio(section, t, 'off')).not.toBeChecked();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    // The group is one stop of Tab: it leaves to the next "?".
+    // The group is one stop of Tab: it leaves the choices.
     await page.keyboard.press('Tab');
-    await expect(section.getByRole('button', { name: aboutOf(t, 'keep') })).toBeFocused();
+    await expect(section.locator('[role="radio"]:focus')).toHaveCount(0);
     await expectAccessible(page);
     expect(await written(page)).toEqual([]);
 

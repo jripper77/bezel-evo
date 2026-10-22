@@ -48,7 +48,7 @@ async function pastRefresh(page, t) {
   await expect(page.locator('#status-device')).toHaveText(t('status.live'));
   await expect(page.getByRole('switch')).toBeChecked();
   // Its card under Screen says it is the live one.
-  await expect(page.locator('#screen-panel .screen-card .meta')).toHaveText(`${LISTED} · ${t('screen.state.awake')} · ${t('status.live')}`);
+  await expect(page.locator('#panel-screen .screen-card .meta')).toHaveText(`${LISTED} · ${t('screen.state.awake')} · ${t('status.live')}`);
 }
 
 async function openStorage(page, t) {
@@ -83,6 +83,8 @@ test('live screen controls: with the listed 8.8" kept chosen, "For this screen" 
   const errors = watchErrors(page);
   await goLive(page, t);
   await page.getByRole('tab', { name: t('library.themes') }).click();
+  // The scope is among the filters, behind their button (T-9c).
+  await page.locator('#panel-themes').getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
   const scope = page.getByRole('group', { name: t('themes.scopeLabel') });
   const forScreen = scope.getByRole('button', { name: t('themes.forScreen') });
   const all = scope.getByRole('button', { name: t('collection.filter.all') });
@@ -108,7 +110,7 @@ test('live screen controls: with the listed 8.8" kept chosen, "For this screen" 
     await pastRefresh(page, t);
     await expect(page.locator('#toast')).toBeHidden();
     await page.getByRole('tab', { name: t('screen.storageTab') }).click();
-    await page.getByRole('region', { name: t('storage.bootTitle') }).getByRole('button', { name: t('storage.defaultAction') }).click();
+    await page.locator('#storage-panel .boot-section').getByRole('button', { name: t('storage.defaultAction') }).click();
     const reset = page.getByRole('dialog', { name: t('storage.confirmDefaultTitle') });
     await expect(reset).toContainText(t('storage.bootKeeps', { percent: 40 }));
     await expectAccessible(page);

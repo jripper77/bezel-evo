@@ -39,8 +39,9 @@ test('Storage offers association when a video has no local copy', async ({ page,
   await page.goto('/index.html?demo=vendorCard');
   await page.getByRole('tab', { name: t('library.screen'), exact: true }).click();
   await page.getByRole('tab', { name: t('screen.storageTab') }).click();
-  await page.locator('[data-path="sd/video/AMD.mp4"]').first().click();
-  await page.locator('[data-focus="act-preview-sd"]').click();
+  // Preview is in the file's own menu (T-7c).
+  await page.getByRole('region', { name: t('storage.medium.sd') }).getByRole('button', { name: t('cardInsp.faceActions', { name: 'AMD.mp4' }), exact: true }).click();
+  await page.getByRole('menuitem', { name: t('common.preview'), exact: true }).click();
   const dialog = page.locator('.video-preview-dialog');
   await expect(dialog).toContainText(t('videoPreview.unavailable'));
   await expect(dialog.getByRole('button', { name: t('videoPreview.associate') })).toBeVisible();
