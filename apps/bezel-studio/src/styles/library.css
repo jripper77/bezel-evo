@@ -434,7 +434,7 @@ button.layer-group-title { cursor: pointer; }
 .pf-detail > .accordion-section > .accordion-body { padding: 4px 16px 20px; }
 .pf-detail > .accordion-section > .accordion-body[hidden] { display: none; }
 .pf-detail > .accordion-section > .accordion-heading { padding-inline: 4px; }
-.pf-object-head .pf-state[data-active="true"]::before, .pf-item .pf-state[data-active="true"]::before { content: '• '; }
+.pf-object-head .pf-state[data-active="true"]::before, .pf-item .pf-state[data-active="true"]::before, .pf-rule-head .pf-state[data-active="true"]::before { content: '• '; }
 .themes-gallery-head { grid-column: 1; min-width: 0; }
 .themes-gallery-head .theme-totals { margin-left: 0; }
 .themes-gallery-head #theme-profiles { display: none; }

@@ -167,7 +167,7 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
     }
     const more = iconButton(t('profiles.removeRule'), ICONS.more, () => openMenuAt(more, { label: t('profiles.event'), items: [{ label: t('profiles.removeRule'), run: () => { profile.rules.splice(index, 1); changed(true); } }] }));
     return el('article', { class: 'pf-rule', dataset: { rule: String(index), kind: rule.source } }, [
-      el('div', { class: 'pf-rule-head notice-head' }, [select(t('profiles.event'), rule.source, PROFILE_RULE_SOURCES.map(source => [source, label(source)]), source => {
+      el('div', { class: 'pf-rule-head notice-head' }, [icon(ICONS[profileIcon({ rules: [rule] })], 16), select(t('profiles.event'), rule.source, PROFILE_RULE_SOURCES.map(source => [source, label(source)]), source => {
         profile.rules[index] = { ...newProfileRule(source, catalog), priority: rule.priority, returnSeconds: rule.returnSeconds };
       }, `${id}-source`), el('span', { class: 'pf-state', dataset: { profileRule: String(index) } }), more]),
       sentence(tokens),
