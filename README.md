@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 <p align="center"><sub>Bezel Evo on a Turing 8.8" screen: live sensors, weather and a Card that switches to the song playing.</sub></p>
 
-![Bezel Evo Studio in dark mode: icon rail and widget library on the left, a portrait Ember dashboard on a dot-grid canvas with floating tool bars, and the inspector on the right with a live preview of the selected CPU ring and its Data and Look tabs](docs/images/studio-hero.png)
+![Bezel Evo Studio in dark mode: icon rail and widget library on the left, a portrait Ember dashboard on a dot-grid canvas with the selected CPU ring's handles and floating bar, and the inspector on the right with a live preview and its Layout, Data, Shape, Color and Behavior sections](docs/images/studio-hero.png)
 
 <p align="center"><sub>Studio in demo mode. Example layout and simulated sensor readings.</sub></p>
 
@@ -24,33 +24,41 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.1.59
+## What's new in 0.2.0
 
-The first published release since 0.1.31. Everything in between was a local
-build; the [changelog](CHANGELOG.md) has each step.
+The biggest update since the fork: Studio rebuilt around how you actually edit.
+The first published release since 0.1.63; the [changelog](CHANGELOG.md) has
+every step.
 
-- **Display profiles.** A profile assigns a theme to every display at once;
-  rules for an app running, an app in front or music playing switch to it, or
-  pick it by hand from Studio or either tray. A redesigned **Profiles and
-  automation** dialog shows who decides (Automatic or Manual), the profiles
-  beside the base themes, and each rule as a sentence.
-- **Transitions that cover the screen.** Curtain, Wipe, Blinds or Mosaic close
-  over the display, swap the theme underneath and open on its first frame, also
-  over video the screen plays itself, at up to 60 frames a second. ▶ tries one
-  towards the selected profile and comes back.
-- **Motion from sensors.** Rotate any object by hand or from a reading, such as
-  fan RPM or load, with inertia; values ease with a new **Inertia** option.
-- **Smoother graphs.** Line, area and bar histories scroll between samples,
-  paced per display.
-- **Studio.** A redesigned inspector with one shared order, one searchable
-  sensor picker, text case formatting, a native eyedropper with a magnifier,
-  slim scrollbars, Layers filtered by object type, probe health in Sensors, and
-  system sensors for audio output, Windows version, processes and power.
-- **Audio spectra** listen to the player's app or to the whole PC, with an
-  amplitude multiplier.
-- **Fixes.** Setup waits for the sensor reader before updating its files; a
-  sleeping display is found again through its wake controller after Light
-  restarts.
+- **A new inspector.** Every object's controls sit in sections you open and
+  close (Layout, Data, Shape, Text, Color, Behavior), each with a summary when
+  closed, and Studio remembers which you keep open for each kind of object.
+  Compact, consistent controls for alignment, colour, corners and motion.
+- **Edit on the canvas.** Handles for what an object draws: a ring's start and
+  end, a needle's arc and zones, a graph's scale, a clock's hands, an image's
+  anchor, a Card's faces. Each shows its value while you drag, lights up its
+  field and takes the arrow keys. A floating bar above the selection holds the
+  linked sensor, ▶ Try, Duplicate and the object menu.
+- **See every state before it happens.** ▶ Try plays one object with trial
+  values; **Trial values** sweeps the whole theme from empty to full. Nothing
+  is saved and the screen keeps showing the real sensors.
+- **Richer widgets.** Analog clocks with dial, ticks, numbers and three hands;
+  needle gauges with zones, numbers, a centre value and a peak marker; values
+  and texts split into parts with their own style, fixed-width digits, Count
+  and Roll transitions, scrolling or shrinking long text; animated weather
+  icons; GIFs that play once or loop at your speed; pictures inside shapes;
+  two-series graphs.
+- **Four new themes for 1920×480 screens**: Pixel, Nebula, Paper and Now
+  Playing, with Fraunces, Instrument Sans, Space Grotesk and Bricolage
+  Grotesque now included.
+- **A theme gallery** with real previews, the sensors each theme reads, where
+  it is used, a 30-second try on the live screen and export to `.bezeltheme`.
+- **Smarter profiles.** New rules for a sensor above or below a value, times
+  and days, idle and PC locked, combined with *any* or *all*; a Profiles
+  dialog that shows the profile active now and why.
+- **Status at a glance.** The status bar says what is selected or what a drag
+  does, with chips for the sensors, Bezel itself and the screen (live state,
+  frames, theme and active profile).
 
 ## A new Studio
 
@@ -61,8 +69,11 @@ Studio has been redesigned from the ground up, in dark and light.
   panels you can resize. Layers filter by object type alongside name or sensor
   search, preserving card and group context. In English, Italian and Portuguese.
 - **An inspector that shows what you change.** Every object gets a live preview
-  of itself, drawn on its own at the top of the panel, followed by membership,
-  position and size, then **Data** and **Look** tabs for its other settings.
+  of itself at the top of the panel, with ▶ Try, followed by sections you open
+  and close: **Layout**, **Data**, **Shape**, **Text**, **Color** and
+  **Behavior**, each summarized when closed.
+- **Handles on the canvas.** Drag a ring's ends, a needle's zones, a graph's
+  scale or a clock's hands directly; the field lights up and arrow keys nudge.
 - **One sensor picker everywhere.** Search names, keys, categories or probes,
   with grouped results, live readings, availability and keyboard navigation.
 - **One colour picker everywhere.** Colour area, hue, opacity, hex code and an
@@ -119,11 +130,13 @@ Studio has been redesigned from the ground up, in dark and light.
 
 | Colours from your theme | Fonts with their real weights |
 | :---: | :---: |
-| [![The CPU ring's Look tab with the colour picker open: colour area, hue and opacity bars, hex code, eyedropper, five saved theme colours and the colours used in the theme](docs/images/studio-color-picker.png)](docs/images/studio-color-picker.png) | [![The clock's font picker: search, Sans, Serif and Mono filters, sections In this theme, Included with Bezel, My fonts and System fonts, and a preview of 12:00](docs/images/studio-font-picker.png)](docs/images/studio-font-picker.png) |
+| [![The CPU ring's Color section with the colour picker open: colour area, hue and opacity bars, hex code, eyedropper, five saved theme colours and the colours used in the theme](docs/images/studio-color-picker.png)](docs/images/studio-color-picker.png) | [![The clock's font picker: search, Sans, Serif and Mono filters, sections In this theme, Included with Bezel, My fonts and System fonts, and a preview of 12:00](docs/images/studio-font-picker.png)](docs/images/studio-font-picker.png) |
 | **Card faces and one transition** | **A media player you compose** |
 | [![A Card selected: its two faces in a list with Edit buttons, the shared background row and a slide transition of 650 ms](docs/images/studio-card-faces.png)](docs/images/studio-card-faces.png) | [![The media player's What to show tiles and its progress bar options: fill, track, thickness, round ends, knob, segments and times at the sides](docs/images/studio-player.png)](docs/images/studio-player.png) |
 | **Change the background** | **Sensor status** |
 | [![The Change background panel with three sources: solid colour in use, from this computer opened with Choose a file, and video from the screen](docs/images/studio-background.png)](docs/images/studio-background.png) | [![Sensors panel with probe and status filters, compact probe counts and Restart Libre](docs/images/studio-sensor-probes.png)](docs/images/studio-sensor-probes.png) |
+| **The theme gallery** | **Profiles and automation** |
+| [![The Themes gallery: a New theme card, built-in themes with previews and tags, and the selected Ember theme with its sensors, where it is used, Open in the editor, Duplicate and Export](docs/images/studio-themes.png)](docs/images/studio-themes.png) | [![The Profiles and automation dialog: Automatic mode, a Night profile active by schedule, a Music profile that turns on when media plays, and the Curtain transition](docs/images/studio-profiles.png)](docs/images/studio-profiles.png) |
 | **Light theme** | **On the screen** |
 | [![Studio in its light theme: Layers with a Card's faces and the CPU ring's colour-by-value thresholds at 70 and 90](docs/images/studio-light.png)](docs/images/studio-light.png) | [![Illustrative portrait USB screen showing the Ember example; not a product photograph](docs/images/screen-render.png)](docs/images/screen-render.png) |
 
@@ -133,10 +146,12 @@ Studio has been redesigned from the ground up, in dark and light.
 tray. Manage them from **Themes → Profiles and automation**: each profile, such
 as Gaming or Music, assigns a saved theme to each display. A single selection
 applies the profile across your screens. Choose who decides: **Automatic**, where
-rules for an app running, an app in the foreground or media playing pick the
-profile (and a fallback shows when none holds), or **Manual**, which always shows
-the base themes or the profile you pick. Each rule reads as a sentence with its
-own priority and return delay. Profiles pause on the display being edited and
+rules pick the profile (and a fallback shows when none holds), or **Manual**,
+which always shows the base themes or the profile you pick. Rules cover an app
+running or in the foreground, media playing, a sensor above or below a value for
+a while, times and days, idle and a locked PC; combine a profile's rules with
+*any* or *all*. Each rule reads as a sentence with its own priority and return
+delay, and the dialog shows which profile is active now and why. Profiles pause on the display being edited and
 resume when Studio is hidden. The **base themes** are the ones chosen in Studio.
 
 Profile changes, and the return to the base themes, use one of four covers:

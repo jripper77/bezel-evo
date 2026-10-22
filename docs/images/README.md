@@ -11,14 +11,16 @@ are simulated, not measurements.
 | Asset | Source |
 | --- | --- |
 | `pixel.svg` | Unmodified copy of `apps/bezel-studio/src/icon.svg`, the existing Pixel mark |
-| `studio-hero.png` | Dark Studio: widget library, Ember document, CPU ring selected with its live preview and Data tab |
-| `studio-color-picker.png` | Dark Studio: the ring's Look tab with the colour picker open, theme colours and colours used in the theme |
+| `studio-hero.png` | Dark Studio: widget library, Ember document, CPU ring selected with its handles, floating bar, live preview and Data section |
+| `studio-color-picker.png` | Dark Studio: the ring's Color section with the colour picker open, theme colours and colours used in the theme |
 | `studio-font-picker.png` | Dark Studio: the clock's font picker with the theme, bundled, user and system sections |
 | `studio-card-faces.png` | Dark Studio: a two-face Card, its faces list, shared background and one transition |
 | `studio-player.png` | Dark Studio: media player parts and a segmented progress bar with knob and side times |
 | `studio-background.png` | Dark Studio: Media panel and the "Change background" chooser |
 | `studio-sensor-probes.png` | Sensors panel with probe/status filters and per-probe availability counts; built-in Demo theme, captured by `tests/e2e/libre.spec.mjs` at 1280x800 with the live simulated clock |
 | `studio-sensors.png` | Dark Studio: Sensors panel and the sensor status popover, with one simulated missing device |
+| `studio-themes.png` | Dark Studio: the Themes gallery with every demo theme and Ember selected |
+| `studio-profiles.png` | Dark Studio: Profiles and automation with two example profiles (Night by schedule, Music when media plays) created in the page only, and the Curtain transition |
 | `studio-light.png` | Light Studio: Layers with a Card, the ring's colour-by-value thresholds |
 | `screen-render.png` | Generic illustrative device, composed with HTML/CSS around the exact demo canvas frame; not a product photograph or hardware validation |
 

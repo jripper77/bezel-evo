@@ -96,28 +96,37 @@ async function selectLayer(page, name) {
   await page.locator('#tab-layers').click();
   await page.locator('.layer-name').filter({ has: page.locator('.layer-label').getByText(name, { exact: true }) }).first().click();
 }
-async function inspectorTab(page, key) {
-  await inspector(page).getByRole('tab', { name: t(key), exact: true }).click();
+// The inspector's independent sections (Layout, Data, Shape, Text, Color, Behavior).
+async function openSections(page, ...ids) {
+  for (const id of ids) {
+    const button = page.locator(`#inspector [data-inspector-section="${id}"] > .accordion-heading > button`);
+    if (await button.count() && await button.getAttribute('aria-expanded') !== 'true') await button.click();
+  }
   await page.waitForTimeout(500);
+}
+async function widgetsAtTop(page) {
+  await page.locator('#tab-widgets').click();
+  await page.waitForTimeout(300);
+  await page.locator('#panel-widgets').evaluate(panel => { for (let node = panel; node; node = node.parentElement) node.scrollTop = 0; panel.querySelectorAll('*').forEach(node => { node.scrollTop = 0; }); });
 }
 
 const SHOTS = [
   // Hero: the shell, the library and the CPU ring with its live preview.
   { name: 'studio-hero', run: async page => {
     await selectLayer(page, 'CPU load');
-    await page.locator('#tab-widgets').click();
+    await widgetsAtTop(page);
   } },
   { name: 'studio-color-picker', run: async page => {
     await selectLayer(page, 'CPU load');
-    await page.locator('#tab-widgets').click();
-    await inspectorTab(page, 'inspector.tab.look');
+    await widgetsAtTop(page);
+    await openSections(page, 'color');
     await inspector(page).getByRole('button', { name: t('inspector.fill'), exact: true }).first().click();
     await page.locator('.picker-popover').waitFor();
   } },
   { name: 'studio-font-picker', run: async page => {
     await selectLayer(page, 'Clock');
-    await page.locator('#tab-widgets').click();
-    await inspectorTab(page, 'inspector.tab.look');
+    await widgetsAtTop(page);
+    await openSections(page, 'text');
     await inspector(page).getByRole('button', { name: t('inspector.fontFamily'), exact: true }).click();
     await page.locator('.picker-popover').waitFor();
   } },
@@ -126,8 +135,8 @@ const SHOTS = [
   } },
   { name: 'studio-player', run: async page => {
     await selectLayer(page, 'Now playing');
-    await page.locator('#tab-widgets').click();
-    await inspectorTab(page, 'inspector.tab.look');
+    await widgetsAtTop(page);
+    await openSections(page, 'data', 'shape', 'text', 'color');
     await inspector(page).locator('[data-section="progress"]').scrollIntoViewIfNeeded();
   } },
   { name: 'studio-background', run: async page => {
@@ -144,8 +153,30 @@ const SHOTS = [
   } },
   { name: 'studio-light', scheme: 'light', run: async page => {
     await selectLayer(page, 'CPU load');
-    await inspectorTab(page, 'inspector.tab.look');
+    await openSections(page, 'color');
     await inspector(page).locator('[data-section="value-color"]').scrollIntoViewIfNeeded();
+  } },
+  { name: 'studio-themes', run: async page => {
+    await page.locator('#tab-themes').click();
+    await page.getByRole('button', { name: t('themesPanel.gallery'), exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: t('library.themes'), exact: true });
+    await dialog.waitFor();
+    await dialog.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
+    await dialog.locator('#theme-scope [data-scope=all]').click();
+    await dialog.getByRole('button', { name: t('themesPanel.filters'), exact: true }).click();
+  } },
+  { name: 'studio-profiles', run: async page => {
+    await page.locator('#tab-themes').click();
+    await page.locator('#theme-profiles').click();
+    const dialog = page.getByRole('dialog').first();
+    await dialog.waitFor();
+    // Two example profiles, in this page only: nothing is saved.
+    for (const [name, rule] of [['Night', t('widget.clock')], ['Music', t('profiles.mediaPlaying')]]) {
+      await dialog.locator('#pf-add').click();
+      await dialog.locator('#pf-name').fill(name);
+      await dialog.locator('.pf-add-types').getByRole('button', { name: rule, exact: true }).click();
+    }
+    await dialog.getByRole('group', { name: t('profiles.transition'), exact: true }).getByRole('button', { name: t('profiles.effect.curtain'), exact: true }).click();
   } },
 ];
 
