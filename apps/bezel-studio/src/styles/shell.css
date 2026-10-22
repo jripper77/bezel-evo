@@ -3,11 +3,12 @@
    the statusbar, the object menu and the preferences. */
 
 /* --------------------------------------------------------------- topbar -- */
-.topbar { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 12px 0 10px; background: var(--chrome); border-bottom: 1px solid var(--line); }
+.topbar { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 12px 0 0; background: var(--chrome); border-bottom: 1px solid var(--line); }
 /* Only the screen chip and the theme name give way when the window is narrow. */
 .topbar > * { flex: none; }
 .topbar > .spacer { flex: 1 1 0; }
-.brand { display: flex; align-items: center; gap: 10px; height: 32px; padding-right: 12px; border-right: 1px solid var(--line); }
+/* The rail's column: its divider runs the bar's full height into the rail's own border. */
+.brand { display: flex; align-self: stretch; align-items: center; justify-content: center; width: 64px; border-right: 1px solid var(--line); }
 
 /* Breadcrumb: Themes › the theme's name (editable) and "Unsaved". */
 /* The theme's name, then whether it is saved and when it last was. */

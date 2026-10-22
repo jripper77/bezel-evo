@@ -40,6 +40,18 @@ test('the panel rail is a vertical tab list the arrows walk', async ({ page, t }
   expect(errors).toEqual([]);
 });
 
+test('the logo sits in the rail column: its divider spans the bar and meets the rail border', async ({ page }) => {
+  await page.goto('/index.html?demo=turing88');
+  const box = (selector) => page.locator(selector).boundingBox();
+  const [brand, logo, bar, rail] = await Promise.all(['.topbar .brand', '.topbar .brand img', '.topbar', '.rail'].map(box));
+  expect(brand.x).toBe(0);
+  expect(brand.x + brand.width).toBe(rail.x + rail.width);
+  expect(brand.y).toBe(bar.y);
+  expect(brand.height).toBe(bar.height - 1);
+  expect(logo.width).toBe(36);
+  expect(Math.abs(logo.x + logo.width / 2 - (brand.x + brand.width / 2))).toBeLessThanOrEqual(1);
+});
+
 test('the floating bars over the stage edit and zoom', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
