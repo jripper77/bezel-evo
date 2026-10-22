@@ -20,6 +20,8 @@ export function createMemoryStatus({ t, root, notify = () => {}, now = () => Dat
   const popover = el('div', { id: 'memory-popover', class: 'popover memory-popover status-popover', popover: 'auto', role: 'dialog', 'aria-labelledby': 'memory-title' });
   const close = iconButton(t('dialog.close'), ICONS.close, () => popover.hidePopover(), { class: 'quiet', autofocus: true });
   const head = panelHead(t('shell.bezelTitle'), { id: 'memory-title', tools: [close] });
+  const headDot = el('span', { class: 'status-dot', 'aria-hidden': 'true' });
+  head.querySelector('h2').prepend(headDot);
   const caption = el('p', { class: 'hint' });
   const spark = svgEl('svg', { class: 'render-spark', viewBox: `0 0 ${SPARK.width} ${SPARK.height}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' });
   const line = svgEl('path', {});
@@ -47,7 +49,8 @@ export function createMemoryStatus({ t, root, notify = () => {}, now = () => Dat
     toggle.dataset.tone = error ? 'warn' : s.tone;
     toggle.title = [s.label, error, s.memory.note].filter(Boolean).join('\n');
     toggle.dataset.demo = String(s.memory.demo);
-    head.querySelector('h2').textContent = t('shell.bezelTitle');
+    head.querySelector('h2').replaceChildren(headDot, t('shell.bezelTitle'));
+    headDot.dataset.state = error || s.tone === 'warn' ? 'partial' : s.tone === 'ok' ? 'ok' : 'idle';
     close.title = t('dialog.close');
     close.setAttribute('aria-label', t('dialog.close'));
     caption.textContent = t('shell.bezelCaption');

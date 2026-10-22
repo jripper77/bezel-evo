@@ -15,13 +15,13 @@ test('the side panels resize from their separators, by keys and drag, and reset'
   await expect(library).toHaveAttribute('aria-valuenow', '272');
   await expect(library).toHaveAttribute('aria-valuemin', '240');
   await expect(library).toHaveAttribute('aria-valuemax', '480');
-  await expect(inspector).toHaveAttribute('aria-valuenow', '320');
+  await expect(inspector).toHaveAttribute('aria-valuenow', '360');
   await expect(inspector).toHaveAttribute('aria-valuemin', '280');
   await expect(inspector).toHaveAttribute('aria-valuemax', '520');
   const sidebar = page.locator('.sidebar');
   const aside = page.locator('#inspector');
   expect(await width(sidebar)).toBe(64 + 272);
-  expect(await width(aside)).toBe(320);
+  expect(await width(aside)).toBe(360);
 
   // Keys: the arrow towards the stage widens, Shift by more, Home and End go to the limits.
   await library.focus();
@@ -38,11 +38,11 @@ test('the side panels resize from their separators, by keys and drag, and reset'
   await expect(library).toHaveAttribute('aria-valuenow', '480');
   await inspector.focus();
   await page.keyboard.press('ArrowLeft');
-  await expect(inspector).toHaveAttribute('aria-valuenow', '328');
+  await expect(inspector).toHaveAttribute('aria-valuenow', '368');
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
-  await expect(inspector).toHaveAttribute('aria-valuenow', '312');
-  expect(await width(aside)).toBe(312);
+  await expect(inspector).toHaveAttribute('aria-valuenow', '352');
+  expect(await width(aside)).toBe(352);
 
   // A double click gives a panel its starting width.
   await library.dblclick();
@@ -79,8 +79,8 @@ test('the panels keep their widths after a reload', async ({ page, t }) => {
   await page.reload();
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await expect(library).toHaveAttribute('aria-valuenow', '304');
-  await expect(inspector).toHaveAttribute('aria-valuenow', '352');
-  expect(await width(page.locator('#inspector'))).toBe(352);
+  await expect(inspector).toHaveAttribute('aria-valuenow', '392');
+  expect(await width(page.locator('#inspector'))).toBe(392);
   expect(errors).toEqual([]);
 });
 

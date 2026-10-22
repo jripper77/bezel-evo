@@ -57,7 +57,7 @@
 /* ------------------------------------------------------------ workspace -- */
 /* Rail, library panel, separator, stage, separator, inspector; the panels'
    widths are --library-w and --inspector-w (panel-sizes.js). */
-.workspace { --library-w: 272px; --inspector-w: 320px; display: grid; grid-template-columns: calc(64px + var(--library-w)) 0 minmax(0, 1fr) 0 var(--inspector-w); min-height: 0; }
+.workspace { --library-w: 272px; --inspector-w: 360px; display: grid; grid-template-columns: calc(64px + var(--library-w)) 0 minmax(0, 1fr) 0 var(--inspector-w); min-height: 0; }
 .sidebar { display: flex; min-width: 0; min-height: 0; background: var(--surface); border-right: 1px solid var(--line); }
 .library { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .inspector { background: var(--surface); overflow: auto; min-height: 0; border-left: 1px solid var(--line); padding: 12px; }
@@ -146,7 +146,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 
 /* Vertical | Horizontal: the segmented primitive with icons. */
 .orientation-tools { display: flex; align-items: center; gap: 4px; }
-.orientation-tools .segmented button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; }
+.orientation-tools .segmented button { display: inline-grid; place-items: center; width: 34px; min-height: 30px; padding: 0; }
 
 /* ------------------------------------------------------------ statusbar -- */
 .statusbar { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; background: var(--chrome); border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-compact); font-variant-numeric: tabular-nums; }
@@ -248,3 +248,6 @@ body.resizing { cursor: col-resize; user-select: none; }
 .guide-distance { position: absolute; z-index: 2; padding: 2px 4px; border: 1px solid var(--guide); border-radius: var(--control-radius); color: var(--guide); background: var(--chrome); font-family: var(--font-mono); font-size: var(--fs-small); white-space: nowrap; pointer-events: none; }
 .guide-distance.x { transform: translate(6px, -50%); }
 .guide-distance.y { transform: translate(-50%, 6px); }
+
+/* Status chips keep the neutral well; only the live display is tinted. */
+#status-libre-toggle[data-tone="ok"], #status-memory-toggle[data-tone="ok"] { background: var(--surface-2); border-color: var(--border-2); color: var(--muted); }

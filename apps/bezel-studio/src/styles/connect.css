@@ -39,7 +39,7 @@
    restarts), the restart beside it when Libre stopped, and its dialog. */
 .sensor-chip { gap: 8px; padding: 0 10px 0 8px; font-size: var(--fs-small); }
 .sensor-chip .status-dot { width: 8px; height: 8px; }
-.sensor-chip[data-state="ok"] .status-dot { box-shadow: 0 0 0 3px var(--signal-ok-halo); }
+.sensor-chip[data-state="ok"] .status-dot { background: var(--signal-ok); }
 .sensor-chip .sensor-spinner, .sensor-chip[data-state="restarting"] .status-dot { display: none; }
 .sensor-chip[data-state="restarting"] .sensor-spinner { display: block; }
 .sensor-chip[aria-expanded="true"] { border-color: currentColor; }

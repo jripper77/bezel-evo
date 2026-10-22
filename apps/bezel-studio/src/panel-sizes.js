@@ -7,7 +7,7 @@
 /** Each panel's limits and starting width (CSS px); `side` is where it sits. */
 export const PANELS = Object.freeze({
   library: Object.freeze({ min: 240, max: 480, initial: 272, side: 'start' }),
-  inspector: Object.freeze({ min: 280, max: 520, initial: 320, side: 'end' }),
+  inspector: Object.freeze({ min: 280, max: 520, initial: 360, side: 'end' }),
 });
 
 /** Where the widths are remembered. */

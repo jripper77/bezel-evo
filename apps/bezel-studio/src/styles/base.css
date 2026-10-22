@@ -322,7 +322,7 @@ button.pill:hover { border-color: var(--accent); }
 
 /* -------------------------------------------------------------- notice -- */
 .notice { margin-top: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); border-left: 4px solid var(--warn); background: var(--surface-2); }
-.notice-head, .card-stepper { display: flex; align-items: center; gap: 8px; }
+.notice-head, .card-stepper, .status-popover .panel-head h2 { display: flex; align-items: center; gap: 8px; }
 .notice-head > svg { color: var(--warn); }
 .notice-head h2 { flex: 1; margin: 0; font-size: 0.95rem; }
 .notice-head .icon-button, .trigger-rule-head .icon-button, .stored-file .icon-button { width: 28px; min-height: 28px; border-color: transparent; background: transparent; }
@@ -530,3 +530,12 @@ button.pill:hover { border-color: var(--accent); }
 .inspector-toggle.is-leading { justify-content: flex-start; }
 
 .inspector .object-heading-row > h2, .inspector .bg-chooser-head h2 { margin: 0; font-size: var(--fs-title); font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; }
+
+/* Shared native number fields, including dialogs and device controls. */
+.number-control { height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); }
+.number-control input { width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; font-family: var(--font-mono); font-size: var(--fs-field); }
+.number-control:focus-within { border-color: var(--accent); }
+.number-control input:focus-visible { outline: none; }
+.number-control:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.number-control input::-webkit-inner-spin-button, .number-control input::-webkit-outer-spin-button { appearance: none; margin: 0; }

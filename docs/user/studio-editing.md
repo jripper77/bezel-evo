@@ -7,7 +7,7 @@ every editing tool of Bezel Studio.
 
 ![Bezel Studio: icon rail, widget library, canvas with floating bars and the inspector](../images/studio-hero.png)
 
-- **Icon rail.** **Widgets**, **Sensors**, **Layers**, **Themes**, **Media**
+- **Icon rail.** **Themes**, **Widgets**, **Sensors**, **Layers**, **Media**
   (Design) and **Screen** (Device). The library panel shows the one you pick.
 - **Top bar.** The theme's name, with a pencil to rename it, and under it
   whether everything is saved (*● unsaved changes · last saved 4 min ago*);
@@ -64,6 +64,8 @@ Language**.
 
 With several objects selected, the alignment buttons line them up on the first
 one you selected; with one, they align it on the screen.
+
+Reorder layers by dragging, or use **Order** in the inspector and the shared object menu. Visibility and lock remain beside each layer.
 
 In **Layers**, combine the name/sensor search with **Object type** (behind the
 funnel button next to the search; a dot on it says a filter is on) to find
