@@ -464,6 +464,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       live.textContent = t(fixed ? 'insp.fixedState' : sample ? 'insp.live' : 'insp.waiting');
       live.dataset.live = String(!fixed && Boolean(sample));
     }
+    for (const field of root.querySelectorAll('.parts-field')) field.refreshPreview?.();
     if (!sample) return;
     if (sample !== seenSample) {
       seenSample = sample;
@@ -573,10 +574,12 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       } else look.push(section('color', t('inspector.color'), [conditional]));
     }
     const transparency = look.find(group => group.dataset.section === 'transparency');
-    const colors = look.find(group => group.dataset.section === 'track') ?? look.find(group => group.dataset.section === 'color');
     if (transparency) transparency.querySelector('.property-section-body').append(opacity);
-    else if (colors) colors.querySelector('.property-section-body').append(opacity);
-    else look.push(section('visibility', t('inspector.opacity'), [opacity], { showIcon: false }));
+    else {
+      const visibility = section('visibility', t('inspector.opacity'), [opacity]);
+      visibility.querySelector(':scope > .section-head').remove();
+      look.push(visibility);
+    }
     // The accordion already names Color. Retain only meaningful inner captions.
     for (const group of look.filter(group => ['color', 'spectrum-paint'].includes(group.dataset.section))) {
       group.querySelector(':scope > .section-head')?.remove();

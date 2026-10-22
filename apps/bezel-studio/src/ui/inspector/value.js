@@ -37,7 +37,7 @@ export function panels(ctx) {
 
     const data = [];
     if (c.type === 'sensor') {
-      data.push(sourceSection(e, c.key, (key) => ({ kind: { content: { key } } })));
+      nodes.splice(1, 0, sourceSection(e, c.key, (key) => ({ kind: { content: { key } } })));
       nodes.push(...valueFormatFields(ctx, e, c, content => update(e.id, { kind: { content } })));
     }
     data.push(section('content', t('inspector.content'), nodes));
@@ -47,7 +47,7 @@ export function panels(ctx) {
       section('font', t('inspector.font'), ['static', 'sensor'].includes(c.type) ? textStyleFields(ctx, e, { tabular: c.type === 'sensor' }) : fontFields(e)),
     ];
     if (['static', 'sensor'].includes(c.type)) {
-      data.push(section('overflow', t('insp.textOverflow'), [overflowField(ctx, e)]));
+      data.push(section('overflow', t('insp.textOverflow'), [overflowField(ctx, e, { bare: true })], { caption: true }));
       look.push(shadowSection(ctx, e));
     }
     return { data, look };

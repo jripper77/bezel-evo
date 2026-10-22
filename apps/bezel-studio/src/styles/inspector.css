@@ -205,7 +205,6 @@
 .arc-row .fld { padding-inline: 6px; gap: 3px; }
 .arc-row .fld-prefix { font-size: var(--fs-tiny); }
 .arc-row .fld-unit { margin-left: -3px; }
-.arc-row input::-webkit-inner-spin-button { appearance: none; }
 .arc-preview { width: 64px; height: 64px; }
 .arc-preview { flex: none; fill: none; stroke-width: 6; }
 .arc-preview .arc-track { stroke: var(--surface-3); }
@@ -262,9 +261,6 @@
 .inspector-linked .option-tile span { white-space: normal; overflow-wrap: normal; text-align: center; line-height: 1.25; }
 .inspector-linked .field textarea { min-height: 72px; resize: vertical; }
 .inspector-linked .field-choice button { min-width: 0; padding-inline: 7px; }
-.inspector-linked .part-editor { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--surface-2); }
-.inspector-linked .part-editor-head { display: flex; align-items: center; justify-content: space-between; }
-.inspector-linked .part-editor-head strong { font-size: var(--fs-field); }
 .inspector-linked .needle-zone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-block: 8px; border-bottom: 1px solid var(--border); }
 .inspector-linked .needle-zone > .fld-grid { grid-column: 1 / -1; }
 .inspector-linked .multi-heading { display: grid; gap: 12px; }

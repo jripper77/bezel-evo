@@ -206,8 +206,27 @@ export function typeRow(label, value, options, onChange) {
 }
 
 /** Clickable styled parts, followed by the active part's own editor. */
-export function partsRow(label, parts, selected, onSelect, renderEditor) {
-  return el('div', { class: 'parts-field' }, [iconChoice(label, selected, parts, onSelect), renderEditor?.(selected)]);
+export function partsRow(label, parts, selected, onSelect, renderEditor, { preview = null } = {}) {
+  const snapshot = preview?.() ?? [];
+  const visibleParts = preview ? snapshot.map(piece => parts.find(([id]) => id === piece.id)).filter(Boolean) : parts;
+  const options = [...visibleParts, ...parts.filter(([id]) => !visibleParts.some(([visible]) => visible === id))];
+  const choice = iconChoice(label, selected, options, onSelect);
+  const group = choice.querySelector('[role="group"]');
+  if (preview) group.classList.add('parts-preview');
+  const field = el('div', { class: 'parts-field' }, [choice, renderEditor?.(selected)]);
+  field.refreshPreview = () => {
+    if (!preview) return;
+    const pieces = preview();
+    const occurrences = new Map();
+    for (const button of group.children) {
+      const id = button.dataset.value, index = occurrences.get(id) ?? 0;
+      occurrences.set(id, index + 1);
+      const text = pieces.filter(piece => piece.id === id)[index]?.text || '—';
+      if (button.textContent !== text) button.textContent = text;
+    }
+  };
+  field.refreshPreview();
+  return field;
 }
 
 /** One asset choice and its shared detail controls; import stays with the caller. */
@@ -339,7 +358,7 @@ export function sentence(parts, attrs = {}) {
 }
 
 /** Prefixed fields two by two (position and size, min and max). */
-export const fieldGrid = (fields) => el('div', { class: 'fld-grid' }, fields);
+export const fieldGrid = (fields, { tail = false } = {}) => el('div', { class: `fld-grid${tail ? ' has-tail' : ''}` }, fields);
 
 /** A switch with its label on the left and the switch on the right (artboards' toggles). */
 export function switchRow(label, checked, onChange) {
@@ -374,13 +393,13 @@ const SECTION_ICONS = Object.freeze({
   motion: 'play', triggers: 'sliders', actions: 'more', refresh: 'refresh',
 });
 
-export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true, caption = false } = {}) {
+export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true, caption = false, heading = true } = {}) {
   const contents = nodes.filter(Boolean);
   if (!contents.length) return null;
   const head = sectionTitle(label, { count: n });
   if (showIcon && !caption) head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
   if (tool) head.append(tool);
-  return el('section', { class: `property-section${caption ? ' is-caption' : ''}`, dataset: { section: key } }, [head, el('div', { class: 'property-section-body' }, contents)]);
+  return el('section', { class: `property-section${caption ? ' is-caption' : ''}`, dataset: { section: key } }, [heading ? head : null, el('div', { class: 'property-section-body' }, contents)]);
 }
 
 /**
@@ -539,7 +558,7 @@ const FONT_CHUNK = 40;
  * @param {(font: {family: string, weight: number, italic: boolean, asset?: string|null}) => void} onChange
  * @param {{catalog: () => object|null, themeFamilies: () => string[], recent: () => string[], remember: (name: string) => void, sample: string, showFace?: (name: string, face: object) => void}} source
  */
-export function fontPicker(texts, value, onChange, source, { faceSample = null, fixedItalic = null } = {}) {
+export function fontPicker(texts, value, onChange, source, { faceSample = null, fixedItalic = null, hideLabels = false } = {}) {
   const catalog = source.catalog();
   const status = fontStatus(catalog, value);
   const current = { weight: value.weight, italic: Boolean(value.italic) };
@@ -576,8 +595,9 @@ export function fontPicker(texts, value, onChange, source, { faceSample = null, 
     button.style.fontWeight = String(spec.weight);
     button.style.fontStyle = spec.italic ? 'italic' : 'normal';
   }
+  if (hideLabels) face.querySelector(':scope > span')?.remove();
   return el('div', { class: 'font-picker' }, [
-    el('div', { class: 'field' }, [el('label', { for: id, text: texts.family }), button, note]),
+    el('div', { class: 'field' }, [hideLabels ? null : el('label', { for: id, text: texts.family }), button, note]),
     face,
   ]);
 }

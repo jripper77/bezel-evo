@@ -1,0 +1,51 @@
+import { test, expect, clickAddWidget, openSection, expectAccessible } from './helpers.mjs';
+
+test('parts show the actual value content, retain accessible names and reset inherited styles', async ({ page, t }) => {
+  await page.goto('/index.html?demo=turing88');
+  await clickAddWidget(page, t, 'value');
+  const panel = page.locator('#inspector');
+  await openSection(page, 'data');
+  const prefix = panel.getByRole('textbox', { name: t('inspector.prefix'), exact: true });
+  await prefix.fill('CPU'); await prefix.press('Tab');
+  const suffix = panel.getByRole('textbox', { name: t('inspector.suffix'), exact: true });
+  await suffix.fill('!'); await suffix.press('Tab');
+  await openSection(page, 'text');
+  const parts = panel.getByRole('group', { name: t('insp.valueParts'), exact: true });
+  await expect(parts.getByRole('button', { name: t('insp.valuePart.prefix'), exact: true })).toHaveText('CPU');
+  await expect(parts.getByRole('button', { name: t('insp.valuePart.number'), exact: true })).toHaveText(/\d/);
+  await expect(parts.getByRole('button', { name: t('insp.valuePart.unit'), exact: true })).toHaveText('%');
+  await expect(parts.getByRole('button', { name: t('insp.valuePart.suffix'), exact: true })).toHaveText('!');
+  await parts.getByRole('button', { name: t('insp.valuePart.unit'), exact: true }).click();
+  const editor = panel.getByRole('group', { name: t('insp.partEditor', { part: t('insp.valuePart.unit') }), exact: true });
+  const size = editor.getByRole('spinbutton', { name: t('insp.partSize'), exact: true });
+  await size.fill('55'); await size.press('Tab');
+  await expect(size).toHaveValue('55');
+  await editor.getByRole('button', { name: t('insp.superscript'), exact: true }).click();
+  await expect(editor.getByRole('button', { name: t('insp.superscript'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await editor.getByRole('button', { name: t('insp.inheritPart'), exact: true }).click();
+  await expect(size).toHaveValue('');
+  await page.locator('#undo').click(); await expect(size).toHaveValue('55');
+  expect(await editor.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await expectAccessible(page);
+});
+
+test('clock preview parts follow the current formatted time without editing the document', async ({ page, t }) => {
+  await page.clock.setFixedTime(new Date('2026-10-22T10:15:20Z'));
+  await page.goto('/index.html?demo=turing88');
+  await clickAddWidget(page, t, 'clock');
+  await openSection(page, 'data');
+  const panel = page.locator('#inspector');
+  const pattern = panel.getByRole('combobox', { name: t('inspector.pattern'), exact: true });
+  await pattern.fill('%H:%M:%S'); await pattern.press('Tab');
+  await openSection(page, 'text');
+  await openSection(page, 'shape');
+  const parts = panel.getByRole('group', { name: t('insp.clock.parts'), exact: true });
+  const seconds = parts.getByRole('button', { name: t('insp.clockPart.seconds'), exact: true });
+  await expect(seconds).toHaveText('20');
+  await expect(parts.locator('button')).toHaveText([/\d{2}/, ':', '15', ':', '20']);
+  await expect(parts.getByRole('button', { name: t('insp.clockPart.separators'), exact: true })).toHaveCount(2);
+  await page.clock.setFixedTime(new Date('2026-10-22T10:15:22Z'));
+  await expect(seconds).toHaveText('22');
+  await expect(pattern).toHaveValue('%H:%M:%S');
+  await expectAccessible(page);
+});

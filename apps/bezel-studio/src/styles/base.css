@@ -424,6 +424,16 @@ button.pill:hover { border-color: var(--accent); }
 .size-field { display: flex; gap: 8px; align-items: center; }
 .size-field > .fld { flex: 1 1 0; min-width: 0; }
 .fade-field, .image-field, .parts-field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fld-grid.has-tail { grid-template-columns: minmax(0, 1fr) 96px; align-items: end; }
+.field-choice.parts-preview { justify-content: center; gap: 4px; padding: 6px 0; border: 0; background: transparent; }
+.field-choice.parts-preview button { min-width: 36px; height: 40px; padding: 0 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); font-family: var(--font-mono); font-size: var(--fs-part-preview); }
+.field-choice.parts-preview button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+.part-editor { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--accent-line); border-radius: var(--radius); background: var(--accent-soft); }
+.part-editor-head { display: flex; align-items: center; gap: 8px; }
+.part-editor-head > .icon-button { margin-left: auto; flex: none; }
+.part-editor-head strong { font-size: var(--fs-field); }
+.part-editor .field { margin: 0; }
+.part-editor-face { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
 
 .bound-field { display: flex; align-items: center; gap: 6px; }
 .bound-field > :first-child { flex: 1 1 auto; min-width: 0; }
@@ -465,3 +475,10 @@ button.pill:hover { border-color: var(--accent); }
 
 .property-section.is-caption > .section-head { margin-bottom: 6px; }
 .property-section.is-caption > .section-head .section-title { color: var(--muted); font-size: var(--fs-compact); font-weight: 400; text-transform: none; letter-spacing: normal; }
+
+.compact-paint-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 96px; align-items: center; gap: 8px; }
+.compact-paint-row > .icon-button { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; }
+.compact-paint-row > .color-field { margin: 0; }
+.compact-paint-row :disabled { opacity: .45; }
+
+.fld input::-webkit-inner-spin-button { appearance: none; }

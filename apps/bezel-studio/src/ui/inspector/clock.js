@@ -38,7 +38,7 @@ export function panels(ctx) {
     return { data: [section('content', t('inspector.content'), [choice('date', ['none', 'day', 'dayMonth']), language])], look, behavior };
   }
   const [parts, ...font] = textStyleFields(ctx, e, { parts: true, scope: 'clock', partIds: CLOCK_PARTS, partsLabel: t('insp.clock.parts'), partLabel: part => t(`insp.clockPart.${part}`), setStyle: patch => update(e.id, { kind: { style: patch, ...(patch.casing != null ? { content: { casing: 'normal' } } : {}) } }) });
-  look.push(section('clock-parts', t('insp.clock.parts'), [parts]));
+  look.push(section('clock-parts', t('insp.clock.parts'), [parts], { heading: false }));
   look.push(section('font', t('inspector.font'), font));
   return {
     data: [section('content', t('inspector.content'), [
@@ -56,7 +56,7 @@ export function panels(ctx) {
     behavior: [section('clock-blink', t('insp.clock.blink'), [
       toggleField(t('insp.clock.blink'), Boolean(style.parts?.separators?.blink), blink => update(e.id, { kind: { style: { parts: { separators: { blink } } } } })),
       el('p', { class: 'hint', text: t('insp.clock.blinkHint') }),
-    ])],
+    ], { heading: false })],
   };
 }
 
