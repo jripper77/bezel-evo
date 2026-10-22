@@ -1,3 +1,7 @@
+## Aggiornamento — strumenti, 22 ottobre
+
+Lancetta e Orologio analogico corretti in `9cf8f43`: righe compatte, miniature, zone, editor centrale, colori e lunghezze. Test e catture in `SUMMARY-FIDELITY-INSTRUMENTS.md`. Prossimo blocco: contenitori/Tema/multipla; poi shell e dialoghi. La verifica generale resta aperta.
+
 ## Aggiornamento — Meteo, 22 ottobre
 
 Ricerca, righe compatte, ordine Colore e icone del movimento corrette in `3d37a0a`. Test, catture e differenze vincolate ai primitivi/alla decisione D-09 in `SUMMARY-FIDELITY-WEATHER.md`. Restano gli altri blocchi sotto e la chiusura generale.

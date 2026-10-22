@@ -14,20 +14,20 @@ Il lavoro complessivo resta aperto; stop al blocco verificato per limite dei tok
 | Grafico/Spettro | completato, `1eb18be`, `fid/inspector-plots` | SUMMARY-FIDELITY-PLOTS.md |
 | Immagine/GIF/Forma/Player | completato, `616a7be`, `fid/inspector-media` | SUMMARY-FIDELITY-MEDIA.md |
 | Meteo | completato, `3d37a0a`, `fid/inspector-weather` | SUMMARY-FIDELITY-WEATHER.md |
-| Composizioni residue | **prossimo** | Lancetta e Orologio analogico |
-| Contenitori/Tema/multipla | da fare | Card/facce, sfondo, controlli multipli secondo audit |
+| Lancetta/Orologio analogico | completato, `9cf8f43`, `fid/inspector-instruments` | SUMMARY-FIDELITY-INSTRUMENTS.md |
+| Contenitori/Tema/multipla | **prossimo** | Card/facce, sfondo, controlli multipli secondo audit |
 | Shell/pannelli | da fare | MainNew, LibraryPanelsNew, StatusBarNew, Schermo/Archivio, larghezze/catture R00–R03 |
 | Profili/Galleria | da fare | ProfilesNew/ThemesNew, stato runtime reale, proporzioni e filtri |
 | Chiusura visiva | da fare | tutte le tavole/stati censiti, galleria finale rigenerata e REVIEW aggiornato prima delle verifiche dell’utente |
 
 Le nuove evidenze sono separate in `evidence/fidelity-paint/`, `fidelity-text/`,
-`fidelity-geometry/`, `fidelity-plots/`, `fidelity-media/` e `fidelity-weather/`. **`evidence/final/` è ancora la galleria
-al termine di T-12**, non quella di questi sei blocchi. Rigenerarla una sola
+`fidelity-geometry/`, `fidelity-plots/`, `fidelity-media/`, `fidelity-weather/` e `fidelity-instruments/`. **`evidence/final/` è ancora la galleria
+al termine di T-12**, non quella di questi sette blocchi. Rigenerarla una sola
 volta alla fine degli interventi restanti; `ux2-gallery.mjs` ora include anche
 il Grafico Area con due sensori (oltre alle barre arrotondate).
 
 Prossima worktree: controllare prima `git log`/`git status` su windows-improvements,
-poi creare `fid/inspector-instruments` da HEAD in `F:/dev/bezel-inspector-instruments`.
+poi creare `fid/inspector-containers` da HEAD in `F:/dev/bezel-inspector-containers`.
 Leggere le sorgenti della tavola e il registro, riusare i primitivi comuni,
 nessuna build/installazione/push e nessuno spegnimento (la vecchia richiesta
 notturna è già stata eseguita, non va ripetuta). Nessuna suite completa durante

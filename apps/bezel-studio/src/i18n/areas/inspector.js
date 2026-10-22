@@ -7,6 +7,9 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    "insp.needle.allNumbers": "all",
+    "insp.needle.diameterCaption": "Diameter",
+    "insp.needle.editCenter": "Edit centre text",
     "insp.shape.silhouette": "Silhouette",
     "insp.image.change": "Change…",
     "insp.fade.from": "from",
@@ -363,6 +366,9 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    "insp.needle.allNumbers": "todas",
+    "insp.needle.diameterCaption": "Diâmetro",
+    "insp.needle.editCenter": "Editar texto central",
     "insp.shape.silhouette": "Forma",
     "insp.image.change": "Trocar…",
     "insp.fade.from": "de",
@@ -719,6 +725,9 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    "insp.needle.allNumbers": "tutti",
+    "insp.needle.diameterCaption": "Diametro",
+    "insp.needle.editCenter": "Modifica testo centrale",
     "insp.shape.silhouette": "Sagoma",
     "insp.image.change": "Cambia…",
     "insp.fade.from": "da",

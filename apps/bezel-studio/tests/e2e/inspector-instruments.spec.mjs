@@ -1,0 +1,50 @@
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection, setPanelWidths, setColor } from './helpers.mjs';
+
+test('needle compact zones, numbers and centre editor retain values and one-step Undo', async ({ page, t }) => {
+  const errors = watchErrors(page); await setPanelWidths(page, { inspector: 320 });
+  await page.goto('/index.html?demo=turing88'); await clickAddWidget(page, t, 'needle');
+  const root = page.locator('#inspector'); await openSection(page, 'shape');
+  const numbers = root.getByRole('group', { name: t('insp.needle.numbers'), exact: true });
+  const positions = await numbers.getByRole('button').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().top));
+  expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(2);
+  const centre = root.locator('[data-section="needle-center"]');
+  await centre.getByRole('button', { name: t('insp.needle.center'), exact: true }).click();
+  await centre.locator('summary').click();
+  const prefix = centre.getByRole('textbox', { name: t('inspector.prefix'), exact: true });
+  await prefix.fill('CPU '); await prefix.press('Tab'); await expect(prefix).toHaveValue('CPU ');
+  await expect(centre.locator('details')).toHaveAttribute('open', '');
+  await page.locator('#undo').click(); await expect(prefix).toHaveValue('');
+  await expect(centre.locator('details')).toHaveAttribute('open', '');
+  await openSection(page, 'color');
+  await root.getByRole('button', { name: t('insp.needle.addZone'), exact: true }).click();
+  const zone = root.getByRole('group', { name: t('insp.needle.zone', { number: 1 }), exact: true });
+  const from = zone.getByRole('spinbutton', { name: t('insp.needle.zoneFrom', { number: 1 }), exact: true });
+  const to = zone.getByRole('spinbutton', { name: t('insp.needle.zoneTo', { number: 1 }), exact: true });
+  const [a, b] = await Promise.all([from.boundingBox(), to.boundingBox()]); expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  await from.fill('25'); await from.press('Tab'); await page.locator('#undo').click(); await expect(from).toHaveValue('0');
+  await setColor(page, t, zone, t('insp.needle.zoneColor', { number: 1 }), '#ff0000');
+  await zone.getByRole('button', { name: t('insp.needle.removeZone', { number: 1 }), exact: true }).click();
+  await expect(zone).toHaveCount(0); await page.locator('#undo').click(); await expect(zone).toHaveCount(1);
+  expect(await root.evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});
+
+test('analog hand controls have distinct icons and compact editable lengths and colours', async ({ page, t }) => {
+  const errors = watchErrors(page); await setPanelWidths(page, { inspector: 320 });
+  await page.goto('/index.html?demo=turing88'); await clickAddWidget(page, t, 'clock');
+  const root = page.locator('#inspector'); await openSection(page, 'shape');
+  await root.getByRole('button', { name: t('insp.clock.analog'), exact: true }).click();
+  const hands = root.getByRole('group', { name: t('insp.clock.hands'), exact: true });
+  const paths = await hands.getByRole('button').evaluateAll(nodes => nodes.map(n => n.querySelector('path').getAttribute('d')));
+  expect(new Set(paths).size).toBe(3);
+  const lengths = ['hour', 'minute', 'second'].map(hand => root.getByRole('spinbutton', { name: t(`insp.clock.${hand}Length`), exact: true }));
+  const boxes = await Promise.all(lengths.map(field => field.boundingBox()));
+  expect(Math.max(...boxes.map(b => b.y)) - Math.min(...boxes.map(b => b.y))).toBeLessThan(2);
+  await lengths[0].fill('75'); await lengths[0].press('Tab'); await expect(lengths[0]).toHaveValue('75');
+  await page.locator('#undo').click(); await expect(lengths[0]).toHaveValue('100');
+  await openSection(page, 'color');
+  await setColor(page, t, root, t('insp.clock.hour'), '#ff0000');
+  await page.locator('#undo').click();
+  expect(await root.evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

@@ -329,6 +329,11 @@ cap**, a **Centre value** styled like a value, and a **Peak marker** that stays
 at the highest reading for a while, then falls back. A needle made before keeps
 its simple look until you change it.
 
+In **Shape**, turn on **Centre value**, then expand **Edit centre text** for
+its prefix, suffix, parts and font settings. The editor stays open while you
+change those settings or undo a change. Each colour zone has its colour,
+start, end and remove command on one row; its limits use the sensor's units.
+
 ### Weather
 
 **Behavior → Icon animation** moves the weather icon: **Still**, **Gentle** or

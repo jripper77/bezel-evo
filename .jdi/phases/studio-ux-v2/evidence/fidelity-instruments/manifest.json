@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "dark/app/inspector/ux2-media-analog.png",
+    "detail": "dark/app/inspector/ux2-media-analog-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-needle",
+    "file": "dark/app/inspector/ux2-linked-needle.png",
+    "detail": "dark/app/inspector/ux2-linked-needle-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "light/app/inspector/ux2-media-analog.png",
+    "detail": "light/app/inspector/ux2-media-analog-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-needle",
+    "file": "light/app/inspector/ux2-linked-needle.png",
+    "detail": "light/app/inspector/ux2-linked-needle-detail.png"
+  }
+]

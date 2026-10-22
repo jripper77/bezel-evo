@@ -4,7 +4,7 @@ import { CLOCK_PATTERNS, withHandLength, analogOf, formatClock } from '../../clo
 import { CLOCK_PARTS } from '../../text-layout.js';
 import { textStyleFields } from './text.js';
 import { el } from '../dom.js';
-import { iconChoice, numberField, propertySection as section, selectField, textField, toggleField, chipButton } from '../fields.js';
+import { fieldGrid, iconChoice, numberField, propertySection as section, selectField, textField, toggleField, chipButton } from '../fields.js';
 import { ICONS } from '../icons.js';
 
 export function panels(ctx) {
@@ -13,29 +13,29 @@ export function panels(ctx) {
   const analog = c.analog != null, dial = analogOf(c.analog);
   const set = content => update(e.id, { kind: { content } });
   const setDial = patch => set({ analog: { ...c.analog, ...patch } });
-  const choice = (key, values) => iconChoice(t(`insp.clock.${key}`), dial[key], values.map(value => [value, t(`insp.clock.${key}.${value}`)]), value => setDial({ [key]: value }), { wide: true });
+  const choice = (key, values) => iconChoice(t(`insp.clock.${key}`), dial[key], values.map(value => [value, t(`insp.clock.${key}.${value}`), key === 'handShape' ? ({ thin: 'needle-thin', rounded: 'hand-rounded', arrow: 'needle-arrow' })[value] : null, key === 'numbers' && value === 'none' ? { text: '—' } : {}]), value => setDial({ [key]: value }), { wide: true, iconOnly: key === 'handShape' });
   const language = selectField(t('clock.language'), c.language ?? '', [['', t('clock.system')], ['it', t('language.it')], ['en', t('language.en')], ['pt-BR', t('language.pt-BR')]], language => set({ language: language || null }));
   const look = [section('style', t('inspector.style'), [optionTiles(t('inspector.style'), [
     { text: t('insp.clock.digital'), art: ICONS.text, pressed: !analog, onClick: () => analog && set({ analog: null }) },
     { text: t('insp.clock.analog'), art: ICONS.clock, pressed: analog, onClick: () => !analog && set({ analog: {} }) },
-  ])])];
+  ])], { caption: true })];
   if (analog) {
     look.push(section('clock-dial', t('insp.clock.dial'), [
       choice('ticks', ['none', 'hours', 'minutes']), choice('numbers', ['none', 'quarters', 'all', 'roman']),
-      optionTiles(t('insp.clock.hands'), ['hour', 'minute', 'second'].map(hand => ({ text: t(`insp.clockPart.${hand}s`), art: ICONS.clock, pressed: dial[`${hand}Hand`], onClick: () => setDial({ [`${hand}Hand`]: !dial[`${hand}Hand`] }) }))),
-      ...['hour', 'minute', 'second'].filter(hand => dial[`${hand}Hand`]).map(hand => numberField(t(`insp.clock.${hand}Length`), Math.round(dial[`${hand}Length`] * 100), value => {
+      optionTiles(t('insp.clock.hands'), ['hour', 'minute', 'second'].map(hand => ({ text: t(`insp.clockPart.${hand}s`), art: ICONS[`hand-${hand}`], pressed: dial[`${hand}Hand`], onClick: () => setDial({ [`${hand}Hand`]: !dial[`${hand}Hand`] }) }))),
+      fieldGrid(['hour', 'minute', 'second'].filter(hand => dial[`${hand}Hand`]).map(hand => numberField(t(`insp.clock.${hand}Length`), Math.round(dial[`${hand}Length`] * 100), value => {
         ctx.store.dispatch('setKind', { id: e.id, kind: { ...e.kind, content: { ...c, analog: withHandLength(c.analog, hand, value / 100) } } });
-      }, { min: 10, max: 200, unit: '%' })),
-      choice('handShape', ['thin', 'rounded', 'arrow']),
-      numberField(t('insp.outline'), dial.border, border => setDial({ border: Math.max(0, Math.min(64, border)) }), { min: 0, max: 64, unit: 'px' }),
-    ]));
+      }, { min: 10, max: 200, unit: '%', compact: true })), { columns: ['hour', 'minute', 'second'].filter(hand => dial[`${hand}Hand`]).length || 1 }),
+      fieldGrid([choice('handShape', ['thin', 'rounded', 'arrow']),
+      numberField(t('insp.outline'), dial.border, border => setDial({ border: Math.max(0, Math.min(64, border)) }), { min: 0, max: 64, unit: 'px', compact: true, iconName: 'pivot-ring' })], { tail: true }),
+    ], { heading: false }));
     look.push(section('color', t('inspector.color'), [
       colorField(t('insp.clock.face'), dial.face, face => setDial({ face })),
       colorField(t('insp.clock.marks'), dial.marks, marks => setDial({ marks })),
-      ...['hour', 'minute', 'second'].map(hand => colorField(t(`insp.clock.${hand}`), dial[`${hand}Color`], color => setDial({ [`${hand}Color`]: color }))),
+      fieldGrid(['hour', 'minute', 'second'].map(hand => el('div', { class: 'field' }, [el('span', { class: 'field-label', text: t(`insp.clock.${hand}`) }), colorField(t(`insp.clock.${hand}`), dial[`${hand}Color`], color => setDial({ [`${hand}Color`]: color }), { swatchOnly: true })])), { columns: 3 }),
     ]));
-    const behavior = dial.secondHand ? [section('clock-seconds', t('insp.clock.secondsMotion'), [iconChoice(t('insp.clock.secondsMotion'), dial.sweep ? 'smooth' : 'step', [['step', t('insp.clock.step')], ['smooth', t('insp.transitionSmooth')]], value => setDial({ sweep: value === 'smooth' }), { wide: true })])] : [];
-    return { data: [section('content', t('inspector.content'), [choice('date', ['none', 'day', 'dayMonth']), language])], look, behavior };
+    const behavior = dial.secondHand ? [section('clock-seconds', t('insp.clock.secondsMotion'), [iconChoice(t('insp.clock.secondsMotion'), dial.sweep ? 'smooth' : 'step', [['step', t('insp.clock.step'), 'transition-jump'], ['smooth', t('insp.transitionSmooth'), 'transition-smooth']], value => setDial({ sweep: value === 'smooth' }), { wide: true })], { heading: false })] : [];
+    return { data: [section('content', t('inspector.content'), [choice('date', ['none', 'day', 'dayMonth']), language], { heading: false })], look, behavior };
   }
   const [parts, ...font] = textStyleFields(ctx, e, { parts: true, scope: 'clock', partIds: CLOCK_PARTS, partsLabel: t('insp.clock.parts'), partLabel: part => t(`insp.clockPart.${part}`), setStyle: patch => update(e.id, { kind: { style: patch, ...(patch.casing != null ? { content: { casing: 'normal' } } : {}) } }) });
   look.push(section('clock-parts', t('insp.clock.parts'), [parts], { heading: false }));

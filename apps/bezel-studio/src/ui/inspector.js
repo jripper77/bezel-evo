@@ -55,7 +55,7 @@ const PREVIEW_HEIGHT = 72;
 // The same reading order for every object's Look tab: structure/type,
 // typography, paint, edges, then effects. A kind omits what it does not use.
 const LOOK_ORDER = Object.freeze([
-  'show', 'shape', 'visualization', 'style', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'spacing', 'cover-fade', 'appearance', 'font',
+  'show', 'shape', 'visualization', 'style', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'needle-center', 'needle-picture', 'spacing', 'cover-fade', 'appearance', 'font',
   'color', 'picture', 'spectrum-paint', 'fill', 'progress', 'track', 'segments',
   'outline', 'corners', 'shadow', 'transparency', 'preview', 'visibility',
 ]);
