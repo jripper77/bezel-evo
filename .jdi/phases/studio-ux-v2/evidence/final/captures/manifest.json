@@ -35,6 +35,14 @@
     "kind": "app",
     "scheme": "dark",
     "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "dark/app/inspector/ux2-media-analog.png",
+    "detail": "dark/app/inspector/ux2-media-analog-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
     "state": "ux2-media-weather",
     "file": "dark/app/inspector/ux2-media-weather.png",
     "detail": "dark/app/inspector/ux2-media-weather-detail.png"
@@ -198,6 +206,14 @@
     "state": "ux2-media-clock",
     "file": "light/app/inspector/ux2-media-clock.png",
     "detail": "light/app/inspector/ux2-media-clock-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-analog",
+    "file": "light/app/inspector/ux2-media-analog.png",
+    "detail": "light/app/inspector/ux2-media-analog-detail.png"
   },
   {
     "kind": "app",
@@ -838,21 +854,5 @@
     "state": "ux2-storage",
     "file": "light/app/screen/ux2-storage.png",
     "detail": "light/app/screen/ux2-storage-detail.png"
-  },
-  {
-    "kind": "app",
-    "scheme": "dark",
-    "area": "inspector",
-    "state": "ux2-media-analog",
-    "file": "dark/app/inspector/ux2-media-analog.png",
-    "detail": "dark/app/inspector/ux2-media-analog-detail.png"
-  },
-  {
-    "kind": "app",
-    "scheme": "light",
-    "area": "inspector",
-    "state": "ux2-media-analog",
-    "file": "light/app/inspector/ux2-media-analog.png",
-    "detail": "light/app/inspector/ux2-media-analog-detail.png"
   }
 ]
