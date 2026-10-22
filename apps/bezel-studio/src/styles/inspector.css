@@ -164,7 +164,7 @@
 .inspector .value-color { display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; background: transparent; }
 .inspector .value-color > .switch-row { font-size: var(--fs-small); }
 .inspector .value-color .trigger-rule { padding: 8px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
-.inspector .corner-radii[data-mode="same"] { grid-template-columns: 64px minmax(100px, 140px); }
+
 .inspector .corner-radii[data-mode="each"] { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); gap: 6px; }
 .inspector .corner-radii .fld { padding-inline: 8px; gap: 4px; }
 .inspector .corner-radii .fld input { width: 5ch; }
@@ -302,3 +302,7 @@
 
 .inspector [data-section="transition"] .fld-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .inspector .number-field.is-compact { grid-template-columns: minmax(0, 1fr); }
+
+.inspector .section-head > .arc-preview { width: 24px; height: 24px; margin-left: auto; }
+
+.inspector .property-section-body > .property-section { margin: 0; padding: 0; border: 0; }

@@ -1,5 +1,9 @@
 # Passaggio — Studio UX v2
 
+**Geometria verificata:** `fid/inspector-geometry`, vedi `SUMMARY-FIDELITY-GEOMETRY.md`.
+Testo già integrato in `49a2a3f`. Resta aperto il riallineamento delle composizioni
+specifiche e dei pannelli; nessuna nuova verifica richiesta all’utente.
+
 **Blocco Testo verificato:** `fid/inspector-text`, vedi `SUMMARY-FIDELITY-TEXT.md`.
 Colore già integrato in `0710d65`; proseguire con geometria e composizioni.
 

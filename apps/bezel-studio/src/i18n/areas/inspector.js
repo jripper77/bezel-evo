@@ -7,6 +7,7 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'size',
     'insp.clock.hourLength': 'Hour hand length',
@@ -349,6 +350,7 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'tam',
     'insp.clock.hourLength': 'Comprimento do ponteiro das horas',
@@ -691,6 +693,7 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'dim',
     'insp.clock.hourLength': 'Lunghezza lancetta delle ore',

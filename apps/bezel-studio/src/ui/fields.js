@@ -140,8 +140,9 @@ export function segmented(label, value, options, onChange, { bare = false } = {}
 }
 
 /** Native pressed choices. Each option is [value, translated label, icon name]. */
-export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false, actions = false, detail = null, caption = label } = {}) {
+export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false, actions = false, detail = null, caption = label, columns = null } = {}) {
   const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
+  if (columns) { group.dataset.columns = String(columns); group.style.setProperty('--choice-columns', String(columns)); }
   for (const [v, text, name, option = {}] of options) group.append(el('button', {
     type: 'button', title: option.description ?? text, 'aria-label': text, ...(option.description ? { 'aria-description': option.description } : {}), ...(actions ? {} : { 'aria-pressed': String(v === value) }), disabled: Boolean(option.disabled), dataset: { value: String(v) }, onclick: () => onChange(v),
   }, [option.leading ?? (name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null), (option.iconOnly ?? iconOnly) ? null : (option.text ?? text)]));
@@ -311,7 +312,7 @@ const CORNER_RADIUS = Object.freeze(['borderTopLeftRadius', 'borderTopRightRadiu
 export function cornerRadii(texts, value, onChange, { individual = true, box = null, unit = 'px' } = {}) {
   const mode = individual ? cornerMode(value) : 'same';
   const tool = individual
-    ? segmented(texts.mode, mode, [['same', texts.same], ['each', texts.each]], (next) => next !== mode && onChange(withCornerMode(value, next)), { bare: true })
+    ? iconChoice(texts.mode, mode, [['same', texts.same, 'radius'], ['each', texts.each, 'corners-all']], (next) => next !== mode && onChange(withCornerMode(value, next)), { bare: true, iconOnly: true })
     : null;
   const drawing = cornerDrawing(mode === 'same' ? { radius: value.radius, corners: null } : value, box, CORNER_FRAMES[mode]);
   // Each corner's mark traces that corner (its arc, or an L when square) and lights while its field is edited.
@@ -328,7 +329,7 @@ export function cornerRadii(texts, value, onChange, { individual = true, box = n
   };
   if (mode === 'same') {
     const shared = field(texts.prefix, texts.label, value.radius, (r) => onChange(withRadius(value, r)), null);
-    return { tool, control: el('div', { class: 'corner-radii', role: 'group', 'aria-label': texts.label, dataset: { mode } }, [art, shared]) };
+    return { tool: null, control: el('div', { class: 'corner-radii', role: 'group', 'aria-label': texts.label, dataset: { mode } }, [art, shared, tool]) };
   }
   const radii = radiiOf(value);
   const corner = (i) => field('', texts.corners[CORNERS[i]], radii[i], (r) => onChange(withCorner(value, i, r)), CORNERS[i]);
@@ -358,7 +359,7 @@ export function sentence(parts, attrs = {}) {
 }
 
 /** Prefixed fields two by two (position and size, min and max). */
-export const fieldGrid = (fields, { tail = false } = {}) => el('div', { class: `fld-grid${tail ? ' has-tail' : ''}` }, fields);
+export const fieldGrid = (fields, { tail = false, lead = false } = {}) => el('div', { class: `fld-grid${tail ? ' has-tail' : ''}${lead ? ' has-lead' : ''}` }, fields);
 
 /** A switch with its label on the left and the switch on the right (artboards' toggles). */
 export function switchRow(label, checked, onChange) {

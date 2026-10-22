@@ -121,3 +121,10 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 - `fieldGrid`: `tail: true` per peso/numero con campo finale da 96 px.
 - `fontPicker`: `hideLabels: true` per l’editor compatto, senza perdere i nomi accessibili.
 - `propertySection`: `heading: false` quando la didascalia è già nel primo controllo.
+
+## Riallineamento Geometria
+
+- `iconChoice`: `columns` per distribuire molte scelte senza etichette troncate.
+- `fieldGrid`: `lead: true` per una prima colonna compatta, complementare a `tail`.
+- `cornerRadii`: stessi calcoli e disegno D-22, modi a icone; nel modo uguale selettore e raggio sono nella stessa riga.
+- `segmentsFields`: stessa riga comune per Anello e Barra, con numero/spazio disabilitati quando spento.

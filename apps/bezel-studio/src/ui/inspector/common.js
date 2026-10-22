@@ -72,8 +72,8 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   /** The source section of an object bound to a sensor: card, Show as, and min/max when it has them. */
   function sourceSection(e, key, patchFor, { range = true } = {}) {
     return section('source', t('insp.source'), [
-      sourceCard(e.id, key, patchFor, { numeric: e.kind.type !== 'text' }),
-      range && e.kind.binding ? rangeFields(e.id, e.kind.binding) : null,
+      el('div', { class: 'field' }, [el('span', { class: 'field-label', text: t('inspector.sensor') }), sourceCard(e.id, key, patchFor, { numeric: e.kind.type !== 'text' })]),
+      range && e.kind.binding ? el('div', { class: 'field' }, [el('span', { class: 'field-label', text: t('insp.scale') }), rangeFields(e.id, e.kind.binding)]) : null,
     ]);
   }
 
@@ -170,7 +170,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       corners: Object.fromEntries(CORNERS.map((name) => [name, t(`inspector.${name}`)])),
     };
     const { tool, control } = cornersField(texts, value, onChange, { individual, box });
-    return section('corners', title, [control], { tool });
+    return section('corners', title, [control], { tool, caption: true });
   }
 
   /** The cover's corners, drawn on the cover's own box. */
@@ -198,13 +198,14 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
 
   function segmentsFields(e) {
     const seg = e.kind.segments;
-    return [
-      toggleField(t('inspector.segments'), Boolean(seg), (on) => update(e.id, { kind: { segments: on ? { count: 10, gap: e.kind.type === 'ring' ? 4 : 2 } : null } })),
-      seg && el('div', { class: 'field-row' }, [
-        numberField(t('inspector.count'), seg.count, (v) => update(e.id, { kind: { segments: { count: Math.min(200, Math.max(1, v)) } } }), { min: 1, max: 200, iconName: 'count' }),
-        numberField(t('inspector.gap'), seg.gap, (v) => update(e.id, { kind: { segments: { gap: Math.max(0, v) } } }), { min: 0, step: 'any', unit: e.kind.type === 'ring' ? '°' : 'px', iconName: 'spacing' }),
+    const count = prefixedField(t('insp.countPrefix'), t('inspector.count'), seg?.count ?? 10, count => update(e.id, { kind: { segments: { count: Math.min(200, Math.max(1, count)) } } }), { min: 1, max: 200 });
+    const gap = prefixedField('', t('inspector.gap'), seg?.gap ?? (e.kind.type === 'ring' ? 4 : 2), gap => update(e.id, { kind: { segments: { gap: Math.max(0, gap) } } }), { min: 0, step: 'any', unit: e.kind.type === 'ring' ? '°' : 'px', iconName: 'spacing' });
+    for (const field of [count, gap]) field.querySelector('input').disabled = !seg;
+    return [el('div', { class: 'field' }, [el('span', { class: 'field-label', text: t('inspector.segments') }),
+      el('div', { class: 'compact-segments' }, [
+        iconButton(t('inspector.segments'), ICONS.blocks, () => update(e.id, { kind: { segments: seg ? null : { count: 10, gap: e.kind.type === 'ring' ? 4 : 2 } } }), { 'aria-pressed': String(Boolean(seg)) }), count, gap,
       ]),
-    ];
+    ])];
   }
 
   /** How the shown value moves to a new reading (D-2026-10-15-studio-redesign-fidelity-18): none or smooth, and how long. */
@@ -215,7 +216,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     if (!modes.includes(mode)) modes.push(mode);
     const set = (change) => update(e.id, { valueTransition: { ...transitionPatch(e, change), ...(change.average === 1 ? { average: 1 } : {}) } });
     return section('transition', t('insp.onReading'), [
-      iconChoice(t('insp.onReading'), mode, modes.map(value => [value, t(value === 'none' ? 'insp.transitionJump' : `insp.transition${value[0].toUpperCase()}${value.slice(1)}`), `transition-${({ none: 'jump', smooth: 'smooth', inertia: 'inertia', count: 'count', roll: 'roll' })[value] ?? 'jump'}`, value === 'inertia' ? { description: t('insp.transitionInertiaHint') } : {}]), next => set({ mode: next }), { bare: true, wide: true }),
+      iconChoice(t('insp.onReading'), mode, modes.map(value => [value, t(value === 'none' ? 'insp.transitionJump' : `insp.transition${value[0].toUpperCase()}${value.slice(1)}`), `transition-${({ none: 'jump', smooth: 'smooth', inertia: 'inertia', count: 'count', roll: 'roll' })[value] ?? 'jump'}`, value === 'inertia' ? { description: t('insp.transitionInertiaHint') } : {}]), next => set({ mode: next }), { bare: true, wide: true, columns: modes.length > 3 ? 3 : null }),
       (mode !== 'none' || isValue) && fieldGrid([
         mode !== 'none' && numberField(t(mode === 'inertia' ? 'insp.transitionSettling' : 'card.duration'), durationMs, durationMs => set({ durationMs }), { ...TRANSITION_RANGE, unit: 'ms', iconName: 'timer', compact: true }),
         isValue && numberField(t('insp.averageReadings'), averageOf(e), average => set({ average: Math.max(AVERAGE_RANGE.min, Math.min(AVERAGE_RANGE.max, average)) }), { ...AVERAGE_RANGE, compact: true }),
@@ -314,7 +315,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       store.dispatch('setFrame',{id:current.id,frame:matrixFrame(current.frame,current.visualization,theme.canvas)});
       root.querySelector('[data-action="fit-matrix"]')?.focus({preventScroll:true});
     };
-    return section('visualization', t('visual.title'), [
+    return section('visualization', t('inspector.style'), [
       presets,
       v?.style === 'matrix' && fieldGrid([n('columns',v.columns,1,64),n('rows',v.rows,1,32)]),
       v?.style === 'matrix' && el('button',{type:'button',class:'text-button',text:t('visual.fitMatrix'),dataset:{action:'fit-matrix'},onpointerdown:event=>{if(event.button===0)event.preventDefault();},onclick:fitMatrix}),
@@ -322,7 +323,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       ['matrix','pixel'].includes(v?.style) && numberField(t('visual.radius'),v.radius,radius=>set({radius:Math.max(0,Math.min(32,radius))}),{min:0,max:32,unit:'px'}),
       ['pixel','dial'].includes(v?.style) && n('ticks',v.ticks,2,120,v.style === 'pixel' ? 'visual.cells' : 'visual.ticks'),
       v?.style === 'dial' && toggleField(t('visual.marker'),v.marker,marker=>set({marker})),
-    ]);
+    ], { caption: true });
   }
   return { sourceCard, rangeFields, sourceSection, sampleText, fontFields, appChipGroup, choiceCard, cornersSection, coverCorners, barCorners, segmentsFields, transitionSection, fadeFields, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, trackFields, angleFields, timingOf, graphWindowMs, button };
 }

@@ -124,7 +124,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 /* Corner radii, `cornerRadii()`: the drawing and one radius beside it, or a
    field at each corner around it; the field being edited lights its corner. */
 .corner-radii { display: grid; gap: 8px; align-items: center; }
-.corner-radii[data-mode="same"] { grid-template-columns: 64px minmax(0, 1fr); }
+.corner-radii[data-mode="same"] { grid-template-columns: 64px minmax(0, 1fr) auto; }
 .corner-radii[data-mode="each"] { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); }
 .corner-radii[data-mode="each"] .corner-drawing { grid-column: 2; grid-row: 1 / span 2; }
 .corner-radii[data-mode="each"] .fld[data-corner="topRight"] { grid-column: 3; grid-row: 1; }
@@ -152,7 +152,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .field-label { display: flex; align-items: center; gap: 6px; }
 .field-label .ic, .fld > .ic { flex: none; color: var(--dim); }
 .field > span { font-size: 0.85rem; color: var(--muted); }
-.field input[type="text"], .field input[type="number"], .field select, .field textarea, .prefs-section .field select, .prefs-section .field input[type="text"] { width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--well); }
+.field > input[type="text"], .field > input[type="number"], .field > select, .field > textarea, .prefs-section .field select, .prefs-section .field input[type="text"] { width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--well); }
 .field-row, .icon-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .field-row.four { grid-template-columns: repeat(4, 1fr); }
 .check { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
@@ -482,3 +482,13 @@ button.pill:hover { border-color: var(--accent); }
 .compact-paint-row :disabled { opacity: .45; }
 
 .fld input::-webkit-inner-spin-button { appearance: none; }
+
+.field-choice[data-columns] { display: grid; grid-template-columns: repeat(var(--choice-columns), minmax(0, 1fr)); }
+.compact-segments { display: grid; grid-template-columns: 34px repeat(2, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.compact-segments > .icon-button { height: 34px; border: 1px solid var(--border); border-radius: 8px; }
+.compact-segments > .fld { padding-inline: 6px; gap: 4px; }
+.compact-segments :disabled { opacity: .45; }
+
+.fld-grid.has-lead { grid-template-columns: auto minmax(0, 1fr); align-items: end; }
+
+.compact-segments > .icon-button[aria-pressed="true"] { background: var(--seg-thumb); color: var(--text); }
