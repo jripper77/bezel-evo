@@ -271,9 +271,11 @@ units; the highest threshold reached wins.
 
 ### Corners
 
-Shapes, Cards, images and the player's cover share one corners control:
-**Equal** (one radius) or **Individual** (each corner), with a drawing of the
-four corners that shows what you set at any size.
+Shapes, Cards, images, spectrum bars and the player's cover share one corners
+control. A compact field sets one radius for every corner. The **Individual**
+button switches to four fields around a proportional drawing; the corner being
+edited lights up. Press the button again to return to one radius, keeping the
+top-left value. Bars that support only one radius have no Individual button.
 
 ### A picture inside a shape
 

@@ -10,7 +10,9 @@ La galleria comprende **108 stati italiani** chiari/scuri, **208 PNG** validi e 
 
 Correzione successiva alla prima verifica manuale: tolto il fondo quadrato dall’anteprima Anello (`b6ead42`), seguendo `RingInspectorOpen.html`. `MainNew` contiene invece un riquadro: per questa divergenza interna si privilegia la tavola specifica. Gli altri inspector mantengono i riquadri delle rispettive tavole. Verifica: 73 unitari/statici/i18n e 24 e2e anteprima verdi; galleria aggiornata, dettagli in `SUMMARY-FIDELITY-PREVIEW.md`.
 
-Differenze visibili mantenute: Angoli D-22; Rotazione su riga propria, assente su Card/gruppi/membri; Duplica/Elimina nei menu; Salva secondario D-6; cinque effetti supportati dai profili; dissolvenza meteo D-09; dati dei quattro temi sostituiti come approvato; esportazione .bezeltheme. Controlli e avvisi funzionali esistenti conservati.
+Seconda correzione dalla verifica manuale: nello Spettro icone distinte per Linea centrale e Tieni il picco, con label accanto ai tasti (`2bda767e`). Angoli uguali ora compatto per tutti i chiamanti del controllo condiviso; disegno proporzionato conservato nella modalità singola (`12567cd8`, D-2026-10-22-studio-ux-v2-22). Riepilogo e test in `SUMMARY-FIDELITY-SPECTRUM-CONTROLS.md`.
+
+Differenze visibili mantenute: disegno proporzionato degli Angoli singoli; Rotazione su riga propria, assente su Card/gruppi/membri; Duplica/Elimina nei menu; Salva secondario D-6; cinque effetti supportati dai profili; dissolvenza meteo D-09; dati dei quattro temi sostituiti come approvato; esportazione .bezeltheme. Controlli e avvisi funzionali esistenti conservati.
 
 **Limite ancora aperto:** nel demo la scheda file ha miniatura/metadati reali, ma il renderer del canvas rappresenta le immagini con contorno/scacchiera. Non è una prova dei pixel nativi delle texture; vedi [attività da pianificare](../../todos/2026-10-22-demo-image-preview-parity.md). Nessun fulmine fittizio per legare Opacità, non esposto dal modello. Connect/DeviceBoot mantengono i limiti di ambito descritti nella galleria; nessuna nuova prova hardware.
 
