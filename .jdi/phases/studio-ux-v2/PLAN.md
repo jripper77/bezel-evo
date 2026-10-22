@@ -226,7 +226,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - **Acceptance:** componenti comuni promossi, chiavi i18n orfane e `inspector-tabs.js` tolti, galleria di fedeltà completa e approvata
   dall'utente, guida utente aggiornata (inspector, maniglie, profili, meteo animato), suite completa verde (AGENTS.md), elenco
   delle prove a vista per l'utente (DoD 6).
-- **Dipendenze:** tutte tranne T-11 (rinviata) · **Status:** in_progress
+- **Dipendenze:** tutte tranne T-11 (rinviata) · **Status:** completed — pulizia (schede, re-export, 42+11 chiavi orfane), spec e2e portate sull'interfaccia nuova (1092 verdi), sei difetti veri corretti, scelte dell'utente su Preferenze/rotazione/standby/temi 3,5″, guida e CHANGELOG, suite completa e copertura verdi, galleria finale in `evidence/final/`. In attesa: approvazione della galleria e prove a vista dell'utente. Vedi `REVIEW.md`.
 
 ## Ordine consigliato e parallelismo
 - Wave 1: T-0 (UI) in parallelo con T-1…T-6 (Rust + demo), fino a 4 agenti alla volta. T-0 è la più urgente perché sblocca la Wave 2.

@@ -34,6 +34,8 @@ approvazione della galleria di fedeltà e le prove a vista sugli schermi (DoD 1 
   chiudeva più il selettore colore. Ora è `aria-disabled` e tiene il focus.
 - **Archivio**: nel menu di un file le azioni disattivate non dicevano perché (la vecchia
   barra lo diceva). Ora il motivo è nel `title` della voce.
+- **Portoghese**: le cinque modalità della transizione del Valore sbordavano di 10 px
+  dall'inspector; le righe di scelte in una sezione ora vanno a capo.
 - `iconChoice`: ogni pulsante porta il suo valore in `data-value` (serve ai test, nessun
   effetto visibile).
 
@@ -69,13 +71,13 @@ Casi in cui la verifica è cambiata di forma, da guardare:
 
 | Gate | Esito |
 |---|---|
-| Unitari UI (`node --test`) | <<UNIT>> |
-| Copertura UI (`npm run test:unit`, soglia 80% righe) | <<UICOV>> |
-| E2E, quattro progetti | <<E2E>> |
-| `cargo fmt --check` | <<FMT>> |
-| `cargo clippy --workspace --all-targets -D warnings` | <<CLIPPY>> |
-| `cargo test --workspace` | <<TEST>> |
-| Copertura Rust (`cargo llvm-cov`, ≥ 80%) | <<COV>> |
+| Unitari UI (`node --test`) | verde: 681/681 |
+| Copertura UI (`npm run test:unit`, soglia 80% righe) | verde: 99,21% righe, 96,08% rami, 96,25% funzioni |
+| E2E, quattro progetti | seconda passata 1087/1092; i 5 rossi (3 casi, tutti in pt) corretti e verdi da soli: un selettore che sbordava in portoghese (difetto vero, vedi sotto), decimali scritti col punto nel test, un `ERR_NO_BUFFER_SPACE` di rete di Windows |
+| `cargo fmt --check` | verde |
+| `cargo clippy --workspace --all-targets -D warnings` | verde |
+| `cargo test --workspace` | verde: 1415 superati, 0 falliti, 19 ignorati |
+| Copertura Rust (`cargo llvm-cov`, ≥ 80%) | verde: 90,25% righe, 89,94% regioni, 86,57% funzioni |
 | i18n: parità e nessuna chiave orfana | verde (test i18n; 0 orfane) |
 
 ## Scelte dell'utente durante la verifica (22 ottobre)

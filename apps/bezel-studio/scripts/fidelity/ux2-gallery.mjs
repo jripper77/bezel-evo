@@ -5,7 +5,7 @@
 // Without --reuse it captures the app first with shoot.mjs (the ux2 states of
 // every area); the four templates come from shoot-templates.mjs's evidence.
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,9 +61,10 @@ const PAIRS = {
 const TEMPLATES = { ThemePixel: 'pixel-wide', ThemeNebula: 'nebula-wide', ThemePaper: 'paper-wide', ThemeNowPlaying: 'now-playing-wide' };
 
 if (!args.includes('--reuse')) {
-  for (const [area, states] of Object.entries(AREAS)) {
+  // The first area writes the manifest; the others add to it.
+  for (const [index, [area, states]] of Object.entries(AREAS).entries()) {
     const code = await new Promise((done, reject) => {
-      const child = spawn(process.execPath, ['scripts/fidelity/shoot.mjs', '--area', area, '--only', 'app', '--scheme', 'both', '--state', states.join(','), '--out', shots, '--merge'],
+      const child = spawn(process.execPath, ['scripts/fidelity/shoot.mjs', '--area', area, '--only', 'app', '--scheme', 'both', '--state', states.join(','), '--out', shots, ...(index ? ['--merge'] : [])],
         { cwd: APP, stdio: 'inherit' });
       child.once('error', reject);
       child.once('exit', done);
@@ -72,14 +73,12 @@ if (!args.includes('--reuse')) {
   }
 }
 
-mkdirSync(join(out, 'boards'), { recursive: true });
 const rel = (path) => relative(out, path).replaceAll('\\', '/');
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+/** The board's PNG where the design keeps it, linked rather than copied. */
 const board = (name) => {
-  const from = join(PHASE, 'design/png', `${name}.png`);
-  const to = join(out, 'boards', `${name}.png`);
-  if (existsSync(from)) copyFileSync(from, to);
-  return existsSync(to) ? rel(to) : null;
+  const file = join(PHASE, 'design/png', `${name}.png`);
+  return existsSync(file) ? rel(file) : null;
 };
 const capture = (scheme, key) => {
   const [area, state] = key.split('/');
