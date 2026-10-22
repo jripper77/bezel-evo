@@ -26,8 +26,13 @@ I test mirati delle correzioni sono verdi (dettagli nei SUMMARY). I gate general
 
 ## Verdetto
 
-**APPROVED_PENDING_MANUAL** — gate automatici: vedi «Gate»; restano la tua
-approvazione della galleria di fedeltà e le prove a vista sugli schermi (DoD 1 e 6).
+**Verdict:** APPROVED — 22 ottobre 2026. L'utente approva la fase e ne chiede la
+pubblicazione come 0.2.0 (DoD 1 galleria e DoD 6 prove a vista: approvazione
+complessiva in chat, dopo l'installazione della 0.2.0; le nove prove non sono state
+registrate una per una). Gate finali in `VERIFY-FIDELITY-FINAL.md`.
+
+Verdetto precedente: APPROVED_PENDING_MANUAL — gate automatici: vedi «Gate»; restavano
+l'approvazione della galleria di fedeltà e le prove a vista sugli schermi (DoD 1 e 6).
 
 ## Ambito
 
