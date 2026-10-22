@@ -11,7 +11,7 @@ Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p.
 Aperti: avvio dell'8,8 dalla flash interna, nomi tagliati nelle righe Sensori e facce
 Card, anteprima immagini nel demo, stato «attivo ora» non esposto dal runtime.
 ChatGPT può lavorare in parallelo nello stesso repository: controllare `git log` prima
-di formattare o fare commit ampi. Ripresa in `F:\Devezel`.
+di formattare o fare commit ampi. Ripresa in `F:\Dev\bezel`.
 
 Este projeto usa o JDI (Just Do It) como workflow de desenvolvimento. JDI eh um workflow enxuto: 6 comandos no loop principal, 5 agents core + 2 per-project specialists.
 
