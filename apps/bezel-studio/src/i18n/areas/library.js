@@ -7,6 +7,7 @@ export const PREFIXES = Object.freeze(['widgets.', 'sensorsPanel.', 'layersPanel
 
 export default {
   en: {
+    "themesPanel.exportShort": "Export",
     "widgets.caption.player": "Player",
     "widgets.caption.spectrum": "Spectrum",
 
@@ -107,6 +108,7 @@ export default {
     'themesPanel.openEditor': 'Open in the editor',
   },
   'pt-BR': {
+    "themesPanel.exportShort": "Exportar",
     "widgets.caption.player": "Reprodutor",
     "widgets.caption.spectrum": "Espectro",
 
@@ -207,6 +209,7 @@ export default {
     'themesPanel.openEditor': 'Abrir no editor',
   },
   it: {
+    "themesPanel.exportShort": "Esporta",
     "widgets.caption.player": "Player",
     "widgets.caption.spectrum": "Spettro",
 

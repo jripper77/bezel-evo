@@ -2,7 +2,7 @@
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
 import { askChoice } from './dialog.js';
-import { accordionSection, chipButton, iconButton, iconChoice, numberField, sentence, screenThumb } from './fields.js';
+import { accordionSection, chipButton, iconButton, iconChoice, numberField, prefixedField, fieldGrid, previewChoice, sentence, screenThumb } from './fields.js';
 import { openMenuAt } from './menu.js';
 import { createSectionMemory } from '../inspector-sections.js';
 import { createProfilesSave } from '../profiles-save.js';
@@ -11,7 +11,7 @@ import { ruleNow } from '../gallery-model.js';
 import { errorText, sensorLabel } from '../messages.js';
 import { PROFILE_EFFECTS, PROFILE_RULE_SOURCES, directed, firstIncomplete, modeOf, newProfileRule, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile } from '../profiles-model.js';
 
-const ADD_RULE_SOURCES = PROFILE_RULE_SOURCES.filter(source => source !== 'process');
+const ADD_RULE_SOURCES = ['foreground', 'mediaPlaying', 'time', 'sensor', 'idle', 'locked'];
 const BASE = 'base', SECTIONS = ['themes', 'rules', 'behavior'];
 export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} }) {
   let dialog = null, config, overview, themes = [], devices = [], catalog = [], selected = BASE, saver, timer = null, saveState = 'saved';
@@ -124,7 +124,7 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
     const mode = modeOf(config);
     return el('aside', { class: 'pf-list' }, [
       el('p', { class: 'hint', text: t('profiles.whoDecides') }),
-      iconChoice(t('profiles.whoDecides'), mode.mode, [['auto', t('profiles.automatic'), 'data'], ['manual', t('profiles.manual')]], value => { config = withMode(config, { ...mode, mode: value }); changed(true); }, { bare: true, wide: true }),
+      iconChoice(t('profiles.whoDecides'), mode.mode, [['auto', t('profiles.automatic'), 'data'], ['manual', t('profiles.manual'), 'hand']], value => { config = withMode(config, { ...mode, mode: value }); changed(true); }, { bare: true, wide: true }),
       mode.mode === 'manual' && select(t('profiles.manualShows'), mode.manual ?? '', choices(), value => { config = withMode(config, { ...mode, manual: value || null }); }, 'pf-manual'),
       el('p', { class: 'pf-now', role: 'status' }),
       el('h3', { class: 'pf-sect', text: t('profiles.count', { count: config.profiles.length }) }),
@@ -140,10 +140,10 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
       const options = compatible.map(theme => [theme.location, theme.name]);
       if (path && !options.some(([location]) => location === path)) options.push([path, path]);
       return el('div', { class: 'pf-theme', dataset: { screen: display.key } }, [
-        icon(ICONS.screen, 16), el('span', { class: 'pf-theme-display', text: display.name }), thumb(path),
+        icon(ICONS.screen, 16), el('span', { class: 'pf-theme-display', text: display.name }), el('span', { class: 'pf-theme-choice' }, [thumb(path),
         profile ? select(t('profiles.themeFor', { display: display.name }), path, [['', t('profileRules.ui.keepCurrent')], ...options], value => {
           if (value) profile.themes[display.key] = value; else delete profile.themes[display.key];
-        }, `pf-theme-${profile.id}-${display.key}`) : el('strong', { class: 'pf-theme-current', text: display.themeName ?? t('profiles.unassigned') }),
+        }, `pf-theme-${profile.id}-${display.key}`) : el('strong', { class: 'pf-theme-current', text: display.themeName ?? t('profiles.unassigned') }), ]),
       ]);
     });
   }
@@ -172,7 +172,7 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
       }, `${id}-source`), el('span', { class: 'pf-state', dataset: { profileRule: String(index) } }), more]),
       sentence(tokens),
       rule.source === 'time' && el('div', { class: 'chip-group', role: 'group', 'aria-label': t('profileRules.ui.days') }, Array.from({ length: 7 }, (_, day) => chipButton(t(`profileRules.day${day}`), (rule.days ?? []).includes(day), () => { rule.days = (rule.days ?? []).includes(day) ? rule.days.filter(d => d !== day) : [...(rule.days ?? []), day]; changed(true); }))),
-      numberField(t('trigger.priority'), rule.priority, value => { rule.priority = Math.max(0, Math.min(100, value)); changed(); }, { min: 0, max: 100 }),
+      prefixedField(t('cardInsp.priority'), t('trigger.priority'), rule.priority, value => { rule.priority = Math.max(0, Math.min(100, value)); changed(); }, { min: 0, max: 100 }),
     ]);
   }
   function detail() {
@@ -191,13 +191,15 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
       profile && section('rules', t('profiles.activatesWhen'), 'data', body => body.append(
         ...profile.rules.map((rule, index) => ruleEditor(profile, rule, index)),
         iconChoice(t('profileRules.ui.combine'), profile.match ?? 'any', [['any', t('profileRules.ui.any')], ['all', t('profileRules.ui.all')]], value => { if (value === 'all') profile.match = value; else delete profile.match; changed(); }, { wide: true }),
-        el('div', { class: 'pf-add-types', role: 'group', 'aria-label': t('profiles.addRule') }, ADD_RULE_SOURCES.map(source => el('button', { type: 'button', text: label(source), disabled: profile.rules.length >= 16, onclick: () => addRule(profile, source) }))),
+        el('div', { class: 'pf-add-types' }, [el('span', { class: 'field-label', text: t('profiles.addRule') }), previewChoice(t('profiles.addRule'), ADD_RULE_SOURCES.map(source => ({ text: label(source), caption: ['foreground', 'mediaPlaying', 'time'].includes(source) ? t(`profileRules.ui.add.${source}`) : label(source), art: ICONS[({ foreground: 'screen', mediaPlaying: 'player', sensor: 'data', time: 'clock', idle: 'clock', locked: 'lock' })[source]], disabled: profile.rules.length >= 16, onClick: () => addRule(profile, source) })), { actions: true })]),
       )),
       section('behavior', t('insp.section.behavior'), 'behav', body => body.append(...[
-        select(t('profiles.transition'), config.transition.effect, PROFILE_EFFECTS.map(effect => [effect, t(effect === 'none' ? 'fade.none' : `profiles.effect.${effect}`)]), value => { config.transition.effect = value; }, 'pf-effect'),
-        config.transition.effect !== 'none' && numberField(t('profiles.durationMs'), config.transition.durationMs, value => { config.transition.durationMs = value; changed(); }, { min: 150, max: 3000, step: 50, unit: 'ms' }),
+        fieldGrid([
+          iconChoice(t('profiles.transition'), config.transition.effect, PROFILE_EFFECTS.map(effect => [effect, t(effect === 'none' ? 'fade.none' : `profiles.effect.${effect}`)]), value => { config.transition.effect = value; changed(true); }, { wide: true }),
+          ...(config.transition.effect !== 'none' ? [numberField(t('profiles.durationMs'), config.transition.durationMs, value => { config.transition.durationMs = value; changed(); }, { min: 150, max: 3000, step: 50, unit: 'ms', iconName: 'clock', compact: true, caption: t('card.duration') })] : []),
+        ], { tail: config.transition.effect !== 'none', columns: config.transition.effect === 'none' ? 1 : null }),
         directed(config.transition.effect) && iconChoice(t('common.direction'), config.transition.direction, ['up', 'down', 'left', 'right'].map(direction => [direction, t(`card.direction.${direction}`), direction === 'left' ? 'arrowLeft' : direction === 'right' ? 'arrowRight' : direction]), value => { config.transition.direction = value; changed(); }),
-        profile && numberField(t('profiles.returnDelay'), profile.rules[0]?.returnSeconds ?? 3, value => { profile.rules.forEach(rule => { rule.returnSeconds = value; }); changed(); }, { min: 0, max: 300, unit: 's' }),
+        profile && numberField(t('profiles.returnDelay'), profile.rules[0]?.returnSeconds ?? 3, value => { profile.rules.forEach(rule => { rule.returnSeconds = value; }); changed(); }, { min: 0, max: 300, unit: 's', iconName: 'clock', compact: true }),
         !profile && select(t('profiles.fallback'), config.defaultProfile ?? '', choices(), value => { config.defaultProfile = value || null; }, 'pf-fallback'),
         iconButton(t('profiles.preview'), ICONS.play, () => { void bridge.previewTransition(config.transition, triedThemes(config, profile?.id ?? BASE, overview.displays)).catch(error => notify(errorText(t, error))); }),
         el('p', { class: 'hint', text: t('profiles.editingPause') }),

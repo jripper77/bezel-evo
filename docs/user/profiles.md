@@ -63,3 +63,5 @@ While you edit a theme in Studio, automatic changes pause on that screen.
 
 The screen chip in Studio's status bar shows the active profile and whether it
 was chosen by the rules or by hand.
+
+Rules can be added from the six icon tiles. Each rule keeps its own compact priority field; the transition buttons and duration apply to profile changes. The selected profile and the profile active on the screen can be different: the active indicators and true-rule indicators come from the runtime.

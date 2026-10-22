@@ -188,7 +188,7 @@ test('the full gallery uses real previews, usage facts and accessible menus insi
   await expect(dialog.locator('.themes-gallery-detail')).toContainText(t('themesPanel.sensors'));
   await expect(dialog.locator('.themes-gallery-detail')).toContainText(t('themesPanel.usedWhere'));
   await expect(dialog.locator('.themes-gallery-detail').getByRole('button', { name: t('storage.deleteAction'), exact: true })).toBeDisabled();
-  const more = dialog.getByRole('button', { name: t('themesPanel.more', { name: 'Demo' }), exact: true });
+  const more = dialog.locator('#theme-grid').getByRole('button', { name: t('themesPanel.more', { name: 'Demo' }), exact: true });
   await dialog.locator('.theme-item').first().hover(); await more.click();
   const menu = dialog.getByRole('menu'); await expect(menu).toBeVisible();
   await expect(menu.getByRole('menuitem', { name: t('common.duplicate'), exact: true })).toBeEnabled();

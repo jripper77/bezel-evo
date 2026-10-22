@@ -59,7 +59,7 @@ test('an invalid profile cannot overwrite the last automatically saved version',
 test('profile transitions, priorities, manual selection and deletion survive autosave', async ({ page, t }) => {
   const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
   let dialog = await openProfiles(page, t);
-  await dialog.locator('#pf-effect').selectOption('wipe');
+  await dialog.getByRole('group', { name: t('profiles.transition'), exact: true }).getByRole('button', { name: t('profiles.effect.wipe'), exact: true }).click();
   await dialog.getByRole('spinbutton', {name:t('profiles.durationMs'),exact:true}).fill('850');
   await dialog.getByRole('button',{name:t('card.direction.up'),exact:true}).click();
   await dialog.getByRole('button',{name:t('profiles.preview'),exact:true}).click();
@@ -72,7 +72,7 @@ test('profile transitions, priorities, manual selection and deletion survive aut
   await expect(item(dialog,'Music').locator('.pf-item-summary')).toHaveText(t('profiles.summary.mediaIn',{app:'Spotify'}));
   await dialog.getByRole('button',{name:t('profiles.manual'),exact:true}).click(); await dialog.locator('#pf-manual').selectOption({label:'Music'});
   await dialog.getByRole('button',{name:t('dialog.close'),exact:true}).click(); dialog = await openProfiles(page,t);
-  await expect(dialog.locator('#pf-effect')).toHaveValue('wipe');
+  await expect(dialog.getByRole('group', { name: t('profiles.transition'), exact: true }).getByRole('button', { name: t('profiles.effect.wipe'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.getByRole('spinbutton',{name:t('profiles.durationMs'),exact:true})).toHaveValue('850');
   await expect(dialog.getByRole('button',{name:t('card.direction.up'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(dialog.locator('#pf-manual option:checked')).toHaveText('Music'); await item(dialog,'Music').click();

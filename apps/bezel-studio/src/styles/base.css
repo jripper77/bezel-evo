@@ -254,7 +254,7 @@ input[aria-invalid="true"] { border-color: var(--danger) !important; }
 .pill-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pill[data-tone="ok"], .live-toggle:has(input:checked) { border-color: var(--ok-line); background: var(--ok-soft); color: var(--ok-ink); }
 .pill[data-tone="ok"] .pill-dot { background: var(--signal-ok); }
-.pill[data-tone="accent"] { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+.pill[data-tone="accent"], .pf-rule .sentence input.sentence-token, .pf-rule .sentence select { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
 .pill[data-tone="warn"] { border-color: color-mix(in srgb, var(--signal-warn) 35%, var(--border-2)); background: color-mix(in srgb, var(--signal-warn) 8%, var(--surface-2)); color: var(--warn); }
 .pill[data-tone="danger"] { border-color: color-mix(in srgb, var(--signal-error) 35%, var(--border-2)); background: color-mix(in srgb, var(--signal-error) 8%, var(--surface-2)); color: var(--danger); }
 .pill[data-tone="info"] { border-color: color-mix(in srgb, var(--info) 35%, var(--border-2)); background: color-mix(in srgb, var(--info) 8%, var(--surface-2)); color: var(--info); }
@@ -539,3 +539,5 @@ button.pill:hover { border-color: var(--accent); }
 .number-control:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 .number-control input::-webkit-inner-spin-button, .number-control input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+
+.option-tiles[data-count="6"] .option-tile .ic { width: 24px; height: 18px; }

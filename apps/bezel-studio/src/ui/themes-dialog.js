@@ -1,7 +1,8 @@
 // One live library grid and one thumbnail cache, moved into the gallery while open.
 import { el } from './dom.js';
 import { ICONS } from './icons.js';
-import { iconButton, screenThumb } from './fields.js';
+import { accordionSection, iconButton, iconChoice, pill, screenThumb } from './fields.js';
+import { createSectionMemory } from '../inspector-sections.js';
 import { openMenuAt } from './menu.js';
 import { askChoice } from './dialog.js';
 import { catalogKeys, missingSensors, themeUses } from '../gallery-model.js';
@@ -9,6 +10,11 @@ import { themePreview } from '../theme-previews.js';
 import { errorText, sensorLabel } from '../messages.js';
 
 export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge, catalog = () => null, readings = () => ({}), screen = () => null, refresh, onFacts = () => {}, onSensors = () => {} }) {
+  const memory = createSectionMemory({ key: 'bezel.gallerySections', ids: ['sensors', 'uses'], open: ['sensors', 'uses'] });
+  const section = (id, title, name, children) => {
+    const control = accordionSection({ id, title, icon: name, expanded: memory.isOpen('gallery', id), onToggle: options => { memory.toggle('gallery', id, options); control.setExpanded(memory.isOpen('gallery', id)); }, render: body => body.append(...children.filter(Boolean)) });
+    return control.element;
+  };
   let selected = null, entries = [], moved = [], opener, busy = false, overview = null, timer, lastFacts;
   const head = el('div', { class: 'dialog-head themes-gallery-head' });
   const filters = el('div', { class: 'themes-gallery-filters' });
@@ -70,23 +76,27 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     const preview = screenThumb(entry.canvas); preview.classList.add('gallery-preview');
     void themePreview(bridge, entry).then(url => { if (url) preview.style.backgroundImage = `url("${url}")`; });
     const action = (text, fn, attrs = {}) => el('button', { type: 'button', class: 'text-button', text, disabled: busy, onclick: () => void run(fn), ...attrs });
+    const more = iconButton(t('themesPanel.more', { name: entry.name }), ICONS.more, () => menu(entry, more), { class: 'quiet' });
     detail.replaceChildren(...[
-      el('h3', { text: entry.name }), preview,
-      el('p', { class: 'hint', text: t('themesPanel.objects', { count: entry.objects ?? 0, width: entry.canvas.width, height: entry.canvas.height }) }),
-      el('h4', { text: t('themesPanel.sensors') }),
+      el('div', { class: 'gallery-object-head' }, [preview, el('div', {}, [el('div', { class: 'notice-head' }, [el('h3', { text: entry.name }), iconButton(t('themesPanel.try', { name: entry.name }), ICONS.play, () => void run(() => tryTheme(entry)), { class: 'quiet', disabled: busy }), more]), el('p', { class: 'hint', text: t('themesPanel.objects', { count: entry.objects ?? 0, width: entry.canvas.width, height: entry.canvas.height }) }), uses.some(use => use.kind === 'screen') && pill(t('themesPanel.onScreen'), { dot: true, tone: 'ok' })])]),
+      section('sensors', t('themesPanel.sensors'), 'data', [
       el('ul', { class: 'gallery-sensors' }, (entry.sensors ?? []).map(key => {
         const sensor = sensors.find(s => s.key === key), reading = readings()[key];
-        return el('li', { dataset: { missing: String(missing.includes(key)) } }, [el('span', { text: sensor ? sensorLabel(t, sensor) : key }), el('span', { dataset: { reading: key }, text: missing.includes(key) ? t('themesPanel.missing') : (reading?.display ?? '\u2014') })]);
+        return el('li', { dataset: { missing: String(missing.includes(key)) } }, [el('span', { class: 'notice-head' }, [el('span', { class: 'status-dot', dataset: { state: missing.includes(key) ? 'partial' : catalog() ? 'ok' : 'pending' }, 'aria-hidden': 'true' }), el('span', { text: sensor ? sensorLabel(t, sensor) : key })]), el('span', { dataset: { reading: key }, text: missing.includes(key) ? t('themesPanel.missing') : (reading?.display ?? '\u2014') })]);
       })),
       !(entry.sensors ?? []).length && el('p', { class: 'hint', text: t('themesPanel.noSensors') }),
-      el('h4', { text: t('themesPanel.usedWhere') }),
+      ]),
+      section('uses', t('themesPanel.usedWhere'), 'base', [
       ...uses.map(use => el('p', { class: 'gallery-use', text: t(`themesPanel.use.${use.kind}`, { name: use.name }) })),
       !uses.length && el('p', { class: 'hint', text: t('themesPanel.unused') }),
+      ]),
       el('div', { class: 'gallery-actions' }, [
         action(t('themesPanel.openEditor'), () => { dialog.close(); openTheme(entry); }, { class: 'primary-button' }),
-        action(t('common.duplicate'), () => duplicateTheme(entry)),
-        action(t('themesPanel.export'), () => exportTheme(entry)),
-        action(t('storage.deleteAction'), () => remove(entry), { disabled: busy || entry.bundled || !overview || uses.length > 0, title: entry.bundled ? t('themes.bundled') : uses.length ? t('themesPanel.removeUses') : '' }),
+        iconChoice(t('themesPanel.details'), null, [
+          ['duplicate', t('common.duplicate'), 'copy', { disabled: busy }],
+          ['export', t('themesPanel.export'), 'download', { disabled: busy, text: t('themesPanel.exportShort') }],
+          ['delete', t('storage.deleteAction'), 'trash', { disabled: busy || entry.bundled || !overview || uses.length > 0, description: entry.bundled ? t('themes.bundled') : uses.length ? t('themesPanel.removeUses') : undefined }],
+        ], key => void run(() => key === 'duplicate' ? duplicateTheme(entry) : key === 'export' ? exportTheme(entry) : remove(entry)), { actions: true, bare: true, wide: true }),
       ]),
     ].filter(Boolean));
   }

@@ -462,11 +462,11 @@ needs LibreHardwareMonitor*). The chips **All**, **Available** and
 ## Themes and the gallery
 
 **Themes → Open theme gallery** shows every theme as a real preview, with
-search, filters and the newest first. Select one to see its size and number of
+search, compact preview strips, filters and the newest first. Select one to see its size and number of
 objects, the sensors it reads (with their current values, and the ones this PC
 cannot read), and where it is used: the base theme of a screen, or a
 [profile](profiles.md). From there: **Open in the editor**, **Duplicate**,
-**Export .bezeltheme…** and **Delete**. A theme in use, or one included
+**Export** (a complete `.bezeltheme` file) and **Delete**, grouped below the main action. The sensor and usage sections can be collapsed. A theme in use, or one included
 with Bezel, cannot be deleted. **▶** on a theme shows it on the live screen
 for 30 seconds, then the screen goes back to what it showed; nothing is saved.
 A new theme starts empty or as a copy of one included with Bezel.
