@@ -5,7 +5,7 @@
 import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection } from './helpers.mjs';
 
 const transition = (page, t) => page.locator('#inspector [data-section="transition"]');
-const modeButton = (page, t, key) => transition(page, t).getByRole('group', { name: t('insp.transition'), exact: true }).getByRole('button', { name: t(key), exact: true });
+const modeButton = (page, t, key) => transition(page, t).getByRole('group', { name: t('insp.onReading'), exact: true }).getByRole('button', { name: t(key), exact: true });
 const durationSlider = (page, t) => transition(page, t).getByRole('spinbutton', { name: t('card.duration'), exact: true });
 
 test('a new ring eases for 400 ms; the control turns it off, on and longer, with Undo', async ({ page, t }) => {
@@ -16,14 +16,14 @@ test('a new ring eases for 400 ms; the control turns it off, on and longer, with
   // The transition is in Behavior.
   await openSection(page, 'behavior');
   await expect(transition(page, t)).toBeVisible();
-  await expect(transition(page, t).getByRole('heading', { name: t('insp.transition'), exact: true })).toBeVisible();
+  await expect(transition(page, t).getByRole('heading', { name: t('insp.onReading'), exact: true })).toBeVisible();
   await expect(modeButton(page, t, 'insp.transitionSmooth')).toHaveAttribute('aria-pressed', 'true');
-  await expect(modeButton(page, t, 'fade.none')).toHaveAttribute('aria-pressed', 'false');
+  await expect(modeButton(page, t, 'insp.transitionJump')).toHaveAttribute('aria-pressed', 'false');
   await expect(durationSlider(page, t)).toHaveValue('400');
-  await expect(transition(page, t).getByText(t('insp.transitionHint'), { exact: true })).toBeVisible();
+  await expect(transition(page, t).getByRole('group', { name: t('insp.onReading'), exact: true }).locator('button svg')).toHaveCount(3);
 
-  await modeButton(page, t, 'fade.none').click();
-  await expect(modeButton(page, t, 'fade.none')).toHaveAttribute('aria-pressed', 'true');
+  await modeButton(page, t, 'insp.transitionJump').click();
+  await expect(modeButton(page, t, 'insp.transitionJump')).toHaveAttribute('aria-pressed', 'true');
   await expect(durationSlider(page, t)).toHaveCount(0);
   await modeButton(page, t, 'insp.transitionSmooth').click();
   await expect(durationSlider(page, t)).toHaveValue('400', { timeout: 5000 });

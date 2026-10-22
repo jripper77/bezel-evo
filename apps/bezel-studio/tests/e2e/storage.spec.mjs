@@ -348,11 +348,15 @@ test('the boot drop target highlights during a drag and clears before confirmati
   // The drop target inside the At start section (the section's own region has the same name).
   const slot = page.locator('#storage-panel .boot-section');
   const from = await file.boundingBox();
-  const to = await slot.boundingBox();
   // Inspect the intermediate pointer state, before the shared dragTo helper
   // would release the file. No HTML drag events: this is a stored-file drag.
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 - 10, { steps: 2 });
+  // Larger file cards can put At start above the viewport. Scroll during
+  // the drag before measuring the destination, as in the actual narrow pane.
+  await slot.scrollIntoViewIfNeeded();
+  const to = await slot.locator('.boot-slot').boundingBox();
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
   await expect(slot).toHaveClass(/drop-target/);
   const accent = await page.locator('html').evaluate((node) => getComputedStyle(node).getPropertyValue('--accent').trim());

@@ -17,7 +17,9 @@ test('double-click fits the frame, one Undo restores it, and keyboard action mat
   await expect(width).toHaveValue(fitted);
   await page.locator('#undo').click();
   await expect(width).toHaveValue(before);
-  const fit = page.getByRole('button', { name: t('insp.fitContent'), exact: true });
+  const actions = page.locator('#inspector .object-menu-button');
+  await actions.focus(); await page.keyboard.press('Enter');
+  const fit = page.getByRole('menuitem', { name: t('insp.fitContent'), exact: true });
   await fit.focus(); await page.keyboard.press('Enter');
   await expect(width).toHaveValue(fitted);
   await page.locator('#undo').click();

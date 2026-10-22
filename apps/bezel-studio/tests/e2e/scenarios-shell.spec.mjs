@@ -101,11 +101,16 @@ test('arrow keys on tabs switch tabs and leave the element alone', async ({ page
 
   await page.getByRole('tab', { name: t('library.layers') }).focus();
   await page.keyboard.press('ArrowRight');
+  const media = page.getByRole('tab', { name: t('library.media') });
+  await expect(media).toBeFocused();
+  await expect(media).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: t('library.screen') })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowRight');
   const themes = page.getByRole('tab', { name: t('library.themes') });
   await expect(themes).toBeFocused();
   await expect(themes).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowLeft');
   await expect(page.getByRole('tab', { name: t('library.screen') })).toHaveAttribute('aria-selected', 'true');
 
   // The Screen panel's subtabs as well.

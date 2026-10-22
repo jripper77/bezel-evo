@@ -55,6 +55,10 @@ test('the screen chip shows the profile the engine has active, and nothing witho
   await expect(chip).toContainText('Gioco');
   await expect(chip.locator('small')).toHaveText(t('shell.profileManual'));
   await page.locator('#status-screen-toggle').click();
-  await expect(page.locator('#screen-popover')).toContainText(t('shell.profileActive', { name: 'Gioco', mode: t('shell.profileManual') }));
+  const popover = page.locator('#screen-popover');
+  await expect(popover).toBeVisible();
+  // The profile already visible in the chip must be present on the first
+  // opening, without waiting for another device or profile refresh.
+  expect(await popover.textContent()).toContain(t('shell.profileActive', { name: 'Gioco', mode: t('shell.profileManual') }));
   await expectAccessible(page); expect(errors).toEqual([]);
 });

@@ -763,6 +763,7 @@ const screenChip = createScreenStatus({
   onLive: () => $('live').click(),
 });
 function renderScreenPill() {
+  renderProfileChip();
   const current = currentScreen();
   const model = current?.models?.length === 1 ? current.models[0] : null;
   const { theme } = store.getState();
@@ -778,7 +779,6 @@ function renderScreenPill() {
     theme: theme.name,
     profile: shownProfile?.text ?? null,
   } : null, { message: screenDevice, problem });
-  renderProfileChip();
 }
 
 /** The stage's "Connect your smart screen" while no screen can be used. */
