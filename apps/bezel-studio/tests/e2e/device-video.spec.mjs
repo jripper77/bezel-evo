@@ -30,7 +30,7 @@ test('stored screen video becomes theme background with loop, windows and linear
   await fadeMode('linear').click();
   await detail.getByLabel(t('shape.fadeAngle'), { exact: true }).fill('90');
   await detail.getByLabel(t('shape.fadeAngle'), { exact: true }).press('Tab');
-  const start = detail.getByRole('slider', { name: new RegExp(t('shape.fadeStart')) });
+  const start = detail.getByRole('spinbutton', { name: t('shape.fadeStart'), exact: true });
   await start.fill('80'); await start.dispatchEvent('change');
   await copyAndPaste(page);
   await expect(window).toHaveAttribute('aria-pressed', 'true');

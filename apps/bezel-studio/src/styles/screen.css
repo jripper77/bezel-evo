@@ -13,7 +13,6 @@
 #screen-panel .section-head, .screen-tail .section-head, .standby .section-head { margin: 0; }
 .screen-block > .screen-card { display: flex; align-items: center; gap: 12px; margin: 0; padding: 12px; border-radius: 12px; border-color: var(--border-2); }
 .screen-glyph { background: var(--accent); border: 3px solid var(--surface-2); box-shadow: 0 0 0 2px var(--text); }
-.screen-id { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .screen-id strong { font-size: var(--fs-heading); overflow-wrap: anywhere; }
 .screen-size { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-caps); font-variant-numeric: tabular-nums; }
 .screen-state { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--fs-compact); color: var(--muted); }

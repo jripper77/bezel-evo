@@ -1,3 +1,7 @@
+## Aggiornamento — media, 22 ottobre
+
+Immagine/GIF, Forma e Player corretti nel blocco `616a7be`; controlli condivisi, test e differenze motivate in `SUMMARY-FIDELITY-MEDIA.md`. Catture it chiaro/scuro in `evidence/fidelity-media/`. Restano aperti gli altri blocchi e la rigenerazione finale; il registro iniziale sotto resta la traccia del confronto di partenza.
+
 # Confronto dell'interfaccia e piano delle correzioni
 
 **Aggiornamento delle correzioni:** completati i quattro blocchi Colore, Testo,

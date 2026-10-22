@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { IMAGE_ANCHORS, isAnimatedImage, playbackSpeeds } from '../../src/media-inspector.js';
+import { IMAGE_ANCHORS, isAnimatedImage, playbackSpeeds, imageAssetFacts } from '../../src/media-inspector.js';
 import { applyCanvasFade, drawClippedMedia } from '../../src/demo-render.js';
 
 test('image controls distinguish GIF metadata from videos and retain imported speeds', () => {
@@ -20,4 +20,11 @@ test('absent fade and zero corners allocate no canvas and do no drawing work', (
   drawClippedMedia(ctx, frame, {}, target => { assert.equal(target, ctx); draws++; });
   drawClippedMedia(ctx, frame, { radius: 0, corners: [0,0,0,0] }, () => draws++);
   assert.equal(draws, 2);
+});
+
+test('asset cards use real metadata and posters without inventing facts for missing media', () => {
+  assert.deepEqual(imageAssetFacts('images/missing.png'), { name: 'missing.png', format: 'PNG', preview: null, bytes: null, duration: null });
+  const assets = [{ ref: 'animation.gif', dataUrl: 'animated', poster: 'poster.png', bytes: 2048, durationMs: 3200 }, { ref: 'poster.png', dataUrl: 'poster' }];
+  assert.deepEqual(imageAssetFacts('animation.gif', assets), { name: 'animation.gif', format: 'GIF', preview: 'poster', bytes: 2048, duration: '0:03' });
+  assert.equal(imageAssetFacts('animation.gif', assets.slice(0, 1)).preview, 'animated');
 });

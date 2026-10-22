@@ -19,7 +19,7 @@ const shots = join(out, 'captures');
 /** The app states that show each board, by area. */
 const AREAS = {
   inspector: ['ux2-main', 'ux2-ring-closed', 'ux2-ring-open', 'ux2-linked-value', 'ux2-linked-text', 'ux2-linked-bar', 'ux2-linked-needle', 'ux2-linked-graph', 'ux2-graph-area', 'ux2-linked-multi',
-    'ux2-media-clock', 'ux2-media-analog', 'ux2-media-weather', 'ux2-media-player', 'ux2-media-spectrum', 'ux2-media-shape', 'ux2-media-image', 'ux2-media-gif',
+    'ux2-media-clock', 'ux2-media-analog', 'ux2-media-weather', 'ux2-media-player', 'ux2-media-spectrum', 'ux2-media-shape', 'ux2-media-image', 'ux2-media-raster', 'ux2-media-gif',
     'ux2-card', 'ux2-theme-open', 'ux2-theme-closed'],
   shell: ['ux2-handles-ring', 'ux2-handles-selection', 'ux2-handles-needle', 'ux2-handles-bar', 'ux2-handles-graph', 'ux2-handles-image', 'ux2-handles-spectrum',
     'ux2-text-inline', 'ux2-value-part', 'ux2-card-entry', 'ux2-shape-image-entry', 'ux2-clock-length', 'ux2-alignment-distance', 'ux2-player-cover', 'ux2-object-bar',
@@ -44,7 +44,7 @@ const PAIRS = {
   PlayerInspectorOpen: ['inspector/ux2-media-player'],
   SpectrumInspectorOpen: ['inspector/ux2-media-spectrum'],
   ShapeInspectorOpen: ['inspector/ux2-media-shape'],
-  ImageInspectorOpen: ['inspector/ux2-media-image', 'inspector/ux2-media-gif'],
+  ImageInspectorOpen: ['inspector/ux2-media-raster', 'inspector/ux2-media-gif', 'inspector/ux2-media-image'],
   CardInspectorOpen: ['inspector/ux2-card'],
   ThemeInspectorOpen: ['inspector/ux2-theme-open', 'inspector/ux2-theme-closed'],
   CanvasHandles: ['shell/ux2-handles-ring', 'shell/ux2-handles-needle', 'shell/ux2-handles-bar', 'shell/ux2-handles-graph', 'shell/ux2-handles-image', 'shell/ux2-handles-spectrum',

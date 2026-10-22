@@ -1,4 +1,6 @@
-import { fadeField } from '../fields.js';
+import { imageAssetFacts } from '../../media-inspector.js';
+import { formatBytes } from '../storage.js';
+import { imageField, fadeField } from '../fields.js';
 // Common existing inspector controls. Each builder has one owner.
 import { visualization, visualStyles, visualArt, matrixFrame } from '../../visualization.js';
 import { defaultSensorMotion, supportsSensorMotion } from '../../sensor-motion.js';
@@ -20,6 +22,11 @@ import { TRANSITION_RANGE, AVERAGE_RANGE, averageOf, transitionOf, transitionPat
 
 export function createCommonFields({ t, store, update, root, sensors, host, pickers, colorField, video, barCornerModes, sourceState, redraw, shownValue, optionTiles }) {
   const button = (text, onclick) => el('button', { type: 'button', class: 'text-button', text, onclick });
+
+  const assetField = (label, value, choices, onChange, assets) => {
+    const facts = imageAssetFacts(value, assets);
+    return imageField(label, value, choices, onChange, { asset: { ...facts, meta: [facts.format, facts.duration, facts.bytes == null ? null : formatBytes(facts.bytes, document.documentElement.lang || 'en')].filter(Boolean).join(' · ') }, changeLabel: t('insp.image.change'), browseLabel: t('insp.image.media'), onBrowse: () => root.ownerDocument.querySelector('#tab-media')?.click() });
+  };
 
   /** A graph's own cadence, otherwise the theme's refresh. */
   const timingOf = (e) => graphTiming(e.kind, store.getState().theme.refreshSeconds);
@@ -225,7 +232,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
   }
 
   function fadeFields(e, { value = e.kind.fade, set = fade => update(e.id, { kind: { fade } }) } = {}) {
-    return [fadeField({ mode: t('fade.mode'), none: t('fade.none'), linear: t('fade.linear'), radial: t('fade.radial'), centerX: t('fade.centerX'), centerY: t('fade.centerY'), extent: t('fade.extent'), angle: t('shape.fadeAngle'), midpoint: t('fade.midpoint'), start: t('shape.fadeStart'), end: t('shape.fadeEnd') }, value, set)];
+    return [fadeField({ mode: t('fade.mode'), x: t('insp.xPrefix'), y: t('insp.yPrefix'), from: t('insp.fade.from'), to: t('insp.fade.to'), midPrefix: t('insp.fade.mid'), extentPrefix: t('insp.fade.extent'), directionControl: t('insp.fade.directionControl'), centerControl: t('insp.fade.centerControl'), none: t('fade.none'), linear: t('fade.linear'), radial: t('fade.radial'), centerX: t('fade.centerX'), centerY: t('fade.centerY'), extent: t('fade.extent'), angle: t('shape.fadeAngle'), midpoint: t('fade.midpoint'), start: t('shape.fadeStart'), end: t('shape.fadeEnd') }, value, set)];
   }
 
   /** How a duration of `seconds` is written ("30 s", "5 min", "1 h"). */
@@ -325,5 +332,5 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       v?.style === 'dial' && toggleField(t('visual.marker'),v.marker,marker=>set({marker})),
     ], { caption: true });
   }
-  return { sourceCard, rangeFields, sourceSection, sampleText, fontFields, appChipGroup, choiceCard, cornersSection, coverCorners, barCorners, segmentsFields, transitionSection, fadeFields, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, trackFields, angleFields, timingOf, graphWindowMs, button };
+  return { assetField, sourceCard, rangeFields, sourceSection, sampleText, fontFields, appChipGroup, choiceCard, cornersSection, coverCorners, barCorners, segmentsFields, transitionSection, fadeFields, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, trackFields, angleFields, timingOf, graphWindowMs, button };
 }
