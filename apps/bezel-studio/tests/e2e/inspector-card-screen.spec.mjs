@@ -35,7 +35,8 @@ test('Theme has a preview, disclosures, orientation and saved status', async ({ 
   await expect(inspector(page).getByRole('button', { name: t('insp.theme.turn'), exact: true })).toHaveAttribute('aria-pressed', String(turned !== 'true'));
   await expect(page.locator('#orient-turn')).toHaveAttribute('aria-pressed', String(turned !== 'true'));
   await change(inspector(page).getByRole('textbox', { name: t('top.themeName'), exact: true }), 'Inspector test');
-  await expect(inspector(page).locator('.theme-save-state')).toHaveText(t('status.unsaved'));
+  await expect(inspector(page).locator('.theme-save-state')).toHaveText(t('insp.theme.unsaved'));
+  await expect(inspector(page).locator('.theme-save-state')).toHaveAttribute('aria-label', t('status.unsaved'));
   await openSection(page, 'behavior');
   await inspector(page).getByRole('button', { name: '2 s', exact: true }).click();
   await expect(inspector(page).getByRole('button', { name: '2 s', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -101,7 +102,8 @@ test('Theme menu saves a named copy and leaves it marked as saved', async ({ pag
   await inspector(page).getByRole('button', { name: t('insp.theme.actions'), exact: true }).click();
   await page.getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
   await expect(inspector(page).getByRole('textbox', { name: t('top.themeName'), exact: true })).toHaveValue(t('layers.copyOf', { name: original }));
-  await expect(inspector(page).locator('.theme-save-state')).toHaveText(t('status.saved'));
+  await expect(inspector(page).locator('.theme-save-state')).toHaveText(t('insp.theme.saved'));
+  await expect(inspector(page).locator('.theme-save-state')).toHaveAttribute('aria-label', t('status.saved'));
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 

@@ -1,7 +1,7 @@
 // Theme controls use the same primitives and disclosure memory as objects.
 import { el } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { iconButton, iconChoice } from '../fields.js';
+import { pill, iconButton, iconChoice } from '../fields.js';
 import { openMenuAt } from '../menu.js';
 import { isHorizontal, isTurned, orientationOf } from '../../editor/geometry.js';
 import { refreshChoices } from '../../inspector-helpers.js';
@@ -23,8 +23,8 @@ export function header({ theme, t, store, video, host }) {
   return el('div', { class: 'theme-heading' }, [
     el('canvas', { class: 'theme-preview', width: 320, height: 82, role: 'img', 'aria-label': t('stage.preview') }),
     el('div', { class: 'theme-name-row' }, [name, more]),
-    el('div', { class: 'theme-facts' }, [el('span', { class: 'mono', text: [model, `${theme.canvas.width} × ${theme.canvas.height}`].filter(Boolean).join(' · ') }),
-      el('span', { class: 'theme-save-state', dataset: { dirty: String(store.isDirty()) }, text: t(store.isDirty() ? 'status.unsaved' : 'status.saved') }),
+    el('div', { class: 'theme-facts' }, [el('span', { class: 'mono', title: [model, `${theme.canvas.width} × ${theme.canvas.height}`].filter(Boolean).join(' · ') }, [model && el('span', { class: 'theme-model', text: model }), el('span', { class: 'theme-size', text: `${model ? ' · ' : ''}${theme.canvas.width} × ${theme.canvas.height}` })]),
+      pill(t(store.isDirty() ? 'insp.theme.unsaved' : 'insp.theme.saved'), { tone: store.isDirty() ? 'accent' : 'ok', dot: true, attrs: { class: 'pill theme-save-state', 'aria-label': t(store.isDirty() ? 'status.unsaved' : 'status.saved'), title: t(store.isDirty() ? 'status.unsaved' : 'status.saved'), dataset: { dirty: String(store.isDirty()) } } }),
     ]),
   ]);
 }
@@ -33,11 +33,12 @@ export function orientationField({ theme, t, store }) {
   const horizontal = isHorizontal(theme.orientation), turned = isTurned(theme.orientation);
   const axis = horizontal ? 'horizontal' : 'vertical';
   const set = (nextAxis, nextTurned) => store.dispatch('setOrientation', { orientation: orientationOf(nextAxis, nextTurned) });
-  return el('div', { class: 'theme-orientation' }, [
+  const row = el('div', { class: 'theme-orientation' }, [
     el('span', { text: t('inspector.orientation') }),
-    iconChoice(t('inspector.orientation'), axis, ['vertical', 'horizontal'].map(value => [value, t(`axis.${value}`), value]), value => set(value, turned), { iconOnly: true, bare: true }),
-    iconButton(t('insp.theme.turn'), ICONS.rotate, () => set(axis, !turned), { 'aria-pressed': String(turned) }),
+    iconChoice(t('inspector.orientation'), axis, [...['vertical', 'horizontal'].map(value => [value, t(`axis.${value}`), value]), ['turn', t('insp.theme.turn'), 'rotate']], value => value === 'turn' ? set(axis, !turned) : set(value, turned), { iconOnly: true, bare: true }),
   ]);
+  row.querySelector('[data-value="turn"]').setAttribute('aria-pressed', String(turned));
+  return row;
 }
 
 export function panel({ theme, assets, background }) {

@@ -52,7 +52,11 @@ export default {
       await standalone(app, 'card');
       await app.page.setViewportSize({ width: 1280, height: 3000 });
       await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
+      const cardName = await inspector(app).getByRole('textbox', { name: t('common.name'), exact: true }).inputValue();
+      const selectCard = async () => { await app.page.locator('#tab-layers').click(); await app.page.locator('.layer-name').filter({ hasText: cardName }).first().click(); await app.page.locator('#tab-widgets').click(); };
+      await app.add('ring'); await selectCard();
       await inspector(app).getByRole('button', { name: t('card.addFace'), exact: true }).click();
+      await app.add('bar'); await app.add('graph'); await selectCard();
       await openSection(app.page, 'behavior');
       await inspector(app).getByRole('group', { name: t('card.effect'), exact: true }).getByRole('button', { name: t('card.effect.slide'), exact: true }).click();
       await inspector(app).getByRole('button', { name: t('cardInsp.addTimed'), exact: true }).click();

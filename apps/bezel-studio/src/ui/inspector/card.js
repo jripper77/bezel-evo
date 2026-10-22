@@ -3,21 +3,22 @@ import { describeSections } from './sections.js';
 // Card content only: the inspector owns header, sections, geometry and preview.
 import { el, icon } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, iconChoice, numberField, previewChoice, selectField, sentence as sentenceOfParts, toggleField as switchRow, textField } from '../fields.js';
+import { chipButton, detailsField, dashedHint, fieldGrid, iconButton, listCard, pill, prefixedField, iconChoice, numberField, previewChoice, selectField, sentence as sentenceOfParts, toggleField as switchRow, textField } from '../fields.js';
 import { SEPARATOR, openMenuAt } from '../menu.js';
 import { widgetOf } from '../../editor/widgets.js';
 import { selectionRoots } from '../../editor/cards.js';
 import { MAX_RULES, ROTATION_MIN, ROTATION_MAX, TRIGGER_SOURCES, appSuggestions, clampPriority, clampReturn, commonReturn, moveRule, newRule, newTimedRule, timedParts, timedSeconds, sentenceOf, withApp, withReturn, withSource, dropIndex } from '../../card-rules.js';
-import { CARD_DURATION, cardDuration, withCardEffect } from '../../card-config.js';
+import { CARD_DURATION, cardDuration, withCardEffect, cardFacePreviewTheme } from '../../card-config.js';
 /** Per store and Card: the face in view when the shared background was chosen for editing. */
 const baseViews = new WeakMap();
+const moveViews = new WeakMap();
 const tool = (label, name, onclick, disabled = false, extra = '') => iconButton(label, ICONS[name], onclick, { size: 16, disabled, class: extra });
 /** Focus after a command: the inspector has been drawn again by then. */
 const focusLater = (selector) => queueMicrotask(() => document.querySelector(selector)?.focus());
 
 // Card content uses the same section contract as every inspector property.
 function cardSection(ctx, key, label, nodes, total = null, sectionTool = null) {
-  const node = ctx.section(key, label, nodes, { count: total, tool: sectionTool });
+  const node = ctx.section(key, label, nodes, { count: total, tool: sectionTool, caption: true });
   node?.classList.add('card-section');
   return node;
 }
@@ -43,7 +44,10 @@ function faceList(ctx, base, views) {
     else store.dispatch('cardFace', { id: e.id, face });
   };
   const command = (action, face, args = {}) => { views.delete(e.id); store.dispatch(action, { id: e.id, face, ...args }); };
+  const previews = [];
   const faceRow = (name, i) => {
+    const thumb = el('canvas', { class: 'face-thumb', width: 24, height: 32, 'aria-hidden': 'true' });
+    previews.push({ thumb, face: i });
     const label = t('cardInsp.faceActions', { name });
     const more = iconButton(label, ICONS.more, () => openMenuAt(more, { label, items: [
       { label: t('common.rename'), run: () => { show(i); focusLater(`.face-editor[data-card-id="${e.id}"] input`); } },
@@ -56,9 +60,8 @@ function faceList(ctx, base, views) {
     ] }), { size: 16, class: 'quiet face-more', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
     const inView = i === c.activeFace;
     return el('li', { class: 'face-row', dataset: { face: String(i), editing: String(!base && inView) }, 'aria-current': inView ? 'true' : null }, [
-      el('span', { class: 'face-number', text: String(i + 1) }),
-      el('span', { class: 'face-name', text: name, title: name }),
-      inView && pill(t('layers.inView'), { tone: 'ok', dot: true, attrs: { title: t('layers.inViewHint') } }),
+      thumb,
+      el('span', { class: 'list-card-text' }, [el('span', { class: 'face-name', text: name, title: name }), el('span', { class: 'face-sub' }, [el('span', { class: 'face-number', text: String(i + 1), title: t('card.faceName', { number: i + 1 }) }), ' · ', t('layers.count', { count: members(ctx, i).length })]), inView && pill(t('layers.inView'), { tone: 'ok', dot: true, attrs: { title: t('layers.inViewHint') } })]),
       editButton(ctx, t('cardInsp.editFace', { name }), !base && inView, () => show(i)),
       more,
     ]);
@@ -68,21 +71,43 @@ function faceList(ctx, base, views) {
     el('span', { class: 'list-card-text' }, [el('span', { class: 'face-name', text: t('cardInsp.base') }), el('span', { class: 'face-sub', text: t('cardInsp.sharedHint') })]),
     editButton(ctx, t('cardInsp.editShared'), base, () => { views.set(e.id, c.activeFace); store.select([e.id]); }),
   ]);
-  const add = el('button', { type: 'button', class: 'text-button quiet face-add', 'aria-label': t('card.addFace'), title: t('card.addFace'), disabled: c.faces.length >= 16,
-    onclick: () => { views.delete(e.id); store.dispatch('addCardFace', { id: e.id, name: t('card.faceName', { number: c.faces.length + 1 }) }); focusLater(`${row(c.faces.length)} .face-edit`); } }, [icon(ICONS.plus, 16), t('cardInsp.add')]);
-  return cardSection(ctx, 'faces', t('card.tab.faces'), [
+  const add = el('button', { type: 'button', class: 'text-button face-add', 'aria-label': t('card.addFace'), title: t('card.addFace'), disabled: c.faces.length >= 16,
+    onclick: () => { views.delete(e.id); store.dispatch('addCardFace', { id: e.id, name: t('card.faceName', { number: c.faces.length + 1 }) }); focusLater(`${row(c.faces.length)} .face-edit`); } }, [icon(ICONS.plus, 16), t('card.addFace')]);
+  const section = cardSection(ctx, 'faces', t('card.tab.faces'), [
     el('div', { class: 'face-list', dataset: { cardId: String(e.id) } }, [
       shared,
-      el('ol', { class: 'face-rows', 'aria-label': t('card.tab.faces') }, c.faces.map(faceRow)),
+      el('ol', { class: 'face-rows', 'aria-label': t('card.tab.faces'), 'aria-description': t('layers.count', { count: c.faces.length }) }, c.faces.map(faceRow)),
     ]),
+    add,
     el('p', { class: 'hint', text: t('cardInsp.editHint') }),
-  ], c.faces.length, add);
+  ], c.faces.length);
+  section.querySelector(':scope > .section-head')?.remove();
+  queueMicrotask(async () => {
+    const theme = store.getState().theme;
+    for (const { thumb, face } of previews) {
+      if (!thumb.isConnected || !ctx.bridge?.renderElement) return;
+      const next = cardFacePreviewTheme(theme, e.id, face);
+      if (!next) continue;
+      try {
+        const frame = await ctx.bridge.renderElement(next, e.id, { max: 48, motion: false });
+        if (!thumb.isConnected || !frame?.width || !frame?.height) continue;
+        const source = document.createElement('canvas'); source.width = frame.width; source.height = frame.height;
+        source.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(frame.pixels ?? frame.rgba), frame.width, frame.height), 0, 0);
+        const scale = Math.min(24 / frame.width, 32 / frame.height);
+        thumb.getContext('2d').drawImage(source, (24 - frame.width * scale) / 2, (32 - frame.height * scale) / 2, frame.width * scale, frame.height * scale);
+        thumb.dataset.ready = 'true';
+      } catch { /* Keep an empty thumbnail if the real renderer cannot preview this face. */ }
+    }
+  });
+  return section;
 }
 
 function facesForm(ctx) {
   const { element: e, t, store, update } = ctx, c = e.card;
   if (!baseViews.has(store)) baseViews.set(store, new Map());
   const views = baseViews.get(store);
+  if (!moveViews.has(store)) moveViews.set(store, new Map());
+  const moves = moveViews.get(store);
   const base = views.get(e.id) === c.activeFace;
   const face = base ? null : c.activeFace;
   const objects = members(ctx, face);
@@ -101,12 +126,14 @@ function facesForm(ctx) {
     move.querySelector('select').setAttribute('aria-label', t('cardInsp.moveObject', { name: item.name }));
     return el('div', { class: 'face-object' }, [card, move]);
   });
+  const chips = el('div', { class: 'chip-group' }, objects.map(item => { const chip = chipButton(item.name, false, () => store.select([item.id]), { 'aria-pressed': null, 'aria-label': t('cardInsp.selectObject', { name: item.name }) }); chip.prepend(icon(ICONS[widgetOf(item)] ?? ICONS.shape, 16)); return chip; }));
+  const moveKey = `${e.id}:${face ?? 'base'}`;
   return [faceList(ctx, base, views), editor,
-    cardSection(ctx, 'objects', t('cardInsp.objectsIn', { face: name }), rows.length ? rows : [el('p', { class: 'hint', text: t('cardInsp.emptyFace') })], objects.length), dashedHint([t('cardInsp.dropHint')])];
+    cardSection(ctx, 'objects', t('cardInsp.objectsIn', { face: name }), rows.length ? [chips, detailsField(t('insp.card.moveMembers'), rows, { open: moves.get(moveKey) ?? false, onToggle: open => moves.set(moveKey, open) })] : [el('p', { class: 'hint', text: t('cardInsp.emptyFace') })], objects.length), dashedHint([t('cardInsp.dropHint')])];
 }
 
 const EFFECT_ART = { none: ['M3 5h7v14H3z', 'M14 5h7v14h-7z'], fade: ['M3 5h10v14H3z', 'M10 5h11v14H10z'], slide: ['M3 5h7v14H3z', 'M17 5h4v14h-4z', 'M11 12h5', 'M14 10l2 2-2 2'], flip: ['M7 5h10v14H7z', 'M3 9v6', 'M21 9v6', 'M10 3h4', 'M10 21h4'] };
-const DIRECTIONS = Object.freeze([['left', 'arrowLeft'], ['right', 'arrowRight'], ['up', 'up'], ['down', 'down']]);
+const DIRECTIONS = Object.freeze([['right', 'arrowRight'], ['left', 'arrowLeft'], ['up', 'up'], ['down', 'down']]);
 /** Only a slide or a flip goes somewhere. */
 const directed = settings => ['slide', 'flip'].includes(settings?.effect);
 
@@ -123,13 +150,13 @@ function transitionSection(ctx) {
   const transition = settings?.effect && settings.effect !== 'none' ? settings : null;
   return cardSection(ctx, 'animation', t('cardInsp.transitionTitle'), [
     previewChoice(t('card.effect'), Object.keys(EFFECT_ART).map(effect => ({
-      text: t(`card.effect.${effect}`), art: EFFECT_ART[effect] ?? EFFECT_ART.none,
+      text: t(`card.effect.${effect}`), caption: effect === 'none' ? t('fade.none') : t(`insp.card.${effect}Caption`), art: EFFECT_ART[effect] ?? EFFECT_ART.none,
       pressed: (settings?.effect ?? 'none') === effect,
       onClick: () => set(withCardEffect(settings, effect)),
     }))),
-    transition && numberField(t('card.duration'), transition.durationMs, durationMs => set({ durationMs: cardDuration(durationMs) }), { ...CARD_DURATION, unit: 'ms', iconName: 'clock' }),
+    transition && numberField(t('card.duration'), transition.durationMs, durationMs => set({ durationMs: cardDuration(durationMs) }), { ...CARD_DURATION, unit: 'ms', iconName: 'clock', compact: true }),
     directed(transition) && directionControl(t, transition, set),
-    transition && switchRow(t('cardInsp.animateShared'), transition.includeBase, includeBase => set({ includeBase })),
+    transition && switchRow(t('cardInsp.animateShared'), transition.includeBase, includeBase => set({ includeBase }), { leading: true }),
   ]);
 }
 
@@ -199,8 +226,10 @@ function triggerForm(ctx) {
   const returnTo = selectField(t('trigger.returnFace'), common === null ? 'previous' : String(common), [['previous', t('trigger.previous')], ...(common === 'mixed' ? [['mixed', t('cardInsp.mixed')]] : []), ...faceOptions], value => value !== 'mixed' && set(withReturn(rules, value === 'previous' ? value : Number(value))));
   returnTo.querySelector('select').disabled = !appRules.length;
   return [cardSection(ctx, 'triggers', t('cardInsp.triggersTitle'), [el('p', { class: 'hint', text: t('cardInsp.triggersIntro') }), list,
-    el('button', { type: 'button', class: 'text-button trigger-add', disabled: rules.length >= MAX_RULES || c.faces.length < 2, onclick: () => set([...rules, newRule(c)]) }, [icon(ICONS.plus, 16), t('trigger.add')]),
-    el('button', { type: 'button', class: 'text-button trigger-add', disabled: rules.length >= MAX_RULES || c.faces.length < 2, onclick: () => set([...rules, newTimedRule(c)]) }, [icon(ICONS.plus, 16), t('cardInsp.addTimed')]),
+    el('div', { class: 'chip-group' }, [
+    el('button', { type: 'button', class: 'chip trigger-add', 'aria-label': t('trigger.add'), disabled: rules.length >= MAX_RULES || c.faces.length < 2, onclick: () => set([...rules, newRule(c)]) }, [icon(ICONS.plus, 16), t('insp.card.appEvent')]),
+    el('button', { type: 'button', class: 'chip trigger-add', 'aria-label': t('cardInsp.addTimed'), disabled: rules.length >= MAX_RULES || c.faces.length < 2, onclick: () => set([...rules, newTimedRule(c)]) }, [icon(ICONS.plus, 16), t('insp.card.timedEvent')]),
+    ]),
     rules.some(r => r.source === 'timer') && el('p', { class: 'hint', text: t('cardInsp.paused') }),
     c.faces.length < 2 && el('p', { class: 'hint', text: t('cardInsp.needsFaces') }), el('p', { class: 'hint', text: t('cardInsp.priorityHint') }),
   ], rules.length), cardSection(ctx, 'return', t('cardInsp.whenEnds'), [returnTo, el('p', { class: 'hint', text: t('cardInsp.appHint') })])];

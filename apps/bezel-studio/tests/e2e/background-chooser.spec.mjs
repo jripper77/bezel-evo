@@ -175,13 +175,14 @@ test('a screen that does not play stored videos disables that source, with the r
   expect(errors).toEqual([]);
 });
 
-test('orientation is two buttons and the refresh has quick values, each one undo step', async ({ page, t }) => {
+test('orientation groups its axes and turn; refresh quick values undo once', async ({ page, t }) => {
   const errors = watchErrors(page);
   await open(page, 'turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   const axes = inspector(page).getByRole('group', { name: t('inspector.orientation'), exact: true });
-  // The two axes are icon buttons, named for assistive technology.
-  await expect(axes.getByRole('button')).toHaveCount(2);
+  // The two axes and the existing turn command share one control.
+  await expect(axes.getByRole('button')).toHaveCount(3);
+  await expect(axes.getByRole('button').nth(2)).toHaveAccessibleName(t('insp.theme.turn'));
   await expect(axes.getByRole('button').nth(0)).toHaveAccessibleName(t('axis.vertical'));
   await expect(axes.getByRole('button').nth(1)).toHaveAccessibleName(t('axis.horizontal'));
   await expect(axes.getByRole('button', { name: t('axis.vertical'), exact: true })).toHaveAttribute('aria-pressed', 'true');

@@ -1,3 +1,7 @@
+## Aggiornamento — contenitori/Tema/multipla, 22 ottobre
+
+Blocco corretto in `5f4ce4c`: facce con miniature del renderer e conteggi reali, chip e spostamento, transizioni compatte, Tema e multipla. Vedi `SUMMARY-FIDELITY-CONTAINERS.md` per test, confronto visivo e differenze motivate. Prossimo blocco: shell/pannelli, poi Profili/Galleria. Revisione finale ancora aperta.
+
 ## Aggiornamento — strumenti, 22 ottobre
 
 Lancetta e Orologio analogico corretti in `9cf8f43`: righe compatte, miniature, zone, editor centrale, colori e lunghezze. Test e catture in `SUMMARY-FIDELITY-INSTRUMENTS.md`. Prossimo blocco: contenitori/Tema/multipla; poi shell e dialoghi. La verifica generale resta aperta.

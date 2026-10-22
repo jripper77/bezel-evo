@@ -39,3 +39,10 @@ export function cardDuration(ms) {
 export function withCardEffect(settings, effect) {
   return { effect, direction: settings?.direction ?? 'left', durationMs: settings?.durationMs ?? 650, includeBase: settings?.includeBase ?? true };
 }
+
+/** An isolated face preview; the edited document and its playback state stay untouched. */
+export function cardFacePreviewTheme(theme, id, face) {
+  const element = theme.elements.find(element => element.id === id);
+  if (!element?.card || !Number.isInteger(face) || face < 0 || face >= element.card.faces.length) return null;
+  return { ...theme, elements: theme.elements.map(item => item === element ? { ...item, card: { ...item.card, activeFace: face } } : item) };
+}

@@ -371,12 +371,15 @@ and **Behavior**; its header says which face is in view and how many there are.
 
 **Faces.**
 
-- The faces are a list: number, name, **in view** on the face the screen shows,
+- The faces are a list: a real preview, number, object count, name, **in view** on the face the screen shows,
   the pencil to show that face on the canvas and edit its objects, and a **⋯**
   menu with **Rename**, **Duplicate**, move earlier or later, and **Delete**.
-  **+ Add** adds a face. On the canvas, the tabs under the Card do the same.
+  **+ Add face** below the list adds a face. On the canvas, the tabs under the Card do the same.
 - **Shared background** holds the objects visible under every face; edit it
   like a face.
+- Objects in the edited face appear as chips; click one to select it. Expand
+  **Move objects** to send an object to another face or to the shared background.
+  The preview thumbnails render isolated copies and never change the face in view.
 
 **Behavior.**
 
