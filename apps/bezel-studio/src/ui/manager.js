@@ -338,11 +338,11 @@ export function createManagerView({ t, locale, bridge, host }) {
       const button = iconButton(label, ICONS.more, () => {
         select(medium, { type: 'click', id: file.path });
         const can = allowed(medium);
-        openMenuAt(button, { label, items: ACTIONS.filter(name => name !== 'boot' || host.features().boot).map(name => ({
-          label: actionLabel(name, medium),
-          disabled: host.busy() || (name === 'preview' ? file.kind !== 'video' : !can[name].enabled),
-          run: () => run(name, medium),
-        })) });
+        openMenuAt(button, { label, items: ACTIONS.filter(name => name !== 'boot' || host.features().boot).map(name => {
+          const { enabled, reason } = name === 'preview' ? { enabled: file.kind === 'video', reason: 'videoOnly' } : can[name];
+          // A disabled action says why, as the toolbar did.
+          return { label: actionLabel(name, medium), disabled: host.busy() || !enabled, title: enabled ? null : t(`storage.reason.${reason}`), run: () => run(name, medium) };
+        }) });
       }, { class: 'quiet file-menu', 'aria-haspopup': 'menu', 'aria-expanded': 'false', style: { gridRow: String(index + 1) } });
       return button;
     });

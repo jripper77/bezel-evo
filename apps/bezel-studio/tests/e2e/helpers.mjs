@@ -186,3 +186,9 @@ export async function choose(scope, label, value) {
 
 /** The value chosen in the choice named `label` ('' when none is). */
 export const chosen = (scope, label) => choiceControl(scope, label).evaluate((n) => (n.tagName === 'SELECT' ? n.value : n.querySelector('button[aria-pressed="true"]')?.dataset.value ?? ''));
+
+/** Opens Storage's "Send file" menu and picks the `medium` (internal, sd) to send to. */
+export async function sendFileTo(page, t, medium) {
+  await page.getByRole('button', { name: t('storagePanel.sendFile'), exact: true }).click();
+  await page.getByRole('menuitem', { name: t(`storage.medium.${medium}`), exact: true }).click();
+}
