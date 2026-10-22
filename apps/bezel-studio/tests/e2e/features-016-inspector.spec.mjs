@@ -15,8 +15,8 @@ test('image and shape share radial controls; player and weather have their own a
   await expect(center).toHaveValue('50');await center.fill('25');await center.press('Tab');await expect(center).toHaveValue('25');
   await mode.selectOption('linear');await expect(page.locator('#inspector').getByRole('spinbutton',{name:t('shape.fadeAngle'),exact:true})).toBeVisible();
   // A linear fade moves its halfway point; a radial one has no midpoint.
-  const midpoint=page.locator('#inspector').getByRole('slider',{name:t('fade.midpoint')});
-  await expect(midpoint).toHaveValue('50');await midpoint.fill('30');await expect(midpoint).toHaveValue('30');
+  const midpoint=page.locator('#inspector').getByRole('spinbutton',{name:t('fade.midpoint')});
+  await expect(midpoint).toHaveValue('50');await midpoint.fill('30');await midpoint.press('Tab');await expect(midpoint).toHaveValue('30');
   await mode.selectOption('radial');await expect(midpoint).toHaveCount(0);
  }
  await add(page,t,'player');await page.locator('#inspector').getByRole('button',{name:t('insp.otherApp'),exact:true}).click();await expect(page.locator('#inspector').getByRole('textbox',{name:t('player.source'),exact:true})).toBeVisible();

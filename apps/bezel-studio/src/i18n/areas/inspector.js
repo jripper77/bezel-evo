@@ -7,6 +7,15 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    "insp.shape.silhouette": "Silhouette",
+    "insp.image.change": "Change…",
+    "insp.fade.from": "from",
+    "insp.fade.to": "to",
+    "insp.fade.mid": "mid",
+    "insp.fade.extent": "extent",
+    "insp.fade.directionControl": "Fade direction: drag or use arrow keys",
+    "insp.fade.centerControl": "Fade centre: drag or use arrow keys",
+
     'insp.spectrum.mirrorShort': 'Mirror',
     'insp.spectrum.ledShort': 'LED',
     'insp.areaFill': 'Area fill',
@@ -354,6 +363,15 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    "insp.shape.silhouette": "Forma",
+    "insp.image.change": "Trocar…",
+    "insp.fade.from": "de",
+    "insp.fade.to": "a",
+    "insp.fade.mid": "meio",
+    "insp.fade.extent": "raio",
+    "insp.fade.directionControl": "Direção da transparência: arraste ou use as setas",
+    "insp.fade.centerControl": "Centro da transparência: arraste ou use as setas",
+
     'insp.spectrum.mirrorShort': 'Espelho',
     'insp.spectrum.ledShort': 'LED',
     'insp.areaFill': 'Preenchimento da área',
@@ -701,6 +719,15 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    "insp.shape.silhouette": "Sagoma",
+    "insp.image.change": "Cambia…",
+    "insp.fade.from": "da",
+    "insp.fade.to": "a",
+    "insp.fade.mid": "metà",
+    "insp.fade.extent": "raggio",
+    "insp.fade.directionControl": "Direzione della trasparenza: trascina o usa le frecce",
+    "insp.fade.centerControl": "Centro della trasparenza: trascina o usa le frecce",
+
     'insp.spectrum.mirrorShort': 'Specchio',
     'insp.spectrum.ledShort': 'LED',
     'insp.areaFill': 'Riempimento dell’area',

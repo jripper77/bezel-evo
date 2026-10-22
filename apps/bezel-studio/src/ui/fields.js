@@ -2,6 +2,7 @@
 // visual object; the look is base.css's). Field builders return a labelled
 // element and call `onChange(value)` with a parsed value; nothing here knows
 // the theme. Texts come translated from the caller.
+import { fadeLine, fadeHandlePatch } from '../shape-fade.js';
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
 import { joinWords, joinsPrevious } from '../sentence.js';
@@ -240,8 +241,24 @@ export function partsRow(label, parts, selected, onSelect, renderEditor, { previ
 }
 
 /** One asset choice and its shared detail controls; import stays with the caller. */
-export function imageField(label, value, choices, onChange, { preview = null, details = [] } = {}) {
-  return el('div', { class: 'image-field' }, [preview, selectField(label, value, choices, onChange), ...details]);
+export function imageField(label, value, choices, onChange, { preview = null, details = [], asset = null, changeLabel = null, browseLabel = null, onBrowse = null } = {}) {
+  const choice = selectField(label, value, choices, onChange);
+  if (!changeLabel) return el('div', { class: 'image-field' }, [preview, choice, ...details]);
+  const select = choice.querySelector('select');
+  select.setAttribute('aria-label', label);
+  const meta = el('small', { class: 'asset-field-meta', text: asset?.meta ?? '' });
+  const picture = asset?.preview ? el('img', { src: asset.preview, alt: '' }) : icon(ICONS.image, 22);
+  if (asset?.preview) picture.addEventListener('load', () => {
+    if (picture.naturalWidth && picture.naturalHeight) meta.textContent = [asset.meta, `${picture.naturalWidth}×${picture.naturalHeight}`].filter(Boolean).join(' · ');
+  });
+  const thumb = el(onBrowse ? 'button' : 'span', { class: 'asset-field-thumb', ...(onBrowse ? { type: 'button', 'aria-label': browseLabel, title: browseLabel, onclick: onBrowse } : { 'aria-hidden': 'true' }) }, [picture]);
+  return el('div', { class: 'image-field' }, [
+    el('label', { class: 'field-label', for: select.id, text: label }),
+    el('div', { class: 'asset-field-card' }, [thumb,
+      el('span', { class: 'asset-field-info' }, [el('span', { class: 'asset-field-name', text: asset?.name || choices.find(([ref]) => ref === value)?.[1] || value }), meta]),
+      el('span', { class: 'asset-field-choice' }, [el('span', { 'aria-hidden': 'true', text: changeLabel }), select]),
+    ]), ...details,
+  ]);
 }
 
 /** Width and height. Linking is UI state; the caller owns aspect-ratio updates. */
@@ -259,20 +276,65 @@ export const cornersField = (...args) => cornerRadii(...args);
 /** Existing fade model, including imported radial settings, without new theme fields. */
 export function fadeField(texts, value, onChange) {
   const f = value;
-  const percent = (label, v, apply, min = 0, max = 100) => numberField(label, Math.round(v * 100), n => apply(Math.max(min, Math.min(max, n)) / 100), { min, max, unit: '%' });
+  const percent = (label, v, apply, min = 0, max = 100, prefix = '') => prefixedField(prefix, label, Math.round(v * 100), n => apply(Math.max(min, Math.min(max, n)) / 100), { min, max, unit: '%' });
+  const controls = f && el('div', { class: 'fade-geometry-fields' }, [
+    f.radial ? fieldGrid([
+      percent(texts.centerX, f.radial[0], x => onChange({ radial: [x, f.radial[1], f.radial[2]] }), 0, 100, texts.x),
+      percent(texts.centerY, f.radial[1], y => onChange({ radial: [f.radial[0], y, f.radial[2]] }), 0, 100, texts.y),
+    ]) : fieldGrid([
+      prefixedField('', texts.angle, f.angle, angle => onChange({ angle: Math.max(-360, Math.min(360, angle)) }), { min: -360, max: 360, unit: '°', iconName: 'rotate' }),
+      percent(texts.midpoint, f.midpoint ?? .5, midpoint => onChange({ midpoint }), 5, 95, texts.midPrefix),
+    ]),
+    f.radial && percent(texts.extent, f.radial[2], extent => onChange({ radial: [f.radial[0], f.radial[1], extent] }), 1, 200, texts.extentPrefix),
+    fieldGrid([
+      percent(texts.start, f.start, start => onChange({ start }), 0, 100, texts.from),
+      percent(texts.end, f.end, end => onChange({ end }), 0, 100, texts.to),
+    ]),
+  ].filter(Boolean));
   return el('div', { class: 'fade-field' }, [
-    iconChoice(texts.mode, !f ? 'none' : f.radial ? 'radial' : 'linear', ['none', 'linear', 'radial'].map(mode => [mode, texts[mode], `fade-${mode}`]), mode => onChange(mode === 'none' ? null : { angle: f?.angle ?? 0, start: f?.start ?? 1, end: f?.end ?? 0, radial: mode === 'radial' ? f?.radial ?? [.5, .5, .5] : null })),
-    ...(f ? [
-      ...(f.radial ? [
-        percent(texts.centerX, f.radial[0], x => onChange({ radial: [x, f.radial[1], f.radial[2]] })),
-        percent(texts.centerY, f.radial[1], y => onChange({ radial: [f.radial[0], y, f.radial[2]] })),
-        percent(texts.extent, f.radial[2], r => onChange({ radial: [f.radial[0], f.radial[1], r] }), 1, 200),
-      ] : [numberField(texts.angle, f.angle, angle => onChange({ angle: Math.max(-360, Math.min(360, angle)) }), { min: -360, max: 360, unit: '°' }),
-        rangeField(texts.midpoint, Math.round((f.midpoint ?? .5) * 100), v => onChange({ midpoint: v / 100 }), { min: 5, max: 95, format: v => `${v}%` })]),
-      rangeField(texts.start, Math.round(f.start * 100), v => onChange({ start: v / 100 }), { format: v => `${v}%` }),
-      rangeField(texts.end, Math.round(f.end * 100), v => onChange({ end: v / 100 }), { format: v => `${v}%` }),
-    ] : []),
+    iconChoice(texts.mode, !f ? 'none' : f.radial ? 'radial' : 'linear', ['none', 'linear', 'radial'].map(mode => [mode, texts[mode], `fade-${mode}`]), mode => onChange(mode === 'none' ? null : { angle: f?.angle ?? 0, start: f?.start ?? 1, end: f?.end ?? 0, radial: mode === 'radial' ? f?.radial ?? [.5, .5, .5] : null }), { wide: true }),
+    f && el('div', { class: 'fade-geometry' }, [fadePreview(texts, f, onChange), controls]),
   ]);
+}
+
+/** The same gradient geometry as the renderer, drawn only while its controls are mounted. */
+function fadePreview(texts, value, onChange) {
+  let current = value, dragging = false;
+  const canvas = el('canvas', { width: 128, height: 128, 'aria-hidden': 'true' });
+  const control = el('div', { class: 'fade-preview', tabindex: '0', role: 'slider', 'aria-label': value.radial ? texts.centerControl : texts.directionControl,
+    'aria-valuemin': value.radial ? 0 : -360, 'aria-valuemax': value.radial ? 100 : 360,
+    'aria-valuenow': value.radial ? Math.round(value.radial[0] * 100) : value.angle,
+    'aria-valuetext': value.radial ? `${Math.round(value.radial[0] * 100)}%, ${Math.round(value.radial[1] * 100)}%` : `${value.angle}°`,
+  }, [canvas]);
+  const draw = () => {
+    const style = getComputedStyle(document.documentElement), ctx = canvas.getContext('2d'), f = current;
+    ctx.resetTransform(); ctx.clearRect(0, 0, 128, 128); ctx.scale(2, 2);
+    // The fill is a UI swatch; the opacity ramp and its midpoint follow the renderer.
+    ctx.fillStyle = style.getPropertyValue('--accent').trim(); ctx.fillRect(0, 0, 64, 64);
+    ctx.globalCompositeOperation = 'destination-in';
+    const gradient = f.radial ? ctx.createRadialGradient(f.radial[0] * 64, f.radial[1] * 64, 0, f.radial[0] * 64, f.radial[1] * 64, f.radial[2] * 64) : ctx.createLinearGradient(...fadeLine({ x: 0, y: 0, width: 64, height: 64 }, f.angle));
+    for (const [at, alpha] of [[0, f.start], [f.midpoint ?? .5, (f.start + f.end) / 2], [1, f.end]]) gradient.addColorStop(at, `rgba(0,0,0,${alpha})`);
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64); ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = style.getPropertyValue('--screen-tile-ink').trim(); ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (f.radial) { const x = f.radial[0] * 64, y = f.radial[1] * 64; ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y); ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8); }
+    else { const a = f.angle * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a), x = 32 + dx * 18, y = 32 + dy * 18;
+      ctx.moveTo(32 - dx * 18, 32 - dy * 18); ctx.lineTo(x, y); ctx.moveTo(x - dx * 5 + dy * 4, y - dy * 5 - dx * 4); ctx.lineTo(x, y); ctx.lineTo(x - dx * 5 - dy * 4, y - dy * 5 + dx * 4); }
+    ctx.stroke();
+  };
+  const point = event => { const box = control.getBoundingClientRect(); return { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height }; };
+  control.addEventListener('pointerdown', event => { if (event.button !== 0) return; event.preventDefault(); control.focus({ preventScroll: true }); dragging = true; control.setPointerCapture(event.pointerId); current = { ...value, ...fadeHandlePatch(value, point(event)) }; draw(); });
+  control.addEventListener('pointermove', event => { if (dragging) { current = { ...value, ...fadeHandlePatch(value, point(event)) }; draw(); } });
+  control.addEventListener('pointerup', event => { if (!dragging) return; dragging = false; control.releasePointerCapture(event.pointerId); onChange(fadeHandlePatch(value, point(event))); });
+  control.addEventListener('pointercancel', () => { dragging = false; current = value; draw(); });
+  control.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    if (value.radial) { const [x, y, extent] = value.radial; onChange({ radial: [Math.max(0, Math.min(1, x + (event.key === 'ArrowRight' ? .01 : event.key === 'ArrowLeft' ? -.01 : 0))), Math.max(0, Math.min(1, y + (event.key === 'ArrowDown' ? .01 : event.key === 'ArrowUp' ? -.01 : 0))), extent] }); }
+    else onChange({ angle: Math.max(-360, Math.min(360, value.angle + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 5 : -5))) });
+  });
+  queueMicrotask(() => { if (control.isConnected) draw(); });
+  return control;
 }
 
 /**

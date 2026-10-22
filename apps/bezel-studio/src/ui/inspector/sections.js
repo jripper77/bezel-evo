@@ -14,7 +14,8 @@ export function describeSections(ctx, panels) {
     }
   }
   // Style previews lead Shape in every artboard, regardless of which legacy panel supplied them.
-  groups.get('shape')?.sort((a, b) => Number(!['visualization', 'style'].includes(a.dataset.section)) - Number(!['visualization', 'style'].includes(b.dataset.section)));
+  const shapeRank = node => ['visualization', 'style'].includes(node.dataset.section) ? 0 : node.dataset.section === 'outline' ? 2 : 1;
+  groups.get('shape')?.sort((a, b) => shapeRank(a) - shapeRank(b));
   return SECTION_ORDER.filter(id => groups.has(id)).map(id => ({
     id, title: ctx.t(({ data: 'inspector.tab.data', shape: 'common.shape', text: 'common.text', color: 'inspector.color', faces: 'card.tab.faces', motion: 'card.tab.motion' })[id] ?? `insp.section.${id}`), icon: ICONS[id],
     summary: element => {

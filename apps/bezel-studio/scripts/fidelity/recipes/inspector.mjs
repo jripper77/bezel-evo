@@ -68,9 +68,9 @@ export default {
       }
       await inspector(app).evaluate(node => { node.style.height = `${node.scrollHeight}px`; node.style.maxHeight = 'none'; node.style.flex = 'none'; node.scrollTop = 0; });
     } })),
-    ...['clock', 'analog', 'weather', 'player', 'spectrum', 'shape', 'image', 'gif'].map(kind => ({ name: `ux2-media-${kind}`, capture: '#inspector', run: async app => {
+    ...['clock', 'analog', 'weather', 'player', 'spectrum', 'shape', 'image', 'raster', 'gif'].map(kind => ({ name: `ux2-media-${kind}`, capture: '#inspector', run: async app => {
       if (kind === 'gif') { const url = new URL(app.page.url()); url.searchParams.set('demo', 'gif'); await app.page.goto(url.href); }
-      await standalone(app, ['image', 'shape', 'gif'].includes(kind) ? null : kind === 'analog' ? 'clock' : kind);
+      await standalone(app, ['image', 'raster', 'shape', 'gif'].includes(kind) ? null : kind === 'analog' ? 'clock' : kind);
       const root = inspector(app);
       if (['shape', 'image'].includes(kind)) {
         await app.page.locator('#tab-media').click(); await app.page.getByRole('tab', { name: t('media.icons'), exact: true }).click(); await app.page.locator('#icon-search').fill('cpu'); await app.page.locator('[data-icon="cpu"]').click();
@@ -78,6 +78,7 @@ export default {
         const source = await root.getByRole('combobox', { name: t('common.image'), exact: true }).inputValue();
         if (kind === 'shape') { await app.add('shape'); await openSection(app.page, 'color'); await root.getByRole('combobox', { name: t('common.image'), exact: true }).selectOption(source); await root.getByRole('button', { name: t('shape.repeat.tile'), exact: true }).click(); }
       }
+      if (kind === 'raster') { await app.page.locator('#tab-media').click(); await addMedia(app.page, t, 'image'); await app.page.locator('.media-item').first().hover(); await app.page.locator('.media-item').first().getByRole('button', { name: t('media.addImage'), exact: true }).click(); }
       if (kind === 'gif') { await app.page.locator('#tab-layers').click(); await app.page.locator('.layer-name').first().click(); }
       if (kind === 'analog') await root.getByRole('button', { name: t('insp.clock.analog'), exact: true }).click();
       if (kind === 'player') await root.locator('[data-section="cover-fade"]').getByRole('button', { name: t('fade.linear'), exact: true }).click();

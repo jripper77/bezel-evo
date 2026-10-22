@@ -10,3 +10,11 @@ export function fadeLine(frame, angle) {
   const cx = frame.x + frame.width / 2, cy = frame.y + frame.height / 2;
   return [cx - dx, cy - dy, cx + dx, cy + dy];
 }
+
+/** A normalized pointer moves the existing fade's direction or radial centre. */
+export function fadeHandlePatch(fade, { x, y }) {
+  if (![x, y].every(Number.isFinite)) return {};
+  if (fade.radial) return { radial: [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y)), fade.radial[2]] };
+  if (Math.hypot(x - .5, y - .5) < .001) return {};
+  return { angle: Math.round(Math.atan2(y - .5, x - .5) * 180 / Math.PI) };
+}

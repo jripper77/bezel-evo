@@ -11,6 +11,10 @@ const rect = (x, y, w, h, r = 0) => (r
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
 
 export const ICONS = Object.freeze({
+  'playback-loop': ['M4 12a8 8 0 1 1 3 6.2M4 18v-6h6'],
+  'playback-once': ['M6 5v14M10 5l10 7-10 7z'],
+  'shape-rect': ['M4 5h16v14H4z'],
+  'shape-ellipse': ['M4 12a8 7 0 1 0 16 0a8 7 0 1 0-16 0'],
   music: ['M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0M19 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0'],
   'spectrum-smooth': ['M3 17c6 0 6-10 18-10'],
   'spectrum-balanced': ['M3 17c4 0 4-10 9-10s5 10 9 10'],
@@ -18,6 +22,7 @@ export const ICONS = Object.freeze({
   'graph-single': ['m3 16 5-5 4 3 4-6 5 4'],
   'graph-mirrored': ['m3 10 5-4 4 2 4-4 5 3M3 14l5 4 4-2 4 4 5-3'],
   'corners-all': ['M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5'],
+  'progress-knob': ['M3 12h18', 'M14.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0'],
   'ends-round': ['M8 9h8a3 3 0 0 1 0 6H8a3 3 0 0 1 0-6z'],
   'ends-flat': ['M5 9h14v6H5z'],
   'blocks': ['M3 9h4v6H3zM10 9h4v6h-4zM17 9h4v6h-4z'],

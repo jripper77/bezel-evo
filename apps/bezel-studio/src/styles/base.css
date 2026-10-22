@@ -509,3 +509,20 @@ button.pill:hover { border-color: var(--accent); }
 
 .option-tiles[data-count="5"] { gap: 6px; }
 .option-tiles[data-count="5"] .option-tile { padding: 8px 2px 6px; font-size: var(--fs-caps); }
+
+/* Shared asset card and fade geometry, matching the inspector artboards. */
+.asset-field-card { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.asset-field-thumb { flex: none; display: grid; place-items: center; width: 48px; height: 36px; padding: 0; border: 0; border-radius: 5px; overflow: hidden; background: var(--surface-3); color: var(--text-2); }
+.asset-field-thumb img, .gif-frame img { width: 100%; height: 100%; object-fit: contain; }
+.asset-field-info, .screen-id { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.asset-field-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.asset-field-meta { color: var(--text-3); font-family: var(--font-mono); font-size: var(--fs-caps); }
+.asset-field-choice { position: relative; flex: none; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text-2); font-size: var(--fs-compact); }
+.asset-field-choice select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.asset-field-choice:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.fade-geometry { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: center; }
+.fade-geometry-fields { display: grid; gap: 8px; min-width: 0; }
+.fade-geometry-fields .fld { gap: 4px; padding-inline: 8px; }
+.fade-preview { width: 64px; height: 64px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; touch-action: none; background: repeating-conic-gradient(var(--surface-3) 0 25%, var(--surface) 0 50%) 0 0 / 10px 10px; }
+.fade-preview canvas { display: block; width: 64px; height: 64px; }
+.fade-preview:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

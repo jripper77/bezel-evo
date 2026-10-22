@@ -2,7 +2,7 @@
 // title, artist and time turn on and off like cover, progress and app
 // name, the fit measures only what shows, and the bar's look (colours,
 // thickness, ends, knob, pattern, where the times go) is set in Look.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor, toggleButton, openSection } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, colorButton, setColor, toggleButton, openSection, openInspectorMenu } from './helpers.mjs';
 
 /** Whether the preview has a strong red pixel. */
 const hasRed = (preview) => preview.evaluate((canvas) => {
@@ -40,12 +40,12 @@ test('each part of the player turns on and off alone and the fit measures only w
   const size = Number(await inspector.getByRole('spinbutton', { name: t('inspector.size'), exact: true }).inputValue());
   const height = inspector.getByRole('spinbutton', { name: t('inspector.height'), exact: true });
   await openSection(page, 'layout');
-  await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
+  await (await openInspectorMenu(page)).getByRole('menuitem', { name: t('insp.fitContent'), exact: true }).click();
   await expect(height).toHaveValue(String(Math.ceil(size * 1.2)));
   // The artist too: two lines.
   await part('insp.partArtist').click();
   await openSection(page, 'layout');
-  await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
+  await (await openInspectorMenu(page)).getByRole('menuitem', { name: t('insp.fitContent'), exact: true }).click();
   await expect(height).toHaveValue(String(2 * Math.ceil(size * 1.2)));
 
   // Keyboard: Space toggles a tile; one Undo per change.
@@ -73,7 +73,7 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   const errors = watchErrors(page);
   const { inspector, part } = await addPlayer(page, t);
   const section = inspector.locator('[data-section="progress"]');
-  await expect(section.getByRole('heading', { name: t('insp.progressBar'), exact: true })).toBeVisible();
+  await expect(section.getByText(t('insp.progressBar'), { exact: true })).toBeVisible();
 
   // Fill colour, in Color with the other paints: the canvas turns red (the
   // inspector's own preview is a thumbnail too small to show a 4 px bar).
@@ -91,7 +91,7 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   await expect(section.getByRole('spinbutton', { name: t('insp.thickness'), exact: true })).toHaveValue('5');
   const round = toggleButton(section, t('inspector.roundCaps'));
   await expect(round).toHaveAttribute('aria-pressed', 'true');
-  await round.click({ force: true });
+  await section.getByRole('button', { name: t('insp.flatEnds'), exact: true }).click();
   await expect(toggleButton(section, t('inspector.roundCaps'))).toHaveAttribute('aria-pressed', 'false');
   const knob = toggleButton(section, t('insp.progressKnob'));
   await expect(knob).toHaveAttribute('aria-pressed', 'false');
@@ -124,7 +124,7 @@ test('the progress bar has its colours, thickness, ends, knob, pattern and times
   for (const key of ['insp.cover', 'insp.partTitle', 'insp.partArtist']) await part(key).click();
   const size = Number(await inspector.getByRole('spinbutton', { name: t('inspector.size'), exact: true }).inputValue());
   await openSection(page, 'layout');
-  await inspector.getByRole('button', { name: t('insp.fitContent'), exact: true }).click();
+  await (await openInspectorMenu(page)).getByRole('menuitem', { name: t('insp.fitContent'), exact: true }).click();
   await expect(inspector.getByRole('spinbutton', { name: t('inspector.height'), exact: true })).toHaveValue(String(Math.max(Math.ceil(size * 1.2), 11)));
   await part('insp.partTime').click();
   await expect(section.getByRole('group', { name: t('insp.timesPlace'), exact: true })).toHaveCount(0);
