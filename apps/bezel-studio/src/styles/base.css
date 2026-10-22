@@ -445,5 +445,6 @@ button.pill:hover { border-color: var(--accent); }
 .number-field.is-compact .number-control > .ic { flex: none; color: var(--dim); }
 .field-choice { flex-wrap: wrap; }
 .field-choice.is-wide button { flex-basis: auto; }
+.field-choice button:disabled { opacity: 0.45; cursor: default; }
 
 .color-button-value > .mono:first-child { text-transform: uppercase; }
