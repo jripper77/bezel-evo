@@ -53,3 +53,31 @@ test('spectrum frequencies fit together in the narrow panel, with movement icons
   await expect(motion.locator(`[data-value="${before}"]`)).toHaveAttribute('aria-pressed', 'true');
   await expectAccessible(page);
 });
+
+test('spectrum baseline and peaks have distinct icons, nearby labels and one-step Undo', async ({ page, t }) => {
+  await page.goto('/index.html?demo=turing88');
+  await setPanelWidths(page, { inspector: 320 }); await page.reload();
+  await clickAddWidget(page, t, 'spectrum');
+  await openSection(page, 'shape');
+  const panel = page.locator('#inspector');
+  const baseline = panel.getByRole('button', { name: t('spectrum.centre'), exact: true });
+  const peaks = panel.getByRole('button', { name: t('spectrum.peaks'), exact: true });
+  expect(await baseline.locator('path').getAttribute('d')).not.toBe(await peaks.locator('path').getAttribute('d'));
+  for (const button of [baseline, peaks]) {
+    const row = button.locator('..');
+    const bounds = await row.evaluate(node => {
+      const button = node.querySelector('button').getBoundingClientRect();
+      const label = node.querySelector('span').getBoundingClientRect();
+      return { gap: label.left - button.right, height: label.height, line: parseFloat(getComputedStyle(node).fontSize) };
+    });
+    expect(bounds.gap).toBeGreaterThanOrEqual(0);
+    expect(bounds.gap).toBeLessThanOrEqual(8);
+    expect(bounds.height).toBeLessThan(bounds.line * 2);
+    const before = await button.getAttribute('aria-pressed');
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', String(before !== 'true'));
+    await page.locator('#undo').click();
+    await expect(button).toHaveAttribute('aria-pressed', before);
+  }
+  await expectAccessible(page);
+});

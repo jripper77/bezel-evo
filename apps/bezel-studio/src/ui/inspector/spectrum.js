@@ -53,8 +53,8 @@ export function panels(ctx) {
         c.style === 'radial' && numberField(t('spectrum.inner'), c.inner, inner => set({ inner }), { min: 0, max: 90 }),
         !line && barCorners(e.id, c, set, e.frame),
         fieldGrid([
-          c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre })),
-          !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks })),
+          c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre }), { iconName: 'spectrum-baseline', leading: true }),
+          !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks }), { iconName: 'spectrum-peaks', leading: true }),
         ].filter(Boolean)),
       ], { caption: true })],
       behavior: [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`), `spectrum-${value}`]), motion => set({ motion }), { wide: true, bare: true })], { caption: true })],
