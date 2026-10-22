@@ -242,3 +242,7 @@ basi `en/pt-BR/it.js` non si toccano. Testo comune = una chiave.
 - Wave 2: T-7a/b/c, T-8, T-9a/b/c/d in parallelo, ognuna con i propri file (vedi **Files**). `src/index.html` è solo di T-9b;
   `src/app.js` solo di T-9b (le altre espongono funzioni e annotano il collegamento).
 - Wave 3: T-10, un solo agente.
+
+## Riallineamento visivo dopo T-12 — 22 ottobre
+
+Status: correzioni dei blocchi e galleria finale completate, **in attesa della verifica visiva dell’utente (punto 5)**. 108 stati chiaro/scuro, 30 tavole censite, test mirati verdi. Riferimenti: `SUMMARY-FIDELITY-FINAL.md` e aggiornamento `REVIEW.md`. Limite del renderer demo immagini esplicito; nessuna nuova decodifica, build, installazione o pubblicazione. La fase resta APPROVED_PENDING_MANUAL, non chiusa automaticamente.

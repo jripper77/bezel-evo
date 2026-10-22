@@ -1,3 +1,12 @@
+# Consegna per verifica visiva — 22 ottobre
+
+**Correzioni e galleria finale completate; punto 5, ora decide l’utente.**
+Riferimento canonico: `evidence/final/index.html` (108 stati, 208 PNG, 30 tavole).
+Leggere `SUMMARY-FIDELITY-FINAL.md` e l’aggiornamento di `REVIEW.md` per test ed eccezioni.
+Limite del canvas demo immagini ancora esplicito, nuova decodifica da pianificare con l’utente.
+Nessuna build/installazione/push o approvazione manuale automatica. Non riprendere le vecchie indicazioni
+«prossimo blocco»: i paragrafi sotto sono il passaggio storico delle correzioni.
+
 # Passaggio — Studio UX v2
 
 ## Correzioni autorizzate — punto di ripresa del 22 ottobre
@@ -18,7 +27,7 @@ Il lavoro complessivo resta aperto; stop al blocco verificato per limite dei tok
 | Contenitori/Tema/multipla | completato, `5f4ce4c`, `fid/inspector-containers` | SUMMARY-FIDELITY-CONTAINERS.md |
 | Shell/pannelli | **prossimo** | MainNew, LibraryPanelsNew, StatusBarNew, Schermo/Archivio, larghezze/catture R00–R03 |
 | Profili/Galleria | completato, `f5c7653`, `7e1ea7c`, `fid/studio-dialogs` | SUMMARY-FIDELITY-DIALOGS.md |
-| Chiusura visiva | **in corso** | tutte le tavole/stati censiti, galleria finale rigenerata e REVIEW aggiornato prima delle verifiche dell’utente |
+| Chiusura visiva | completata — verifica manuale in attesa | SUMMARY-FIDELITY-FINAL.md, REVIEW.md, evidence/final/index.html |
 
 Le nuove evidenze sono separate in `evidence/fidelity-paint/`, `fidelity-text/`,
 `fidelity-geometry/`, `fidelity-plots/`, `fidelity-media/`, `fidelity-weather/`, `fidelity-instruments/` e `fidelity-containers/`. **`evidence/final/` è ancora la galleria
