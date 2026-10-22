@@ -74,8 +74,8 @@ Two screens of the same model share one choice, as they share Bezel's catalog.
 ## In Studio
 
 **Screen → Settings → When the computer shuts down**: pick one of the four;
-each **?** explains it. A choice that does not apply is greyed out with the
-reason: the screen is not connected, it is not a Turing rev C screen, there is
+the line under each says what it does, and the box below explains the chosen
+one. A choice that does not apply is greyed out, with the reason under it: the screen is not connected, it is not a Turing rev C screen, there is
 no memory card, or no video is stored. The screen must be connected to change
 the choice.
 

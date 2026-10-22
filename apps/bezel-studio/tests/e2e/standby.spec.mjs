@@ -227,7 +227,7 @@ test.describe('standby', () => {
     await expect(keep).toBeChecked();
     await expect(off).not.toBeChecked();
     // No longer the choice: it says what it does, not its timer.
-    await expect(off).toHaveAccessibleDescription(t('screenPanel.standby.off'));
+    await expect(off).toHaveAccessibleDescription(t('standby.hint.off'));
     expect(await written(page)).toEqual([{ screen: SCREEN, choice: 'keep', sleepMinutes: 0, file: null, startMode: 0 }]);
 
     // Keep again sends nothing and asks nothing.

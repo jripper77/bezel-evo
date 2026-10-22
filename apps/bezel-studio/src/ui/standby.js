@@ -169,36 +169,33 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
     const option = optionOf(view.data, choice);
     const checked = view.data.choice === choice;
     const label = t(`standby.choice.${choice}`);
-    // The choice's state when it is the one, why it is off, or what it does.
-    const detail = option.enabled
-      ? currentDetail(view.data, choice) ?? { key: `screenPanel.standby.${choice}`, params: {} }
-      : { key: `standby.reason.${option.reason}`, params: {} };
+    // Why the choice is off, when it is; the chosen one's state (its timer, its video).
+    const reason = option.enabled ? null : say({ key: `standby.reason.${option.reason}`, params: {} });
+    const state = checked ? currentDetail(view.data, choice) : null;
     const nameId = `standby-name-${choice}`;
     const detailId = `standby-detail-${choice}`;
+    const stateId = `standby-state-${choice}`;
     const radio = el('button', {
       type: 'button', role: 'radio', class: 'standby-radio', 'aria-checked': String(checked), 'aria-disabled': option.enabled ? null : 'true',
-      'aria-labelledby': nameId, 'aria-describedby': detailId, tabindex: checked ? '0' : '-1',
-      title: option.enabled ? null : say(detail), dataset: { choice, focus: `radio-${choice}` },
+      'aria-labelledby': nameId, 'aria-describedby': state ? stateId : detailId, tabindex: checked ? '0' : '-1',
+      title: reason, dataset: { choice, focus: `radio-${choice}` },
       onclick: () => void choose(choice), onkeydown: (evt) => moveFocus(evt, choice),
     }, [
       icon(ICONS[({ keep: 'screen', off: 'power', album: 'image', video: 'film' })[choice]], 18),
       el('span', { id: nameId, class: 'standby-label', text: label }),
-      el('span', { id: detailId, class: `standby-detail${option.enabled ? '' : ' reason'}`, text: say(detail) }),
+      // Seen in the box under the choices; read here with the choice.
+      state && el('span', { id: stateId, class: 'visually-hidden', text: say(state) }),
     ]);
-    const [help, panel] = popovers.help(`standby-help-${choice}`, t('standby.helpFor', { choice: label }), [
-      el('strong', { text: label }),
-      el('p', { text: t(`standby.explain.${choice}`) }),
-    ]);
-    return el('div', { class: `standby-option${checked ? ' checked' : ''}` }, [radio, help, panel]);
+    // What it does in one short line, or why it is off.
+    const help = el('p', { id: detailId, class: `hint standby-detail${reason ? ' reason' : ''}`, text: reason ?? t(`standby.hint.${choice}`) });
+    return el('div', { class: `standby-option${checked ? ' checked' : ''}` }, [radio, help]);
   }
 
-  /** The section's 11px caps title with its "?". */
+  /** The section's 11px caps title. */
   function head(current) {
     const model = current.models.length === 1 ? current.models[0].name : current.models.map((m) => m.name).join(' / ');
-    const [help, panel] = popovers.help('standby-help', t('standby.help'), [el('p', { text: t('standby.helpText') })]);
     const title = sectionTitle(t('standby.summary.atShutdown'), { id: 'standby-title' });
     title.classList.add('standby-head');
-    title.append(help, panel);
     return [title, el('p', { class: 'standby-screen visually-hidden', text: model })];
   }
 
