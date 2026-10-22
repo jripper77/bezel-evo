@@ -18,6 +18,12 @@ All notable changes to Bezel Evo are documented here. The format follows
   value while dragged, lights up its inspector field and takes the arrow keys.
 - **A floating bar** above the selection: linked sensor, ▶ Try, Duplicate and
   the object menu.
+- **Layer order** in Layout and the shared object menu, including moving a
+  selection forward or backward in one undo step. Duplicate and Delete stay
+  in the object menu.
+- **Compact inspector controls**: consistent alignment, color and motion
+  controls; distinct spectrum baseline and peak icons with nearby labels;
+  one shared corner editor with a compact radius and individual-corner mode.
 - **Trial values** in the canvas bar: the whole theme sweeps every sensor from
   empty to full, so you can see it at 0 % and at 100 %. Nothing is saved and
   the screen keeps showing the real sensors.
