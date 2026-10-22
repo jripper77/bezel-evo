@@ -44,7 +44,6 @@
 .bg-chooser > .bg-sources { flex: 1; min-height: 0; overflow: hidden; }
 .bg-chooser > :not(.bg-sources), .bg-sources > .bg-source { flex-shrink: 0; }
 .bg-chooser-head { display: flex; align-items: center; gap: 8px; margin: -4px 0 0; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.inspector .bg-chooser-head h2 { margin: 0; font-size: var(--fs-title); font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text); }
 .inspector .bg-chooser-intro { margin: 0; font-size: var(--fs-field); line-height: 1.5; color: var(--text-3); }
 .bg-source { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--border-2); border-radius: 12px; background: var(--surface-2); }
 .bg-source[data-open="true"] { flex-shrink: 1; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface-2)); }
@@ -266,10 +265,10 @@
 .inspector-linked .player-part-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* Theme details sit below the actual rendered document thumbnail. */
-.theme-heading { display: grid; gap: 10px; padding: 14px; background: var(--chrome); }
+.theme-heading { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 10px; padding: 14px; background: var(--chrome); }
 .theme-preview { display: block; width: 100%; height: 82px; border: 1px solid var(--border); border-radius: 8px; background: var(--screen); }
 .theme-name-row .inspector-name { flex: 1; min-width: 0; }
-.theme-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; color: var(--muted); font-size: var(--fs-small); }
+.theme-facts { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 8px; color: var(--muted); font-size: var(--fs-small); }
 .theme-save-state { margin-left: auto; color: var(--ok-ink); }
 .theme-save-state[data-dirty="true"] { color: var(--accent-ink); }
 .theme-orientation { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); }
@@ -297,3 +296,9 @@
 .inspector .section-head > .arc-preview { width: 24px; height: 24px; margin-left: auto; }
 
 .inspector .property-section-body > .property-section { margin: 0; padding: 0; border: 0; }
+
+.theme-facts > .mono { display: flex; align-items: baseline; min-width: 0; flex: 1; }
+.theme-facts > .theme-save-state { flex: none; white-space: nowrap; }
+
+.theme-model { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-size { flex: none; white-space: pre; }

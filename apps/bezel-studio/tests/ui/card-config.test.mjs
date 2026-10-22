@@ -1,3 +1,4 @@
+import { cardFacePreviewTheme } from '../../src/card-config.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeCard, normalizeCardTheme } from '../../src/card-config.js';
@@ -124,4 +125,16 @@ test('timers advance or select a face, pause during app overrides and restart af
   tracker.update(theme, 16000);
   assert.equal(tracker.update(theme, 21000).theme.elements[0].card.activeFace, 1);
   assert.equal(theme.elements[0].card.activeFace, 0);
+});
+
+test('face previews isolate only the requested face and leave the edited theme untouched', () => {
+  const card = { id: 1, card: { activeFace: 0, faces: ['A', 'B'], triggers: [{ source: 'media' }] } }, other = { id: 2 };
+  const theme = { elements: [card, other] };
+  const preview = cardFacePreviewTheme(theme, 1, 1);
+  assert.equal(theme.elements[0].card.activeFace, 0);
+  assert.equal(preview.elements[0].card.activeFace, 1);
+  assert.equal(preview.elements[0].card.triggers, card.card.triggers);
+  assert.equal(preview.elements[1], other);
+  assert.equal(cardFacePreviewTheme(theme, 1, 2), null);
+  assert.equal(cardFacePreviewTheme(theme, 2, 0), null);
 });

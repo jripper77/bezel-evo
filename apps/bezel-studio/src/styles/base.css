@@ -528,3 +528,5 @@ button.pill:hover { border-color: var(--accent); }
 .fade-preview:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 .inspector-toggle.is-leading { justify-content: flex-start; }
+
+.inspector .object-heading-row > h2, .inspector .bg-chooser-head h2 { margin: 0; font-size: var(--fs-title); font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; }

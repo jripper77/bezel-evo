@@ -38,7 +38,7 @@ test('faces are a numbered list; the shared background is its own row; Move send
   await expect(faces.getByRole('listitem')).toHaveCount(2);
   await expect(faces.locator('.face-number')).toHaveText(['1', '2']);
   await expect(faces.locator('.face-name')).toHaveText([face(1), face(2)]);
-  await expect(inspector.locator('[data-section="faces"] .count')).toHaveText('2');
+  await expect(faces).toHaveAttribute('aria-description', t('layers.count', { count: 2 }));
   // The face in view: current, marked "in view", its Edit pressed; the other is not.
   const second = faces.locator('[data-face="1"]');
   await expect(second).toHaveAttribute('aria-current', 'true');
@@ -48,13 +48,19 @@ test('faces are a numbered list; the shared background is its own row; Move send
   await expect(editSecond).toHaveAttribute('aria-pressed', 'true');
   await expect(editSecond.locator('svg')).toHaveCount(1);
   await expect(faces.locator('[data-face="0"]')).not.toHaveAttribute('aria-current', 'true');
-  // No thumbnails, no pair chips, no horizontal strip.
+  // Real face thumbnails stay inside the numbered list; no pair chips or horizontal strip.
   await expect(inspector.locator('.face-chip, .face-transition, .screen-thumb')).toHaveCount(0);
+  await expect(faces.locator('.face-thumb[data-ready="true"]')).toHaveCount(2);
+  const previews = await faces.locator('.face-thumb').evaluateAll(nodes => nodes.map(canvas => [...canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data].join(',')));
+  expect(new Set(previews).size).toBe(2);
+  await expect(second).toHaveAttribute('aria-current', 'true');
+
   const objects = inspector.locator('[data-section="objects"]');
   await expect(objects.getByRole('heading')).toHaveText(t('cardInsp.objectsIn', { face: face(2) }));
   await expect(objects.locator('.count')).toHaveText('2');
   await expect(objects.locator('.face-object')).toHaveCount(2);
   // Move the bar to face 1: it leaves this list; Undo brings it back.
+  await objects.locator('summary').click();
   await objects.getByRole('combobox', { name: t('cardInsp.moveObject', { name: t('widget.bar') }) }).selectOption('0');
   await expect(objects.locator('.face-object')).toHaveCount(1);
   await page.locator('#undo').click();
@@ -83,7 +89,7 @@ test('faces are a numbered list; the shared background is its own row; Move send
   await page.locator('#undo').click();
   await faces.getByRole('button', { name: t('cardInsp.editFace', { name: face(2) }), exact: true }).click();
   // A list card selects its object.
-  await objects.getByRole('button', { name: t('cardInsp.selectObject', { name: t('widget.graph') }), exact: true }).click();
+  await objects.locator(':scope > .property-section-body > .chip-group').getByRole('button', { name: t('cardInsp.selectObject', { name: t('widget.graph') }), exact: true }).click();
   await expect(faces).toHaveCount(0);
   await selectCard();
   await expect(inspector.getByText(t('cardInsp.dropHint'), { exact: true })).toBeVisible();
@@ -148,7 +154,7 @@ test('the ⋮ menu renames, duplicates, moves and deletes a face, from the keybo
   await faces.getByRole('button', { name: t('cardInsp.editFace', { name: face(2) }), exact: true }).click();
   await expect(inspector.locator('[data-section="objects"] .face-object')).toHaveCount(2);
   // The add button sits in the section head and gives the focus to the new face.
-  await inspector.locator('[data-section="faces"] .section-head').getByRole('button', { name: t('card.addFace'), exact: true }).click();
+  await inspector.locator('[data-section="faces"]').getByRole('button', { name: t('card.addFace'), exact: true }).click();
   await expect(faces.locator('[data-face="2"] .face-edit')).toBeFocused();
   await expectAccessible(page);
   expect(errors).toEqual([]);

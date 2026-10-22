@@ -75,7 +75,7 @@ function commonPanels({ ids, t, store, colorField, sensors, host }) {
     else store.dispatch('patchElements', { patches: selectionPatches(elements, field, value) });
   };
   const numeric = (key, label, value, scale = 1) => {
-    const field = numberField(t(label), value === MIXED ? null : value * scale, value => edit(key, value === null ? null : value / scale), { nullable: true, unit: key === 'opacity' ? '%' : key === 'rotation' ? '°' : 'px', ...(key === 'opacity' ? { min: 0, max: 100 } : {}) });
+    const field = numberField(t(label), value === MIXED ? null : value * scale, value => edit(key, value === null ? null : value / scale), { nullable: true, compact: true, ...(key in shared.frame ? { prefix: t(`insp.${({ x: 'xPrefix', y: 'yPrefix', width: 'widthPrefix', height: 'heightPrefix' })[key]}`) } : {}), unit: key === 'opacity' ? '%' : key === 'rotation' ? '°' : 'px', ...(key === 'opacity' ? { min: 0, max: 100 } : {}) });
     if (value === MIXED) field.querySelector('input').placeholder = t('insp.mixed');
     return field;
   };
@@ -93,7 +93,7 @@ function commonPanels({ ids, t, store, colorField, sensors, host }) {
       fieldGrid(['x', 'y'].map(key => numeric(key, `inspector.${key}`, shared.frame[key]))),
       fieldGrid(['width', 'height'].map(key => numeric(key, `inspector.${key}`, shared.frame[key]))),
       shared.rotation !== null && numeric('rotation', 'insp.rotation', shared.rotation),
-    ]),
+    ], { heading: false }),
     data: [section('content', t('insp.commonProperties'), [
       shared.sensor !== null && sensorPicker({ t, key: shared.sensor === MIXED ? '' : shared.sensor, label: t('inspector.sensor'), catalog: () => sensors.catalog(), readings: () => host.lastSample()?.readings,
         summary: shared.sensor === MIXED ? { title: t('insp.mixedSensors', { count: new Set(elements.map(e => e.kind.binding?.key ?? e.kind.content?.key)).size }), value: t('insp.mixed') } : null,
@@ -112,16 +112,15 @@ export function panel({ ids, t, store, ALIGN_EDGES }) {
       el('h2', { text: t('inspector.multi', { count: ids.length }) }),
       section('position', t('inspector.alignTools'), [
         iconChoice(t('inspector.alignTools'), null, ALIGN_EDGES.map(([edge, name]) => [edge, t(`align.${edge}`), name]), edge => store.dispatch('align', { ids, edge }), { wide: true, iconOnly: true, actions: true }),
-        el('div', { class: 'button-row' }, [
-          el('button', { type: 'button', class: 'text-button', disabled: ids.length < 3, onclick: () => store.dispatch('distribute', { ids, axis: 'x' }) }, [icon(ICONS.distributeX, 16), t('align.distributeX')]),
-          el('button', { type: 'button', class: 'text-button', disabled: ids.length < 3, onclick: () => store.dispatch('distribute', { ids, axis: 'y' }) }, [icon(ICONS.distributeY, 16), t('align.distributeY')]),
-        ]),
+        iconChoice(t('insp.distribute'), null, [['x', t('align.distributeX'), 'distributeX', { disabled: ids.length < 3, text: t('axis.horizontal') }], ['y', t('align.distributeY'), 'distributeY', { disabled: ids.length < 3, text: t('axis.vertical') }]], axis => store.dispatch('distribute', { ids, axis }), { wide: true, actions: true }),
       ]),
       section('membership', t('inspector.membership'), [
-        el('button', { type: 'button', class: 'text-button', text: t('group.create'), disabled: !canGroup(store.getState().theme, ids), title: t('group.scope'), onclick: () => store.dispatch('groupSelection', { ids }) }),
-        ...(store.getState().theme.elements.some(e => ids.includes(e.id) && e.isGroup) ? [el('button', { type: 'button', class: 'text-button', text: t('group.ungroup'), onclick: () => store.dispatch('ungroup', { ids }) })] : []),
-        el('button', { type: 'button', class: 'text-button', text: t('card.group'), onclick: () => store.dispatch('cardFromSelection', { ids }) }),
-      ]),
+        iconChoice(t('inspector.membership'), null, [
+          ['group', t('group.create'), 'group', { disabled: !canGroup(store.getState().theme, ids), text: t('layersPanel.group'), description: t('group.scope') }],
+          ...(store.getState().theme.elements.some(e => ids.includes(e.id) && e.isGroup) ? [['ungroup', t('group.ungroup'), 'group']] : []),
+          ['card', t('card.group'), 'card', { text: t('layersPanel.card') }],
+        ], command => store.dispatch(({ group: 'groupSelection', ungroup: 'ungroup', card: 'cardFromSelection' })[command], { ids }), { wide: true, bare: true, actions: true }),
+      ], { heading: false }),
       orderField({ store, t, ids }),
     ];
   }

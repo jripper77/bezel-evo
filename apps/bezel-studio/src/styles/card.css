@@ -14,8 +14,8 @@
 .shared-background > svg { flex: none; color: var(--info); }
 .face-sub { color: var(--muted); font-size: var(--fs-small); line-height: 1.35; }
 .card-section[data-section="faces"] .section-head { justify-content: flex-start; }
-.face-add { min-height: 28px; margin-left: auto; padding-inline: 8px; }
-.face-editor { display: grid; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.face-add { width: 100%; border-style: dashed; justify-content: center; }
+.face-editor { display: grid; gap: 10px; }
 .face-editor .field { margin: 0; }
 .face-editor input { font-family: var(--font-mono); }
 .face-object .list-card { flex: 1 1 auto; min-width: 0; padding: 8px; }
@@ -35,14 +35,14 @@
 .sentence-token[list] { width: 120px; font-family: var(--font-mono); }
 .trigger-rule .fld { gap: 4px; padding-inline: 6px; }
 .trigger-rule .fld-prefix { font-size: var(--fs-tiny); }
-.trigger-add { width: 100%; border-style: dashed; }
+.trigger-add { border-style: dashed; }
 
 /* Keep the complete face name readable even beside a long translated action. */
 .face-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; }
-.face-row > .face-name { grid-column: 2; }
-.face-row .pill { grid-column: 2; grid-row: 2; justify-self: start; }
-.face-row .face-edit { grid-column: 3; grid-row: 1 / span 2; }
-.face-row .face-more { grid-column: 4; grid-row: 1 / span 2; }
+.face-row > .list-card-text { grid-column: 2; min-width: 0; }
+.face-row .pill { justify-self: start; }
+.face-row .face-edit { grid-column: 3; grid-row: 1; }
+.face-row .face-more { grid-column: 4; grid-row: 1; }
 .shared-background { grid-template-columns: auto minmax(0, 1fr) auto; }
 .shared-background .list-card-text { min-width: 0; }
 .inspector-linked .card-section .option-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -51,3 +51,5 @@
 .inspector-linked .card-section .option-tile span { overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 
 .shared-background .list-card-text { display: grid; gap: 2px; }
+
+.face-thumb { width: 24px; height: 32px; border-radius: 3px; background: var(--screen); }
