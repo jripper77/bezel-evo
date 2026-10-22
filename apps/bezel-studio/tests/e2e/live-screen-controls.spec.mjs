@@ -48,7 +48,11 @@ async function pastRefresh(page, t) {
   await expect(page.locator('#status-device')).toHaveText(t('status.live'));
   await expect(page.getByRole('switch')).toBeChecked();
   // Its card under Screen says it is the live one.
-  await expect(page.locator('#panel-screen .screen-card .meta')).toHaveText(`${LISTED} · ${t('screen.state.awake')} · ${t('status.live')}`);
+  const card = page.locator('#panel-screen .screen-card');
+  await expect(card.locator('.screen-size')).toContainText(LISTED);
+  // Live tone requires both the awake state and this screen being live.
+  await expect(card.locator('.screen-state')).toHaveAttribute('data-tone', 'live');
+  await expect(card.locator('.meta')).toHaveText(t('status.live'));
 }
 
 async function openStorage(page, t) {

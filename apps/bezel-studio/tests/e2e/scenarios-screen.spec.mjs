@@ -57,7 +57,7 @@ test('the Screen panel shows only the screen chosen at the top', async ({ page, 
   // Only the chosen screen: one card, one brightness, one menu of screen actions.
   await expect(panel.locator('.screen-card')).toHaveCount(1);
   await expect(panel.locator('.screen-card strong')).toHaveText(names[first]);
-  await expect(panel.locator('.screen-card .meta')).toHaveText(new RegExp(`^${first.replace(/[/.]/g, '\$&')} · `));
+  await expect(panel.locator('.screen-card .screen-size')).toHaveText(new RegExp(`^${first.replace(/[/.]/g, '\$&')} · `));
   await expect(slider).toHaveCount(1);
   await expect(advanced).toHaveCount(1);
   await expect(autostart).toBeVisible();
@@ -68,7 +68,7 @@ test('the Screen panel shows only the screen chosen at the top', async ({ page, 
   // The other screen shows once chosen at the top, with its own brightness.
   await picker.selectOption(second);
   await expect(panel.locator('.screen-card')).toHaveCount(1);
-  await expect(panel.locator('.screen-card .meta')).toHaveText(new RegExp(`^${second.replace(/[/.]/g, '\$&')} · `));
+  await expect(panel.locator('.screen-card .screen-size')).toHaveText(new RegExp(`^${second.replace(/[/.]/g, '\$&')} · `));
   await expect(slider).toHaveCount(1);
   await expect(slider).toHaveValue('70');
   await expect(advanced).toHaveCount(1);
