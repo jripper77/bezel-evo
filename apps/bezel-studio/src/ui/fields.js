@@ -157,11 +157,12 @@ export function previewChoice(label, tiles) {
 }
 
 /** Inspector toggles use native buttons with a visible state and accessible name. */
-export function toggleField(label, pressed, onChange, { iconName = 'eye' } = {}) {
-  return el('div', { class: 'inspector-toggle' }, [el('span', { text: label }),
+export function toggleField(label, pressed, onChange, { iconName = 'eye', leading = false } = {}) {
+  const button =
     iconName === 'bolt' ? bindButton(label, pressed, () => onChange(!pressed))
-      : iconButton(label, ICONS[iconName], () => onChange(!pressed), { 'aria-pressed': String(Boolean(pressed)) }),
-  ]);
+      : iconButton(label, ICONS[iconName], () => onChange(!pressed), { 'aria-pressed': String(Boolean(pressed)) });
+  const caption = el('span', { text: label });
+  return el('div', { class: `inspector-toggle${leading ? ' is-leading' : ''}` }, leading ? [button, caption] : [caption, button]);
 }
 
 /** Binding affordance: callers own the supported binding and its editor. */
