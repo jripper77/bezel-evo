@@ -1,3 +1,4 @@
+import { layerOrderAvailability } from '../editor/layers.js';
 import {canFitContent} from '../editor/fit-content.js';
 import {SEPARATOR,closeMenu,openMenu,openMenuAt} from './menu.js';
 import {canGroup,groupTarget,isShown,owners} from '../editor/cards.js';
@@ -43,6 +44,7 @@ export function alignItems({ store, t, ids }) {
 export function objectMenuItems({store,t,fitContent=()=>{}}) {
   const {theme,selection}=store.getState();
   const selected=theme.elements.filter(e=>selection.includes(e.id));
+  const order=layerOrderAvailability(theme,selection);
   const editable=selected.some(e=>!owners(theme,e).some(p=>p.locked));
   const action=(label,run,disabled=false)=>({label,run,disabled});
   const dispatch=(command,args={})=>()=>store.dispatch(command,{ids:selection,...args});
@@ -53,9 +55,11 @@ export function objectMenuItems({store,t,fitContent=()=>{}}) {
    SEPARATOR,action(t('group.create'),dispatch('groupSelection'),!canGroup(theme,selection)),
    action(t('group.ungroup'),dispatch('ungroup'),!selected.some(e=>e.isGroup&&!e.locked)),
    action(t('card.group'),dispatch('cardFromSelection'),!editable||selected.some(e=>e.card)),
-   SEPARATOR,action(t('inspector.front'),dispatch('orderSelection',{front:true}),!selected.length),
-   action(t('inspector.back'),dispatch('orderSelection',{front:false}),!selected.length),
-   action(t('menu.detach'),dispatch('placeLayer',{root:true}),!selected.some(e=>e.groupParent!=null||e.cardMember)),
+   SEPARATOR,action(t('inspector.front'),dispatch('orderSelection',{front:true}),!order.front),
+   action(t('insp.oneForward'),dispatch('stepSelection',{step:1}),!order.forward),
+   action(t('insp.oneBackward'),dispatch('stepSelection',{step:-1}),!order.backward),
+   action(t('inspector.back'),dispatch('orderSelection',{front:false}),!order.back),
+   SEPARATOR,action(t('menu.detach'),dispatch('placeLayer',{root:true}),!selected.some(e=>e.groupParent!=null||e.cardMember)),
    action(t(selected.every(e=>e.locked)?'common.unlock':'common.lock'),dispatch('updateSelection',{patch:{locked:!selected.every(e=>e.locked)}}),!selected.length),
    action(t(selected.every(e=>e.visible===false)?'common.show':'common.hide'),dispatch('updateSelection',{patch:{visible:selected.every(e=>e.visible===false)}}),!selected.length),
    SEPARATOR,action(t('common.delete'),dispatch('remove',{ids:selected.filter(e=>!owners(theme,e).some(p=>p.locked)).map(e=>e.id)}),!editable),

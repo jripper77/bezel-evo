@@ -71,7 +71,7 @@ test('membership stays visible across independent sections and changing a card k
   const inspector = page.locator('#inspector');
   await openSection(page, 'layout');
   const membership = inspector.locator('[data-section="membership"]');
-  const card = membership.getByRole('combobox', { name: t('inspector.membership'), exact: true });
+  const card = membership.getByRole('combobox', { name: t('insp.memberOf'), exact: true });
   const parent = await card.inputValue();
   expect(parent).not.toBe('');
   for (const tab of ['look', 'data']) {

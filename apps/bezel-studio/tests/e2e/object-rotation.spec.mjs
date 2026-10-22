@@ -1,3 +1,4 @@
+import { openInspectorMenu } from './helpers.mjs';
 import { readFileSync } from 'node:fs';
 import { createWidget } from '../../src/editor/widgets.js';
 import { test, expect, watchErrors, expectAccessible, copyAndPaste, openSection } from './helpers.mjs';
@@ -74,8 +75,7 @@ test('copy, paste and duplicate keep the angle', async ({page,t}) => {
   const errors=watchErrors(page); await open(page,theme([object(1,{rotation:30})])); await select(page);
   await copyAndPaste(page); await expect(field(page,t)).toHaveValue('30');
   await expect(page.locator('.layer-row')).toHaveCount(2);
-  await page.locator('#inspector').getByRole('button',{name:t('insp.more'),exact:true}).click();
-  await page.locator('#inspector').getByRole('button',{name:t('common.duplicate'),exact:true}).click();
+  await (await openInspectorMenu(page)).getByRole('menuitem',{name:t('common.duplicate'),exact:true}).click();
   await expect(page.locator('.layer-row')).toHaveCount(3); await expect(field(page,t)).toHaveValue('30');
   await expectAccessible(page); expect(errors).toEqual([]);
 });

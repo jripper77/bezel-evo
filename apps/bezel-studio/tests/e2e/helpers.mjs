@@ -198,3 +198,12 @@ export async function openPreferences(page, t) {
   await page.locator('#more-menu').click();
   await page.getByRole('menuitem', { name: t('prefs.title'), exact: true }).click();
 }
+
+
+/** The inspector header uses the same object menu as right-click and the canvas bar. */
+export async function openInspectorMenu(page) {
+  await page.locator('#inspector .object-menu-button').click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  return menu;
+}
