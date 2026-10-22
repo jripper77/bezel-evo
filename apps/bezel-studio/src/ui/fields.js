@@ -151,8 +151,8 @@ export function iconChoice(label, value, options, onChange, { wide = false, icon
 
 /** The same preview tile in every widget. */
 export function previewChoice(label, tiles) {
-  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label }, tiles.map(({ text, art, preview, pressed, onClick }) =>
-    el('button', { type: 'button', class: 'option-tile', 'aria-pressed': String(pressed), onclick: onClick }, [preview ?? icon(art, 32), el('span', { text })])));
+  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label, dataset: { count: String(tiles.length) } }, tiles.map(({ text, caption = text, art, preview, pressed, onClick }) =>
+    el('button', { type: 'button', class: 'option-tile', 'aria-label': text, title: text, 'aria-pressed': String(pressed), onclick: onClick }, [preview ?? icon(art, 32), el('span', { text: caption })])));
 }
 
 /** Inspector toggles use native buttons with a visible state and accessible name. */
@@ -173,6 +173,15 @@ export function fieldAction(field, action) {
   const control = field.lastElementChild;
   field.append(el('div', { class: 'bound-field' }, [control, action]));
   return field;
+}
+
+/** A small native disclosure for secondary precision/settings within a section. */
+export function detailsField(label, nodes, { open = false, onToggle = () => {} } = {}) {
+  const details = el('details', { class: 'field-disclosure', open }, [
+    el('summary', { text: label }), el('div', { class: 'property-section-body' }, nodes.filter(Boolean)),
+  ]);
+  details.addEventListener('toggle', () => onToggle(details.open));
+  return details;
 }
 
 /** Endpoints use the regular colour picker; the arc midpoint is a native slider. */
@@ -359,7 +368,11 @@ export function sentence(parts, attrs = {}) {
 }
 
 /** Prefixed fields two by two (position and size, min and max). */
-export const fieldGrid = (fields, { tail = false, lead = false } = {}) => el('div', { class: `fld-grid${tail ? ' has-tail' : ''}${lead ? ' has-lead' : ''}` }, fields);
+export const fieldGrid = (fields, { tail = false, lead = false, columns = null } = {}) => {
+  const grid = el('div', { class: `fld-grid${tail ? ' has-tail' : ''}${lead ? ' has-lead' : ''}` }, fields);
+  if (columns) { grid.dataset.columns = String(columns); grid.style.setProperty('--field-columns', String(columns)); }
+  return grid;
+};
 
 /** A switch with its label on the left and the switch on the right (artboards' toggles). */
 export function switchRow(label, checked, onChange) {

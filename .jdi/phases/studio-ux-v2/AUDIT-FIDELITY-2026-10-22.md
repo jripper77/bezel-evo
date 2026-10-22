@@ -1,5 +1,16 @@
 # Confronto dell'interfaccia e piano delle correzioni
 
+**Aggiornamento delle correzioni:** completati i quattro blocchi Colore, Testo,
+Geometria e Grafico/Spettro (commit e seguito in `HANDOFF.md`). C06 risolta nella
+ricomposizione disponibile, resta il fulmine Opacità privo di modello; C08
+fondazione risolta, C09 compatto con disegno mantenuto per D-22. C03/C04/C05 e
+le composizioni per tipo restano parziali dove non esplicitamente documentate.
+R02 ha una nuova ricetta Grafico Area con due sensori veri nel demo. Non chiusi
+C10, multipla di C11, shell/pannelli e dialoghi. Le righe sotto sono il registro
+di baseline: usare i SUMMARY-FIDELITY-* per distinguere quanto già corretto.
+La galleria finale della fase non è ancora rigenerata e non è richiesta
+approvazione manuale fino al completamento dei blocchi restanti.
+
 **Avanzamento dopo la ripresa:** T-12 completata (`SUMMARY-T-12.md`). Risolta la
 parte Ordine di C11; corretti contrasto dell'anteprima di C01, compattezza Tipo
 C02, selezione neutra e icone delle transizioni di C05, Durata/Media e ritorno a

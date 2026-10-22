@@ -2,7 +2,7 @@
 // PlayerData/Look): its head, its preview rendered alone by the backend
 // (D-2026-10-09-studio-redesign-fidelity-8), the graph's scale and window,
 // and the player's apps, all from the demo's real data.
-import { openSection, openInspectorTab, test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, setColor } from './helpers.mjs';
+import { openGraphPrecision, openSection, openInspectorTab, test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, setColor } from './helpers.mjs';
 import { joinWords, sentenceParts } from '../../src/sentence.js';
 
 /** Whether the preview's canvas has a pixel drawn (`any`) or a strong red one (`red`). */
@@ -148,10 +148,11 @@ test('the head names the object, its kind and layer; the eye hides it and the lo
   expect(errors).toEqual([]);
 });
 
-test('the graph window reads as a sentence over a time ruler; it scales itself and shows its peak', async ({ page, t }) => {
+test('the graph precision reads as a sentence over a time ruler; it scales itself and shows its peak', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await add(page, t, 'graph');
+  await openGraphPrecision(page);
   const inspector = page.locator('#inspector');
   // D-2026-10-15-studio-redesign-fidelity-17: "Show the last [1] [minute], with one point every [1] [second]",
   // in the locale's own word order, then a ruler from -window to now with a mark per point.
@@ -248,10 +249,10 @@ test('the graph window reads as a sentence over a time ruler; it scales itself a
   await tab(page, t, 'inspector.tab.look');
   const styles = inspector.getByRole('group', { name: t('inspector.style'), exact: true });
   await expect(styles.getByRole('button', { name: t('graph.area'), exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(inspector.getByRole('slider', { name: new RegExp(t('insp.fillShare')) })).toBeVisible();
+  await expect(inspector.getByRole('spinbutton', { name: t('insp.areaFill'), exact: true })).toBeVisible();
   await styles.getByRole('button', { name: t('graph.line'), exact: true }).click();
   await expect(styles.getByRole('button', { name: t('graph.line'), exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(inspector.getByRole('slider', { name: new RegExp(t('insp.fillShare')) })).toHaveCount(0);
+  await expect(inspector.getByRole('spinbutton', { name: t('insp.areaFill'), exact: true })).toHaveCount(0);
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });

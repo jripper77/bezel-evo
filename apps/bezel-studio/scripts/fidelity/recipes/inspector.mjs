@@ -1,6 +1,6 @@
 // The inspector (artboards Main's right panel, GraphData/Look, PlayerData/Look).
 import { fileURLToPath } from 'node:url';
-import { setColor, choose, addMedia, openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
+import { pickSensor, setColor, choose, addMedia, openSection, openInspectorTab, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 
 const t = translator('it');
@@ -86,6 +86,16 @@ export default {
       await app.page.locator('.statusbar').evaluate(node => { node.style.visibility = 'hidden'; });
     } })),
     ...['value', 'text', 'bar', 'needle', 'graph'].map(kind => ({ name: `ux2-linked-${kind}`, capture: '#inspector', run: app => linkedBoard(app, kind) })),
+    { name: 'ux2-graph-area', capture: '#inspector', run: async app => {
+      await linkedBoard(app, 'graph');
+      await openSection(app.page, 'data');
+      await pickSensor(app.page, t, inspector(app).locator('[data-section="secondary-source"]'), 'gpu.usage', t('visual.secondary'));
+      await openSection(app.page, 'shape');
+      await inspector(app).getByRole('button', { name: t('graph.area'), exact: true }).click();
+      const width = inspector(app).getByRole('spinbutton', { name: t('insp.thickness'), exact: true });
+      await width.fill('2'); await width.press('Tab');
+      await inspector(app).evaluate(node => { document.activeElement?.blur(); node.style.height = 'auto'; node.style.height = `${node.scrollHeight}px`; });
+    } },
     { name: 'ux2-linked-multi', capture: '#inspector', run: async app => {
       await standalone(app, null);
       await app.page.locator('#grid-toggle').focus(); await app.page.keyboard.press('Control+a'); await app.page.keyboard.press('Delete');

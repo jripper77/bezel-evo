@@ -11,6 +11,12 @@ const rect = (x, y, w, h, r = 0) => (r
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
 
 export const ICONS = Object.freeze({
+  music: ['M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0M19 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0'],
+  'spectrum-smooth': ['M3 17c6 0 6-10 18-10'],
+  'spectrum-balanced': ['M3 17c4 0 4-10 9-10s5 10 9 10'],
+  'spectrum-snappy': ['M3 17h4V7h4v10h4V7h6'],
+  'graph-single': ['m3 16 5-5 4 3 4-6 5 4'],
+  'graph-mirrored': ['m3 10 5-4 4 2 4-4 5 3M3 14l5 4 4-2 4 4 5-3'],
   'corners-all': ['M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5'],
   'ends-round': ['M8 9h8a3 3 0 0 1 0 6H8a3 3 0 0 1 0-6z'],
   'ends-flat': ['M5 9h14v6H5z'],

@@ -1,5 +1,11 @@
 # Studio UX v2 — verifica della fase (T-10)
 
+**22 ottobre — correzioni di fedeltà in corso:** quattro blocchi implementati e
+verificati, commit e prossimi interventi in HANDOFF.md. Non usare ancora
+`evidence/final/` per approvare queste correzioni: è la galleria di T-12, da
+rigenerare quando il riallineamento sarà completo. L’utente riprenderà le
+verifiche manuali dopo la chiusura dei residui del registro.
+
 21–22 ottobre 2026, Claude. Branch `ux2/t10`, worktree `F:/dev/bezel-ux2-t10`, base
 `717451f` (Wave 2 integrata, T-11 rinviata). Nessun push, build, setup o installazione.
 

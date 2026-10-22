@@ -1,5 +1,43 @@
 # Passaggio — Studio UX v2
 
+## Correzioni autorizzate — punto di ripresa del 22 ottobre
+
+L’utente ha chiesto di correggere autonomamente i disallineamenti e di riparlare
+solo dopo delle proprie verifiche. Non chiedere ora approvazione della galleria.
+Il lavoro complessivo resta aperto; stop al blocco verificato per limite dei token.
+
+| Blocco | Stato / commit di implementazione | Riepilogo |
+|---|---|---|
+| Colore condiviso | completato, `933a1cf`, `fid/inspector-paint` | SUMMARY-FIDELITY-PAINT.md |
+| Testo/parti | completato, `f457411`, `fid/inspector-text` | SUMMARY-FIDELITY-TEXT.md |
+| Geometria Anello/Barra/Angoli | completato, `28aa63a`, `fid/inspector-geometry` | SUMMARY-FIDELITY-GEOMETRY.md |
+| Grafico/Spettro | completato, `1eb18be`, `fid/inspector-plots` | SUMMARY-FIDELITY-PLOTS.md |
+| Media e composizioni residue | **prossimo** | Immagine/GIF/Forma, fadeField/imageField, copertina/progresso Player, Meteo, Lancetta e Orologio analogico |
+| Contenitori/Tema/multipla | da fare | Card/facce, sfondo, controlli multipli secondo audit |
+| Shell/pannelli | da fare | MainNew, LibraryPanelsNew, StatusBarNew, Schermo/Archivio, larghezze/catture R00–R03 |
+| Profili/Galleria | da fare | ProfilesNew/ThemesNew, stato runtime reale, proporzioni e filtri |
+| Chiusura visiva | da fare | tutte le tavole/stati censiti, galleria finale rigenerata e REVIEW aggiornato prima delle verifiche dell’utente |
+
+Le nuove evidenze sono separate in `evidence/fidelity-paint/`, `fidelity-text/`,
+`fidelity-geometry/` e `fidelity-plots/`. **`evidence/final/` è ancora la galleria
+al termine di T-12**, non quella di questi quattro blocchi. Rigenerarla una sola
+volta alla fine degli interventi restanti; `ux2-gallery.mjs` ora include anche
+il Grafico Area con due sensori (oltre alle barre arrotondate).
+
+Prossima worktree: controllare prima `git log`/`git status` su windows-improvements,
+poi creare `fid/inspector-media` da HEAD in `F:/dev/bezel-inspector-media`.
+Leggere le sorgenti della tavola e il registro, riusare i primitivi comuni,
+nessuna build/installazione/push e nessuno spegnimento (la vecchia richiesta
+notturna è già stata eseguita, non va ripetuta). Nessuna suite completa durante
+le correzioni: test dei moduli e delle sole spec toccate.
+
+Differenze da non reintrodurre: Card/gruppi/membri senza Rotazione; esportazione
+nativa .bezeltheme; sostituzioni dei dati dei quattro temi approvate; video
+negli oggetti rinviati T-11; disegno Angoli D-22 conservato. Il fulmine Opacità
+non ha oggi un modello/runtime: non mostrare un comando fittizio; annotato nel
+riepilogo Colore come ampliamento distinto dalla ricomposizione grafica.
+
+
 **Geometria verificata:** `fid/inspector-geometry`, vedi `SUMMARY-FIDELITY-GEOMETRY.md`.
 Testo già integrato in `49a2a3f`. Resta aperto il riallineamento delle composizioni
 specifiche e dei pannelli; nessuna nuova verifica richiesta all’utente.

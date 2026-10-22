@@ -128,3 +128,9 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 - `fieldGrid`: `lead: true` per una prima colonna compatta, complementare a `tail`.
 - `cornerRadii`: stessi calcoli e disegno D-22, modi a icone; nel modo uguale selettore e raggio sono nella stessa riga.
 - `segmentsFields`: stessa riga comune per Anello e Barra, con numero/spazio disabilitati quando spento.
+
+## Riallineamento Grafico/Spettro
+
+- `detailsField(label, nodes, {open, onToggle})`: details/summary nativi per impostazioni secondarie; lo stato appartiene al chiamante.
+- `fieldGrid`: `columns` e `lead` per righe con tre campi senza troncare i numeri; variabili CSS impostate con setProperty.
+- `previewChoice`: `caption` facoltativa, nome e tooltip continuano a usare `text` completo. Cinque miniature usano la densità compatta del catalogo.
