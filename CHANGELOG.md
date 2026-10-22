@@ -5,6 +5,12 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Fixes
+- The media player's cover gap no longer shows a long decimal such as
+  7.199999999999999 px in the inspector; it reads 7.2 px.
+
 ## [0.2.0] - 2026-10-22
 
 0.1.64 was a local build; this entry and the one below cover it.

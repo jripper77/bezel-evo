@@ -35,7 +35,7 @@ export function panels(ctx) {
       section('show', t('insp.show'), [partTiles], { caption: true }),
       parts.cover ? section('spacing', t('insp.cover'), [
         coverCorners(e),
-        prefixedField('', t('player.coverGap'), c.coverGap ?? s.size * 0.3, v => set({ coverGap: Math.max(0, v) }), { min: 0, step: 'any', unit: 'px', iconName: 'spacing' }),
+        prefixedField('', t('player.coverGap'), Math.round((c.coverGap ?? s.size * 0.3) * 100) / 100, v => set({ coverGap: Math.max(0, v) }), { min: 0, step: 'any', unit: 'px', iconName: 'spacing' }),
       ], { caption: true }) : null,
       parts.cover ? section('cover-fade', t('insp.player.coverFade'), ctx.fadeFields(e, { value: c.coverFade, set: coverFade => set({ coverFade }) }), { caption: true }) : null,
       parts.progress ? progressSection(e, parts) : null,
