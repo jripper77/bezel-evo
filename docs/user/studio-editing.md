@@ -153,6 +153,9 @@ With an object selected, it shows from top to bottom:
   transparency) and **Behavior** (transitions, animation, playback,
   sensor-driven motion, long text).
 
+Graphs keep quick time windows visible. Expand **Precision** to edit the custom
+duration and sampling interval; the closed summary shows the interval and point count.
+
 Click a section's title to open or close it; **Alt+click** opens it alone and
 closes the others. A closed section shows a summary of its values (*240 × 240 ·
 0°*). Studio remembers which sections are open for each kind of object.

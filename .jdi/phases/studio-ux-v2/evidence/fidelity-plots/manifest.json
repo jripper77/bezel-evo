@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-graph",
+    "file": "dark/app/inspector/ux2-linked-graph.png",
+    "detail": "dark/app/inspector/ux2-linked-graph-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-graph-area",
+    "file": "dark/app/inspector/ux2-graph-area.png",
+    "detail": "dark/app/inspector/ux2-graph-area-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-graph",
+    "file": "light/app/inspector/ux2-linked-graph.png",
+    "detail": "light/app/inspector/ux2-linked-graph-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-graph-area",
+    "file": "light/app/inspector/ux2-graph-area.png",
+    "detail": "light/app/inspector/ux2-graph-area-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-spectrum",
+    "file": "dark/app/inspector/ux2-media-spectrum.png",
+    "detail": "dark/app/inspector/ux2-media-spectrum-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-spectrum",
+    "file": "light/app/inspector/ux2-media-spectrum.png",
+    "detail": "light/app/inspector/ux2-media-spectrum-detail.png"
+  }
+]

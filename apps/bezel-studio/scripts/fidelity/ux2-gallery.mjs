@@ -18,7 +18,7 @@ const shots = join(out, 'captures');
 
 /** The app states that show each board, by area. */
 const AREAS = {
-  inspector: ['ux2-main', 'ux2-ring-closed', 'ux2-ring-open', 'ux2-linked-value', 'ux2-linked-text', 'ux2-linked-bar', 'ux2-linked-needle', 'ux2-linked-graph', 'ux2-linked-multi',
+  inspector: ['ux2-main', 'ux2-ring-closed', 'ux2-ring-open', 'ux2-linked-value', 'ux2-linked-text', 'ux2-linked-bar', 'ux2-linked-needle', 'ux2-linked-graph', 'ux2-graph-area', 'ux2-linked-multi',
     'ux2-media-clock', 'ux2-media-analog', 'ux2-media-weather', 'ux2-media-player', 'ux2-media-spectrum', 'ux2-media-shape', 'ux2-media-image', 'ux2-media-gif',
     'ux2-card', 'ux2-theme-open', 'ux2-theme-closed'],
   shell: ['ux2-handles-ring', 'ux2-handles-selection', 'ux2-handles-needle', 'ux2-handles-bar', 'ux2-handles-graph', 'ux2-handles-image', 'ux2-handles-spectrum',
@@ -36,7 +36,7 @@ const PAIRS = {
   ValueInspectorOpen: ['inspector/ux2-linked-value', 'inspector/ux2-linked-text'],
   BarInspectorOpen: ['inspector/ux2-linked-bar'],
   NeedleInspectorOpen: ['inspector/ux2-linked-needle'],
-  GraphInspectorOpen: ['inspector/ux2-linked-graph'],
+  GraphInspectorOpen: ['inspector/ux2-graph-area', 'inspector/ux2-linked-graph'],
   MultiInspectorOpen: ['inspector/ux2-linked-multi'],
   ClockInspectorOpen: ['inspector/ux2-media-clock', 'inspector/ux2-media-analog'],
   WeatherInspectorOpen: ['inspector/ux2-media-weather'],

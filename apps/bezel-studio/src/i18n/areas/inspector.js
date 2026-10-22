@@ -7,6 +7,10 @@ export const PREFIXES = Object.freeze(['insp.']);
 
 export default {
   en: {
+    'insp.spectrum.mirrorShort': 'Mirror',
+    'insp.spectrum.ledShort': 'LED',
+    'insp.areaFill': 'Area fill',
+    'insp.graphPrecision': 'Precision · one point every {interval} ({points} points)',
     'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'size',
@@ -350,6 +354,10 @@ export default {
     'insp.gapHint': '“Gap” is the space between cover and text.',
   },
   'pt-BR': {
+    'insp.spectrum.mirrorShort': 'Espelho',
+    'insp.spectrum.ledShort': 'LED',
+    'insp.areaFill': 'Preenchimento da área',
+    'insp.graphPrecision': 'Precisão · um ponto a cada {interval} ({points} pontos)',
     'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'tam',
@@ -693,6 +701,10 @@ export default {
     'insp.gapHint': '“Distância” é o espaço entre a capa e o texto.',
   },
   it: {
+    'insp.spectrum.mirrorShort': 'Specchio',
+    'insp.spectrum.ledShort': 'LED',
+    'insp.areaFill': 'Riempimento dell’area',
+    'insp.graphPrecision': 'Precisione · un punto ogni {interval} ({points} punti)',
     'insp.countPrefix': 'n',
     'insp.blurPrefix': 'blur',
     'insp.sizePrefix': 'dim',

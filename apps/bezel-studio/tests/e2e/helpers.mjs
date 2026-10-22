@@ -207,3 +207,10 @@ export async function openInspectorMenu(page) {
   await expect(menu).toBeVisible();
   return menu;
 }
+
+/** Opens the shared precision disclosure before editing custom graph timing. */
+export async function openGraphPrecision(page) {
+  const details = page.locator('#inspector [data-section="window"] .field-disclosure');
+  if (!(await details.evaluate(node => node.open))) await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+}

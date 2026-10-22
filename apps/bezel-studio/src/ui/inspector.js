@@ -527,10 +527,6 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   function panelsOf(e, theme, assets, specific, layout) {
     // Conditional colour belongs beside the paint it controls. Opacity has a
     // stable group of its own instead of ending up among corners or thresholds.
-    if (e.kind.type === 'graph') {
-      const seconds = timingOf(e).duration;
-      specific.data?.find(group => group?.dataset.section === 'window')?.append(el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]));
-    }
     const opacity = numberField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%', compact: true });
     const linked = !e.card && !e.isGroup;
     const motion = sensorMotionSection(e);
@@ -552,8 +548,8 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
           prefixedField(t('insp.minPrefix'), t('visual.secondaryMin'), b.min, min => set({ secondary: { ...b, min: Math.min(min,b.max-0.001) } }), { step:'any' }),
           prefixedField(t('insp.maxPrefix'), t('visual.secondaryMax'), b.max, max => set({ secondary: { ...b, max: Math.max(max,b.min+0.001) } }), { step:'any' }),
         ]),
-        el('p', { class:'hint', text:t('visual.mirroredHint') }),
-      ]));
+        !b && el('p', { class:'hint', text:t('visual.mirroredHint') }),
+      ], { caption: true }));
       look.find(group => group.dataset.section === 'color')?.querySelector('.property-section-body').append(colorField(t('visual.secondaryColor'), v.secondaryColor, secondaryColor => set({ secondaryColor })));
     }
     const fontGroup = look.find(group => group.dataset.section === 'font');
