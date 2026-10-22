@@ -114,3 +114,10 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 - `gradientField(start, end, {stops, midpoint, onMidpoint, label})` compone i picker esistenti, una barra e il range nativo; il numero esatto e il cursore modificano lo stesso valore.
 - `colorPicker`: `swatchOnly` nasconde soltanto il readout visivo, conservando nome e descrizione accessibili del pulsante.
 - `propertySection`: `caption` per le didascalie semplici delle tavole, senza un’icona interna inventata.
+
+## Riallineamento Testo
+
+- `partsRow`: `preview` restituisce le parti del contenuto reale; mantiene ordine e separatori ripetuti. `refreshPreview()` aggiorna solo i testi cambiati; nessuna scrittura nel tema.
+- `fieldGrid`: `tail: true` per peso/numero con campo finale da 96 px.
+- `fontPicker`: `hideLabels: true` per l’editor compatto, senza perdere i nomi accessibili.
+- `propertySection`: `heading: false` quando la didascalia è già nel primo controllo.

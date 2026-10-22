@@ -79,6 +79,7 @@
   --spark-width: 60px;
   /* Typography (D-2026-10-09-studio-redesign-fidelity-9): 13px Sans, 11px caps titles, Mono readouts.
      The steps below and above them are the artboards' other sizes, by role. */
+  --fs-part-preview: 20px;
   --fs-micro: 9px;
   --fs-tiny: 10px;
   --fs-meta: 10.5px;

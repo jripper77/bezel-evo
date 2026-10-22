@@ -100,7 +100,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     const s = style;
     const { texts, source } = pickers.font(applyTextCase(sampleText(e), s.casing));
     const picker = fontPicker(texts, s.font, font => setStyle({ font }), source, { faceSample: compact ? t('insp.faceSample') : null });
-    const fontSize = size && numberField(t('inspector.size'), s.size, value => setStyle({ size: Math.max(4, value) }), { min: 4, max: 800, unit: 'px', iconName: 'textSize' });
+    const fontSize = size && numberField(t('inspector.size'), s.size, value => setStyle({ size: Math.max(4, value) }), { min: 4, max: 800, unit: 'px', iconName: 'textSize', compact: true });
     const cases = TEXT_CASES.map(value => [value, t(`textCase.${value}`)]);
     const casing = compact ? iconChoice(t('textCase.label'), s.casing ?? 'normal', cases, casing => setStyle({ casing }), { wide: true })
       : selectField(t('textCase.label'), s.casing ?? 'normal', cases, casing => setStyle({ casing }));
@@ -114,7 +114,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
     const face = compact && picker.lastElementChild;
     return [
       picker,
-      compact ? fieldGrid([face, fontSize]) : casing,
+      compact ? fieldGrid([face, fontSize], { tail: true }) : casing,
       compact ? casing : fontSize,
       colorField(t('inspector.color'), typeof s.paint === 'string' ? s.paint : '#ffffffff', paint => setStyle({ paint })),
       compact ? fieldGrid([horizontal, vertical]) : horizontal,

@@ -63,7 +63,9 @@ test('static multiline text has a real shadow, which disappears on Undo', async 
   await shadow.click(); await expect(shadow).toHaveAttribute('aria-pressed', 'true');
   await change(number(page, t, 'insp.shadowBlur'), 12);
   await expect(number(page, t, 'insp.shadowBlur')).toHaveValue('12');
-  await shadow.click(); await expect(number(page, t, 'insp.shadowBlur')).toBeHidden();
+  await shadow.click();
+  await expect(shadow).toHaveAttribute('aria-pressed', 'false');
+  await expect(number(page, t, 'insp.shadowBlur')).toBeDisabled();
   await page.locator('#undo').click(); await expect(number(page, t, 'insp.shadowBlur')).toHaveValue('12');
   const rendered = await page.evaluate(async () => {
     const { createDemoBackend } = await import('./demo-backend.js');

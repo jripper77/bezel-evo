@@ -29,7 +29,7 @@ test('paint keeps the binding beside the choice, track compact, and midpoint edi
   await expect(track.locator('.color-field')).toHaveCount(0);
   await page.locator('#undo').click();
   await expect(track.locator('.color-field')).toBeVisible();
-  await expect(track.getByRole('spinbutton', { name: t('inspector.opacity'), exact: true })).toBeVisible();
+  await expect(panel.locator('[data-section="visibility"]').getByRole('spinbutton', { name: t('inspector.opacity'), exact: true })).toBeVisible();
   await expectAccessible(page);
 });
 
