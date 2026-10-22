@@ -127,6 +127,8 @@
 /* The preview: the object rendered alone (D-8), on the screen's black. */
 /* The 72px isolated preview in the common object header. */
 .inspector-preview { width: 72px; height: 72px; margin: 0; padding: 0; border-radius: 10px; background: var(--screen-tile); color: var(--screen-thumb-ink); overflow: hidden; }
+/* RingInspectorOpen draws the ring directly on the header, without a tile. */
+.inspector-preview[data-kind="ring"] { background: transparent; border-radius: 0; }
 .inspector-preview-stage { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; }
 .inspector-preview-stage canvas { display: block; max-width: 100%; }
 .inspector-preview-stage .inspector-preview-off { margin: 0; font-size: var(--fs-tiny); color: var(--screen-thumb-ink); }

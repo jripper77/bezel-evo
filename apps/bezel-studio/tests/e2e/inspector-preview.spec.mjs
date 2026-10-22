@@ -72,6 +72,9 @@ test('the preview draws the object alone: an object under it is absent, and its 
   // The shape fills the ring's middle on the screen; alone, the middle is empty.
   await expect.poll(() => alphaAt(preview, 0.5, 0.5)).toBe(0);
   await expect.poll(() => alphaAt(preview, 0.02, 0.02)).toBe(0);
+  // RingInspectorOpen has no thumbnail tile behind the isolated ring.
+  await expect(inspector.locator('.inspector-preview')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(inspector.locator('.inspector-preview')).toHaveCSS('border-radius', '0px');
   expect(await anyPixel(preview, 'red')).toBe(false);
 
   await tab(page, t, 'inspector.tab.look');
