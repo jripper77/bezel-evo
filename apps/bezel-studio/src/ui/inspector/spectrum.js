@@ -33,7 +33,7 @@ export function panels(ctx) {
         segmented(t('common.preview'), c.demo ? 'demo' : 'live', [['live',t('spectrum.live')],['demo',t('spectrum.demo')]], v => set({ demo: v === 'demo' })),
         c.demo && el('p', { class: 'hint', role: 'status', text: t('spectrum.demoHint') }),
         el('p', { class: 'hint', text: t('spectrum.enableHint') }),
-      ]), section('spectrum-bands', t('spectrum.bands'), [
+      ], { caption: true }), section('spectrum-bands', t('spectrum.bands'), [
         fieldGrid([
           prefixedField(t('insp.countPrefix'), t('spectrum.bands'), c.bands, bands => set({ bands }), { min: 8, max: 64, step: 1 }),
           prefixedField(t('insp.minPrefix'), t('spectrum.low'), c.low, low => set({ low }), { min: 20, max: 23999, step: 1, unit: 'Hz' }),
@@ -41,7 +41,7 @@ export function panels(ctx) {
         ], { columns: 3, lead: true }),
         numberField(t('spectrum.gain'), c.gain, gain => set({ gain }), { min: 0.1, max: 4, step: 0.1, unit: '×', iconName: 'gain', compact: true }),
         el('p', { class: 'hint', text: t('spectrum.gainHint') }),
-      ])],
+      ], { caption: true })],
       look: [section('spectrum-paint', t('inspector.color'), gaugeFillFields(ctx, e, { path: ['kind', 'style', 'paint'] })), section('spectrum-bars', t('spectrum.style'), [
         ctx.optionTiles(t('spectrum.style'), SPECTRUM_STYLES.map(value => ({ text: t(STYLE_LABELS[value]), caption: value === 'mirrored' ? t('insp.spectrum.mirrorShort') : value === 'blocks' ? t('insp.spectrum.ledShort') : t(STYLE_LABELS[value]), art: ART[value] ?? (value === 'radial' ? ICONS.ring : ART.bars), pressed: c.style === value, onClick: () => set({ style: value }) }))),
         !line && fieldGrid([numberField(t('spectrum.thickness'), c.thickness, thickness => set({ thickness }), { min: 1, max: 256, unit: 'px', iconName: 'width', compact: true }),
@@ -51,9 +51,12 @@ export function panels(ctx) {
         line && numberField(t('spectrum.stroke'), c.stroke, stroke => set({ stroke }), { min: 1, max: 32, unit: 'px', iconName: 'strokeWidth' }),
         line && switchRow(t('spectrum.fill'), c.fill, fill => set({ fill })),
         c.style === 'radial' && numberField(t('spectrum.inner'), c.inner, inner => set({ inner }), { min: 0, max: 90 }),
-        c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre })),
-        !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks })),
-      ], { caption: true }), !line && barCorners(e.id, c, set, e.frame)],
+        !line && barCorners(e.id, c, set, e.frame),
+        fieldGrid([
+          c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre })),
+          !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks })),
+        ].filter(Boolean)),
+      ], { caption: true })],
       behavior: [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`), `spectrum-${value}`]), motion => set({ motion }), { wide: true, bare: true })], { caption: true })],
     };
   }

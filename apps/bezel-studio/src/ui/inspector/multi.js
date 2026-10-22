@@ -62,7 +62,7 @@ export function header({ ids, t, store, host, video }) {
       tryButton,
       menuButton: iconButton(t('insp.more'), ICONS.more, event => openMenuAt(event.currentTarget, { label: t('menu.title'), items: objectMenuItems({ store, t, fitContent: id => host.fitContent?.(id) }) }), { class: 'quiet object-menu-button', 'aria-haspopup': 'menu' }),
     }),
-    el('div', { class: 'chip-group multi-objects', role: 'group', 'aria-label': t('insp.selectedObjects') }, elements.map(e => chipButton(e.name, true, () => store.select(ids.filter(id => id !== e.id))))),
+    el('div', { class: 'chip-group multi-objects', role: 'group', 'aria-label': t('insp.selectedObjects') }, elements.map(e => { const chip = chipButton(e.name, true, () => store.select(ids.filter(id => id !== e.id)), { title: t('layersPanel.clear'), 'aria-description': t('layersPanel.clear') }); chip.append(icon(ICONS.close, 12)); return chip; })),
   ]);
 }
 
