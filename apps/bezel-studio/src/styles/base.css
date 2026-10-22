@@ -385,7 +385,7 @@ button.pill:hover { border-color: var(--accent); }
 .property-section-body > .field, .property-section-body > .slider-field, .property-section-body > .check { margin: 0; }
 .property-section-body h4 { margin: 4px 0 0; font-size: var(--fs-caps); color: var(--muted); }
 .property-section-body .actions { margin-top: 0; }
-.property-section-body > .segmented { display: flex; }
+.property-section-body > .segmented { display: flex; flex-wrap: wrap; }
 .property-section-body > .segmented button { flex: 1 1 0; }
 .property-section-body .hint { margin: 0; font-size: var(--fs-small); line-height: 1.45; }
 .property-section-body .chip-group { margin: 0; }

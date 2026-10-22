@@ -273,7 +273,7 @@ test('a late file picker does not change a reopened chooser', async ({ page, t }
   expect(errors).toEqual([]);
 });
 
-test('a saved refresh outside the quick choices stays selectable and survives undo', async ({ page, t }) => {
+test('a saved refresh outside the quick choices stays selectable and survives undo', async ({ page, t, lang }) => {
   const errors = watchErrors(page);
   await page.route('**/demo-theme.js', async (route) => {
     const response = await route.fetch();
@@ -282,9 +282,9 @@ test('a saved refresh outside the quick choices stays selectable and survives un
   await open(page, 'turing88');
   const refresh = inspector(page).getByRole('region', { name: t('inspector.refresh'), exact: true });
   await expect(refresh.getByRole('button')).toHaveCount(5);
-  const saved = refresh.getByRole('button', { name: t('unit.seconds', { value: 1.3 }), exact: true });
+  const saved = refresh.getByRole('button', { name: t('unit.seconds', { value: (1.3).toLocaleString(lang) }), exact: true });
   await expect(saved).toHaveAttribute('aria-pressed', 'true');
-  await refresh.getByRole('button', { name: t('unit.seconds', { value: 0.5 }), exact: true }).click();
+  await refresh.getByRole('button', { name: t('unit.seconds', { value: (0.5).toLocaleString(lang) }), exact: true }).click();
   await page.locator('#undo').click();
   await expect(saved).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#undo')).toBeDisabled();
