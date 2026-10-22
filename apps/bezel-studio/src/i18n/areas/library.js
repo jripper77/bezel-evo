@@ -7,6 +7,9 @@ export const PREFIXES = Object.freeze(['widgets.', 'sensorsPanel.', 'layersPanel
 
 export default {
   en: {
+    "widgets.caption.player": "Player",
+    "widgets.caption.spectrum": "Spectrum",
+
     "themesPanel.details": "Theme details",
     "themesPanel.onScreen": "On screen",
     "themesPanel.missing": "Missing sensor",
@@ -104,6 +107,9 @@ export default {
     'themesPanel.openEditor': 'Open in the editor',
   },
   'pt-BR': {
+    "widgets.caption.player": "Reprodutor",
+    "widgets.caption.spectrum": "Espectro",
+
     "themesPanel.details": "Detalhes do tema",
     "themesPanel.onScreen": "Na tela",
     "themesPanel.missing": "Sensor ausente",
@@ -201,6 +207,9 @@ export default {
     'themesPanel.openEditor': 'Abrir no editor',
   },
   it: {
+    "widgets.caption.player": "Player",
+    "widgets.caption.spectrum": "Spettro",
+
     "themesPanel.details": "Dettagli del tema",
     "themesPanel.onScreen": "Sullo schermo",
     "themesPanel.missing": "Sensore mancante",

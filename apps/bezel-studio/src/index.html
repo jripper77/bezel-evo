@@ -64,7 +64,10 @@
       <nav class="sidebar" data-i18n-aria-label="library.title">
         <div class="tabs rail" role="tablist" aria-orientation="vertical" data-i18n-aria-label="library.title">
           <div class="tab-design" role="presentation">
-            <span class="tab-domain" aria-hidden="true" data-i18n="library.design"></span>
+            <button type="button" role="tab" id="tab-themes" aria-controls="panel-themes" aria-selected="false" tabindex="-1" data-tab="themes" data-i18n-aria-label="library.themes" data-i18n-title="library.themes">
+              <svg data-icon="themes" width="10"></svg>
+              <span class="rail-label" data-i18n="library.themes"></span>
+            </button>
             <button type="button" role="tab" id="tab-widgets" aria-controls="panel-widgets" aria-selected="true" data-tab="widgets" data-i18n-aria-label="library.widgets" data-i18n-title="library.widgets">
               <svg data-icon="widgets" width="7"></svg>
               <span class="rail-label" data-i18n="library.widgets"></span>
@@ -77,17 +80,12 @@
               <svg data-icon="layers"></svg>
               <span class="rail-label" data-i18n="library.layers"></span>
             </button>
-            <button type="button" role="tab" id="tab-themes" aria-controls="panel-themes" aria-selected="false" tabindex="-1" data-tab="themes" data-i18n-aria-label="library.themes" data-i18n-title="library.themes">
-              <svg data-icon="themes" width="10"></svg>
-              <span class="rail-label" data-i18n="library.themes"></span>
-            </button>
             <button type="button" role="tab" id="tab-media" aria-controls="panel-media" aria-selected="false" tabindex="-1" data-tab="media" data-i18n-aria-label="library.media" data-i18n-title="library.media">
               <svg data-icon="media" width="18"></svg>
               <span class="rail-label" data-i18n="library.media"></span>
             </button>
           </div>
           <div class="tab-device" role="presentation">
-            <span class="tab-domain" aria-hidden="true" data-i18n="library.device"></span>
             <button type="button" role="tab" id="tab-screen" aria-controls="panel-screen" aria-selected="false" tabindex="-1" data-tab="screen" data-i18n-aria-label="library.screen" data-i18n-title="library.screen">
               <svg data-icon="screen" width="10"></svg>
               <span class="rail-label" data-i18n="library.screen"></span>
@@ -230,13 +228,11 @@
         <div class="stage-tools" role="group" data-i18n-aria-label="stage.tools">
           <div class="orientation-tools" role="group" data-i18n-aria-label="top.orientation">
             <div class="segmented">
-              <button type="button" id="orient-vertical" aria-pressed="false" data-i18n-title="top.verticalHint">
+              <button type="button" id="orient-vertical" aria-pressed="false" data-i18n-aria-label="axis.vertical" data-i18n-title="top.verticalHint">
                 <svg data-icon="vertical" width="16" height="16"></svg>
-                <span data-i18n="axis.vertical"></span>
               </button>
-              <button type="button" id="orient-horizontal" aria-pressed="false" data-i18n-title="top.horizontalHint">
+              <button type="button" id="orient-horizontal" aria-pressed="false" data-i18n-aria-label="axis.horizontal" data-i18n-title="top.horizontalHint">
                 <svg data-icon="horizontal" width="16" height="16"></svg>
-                <span data-i18n="axis.horizontal"></span>
               </button>
             </div>
             <button type="button" class="icon-button quiet" id="orient-turn" aria-pressed="false" data-i18n-title="top.turnHint" data-i18n-aria-label="top.turn">

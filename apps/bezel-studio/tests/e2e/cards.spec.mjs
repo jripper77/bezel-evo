@@ -40,7 +40,9 @@ test('card faces, shared base, grouping and clipboard are editable', async ({ pa
   const faceRows = tree.locator('[data-face="1"] .layer-row');
   const rowIds = () => faceRows.evaluateAll(rows => rows.map(row => row.dataset.elementId));
   const originalOrder = await rowIds();
-  await faceRows.last().getByRole('button', { name: t('layers.up'), exact: true }).click();
+  await faceRows.last().locator('.layer-name').click();
+  await openSection(page, 'layout');
+  await detail.getByRole('button', { name: t('insp.oneForward'), exact: true }).click();
   expect(await rowIds()).toEqual([...originalOrder].reverse());
   await expect(tree.locator('[data-face="base"] .layer-row')).toHaveCount(1);
   await page.locator('#undo').click();

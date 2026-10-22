@@ -169,7 +169,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   // ------------------------------------------------------------- widgets --
   function widgetTile(w) {
     const label = t(`widget.${w}`);
-    const tile = el('button', { type: 'button', class: 'widget-tile', dataset: { widget: w }, 'aria-label': t('library.addWidget', { name: label }) }, [icon(ICONS[w], 22), el('span', { text: label })]);
+    const tile = el('button', { type: 'button', class: 'widget-tile', dataset: { widget: w }, 'aria-label': t('library.addWidget', { name: label }) }, [icon(ICONS[w === 'value' ? 'type-valore' : w], 16), el('span', { text: ['player', 'spectrum'].includes(w) ? t(`widgets.caption.${w}`) : label })]);
     makeDraggable(tile, {
       label,
       canvas,
@@ -520,8 +520,6 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
       el('span', { class: 'layer-kind', 'aria-hidden': 'true' }, [icon(e.isGroup ? ICONS.group : ICONS[widget] ?? ICONS.shape, 16)]),
       layerName(e, widget, selected),
       el('span', { class: 'layer-tools' }, [
-        btn(t('layers.up'), ICONS.up, () => store.dispatch('reorder', { id: e.id, index: neighbors ? neighbors.up : index + 1 }), neighbors ? neighbors.up == null : index === total - 1),
-        btn(t('layers.down'), ICONS.down, () => store.dispatch('reorder', { id: e.id, index: neighbors ? neighbors.down : index - 1 }), neighbors ? neighbors.down == null : index === 0),
         btn(e.visible === false ? t('common.show') : t('common.hide'), e.visible === false ? ICONS.eyeOff : ICONS.eye, () => store.dispatch('update', { id: e.id, patch: { visible: e.visible === false } }), false, e.visible !== false, e.visible === false ? ' layer-flag' : ''),
         btn(e.locked ? t('common.unlock') : t('common.lock'), e.locked ? ICONS.lock : ICONS.unlock, () => store.dispatch('update', { id: e.id, patch: { locked: !e.locked } }), false, Boolean(e.locked), e.locked ? ' layer-flag' : ''),
       ]),

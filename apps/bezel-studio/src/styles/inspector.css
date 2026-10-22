@@ -154,11 +154,6 @@
 .inspector .number-field { display: grid; grid-template-columns: minmax(0, max-content) 112px; justify-content: start; align-items: center; gap: 10px; }
 .inspector .field input[type="text"], .inspector .field select, .inspector .color-button, .inspector .font-button { min-height: var(--control-height); border-radius: var(--control-radius); }
 .inspector .number-field > .field-label { font-size: var(--fs-field); line-height: 1.4; color: var(--text-2); }
-.inspector .number-control { height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); }
-.inspector .number-control input { width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; font-family: var(--font-mono); font-size: var(--fs-field); }
-.inspector .number-control:focus-within { border-color: var(--accent); }
-.inspector .number-control input:focus-visible { outline: none; }
-.inspector .number-control:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .inspector .field-row .number-field { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .inspector .value-color { display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; background: transparent; }
 .inspector .value-color > .switch-row { font-size: var(--fs-small); }

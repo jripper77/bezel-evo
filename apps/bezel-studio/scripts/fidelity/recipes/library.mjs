@@ -2,10 +2,10 @@ import { fileURLToPath } from 'node:url';
 import { addMedia, setPanelWidths } from '../../../tests/e2e/helpers.mjs';
 import { translator } from '../../../src/i18n/index.js';
 // The library panels (artboards Main's left panel, Sensors, Layers, Media, Themes).
-// The standalone artboards use 360px panels. Use the existing resizer
+// LibraryPanelsNew uses 400px panels without the rail. Use the existing resizer
 // preference helper, then reload so the normal host applies that width.
 const panel = async (app, name) => {
-  await setPanelWidths(app.page, { library: 360, inspector: 320 });
+  await setPanelWidths(app.page, { library: 400, inspector: 360 });
   await app.page.reload();
   await app.tab(name);
 };
@@ -38,8 +38,13 @@ export default {
     { name: 'layers-selection', run: async (app) => {
       await panel(app, 'layers');
       const names = app.page.locator('#layer-list button.layer-name');
-      await names.nth(1).click();
-      await names.nth(2).click({ modifiers: ['Control'] });
+      await names.filter({ has: app.page.locator('.layer-label', { hasText: /^CPU$/ }) }).click();
+      await names.filter({ hasText: 'Clock' }).click({ modifiers: ['Control'] });
+      await app.page.keyboard.press('Control+g');
+      await app.add('card'); await app.add('ring'); await app.add('bar');
+      await app.tab('layers');
+      await names.filter({ has: app.page.locator('.layer-label', { hasText: /^CPU$/ }) }).click();
+      await names.filter({ hasText: 'Clock' }).click({ modifiers: ['Control'] });
     } },
     { name: 'media', run: (app) => panel(app, 'media') },
     { name: 'media-filled', run: async (app) => {
@@ -49,6 +54,8 @@ export default {
       await addMedia(app.page, t, 'image');
       await addMedia(app.page, t, 'video');
       await app.page.locator('.media-item').nth(2).waitFor({ state: 'visible' });
+      await app.page.locator('.media-item').first().hover();
+      await app.page.locator('.media-item').first().getByRole('button', { name: t('collection.useBackground'), exact: true }).click();
       await app.page.locator('#toast').waitFor({ state: 'hidden' });
     } },
     { name: 'media-collection', run: async (app) => { await app.tab('media'); await app.click('#subtab-media-collection'); } },
@@ -57,5 +64,5 @@ export default {
     { name: 'themes-panel', run: (app) => app.tab('themes') },
     { name: 'themes', run: themes },
     { name: 'themes-all', run: async (app) => { await themes(app); await app.click('#theme-search .filters-toggle'); await app.click('#theme-scope [data-scope=all]'); } },
-  ].map(state => ({ ...state, capture: state.capture ?? (state.name.startsWith('themes') && state.name !== 'themes-panel' ? '.themes-dialog' : state.name === 'gif-search' ? '.gif-dialog' : '.sidebar') })),
+  ].map(state => ({ ...state, capture: state.capture ?? (state.name.startsWith('themes') && state.name !== 'themes-panel' ? '.themes-dialog' : state.name === 'gif-search' ? '.gif-dialog' : '.library') })),
 };

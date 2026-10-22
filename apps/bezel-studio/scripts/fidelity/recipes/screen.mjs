@@ -1,5 +1,5 @@
 // The screen panel and the sensor status (artboards Screen, Storage, SensorStatus).
-// The artboards draw the panel 360px wide: the Settings states widen the
+// The legacy artboards draw the panel 360px wide: the Settings states widen the
 // library panel to that width (its resizer's own key), so the two compare.
 const widen = async (app) => {
   const handle = app.page.locator('#resize-library');
@@ -29,7 +29,7 @@ export default {
   artboards: ['Screen', 'Storage', 'SensorStatus'],
   states: [
     ...['settings', 'storage'].map(state => ({ name: `ux2-${state}`, capture: '#panel-screen', run: async app => {
-      await app.page.evaluate(() => localStorage.setItem('bezel.panelWidths', JSON.stringify({ library: 360, inspector: 320 })));
+      await app.page.evaluate(() => localStorage.setItem('bezel.panelWidths', JSON.stringify({ library: 380, inspector: 360 })));
       await app.page.reload();
       await app.tab('screen');
       if (state === 'storage') {

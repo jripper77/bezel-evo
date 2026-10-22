@@ -49,7 +49,7 @@ export function createScreenPanel({ root, t, actions }) {
         if (focused) next.querySelector('button').focus();
       };
       Promise.resolve(actions.setAutostart(on)).then(refresh, refresh);
-    }, { iconName: 'power' });
+    }, { iconName: 'power', leading: true });
     row.classList.add('toggle-row');
     const label = row.querySelector('span');
     label.className = 'toggle-label';
@@ -106,19 +106,20 @@ export function createScreenPanel({ root, t, actions }) {
     thumb.style.height = `${54 * (shape?.height ?? 1) / longest}px`;
     const protocol = PROTOCOLS[s.family];
     const facts = [
+      s.key,
       model ? `${model.width}×${model.height}` : null,
       protocol ? t('screenPanel.protocol', { name: protocol }) : null,
     ].filter(Boolean);
     let tone = 'idle';
     if (s.state === 'awake') tone = liveHere ? 'live' : 'awake';
     return el('div', { class: 'screen-card' }, [
-      thumb,
+      el('span', { class: 'screen-glyph-well' }, [thumb]),
       el('span', { class: 'screen-id' }, [
         el('strong', { text: model ? model.name : s.models.map((m) => m.name).join(' / ') }),
         facts.length ? el('span', { class: 'screen-size', text: facts.join(' · ') }) : null,
         el('span', { class: 'screen-state', dataset: { tone } }, [
           el('span', { class: 'status-dot', 'aria-hidden': 'true' }),
-          el('span', { class: 'meta mono', text: `${s.key} · ${t(`screen.state.${s.state}`)}${liveHere ? ` · ${t('status.live')}` : ''}` }),
+          el('span', { class: 'meta mono', text: liveHere ? t('status.live') : t(`screen.state.${s.state}`) }),
         ]),
       ]),
     ]);
@@ -129,11 +130,11 @@ export function createScreenPanel({ root, t, actions }) {
     const apply = value => actions.setBrightness(s.key, value);
     const field = rangeField(t('screen.brightness'), level, apply, { format: (value) => `${value}%` });
     field.classList.add('brightness');
-    const head = sectionTitle(t('screen.brightness'));
+    const head = el('span', { class: 'field-label', text: t('screen.brightness') });
     field.querySelector('.slider-head').replaceWith(head);
     const slider = field.querySelector('input');
     slider.setAttribute('aria-label', t('screen.brightness'));
-    const amount = numberField(t('screen.brightness'), level, value => { slider.value = String(value); apply(value); }, { min: 0, max: 100, unit: '%', iconName: 'sunDim' });
+    const amount = numberField(t('screen.brightness'), level, value => { slider.value = String(value); apply(value); }, { min: 0, max: 100, unit: '%', iconName: 'sunDim', compact: true });
     slider.addEventListener('input', () => { amount.querySelector('input').value = slider.value; });
     // Two native inputs have their own labels; neither label contains the other.
     return el('div', { class: 'brightness' }, [head, el('div', { class: 'brightness-row' }, [slider, amount])]);

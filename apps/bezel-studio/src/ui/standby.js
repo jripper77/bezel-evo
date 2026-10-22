@@ -177,17 +177,17 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
     const stateId = `standby-state-${choice}`;
     const radio = el('button', {
       type: 'button', role: 'radio', class: 'standby-radio', 'aria-checked': String(checked), 'aria-disabled': option.enabled ? null : 'true',
-      'aria-labelledby': nameId, 'aria-describedby': state ? stateId : detailId, tabindex: checked ? '0' : '-1',
+      'aria-label': label, 'aria-describedby': state ? stateId : detailId, tabindex: checked ? '0' : '-1',
       title: reason, dataset: { choice, focus: `radio-${choice}` },
       onclick: () => void choose(choice), onkeydown: (evt) => moveFocus(evt, choice),
     }, [
       icon(ICONS[({ keep: 'screen', off: 'power', album: 'image', video: 'film' })[choice]], 18),
-      el('span', { id: nameId, class: 'standby-label', text: label }),
+      el('span', { id: nameId, class: 'standby-label', text: choice === 'keep' ? label : t(`screenPanel.caption.${choice}`) }),
       // Seen in the box under the choices; read here with the choice.
       state && el('span', { id: stateId, class: 'visually-hidden', text: say(state) }),
     ]);
     // What it does in one short line, or why it is off.
-    const help = el('p', { id: detailId, class: `hint standby-detail${reason ? ' reason' : ''}`, text: reason ?? t(`standby.hint.${choice}`) });
+    const help = el('p', { id: detailId, class: `hint standby-detail${reason ? ' reason' : ' visually-hidden'}`, text: reason ?? t(`standby.hint.${choice}`) });
     return el('div', { class: `standby-option${checked ? ' checked' : ''}` }, [radio, help]);
   }
 

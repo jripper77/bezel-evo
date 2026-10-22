@@ -2,7 +2,7 @@
 // stage and the status bar, by keyboard and pointer, in every scheme and language.
 import { test, expect, watchErrors, expectAccessible, libraryTabKey } from './helpers.mjs';
 
-const PANELS = ['widgets', 'sensors', 'layers', 'themes', 'media', 'screen'];
+const PANELS = ['themes', 'widgets', 'sensors', 'layers', 'media', 'screen'];
 
 test('the panel rail is a vertical tab list the arrows walk', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -24,14 +24,16 @@ test('the panel rail is a vertical tab list the arrows walk', async ({ page, t }
   await page.keyboard.press('ArrowUp');
   await expect(tab('widgets')).toBeFocused();
   await page.keyboard.press('ArrowUp');
+  await expect(tab('themes')).toBeFocused();
+  await page.keyboard.press('ArrowUp');
   await expect(tab('screen')).toBeFocused();
   await expect(page.locator('#panel-screen')).toBeVisible();
   await page.keyboard.press('Home');
-  await expect(tab('widgets')).toHaveAttribute('aria-selected', 'true');
+  await expect(tab('themes')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('End');
   await expect(tab('screen')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Home');
-  await expect(tab('widgets')).toHaveAttribute('tabindex', '0');
+  await expect(tab('themes')).toHaveAttribute('tabindex', '0');
   await expect(tab('sensors')).toHaveAttribute('tabindex', '-1');
   expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('IBM Plex Sans');
   await expectAccessible(page);

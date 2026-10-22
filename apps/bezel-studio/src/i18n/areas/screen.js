@@ -7,6 +7,10 @@ export const PREFIXES = Object.freeze(['screenPanel.', 'storagePanel.']);
 
 export default {
   en: {
+    "screenPanel.caption.off": "Off",
+    "screenPanel.caption.album": "Photo album",
+    "screenPanel.caption.video": "Video",
+
     "storagePanel.sendFile": "Send file",
 
     "screenPanel.actions": "Screen actions",
@@ -38,6 +42,10 @@ export default {
     'storagePanel.cacheButton': 'Local copies · {size}',
   },
   'pt-BR': {
+    "screenPanel.caption.off": "Desligar",
+    "screenPanel.caption.album": "?lbum de fotos",
+    "screenPanel.caption.video": "V?deo",
+
     "storagePanel.sendFile": "Enviar arquivo",
 
     "screenPanel.actions": "Ações da tela",
@@ -69,6 +77,10 @@ export default {
     'storagePanel.cacheButton': 'Cópias locais · {size}',
   },
   it: {
+    "screenPanel.caption.off": "Spegni",
+    "screenPanel.caption.album": "Album foto",
+    "screenPanel.caption.video": "Video",
+
     "storagePanel.sendFile": "Invia file",
 
     "screenPanel.actions": "Azioni sullo schermo",

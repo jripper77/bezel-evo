@@ -290,3 +290,9 @@
 #storage-panel .storage-send { flex: none; }
 #storage-panel .storage-places { order: 3; }
 .workspace:not(.storage-wide) #storage-panel .manager-actions, .workspace:not(.storage-wide) #storage-panel .drop-zone { display: none; }
+
+.screen-glyph-well { display: grid; place-items: center; flex: none; width: 72px; height: 72px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.screen-header .screen-id { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; align-items: center; gap: 10px; }
+.screen-header .screen-id strong { flex: 1 0 100%; font-size: var(--fs-base); }
+.screen-header .screen-state { margin-left: auto; }
+.screen-header .screen-size { overflow-wrap: anywhere; }

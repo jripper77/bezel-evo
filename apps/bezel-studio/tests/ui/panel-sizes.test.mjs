@@ -9,7 +9,7 @@ function memory(initial = {}) {
 }
 
 test('each panel starts at its width and stays between its limits', () => {
-  assert.deepEqual(initialWidths(), { library: 272, inspector: 320 });
+  assert.deepEqual(initialWidths(), { library: 272, inspector: 360 });
   for (const [panel, { min, max, initial }] of Object.entries(PANELS)) {
     assert.ok(min < initial && initial < max, panel);
     assert.equal(clampWidth(panel, min - 50), min);
@@ -61,4 +61,8 @@ test('a narrow window takes width from the inspector first, then the library, ne
   assert.deepEqual(fitWidths(widths, 400 + 400 + STAGE_MIN - 50), { library: 400, inspector: 350 });
   assert.deepEqual(fitWidths(widths, 400 + PANELS.inspector.min + STAGE_MIN - 30), { library: 370, inspector: PANELS.inspector.min });
   assert.deepEqual(fitWidths(widths, 100), { library: PANELS.library.min, inspector: PANELS.inspector.min });
+});
+
+test('the new default does not replace a saved inspector width', () => {
+  assert.deepEqual(readWidths(memory({ [STORAGE_KEY]: '{"library":272,"inspector":320}' })), { library: 272, inspector: 320 });
 });
