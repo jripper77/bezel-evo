@@ -126,7 +126,7 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
       colorField(t('inspector.color'), typeof s.paint === 'string' ? s.paint : '#ffffffff', paint => setStyle({ paint })),
       compact ? fieldGrid([horizontal, vertical]) : horizontal,
       compact ? null : vertical,
-      numberField(t('inspector.letterSpacing'), s.letterSpacing ?? 0, letterSpacing => setStyle({ letterSpacing }), { step: 'any', unit: 'px', iconName: 'spacing' }),
+      numberField(t('inspector.letterSpacing'), s.letterSpacing ?? 0, letterSpacing => setStyle({ letterSpacing }), { step: 'any', unit: 'px', iconName: 'spacing', compact }),
     ];
   }
 
