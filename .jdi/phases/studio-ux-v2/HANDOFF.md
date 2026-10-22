@@ -5,6 +5,9 @@ Riferimento canonico: `evidence/final/index.html` (108 stati, 208 PNG, 30 tavole
 Leggere `SUMMARY-FIDELITY-FINAL.md` e l’aggiornamento di `REVIEW.md` per test ed eccezioni.
 Prima correzione dalla verifica manuale: anteprima Anello senza riquadro, `b6ead42`;
 vedi `SUMMARY-FIDELITY-PREVIEW.md`. Gli altri tipi mantengono il fondo delle rispettive tavole.
+Seconda correzione: opzioni Spettro con icone distinte e label vicine (`2bda767e`),
+Angoli uguali compatto nel controllo condiviso (`12567cd8`, conferma esplicita
+D-2026-10-22-studio-ux-v2-22). Vedi `SUMMARY-FIDELITY-SPECTRUM-CONTROLS.md`.
 Limite del canvas demo immagini ancora esplicito, nuova decodifica da pianificare con l’utente.
 Nessuna build/installazione/push o approvazione manuale automatica. Non riprendere le vecchie indicazioni
 «prossimo blocco»: i paragrafi sotto sono il passaggio storico delle correzioni.

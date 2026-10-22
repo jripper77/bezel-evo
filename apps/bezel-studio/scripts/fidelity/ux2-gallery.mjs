@@ -93,6 +93,7 @@ const capture = (scheme, key) => {
 const NOTES = {
   MainNew: 'Salva resta secondario per D-2026-10-09-studio-redesign-fidelity-6. Dati, nomi e stato live provengono dal bridge. Per l’anteprima Anello si segue RingInspectorOpen: senza riquadro, diversamente da MainNew.',
   RingInspectorOpen: 'Anteprima senza riquadro come nell’HTML di questa tavola; gli altri tipi conservano il fondo previsto dalle rispettive tavole.',
+  SpectrumInspectorOpen: 'Linea centrale e Tieni il picco restano con label separate, vicine ai tasti e icone distinte, come accettato nella verifica manuale. Angoli usa il controllo condiviso aggiornato: uguali compatto, singoli con disegno proporzionato (D-2026-10-22-studio-ux-v2-22).',
   CardInspectorOpen: 'La Rotazione del disegno è un errore già rettificato: Card, gruppi e membri non ruotano (D-21).',
   MultiInspectorOpen: 'Ordine nella Disposizione; Duplica/Elimina nei menu condivisi, secondo T-12. Rotazione solo se tutti gli oggetti la consentono.',
   WeatherAnimations: 'Il PNG documenta i controlli. Le otto famiglie e il movimento sono verificati dai test del motore/demo documentati in T-4, non da una fotografia statica.',

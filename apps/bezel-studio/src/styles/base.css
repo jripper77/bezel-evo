@@ -121,10 +121,10 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .fld:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .fld-unit { flex: none; color: var(--dim); font-size: var(--fs-caps); }
 .fld-grid, .storage-meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-/* Corner radii, `cornerRadii()`: the drawing and one radius beside it, or a
-   field at each corner around it; the field being edited lights its corner. */
+/* Corner radii, `cornerRadii()`: one compact radius, or a field at each
+   corner around the drawing; the field being edited lights its corner. */
 .corner-radii { display: grid; gap: 8px; align-items: center; }
-.corner-radii[data-mode="same"] { grid-template-columns: 64px minmax(0, 1fr) auto; }
+.corner-radii[data-mode="same"] { grid-template-columns: minmax(0, 1fr) auto; }
 .corner-radii[data-mode="each"] { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); }
 .corner-radii[data-mode="each"] .corner-drawing { grid-column: 2; grid-row: 1 / span 2; }
 .corner-radii[data-mode="each"] .fld[data-corner="topRight"] { grid-column: 3; grid-row: 1; }
@@ -139,7 +139,6 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .corner-mark[data-corner="topRight"] { top: -2px; right: -2px; border-top-width: 3px; border-right-width: 3px; }
 .corner-mark[data-corner="bottomRight"] { bottom: -2px; right: -2px; border-bottom-width: 3px; border-right-width: 3px; }
 .corner-mark[data-corner="bottomLeft"] { bottom: -2px; left: -2px; border-bottom-width: 3px; border-left-width: 3px; }
-.corner-radii[data-mode="same"]:focus-within .corner-mark,
 .corner-radii:has(.fld[data-corner="topLeft"]:focus-within) .corner-mark[data-corner="topLeft"],
 .corner-radii:has(.fld[data-corner="topRight"]:focus-within) .corner-mark[data-corner="topRight"],
 .corner-radii:has(.fld[data-corner="bottomRight"]:focus-within) .corner-mark[data-corner="bottomRight"],
@@ -527,7 +526,7 @@ button.pill:hover { border-color: var(--accent); }
 .fade-preview canvas { display: block; width: 64px; height: 64px; }
 .fade-preview:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
-.inspector-toggle.is-leading { justify-content: flex-start; }
+.inspector-toggle.is-leading { justify-content: flex-start; gap: 8px; }
 
 .inspector .object-heading-row > h2, .inspector .bg-chooser-head h2 { margin: 0; font-size: var(--fs-title); font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; }
 
