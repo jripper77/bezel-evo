@@ -21,13 +21,26 @@ export default {
   mockDesigns: [{ root: fileURLToPath(new URL('../../../../../.jdi/phases/studio-ux-v2/design/boards/', import.meta.url)), artboards: ['ProfilesNew', 'ThemesNew'] }],
   artboards: ['Main', 'Sensors', 'Layers', 'Media', 'Themes'],
   states: [
-    { name: 'ux2-profiles', capture: '.profiles-dialog', run: async app => {
+    ...['active', 'ready', 'manual'].map(status => ({ name: status === 'active' ? 'ux2-profiles' : `ux2-profiles-${status}`, demo: 'two', capture: '.profiles-dialog', run: async app => {
+      const t = translator('it');
+      await app.page.setViewportSize({ width: 1280, height: 1500 });
       await app.tab('themes'); await app.click('#theme-profiles'); await app.click('#pf-add');
-      await app.page.locator('#pf-name').fill('Gaming');
-      await app.page.locator('.pf-add-types').getByRole('button', { name: translator('it')('profiles.foreground'), exact: true }).click();
-      await app.page.locator('.pf-rule input[type=text]').fill('game.exe');
-      await app.page.locator('.pf-save-status').getByText(translator('it')('profileRules.ui.save.saved'), {exact:true}).waitFor();
-    } },
+      await app.page.locator('#pf-name').fill('Browser');
+      await app.page.locator('.pf-add-types').getByRole('button', { name: t('profiles.foreground'), exact: true }).click();
+      await app.page.locator('.pf-rule input[type=text]').fill(status === 'ready' ? 'game.exe' : 'chrome');
+      await app.page.locator('.pf-add-types').getByRole('button', { name: t('inspector.sensor'), exact: true }).click();
+      await app.page.getByRole('spinbutton', { name: t('profileRules.ui.threshold'), exact: true }).fill(status === 'ready' ? '100' : '0');
+      if (status === 'manual') await app.page.getByRole('button', { name: t('profiles.manual'), exact: true }).click();
+      await app.page.locator('.pf-save-status').getByText(t('profileRules.ui.save.saved'), {exact:true}).waitFor();
+      if (status === 'active') await app.page.locator('.pf-object-head [data-profile-active][data-active=true]').waitFor();
+      if (status === 'ready') await app.page.locator('.pf-object-head [data-profile-active][data-active=false]').waitFor();
+      await app.page.getByRole('group', { name: t('profiles.transition'), exact: true }).getByRole('button', { name: t('profiles.effect.curtain'), exact: true }).click();
+      await app.page.locator('.pf-save-status').getByText(t('profileRules.ui.save.saved'), {exact:true}).waitFor();
+      await app.page.locator('.profiles-dialog > form').evaluate(form => { form.style.height = `${form.querySelector('.pf-detail').scrollHeight + form.querySelector('.pf-head').offsetHeight + 8}px`; });
+      await app.page.locator('.pf-detail').evaluate(node => { node.scrollTop = 0; });
+      await app.page.locator('#pf-name').focus(); await app.page.locator('#pf-name').blur();
+      await app.page.waitForFunction(() => document.querySelector('.pf-object-head .pf-thumb')?.style.backgroundImage.startsWith('url('));
+    } })),
     { name: 'ux2-themes', capture: '.themes-dialog', run: async app => { await themes(app); await app.click('#theme-search .filters-toggle'); await app.click('#theme-scope [data-scope=all]'); } },
     { name: 'widgets', run: (app) => app.tab('widgets') },
     { name: 'sensors', run: sensors },

@@ -11,6 +11,7 @@ const rect = (x, y, w, h, r = 0) => (r
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
 
 export const ICONS = Object.freeze({
+  hand: ['M8 13V6a1.5 1.5 0 0 1 3 0v6V4a1.5 1.5 0 0 1 3 0v8V6a1.5 1.5 0 0 1 3 0v7V9a1.5 1.5 0 0 1 3 0v7a6 6 0 0 1-6 6h-1c-2 0-3-1-4-2l-5-6a1.5 1.5 0 0 1 2-2l2 2'],
   'playback-loop': ['M4 12a8 8 0 1 1 3 6.2M4 18v-6h6'],
   'playback-once': ['M6 5v14M10 5l10 7-10 7z'],
   'shape-rect': ['M4 5h16v14H4z'],

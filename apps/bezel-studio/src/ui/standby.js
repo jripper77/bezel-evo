@@ -182,7 +182,7 @@ export function createStandbyPanel({ root, t, locale, bridge, notify, context, s
       onclick: () => void choose(choice), onkeydown: (evt) => moveFocus(evt, choice),
     }, [
       icon(ICONS[({ keep: 'screen', off: 'power', album: 'image', video: 'film' })[choice]], 18),
-      el('span', { id: nameId, class: 'standby-label', text: choice === 'keep' ? label : t(`screenPanel.caption.${choice}`) }),
+      el('span', { id: nameId, class: 'standby-label', text: choice === 'keep' ? label : choice === 'video' ? t('common.video') : t(`screenPanel.caption.${choice}`) }),
       // Seen in the box under the choices; read here with the choice.
       state && el('span', { id: stateId, class: 'visually-hidden', text: say(state) }),
     ]);

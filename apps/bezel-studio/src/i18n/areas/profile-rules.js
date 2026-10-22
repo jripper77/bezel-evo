@@ -2,6 +2,10 @@
 export const PREFIXES = Object.freeze(['profileRules.']);
 export default {
   en: {
+    "profileRules.ui.add.foreground": "App",
+    "profileRules.ui.add.mediaPlaying": "Music",
+    "profileRules.ui.add.time": "Schedule",
+
     "profileRules.ui.idle": "Idle",
     "profileRules.ui.locked": "PC locked",
     "profileRules.ui.active": "Active now",
@@ -48,6 +52,10 @@ export default {
     'profileRules.locked': 'when the PC is locked',
   },
   'pt-BR': {
+    "profileRules.ui.add.foreground": "Aplicativo",
+    "profileRules.ui.add.mediaPlaying": "Música",
+    "profileRules.ui.add.time": "Horário",
+
     "profileRules.ui.idle": "Inatividade",
     "profileRules.ui.locked": "PC bloqueado",
     "profileRules.ui.active": "Ativo agora",
@@ -94,6 +102,10 @@ export default {
     'profileRules.locked': 'quando o PC está bloqueado',
   },
   it: {
+    "profileRules.ui.add.foreground": "App",
+    "profileRules.ui.add.mediaPlaying": "Musica",
+    "profileRules.ui.add.time": "Orario",
+
     "profileRules.ui.idle": "Inattività",
     "profileRules.ui.locked": "PC bloccato",
     "profileRules.ui.active": "Attivo ora",

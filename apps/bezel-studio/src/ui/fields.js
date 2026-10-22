@@ -151,9 +151,9 @@ export function iconChoice(label, value, options, onChange, { wide = false, icon
 }
 
 /** The same preview tile in every widget. */
-export function previewChoice(label, tiles) {
-  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label, dataset: { count: String(tiles.length) } }, tiles.map(({ text, caption = text, art, preview, pressed, onClick }) =>
-    el('button', { type: 'button', class: 'option-tile', 'aria-label': text, title: text, 'aria-pressed': String(pressed), onclick: onClick }, [preview ?? icon(art, 32), el('span', { text: caption })])));
+export function previewChoice(label, tiles, { actions = false } = {}) {
+  return el('div', { class: 'option-tiles', role: 'group', 'aria-label': label, dataset: { count: String(tiles.length) } }, tiles.map(({ text, caption = text, art, preview, pressed, disabled = false, onClick }) =>
+    el('button', { type: 'button', class: 'option-tile', 'aria-label': text, title: text, ...(actions ? {} : { 'aria-pressed': String(pressed) }), disabled, onclick: onClick }, [preview ?? icon(art, 32), el('span', { text: caption })])));
 }
 
 /** Inspector toggles use native buttons with a visible state and accessible name. */

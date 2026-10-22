@@ -9,7 +9,6 @@ export default {
   en: {
     "screenPanel.caption.off": "Off",
     "screenPanel.caption.album": "Photo album",
-    "screenPanel.caption.video": "Video",
 
     "storagePanel.sendFile": "Send file",
 
@@ -43,8 +42,7 @@ export default {
   },
   'pt-BR': {
     "screenPanel.caption.off": "Desligar",
-    "screenPanel.caption.album": "?lbum de fotos",
-    "screenPanel.caption.video": "V?deo",
+    "screenPanel.caption.album": "Álbum de fotos",
 
     "storagePanel.sendFile": "Enviar arquivo",
 
@@ -79,7 +77,6 @@ export default {
   it: {
     "screenPanel.caption.off": "Spegni",
     "screenPanel.caption.album": "Album foto",
-    "screenPanel.caption.video": "Video",
 
     "storagePanel.sendFile": "Invia file",
 

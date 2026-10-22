@@ -156,6 +156,6 @@ Meteo: `toggleField(..., { leading: true })` porta il comando prima della didasc
 - `cardFacePreviewTheme` in card-config.js prepara la copia isolata e validata per una faccia; coperta da unitari. Non modifica lo store né aggiunge campi al tema.
 - Tema: stato con `pill` e orientamento con `iconChoice`; l’azione di giro conserva uno stato booleano indipendente dalla scelta dell’asse nello stesso gruppo.
 
-## Fedelt? shell/pannelli, 22 ottobre
+## Fedeltà shell/pannelli, 22 ottobre
 
-`numberField` usa ora gli stessi bordi/input in `base.css` anche fuori dall?inspector (Luminosit?, dialoghi); nessuna variante per Schermo. I controlli numerici restano nativi, senza spinner interno che sottrae spazio alle cifre.
+`numberField` usa ora gli stessi bordi/input in `base.css` anche fuori dall’inspector (Luminosità, dialoghi); nessuna variante per Schermo. I controlli numerici restano nativi, senza spinner interno che sottrae spazio alle cifre.
