@@ -142,3 +142,9 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 - `fadeHandlePatch` puro e testato in shape-fade.js; `imageAssetFacts` puro e testato in media-inspector.js. Nessuna geometria nel modulo DOM specifico di un oggetto.
 
 Meteo: `toggleField(..., { leading: true })` porta il comando prima della didascalia con lo stesso pulsante/stato condiviso; nessuna seconda implementazione del toggle. Ricerca riusa `searchField`, `fieldAction`, `iconButton` e `listCard`.
+
+## Fedeltà strumenti — 22 ottobre
+
+- `numberField(..., { caption })`: didascalia breve distinta dal nome accessibile `label`; il comportamento numerico è lo stesso.
+- `fieldGrid(..., { columns })`: oltre al numero di colonne, accetta una lista di larghezze CSS per campi con azioni ai lati; allineamento in basso comune, utile quando una didascalia va su due righe. Riutilizzato dalle zone della Lancetta, senza regole locali.
+- La disclosure del centro Lancetta usa `detailsField`, testo/parti usano i builder del Valore; apertura nella memoria del relativo store, senza nuovi campi del tema.
