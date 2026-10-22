@@ -4,9 +4,10 @@ import { addMedia, openSection, openInspectorTab, setPanelWidths } from '../../.
 import { translator } from '../../../src/i18n/index.js';
 
 const t = translator('it');
-// Standalone inspector boards are 360px; Main keeps the shell's 320px.
+// The paired Value/Text and Clock boards have 380px panels; the single boards have 360px.
+// Main retains the actual shell default, so that its difference stays visible.
 async function standalone(app, kind) {
-  await setPanelWidths(app.page, { inspector: 360 });
+  await setPanelWidths(app.page, { inspector: ['value', 'text', 'clock'].includes(kind) ? 380 : 360 });
   await app.page.reload();
   if (kind) await app.add(kind);
   for (const section of await app.page.locator('#inspector > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));

@@ -126,7 +126,7 @@ figure { margin: 0; } img { max-width: 100%; height: auto; border: 1px solid var
 @media (max-width: 800px) { .pair { grid-template-columns: 1fr; } }
 </style></head><body>
 <h1>Studio UX v2 · confronto finale con le tavole</h1>
-<p>Catture dell'app in italiano dopo l'integrazione (T-10), scuro e chiaro, accanto alla tavola. Clic su un'immagine per vederla intera.${missing.length ? ` Mancano: ${esc(missing.join(', '))}.` : ''}</p>
+<p>Catture aggiornate dell'app in italiano, scuro e chiaro, accanto alla tavola. Le differenze residue sono registrate in REVIEW.md e nei riepiloghi delle attività. Clic su un'immagine per vederla intera.${missing.length ? ` Mancano: ${esc(missing.join(', '))}.` : ''}</p>
 <nav>${nav}</nav>
 ${sections.join('\n')}
 </body></html>

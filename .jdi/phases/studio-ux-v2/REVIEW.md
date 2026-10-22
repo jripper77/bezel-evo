@@ -114,3 +114,24 @@ Sull'8,8″ (e sul 3,5″ dove indicato), con Studio e Light aggiornati:
 
 `evidence/final/index.html`: ogni tavola accanto alle catture dell'app dopo T-10, scuro e
 chiaro. Rigenerabile con `node scripts/fidelity/ux2-gallery.mjs`. Da approvare (DoD 1).
+
+## Follow-up T-12 — Ordine e componenti condivisi
+
+22 ottobre, ChatGPT, branch `ux2/t12`, base `fb6b42f`. Vedere `SUMMARY-T-12.md`.
+
+**Differenza tolta:** il blocco separato «Ordine dei livelli» con Duplica/Elimina
+è sostituito dalla riga **Ordine** nella Disposizione, dopo «Fa parte di», come
+nelle tavole. I due passi singoli sono anche nel menu oggetto piatto condiviso;
+selezione multipla con un solo Undo, ambiti e blocchi verificati. I comandi non
+disponibili sono disabilitati anche visivamente. Il livello non appare nella multipla.
+
+Riallineati inoltre header, Tipo compatto, Allinea, selezione neutra, icone e
+misure delle transizioni e campioni del riempimento. I test funzionali dell'area
+e gli unitari sono registrati nel riepilogo; nessuna nuova build o prova hardware.
+
+La galleria viene aggiornata per T-12, conservando le immagini precedenti di
+Anello/Card/Multipla in `evidence/t12/`. Il registro
+`AUDIT-FIDELITY-2026-10-22.md` resta aperto per le altre differenze strutturali
+(parti, gradiente, composizioni specifiche, shell, Profili e Galleria). Il verdetto
+T-10 sopra descrive i suoi gate automatici: non attesta che queste differenze
+siano già risolte. L'approvazione manuale della fase resta in sospeso.

@@ -1,5 +1,11 @@
 # Riallineamento sistematico ai mockup — proposta per la ripresa
 
+**Avanzamento dopo la ripresa, 22 ottobre:** T-12 completata e documentata in
+`SUMMARY-T-12.md`; galleria aggiornata. Ordine, basi dell'header/Tipo/Allinea,
+palette delle scelte e parte di Colore/Comportamento sono corretti. Proseguire
+con la ricomposizione degli editor e dei moduli censiti nell'audit; non ripetere
+T-12 e non considerare chiuso il registro generale.
+
 22 ottobre 2026. Proposta da valutare con l'utente; implementazione T-12 sospesa su sua richiesta. L'utente ha poi autorizzato il confronto autonomo e lo spegnimento normale del PC al termine, dopo aver salvato il punto di ripresa. La fase resta in attesa dell'approvazione manuale.
 
 **Audit eseguito:** [riscontri concreti, copertura delle 30 tavole e ordine di intervento](AUDIT-FIDELITY-2026-10-22.md). Il criterio finale precisato dall'utente è una corrispondenza accurata di struttura, proporzioni, controlli, colori e icone, senza inseguire differenze minime di rasterizzazione. Non usare soglie arbitrarie di pixel o percentuali globali.

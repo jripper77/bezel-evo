@@ -1,5 +1,13 @@
 # Confronto dell'interfaccia e piano delle correzioni
 
+**Avanzamento dopo la ripresa:** T-12 completata (`SUMMARY-T-12.md`). Risolta la
+parte Ordine di C11; corretti contrasto dell'anteprima di C01, compattezza Tipo
+C02, selezione neutra e icone delle transizioni di C05, Durata/Media e ritorno a
+capo di C07. C06 ha ora campioni, didascalia e nomi corti coerenti, ma resta da
+ricomporre l'intero editor. R00 corretto per Valore/Testo e Orologio, ancora
+aperto per gli altri casi. Le righe dell'audit sotto descrivono la baseline e
+restano il registro per proseguire; questa nota non chiude gli altri riscontri.
+
 22 ottobre 2026, ChatGPT. Worktree `F:/dev/bezel-ux2-t12`, branch `ux2/t12`, base `fb6b42f`, con bozza T-12 non committata. Questo è un audit e non una consegna della correzione.
 
 ## Esito

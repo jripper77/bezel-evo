@@ -1,4 +1,20 @@
-# T-12 — punto di ripresa
+# T-12 — completata, punto di integrazione
+
+**Stato corrente, 22 ottobre:** T-12 completata in `ux2/t12`, worktree
+`F:/dev/bezel-ux2-t12`, base `fb6b42f`. Vedere `SUMMARY-T-12.md` per codice,
+test e differenze residue. Galleria aggiornata in `evidence/final/index.html`;
+confronto prima/dopo in `evidence/t12/`. Nessun merge, push, build o installazione.
+
+Prossimo lavoro: proseguire il piano sistematico di fedeltà (editor delle parti,
+gradiente, composizioni specifiche e altre aree), con attività/worktree proprie.
+T-12 non costituisce approvazione dell'intera fase.
+
+La copia di recupero delle 03:41 è **storica**: contiene la bozza precedente ai
+commit di completamento e non va applicata al codice attuale. Anche la richiesta
+di spegnimento sotto appartiene alla pausa già conclusa.
+
+<details>
+<summary>Checkpoint storico della pausa</summary>
 
 22 ottobre 2026. Pausa dell'implementazione richiesta dall'utente per valutare un riallineamento sistematico ai mockup. Confronto autonomo successivamente autorizzato e concluso: vedere `AUDIT-FIDELITY-2026-10-22.md` e `PLAN-FIDELITY-FOLLOWUP.md`. L'utente ha chiesto di salvare e spegnere normalmente il PC al termine, senza attenderne risposte.
 
@@ -28,3 +44,5 @@ Restano da fare documentazione utente, SUMMARY-T-12, aggiornamenti PLAN/HANDOFF,
 ## Copia di ripresa
 
 Oltre ai file presenti nella worktree, `target/scratch/t12/checkpoint/` contiene patch binaria Git dei file tracciati, copia dei due nuovi moduli non tracciati e inventario del salvataggio. Non applicare la patch sopra la worktree già modificata: serve solo come recupero. Conservare questi output fino alla chiusura di T-12.
+
+</details>
