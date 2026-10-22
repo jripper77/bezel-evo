@@ -27,6 +27,9 @@ test('visible preview content stays centred when the widget text aligns left or 
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await add(page, t, 'text');
   const inspector = page.locator('#inspector');
+  // ValueInspectorOpen specifies a thumbnail well for text, unlike the ring.
+  expect(await inspector.locator('.inspector-preview').evaluate(figure =>
+    getComputedStyle(figure).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
   await inspector.getByRole('textbox', { name: t('common.text'), exact: true }).fill('Hi');
   await inspector.getByRole('textbox', { name: t('common.text'), exact: true }).press('Tab');
   await tab(page, t, 'inspector.tab.look');
