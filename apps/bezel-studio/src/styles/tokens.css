@@ -133,7 +133,7 @@
     --guide: #F472B6;
     --dot: #1E2328;
     --seg-track: var(--bg);
-    --seg-thumb: var(--surface-3);
+    --seg-thumb: var(--border);
     --seg-shadow: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
   }

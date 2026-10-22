@@ -50,7 +50,7 @@ test('sensor formatting offers temperature controls only for temperatures and tr
   const transition = inspector.locator('[data-section="transition"]');
   await transition.getByRole('button', { name: t('insp.transitionSmooth'), exact: true }).click();
   await expect(transition.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveValue('400');
-  await transition.getByRole('button', { name: t('fade.none'), exact: true }).click();
+  await transition.getByRole('button', { name: t('insp.transitionJump'), exact: true }).click();
   await expect(transition.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveCount(0);
   await transition.getByRole('button', { name: t('insp.transitionSmooth'), exact: true }).click();
   await pickSensor(page, t, inspector, 'gpu.usage');

@@ -1,6 +1,6 @@
 // Gauge paint controls share the same field builders and theme paint model.
 import { atPath, pathPatch } from '../../inspector-edit.js';
-import { iconChoice, numberField } from '../fields.js';
+import { iconChoice, numberField, swatchChip } from '../fields.js';
 
 export function gaugeFillFields(ctx, element, { path = ['kind', 'fill'] } = {}) {
   const { t, update, colorField, store } = ctx, fill = atPath(element, path);
@@ -9,7 +9,7 @@ export function gaugeFillFields(ctx, element, { path = ['kind', 'fill'] } = {}) 
   const last = arc ? fill.end : linear ? fill.stops.at(-1)?.[1] ?? first : first;
   const replace = paint => store.dispatch('patchElements', { respectLocks: false, patches: [{ id: element.id, patch: pathPatch(path, null) }, { id: element.id, patch: pathPatch(path, paint) }] });
   const set = paint => update(element.id, pathPatch(path, paint));
-  const modes = [['solid', t('ring.solid')], ['gradient', t('insp.gradient')], ...(ring && linear ? [['linear', t('ring.importedLinear')]] : [])];
+  const modes = [['solid', t('ring.solid'), null, { leading: swatchChip(first), text: t('insp.solid') }], ['gradient', t('insp.gradient'), null, { leading: swatchChip(first, '', arc || linear ? last : null) }], ...(ring && linear ? [['linear', t('ring.importedLinear')]] : [])];
   const color = (index, value) => {
     if (arc) set({ ...fill, [index === 0 ? 'start' : 'end']: value });
     else if (linear) set({ ...fill, stops: fill.stops.map((stop, i) => i === (index === 0 ? 0 : fill.stops.length - 1) ? [stop[0], value] : stop) });
@@ -19,8 +19,8 @@ export function gaugeFillFields(ctx, element, { path = ['kind', 'fill'] } = {}) 
     iconChoice(t(ring ? 'ring.fillMode' : 'inspector.fill'), arc || linear && !ring ? 'gradient' : linear ? 'linear' : 'solid', modes, mode => {
       if (mode === 'solid') replace(first);
       else if (mode === 'gradient') replace(ring ? { scale: 'arc', start: first, end: last, transition: 50 } : { angle: 0, stops: [[0, first], [1, last]] });
-    }, { wide: true }),
-    colorField(t(arc || linear ? 'ring.startColor' : 'inspector.fill'), first, value => color(0, value)),
+    }, { wide: true, caption: t('inspector.fill') }),
+    colorField(t(arc || linear ? 'ring.startColor' : 'inspector.fill'), first, value => color(0, value), { hideLabel: !arc && !linear }),
     (arc || linear) && colorField(t('ring.endColor'), last, value => color(1, value)),
     arc && numberField(t('ring.transition'), fill.transition ?? 50, transition => set({ ...fill, transition: Math.max(0, Math.min(100, transition)) }), { min: 0, max: 100, unit: '%' }),
     linear && numberField(t('shape.fadeAngle'), fill.angle, angle => set({ ...fill, angle }), { step: 'any', unit: '°' }),

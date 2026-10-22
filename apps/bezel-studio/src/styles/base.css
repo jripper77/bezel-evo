@@ -417,7 +417,7 @@ button.pill:hover { border-color: var(--accent); }
 .inspector-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; font-size: var(--fs-field); }
 .inspector-toggle .icon-button { flex: none; }
 .inspector-toggle [aria-pressed="true"], .bind-button[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-line); }
-.object-header { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 72px; margin: 4px 0 12px; }
+.object-header { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 72px; margin: 4px 0 12px; }
 .object-heading { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .object-tools { display: grid; grid-template-columns: 26px 26px; align-items: center; gap: 4px; }
 .object-tools .icon-button { width: 26px; height: 28px; }
@@ -427,3 +427,23 @@ button.pill:hover { border-color: var(--accent); }
 
 .bound-field { display: flex; align-items: center; gap: 6px; }
 .bound-field > :first-child { flex: 1 1 auto; min-width: 0; }
+
+/* Shared choice labels may carry a secondary readout, such as layer position. */
+.object-heading-row, .object-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.field-label { min-width: 0; }
+.field-label > .hint { margin-left: auto; font-weight: 400; }
+.object-heading-row > :first-child, .object-detail-row > :first-child { flex: 1; min-width: 0; }
+.object-detail-row { align-items: flex-end; }
+
+.swatch[data-gradient] { background: linear-gradient(90deg, var(--swatch), var(--swatch-end, var(--rule-media))); }
+
+.field-choice { border: 1px solid var(--line); background: var(--well); }
+.field-choice button[aria-pressed="true"] { background: var(--seg-thumb); }
+
+/* Compact numbers keep their label above the well and their glyph inside it. */
+.number-field.is-compact { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.number-field.is-compact .number-control > .ic { flex: none; color: var(--dim); }
+.field-choice { flex-wrap: wrap; }
+.field-choice.is-wide button { flex-basis: auto; }
+
+.color-button-value > .mono:first-child { text-transform: uppercase; }

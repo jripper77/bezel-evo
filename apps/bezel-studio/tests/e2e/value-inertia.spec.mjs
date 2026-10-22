@@ -9,7 +9,8 @@ test('value transitions offer inertia with settling time and undo',async({page,t
   await section.getByRole('button',{name:t('insp.transitionInertia'),exact:true}).click();
   await expect(section.getByRole('button',{name:t('insp.transitionInertia'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(section).toContainText(t('insp.transitionSettling'));
-  await expect(section).toContainText(t('insp.transitionInertiaHint'));
+  await expect(section.getByRole('button',{name:t('insp.transitionInertia'),exact:true})).toHaveAttribute('title',t('insp.transitionInertiaHint'));
+  await expect(section.getByRole('button',{name:t('insp.transitionInertia'),exact:true})).toHaveAttribute('aria-description',t('insp.transitionInertiaHint'));
   const settling=section.getByRole('spinbutton',{name:t('insp.transitionSettling'),exact:true});
   await settling.press('ArrowUp');
   await expect(settling).toHaveValue('450');

@@ -85,3 +85,25 @@ picker e programmazione delle anteprime usano le implementazioni condivise di T-
   nel demo con `drawClippedMedia` e `applyCanvasFade`.
 
 Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
+
+
+## Estensioni condivise di T-12
+
+- `iconChoice`: modalit? `actions` per comandi momentanei (senza `aria-pressed`),
+  `detail` per un dato secondario nella didascalia e `caption` per il testo visibile
+  quando il nome accessibile conserva un contesto pi? esteso; quarta voce opzionale della
+  scelta `{disabled, iconOnly, text, leading, description}`. Stesso riquadro e stile condiviso,
+  nessuna seconda toolbar per Ordine o Allinea. Le scelte testuali possono andare
+  a capo; Tipo resta compatto su una riga.
+- `objectHeader`: nome/azioni e sottotitolo/stato sulle due righe condivise.
+- `numberField`: `compact` conserva etichetta sopra e icona dentro il controllo,
+  riusato da Durata e Media delle transizioni.
+- `colorPicker`: `hideLabel` nasconde solo l'etichetta visibile ridondante,
+  conservando il nome accessibile. `swatchChip` esportato con estremi opzionali
+  per le scelte di riempimento.
+- `description` sulle scelte conserva aiuti di comportamento come tooltip e
+  descrizioni accessibili, senza aggiungere un paragrafo alle tavole.
+- `propertySection`: `showIcon: false` per gruppi che hanno una semplice
+  didascalia nella tavola, senza un'icona generica inventata.
+- `inspector/order.js` riusa `iconChoice` e `layerOrderAvailability`, comune allo
+  store e al menu oggetto esistente; il livello viene da `layerFacts`.
