@@ -1,5 +1,7 @@
 # Riallineamento — Grafico e Spettro
 
+Commit di implementazione: `1eb18be`.
+
 22 ottobre 2026. Branch `fid/inspector-plots`, base `059b937`.
 
 ## Fatto
@@ -18,7 +20,7 @@
 - La verifica visiva ha scoperto le frequenze ancora impilate: `Object.assign` non applicava la variabile CSS della griglia. Corretto con `style.setProperty` e aggiunta asserzione geometrica (stessa coordinata verticale per i tre campi). Dopo la correzione **28/28 verdi** per audio-spectrum e inspector-plots, incluso «24000» completamente leggibile a 320 px.
 - Grafico definitivo: **32/32 verdi** per inspector-preview e inspector-plots. Migrati soltanto l’apertura esplicita di Precisione e il ruolo slider→spinbutton del riempimento; tutte le verifiche di frase, unità, picchi, limiti, renderer e Undo mantenute. Nuovi test verificano apertura conservata, Undo del campionamento/riempimento, frequenze e icone.
 - Le catture finali italiano chiaro/scuro sono in `evidence/fidelity-plots/`; esaminati Grafico Area e Spettro, poi corretta anche la dicitura che si spezzava nelle cinque miniature.
-- Complessivamente 108 casi distinti hanno esito verde nelle esecuzioni mirate; non è una nuova suite completa del prodotto. Ultimo gruppo dopo le didascalie registrato nel log `target/logs/fidelity-plots/e2e-caption-final.log`.
+- Complessivamente 108 casi distinti hanno esito verde nelle esecuzioni mirate; non è una nuova suite completa del prodotto. **Ultimo gruppo dopo le didascalie: 36/36 verdi**, registrato nel log `target/logs/fidelity-plots/e2e-caption-final.log`.
 - Nessuna modifica al formato del tema, runtime o renderer; nessuna build, installazione o push.
 
 ## Residui

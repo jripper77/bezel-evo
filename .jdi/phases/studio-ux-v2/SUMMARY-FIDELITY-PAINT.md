@@ -1,5 +1,7 @@
 # Riallineamento — Colore condiviso
 
+Commit di implementazione: `933a1cf`.
+
 22 ottobre 2026. Branch `fid/inspector-paint`, worktree `F:/dev/bezel-inspector-paint`, base `593fc81` (integrazione T-12).
 
 ## Fatto

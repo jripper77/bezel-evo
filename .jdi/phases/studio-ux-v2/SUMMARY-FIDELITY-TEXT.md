@@ -1,5 +1,7 @@
 # Riallineamento — Testo e parti
 
+Commit di implementazione: `f457411`.
+
 22 ottobre 2026. Branch `fid/inspector-text`, worktree `F:/dev/bezel-inspector-text`, base `0710d65`.
 
 ## Fatto

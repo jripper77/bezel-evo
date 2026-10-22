@@ -1,5 +1,7 @@
 # Riallineamento — Geometria condivisa, Anello e Barra
 
+Commit di implementazione: `28aa63a`.
+
 22 ottobre 2026. Branch `fid/inspector-geometry`, base `49a2a3f`.
 
 - Stile precede Arco in Forma, con ordinamento condiviso nella composizione delle sezioni. Visualizzazione usa la didascalia Stile.
