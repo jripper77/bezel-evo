@@ -83,7 +83,7 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .icon-button svg, .chip-button svg, .text-button svg, .badge svg, .notice-head svg { width: 18px; height: 18px; }
 .text-button svg { width: 16px; height: 16px; }
 .icon-button:hover, .text-button:hover, .chip-button:hover { border-color: var(--accent); }
-.icon-button:disabled, .text-button:disabled { opacity: 0.45; cursor: default; }
+.icon-button:disabled, .icon-button[aria-disabled="true"], .text-button:disabled { opacity: 0.45; cursor: default; }
 .primary-button { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; padding: 0 16px; }
 .icon-button[aria-pressed="true"], .chip-button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
 /* A quiet button: no frame until hovered (toolbars, panel tools, heads). */
@@ -385,7 +385,7 @@ button.pill:hover { border-color: var(--accent); }
 .property-section-body > .field, .property-section-body > .slider-field, .property-section-body > .check { margin: 0; }
 .property-section-body h4 { margin: 4px 0 0; font-size: var(--fs-caps); color: var(--muted); }
 .property-section-body .actions { margin-top: 0; }
-.property-section-body > .segmented { display: flex; }
+.property-section-body > .segmented { display: flex; flex-wrap: wrap; }
 .property-section-body > .segmented button { flex: 1 1 0; }
 .property-section-body .hint { margin: 0; font-size: var(--fs-small); line-height: 1.45; }
 .property-section-body .chip-group { margin: 0; }

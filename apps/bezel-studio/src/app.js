@@ -504,7 +504,7 @@ const animation = createPreviewAnimation({
 const memoryStatus = createMemoryStatus({ t, root: $('status-memory'), notify: (message) => toast(message) });
 
 // "Trial values" in the canvas toolbar: trial inputs instead of the sensors, never saved.
-const trialValues = createTrialValues({ after: $('grid-toggle'), t: (key) => t(key), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
+const trialValues = createTrialValues({ button: $('trial-values'), motion: () => !reducedMotion?.matches, onChange: () => renderNow() });
 
 async function drawPreview() {
   if (switchingScreen) return;
@@ -539,7 +539,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) renderNow();
 });
 reducedMotion?.addEventListener?.('change', () => {
-  trialValues.retranslate();
+  trialValues.follow();
   inspector.contextChanged();
   renderNow();
 });
@@ -1334,7 +1334,8 @@ showGrid((() => { try { return localStorage.getItem(GRID_KEY) === '1'; } catch {
 $('grid-toggle').addEventListener('click', () => showGrid($('grid-toggle').getAttribute('aria-pressed') !== 'true'));
 // ⋯: the preferences and which Bezel this is (D-2026-10-20-studio-ux-v2-11).
 $('more-menu').addEventListener('click', (evt) => openMenuAt(evt.currentTarget, { label: t('shell.more'), items: [
-  { label: t('prefs.title'), run: () => preferences.open() },
+  // The menu is gone when an item runs: the dialog gives the focus back to ⋯.
+  { label: t('prefs.title'), run: () => { $('more-menu').focus(); preferences.open(); } },
   { label: t('app.version', { version: appVersion }), run: () => {}, disabled: true },
 ] }));
 // The side panels' widths (D-...-fidelity-7): separators to drag or key, remembered.
@@ -1398,7 +1399,6 @@ function setLocale(next) {
   sensorStatus.close();
   memoryStatus.retranslate();
   renderScreenPill();
-  trialValues.retranslate();
   applyIcons(document, ICONS);
   refreshChrome('select');
   renderScreenSelect();
@@ -1406,7 +1406,6 @@ function setLocale(next) {
 }
 
 const preferences = createPreferences({ t, bridge, onLanguage: setLocale, notify: toast });
-$('preferences').addEventListener('click', () => preferences.open());
 const profiles = createProfilesDialog({ t, bridge, notify: toast });
 $('theme-profiles').addEventListener('click', () => profiles.open());
 const openRequestedProfiles = async () => { if (await bridge.profilesRequested()) await profiles.open(); };

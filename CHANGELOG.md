@@ -5,6 +5,54 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Studio
+- **A new inspector**: the controls of every object are in sections you open
+  and close (Layout, Data, Shape, Text, Color, Behavior), each with a summary
+  when closed; Studio remembers which are open for each kind of object.
+  **▶ Try** in the preview plays an object with trial values without saving.
+- **Handles for what an object draws**: a ring's start and end, a needle's
+  arc and zones, a graph's scale, a value's parts and size, a clock's hands,
+  an image's anchor, a player's cover fade, a Card's faces. Each shows its
+  value while dragged, lights up its inspector field and takes the arrow keys.
+- **A floating bar** above the selection: linked sensor, ▶ Try, Duplicate and
+  the object menu.
+- **Trial values** in the canvas bar: the whole theme sweeps every sensor from
+  empty to full, so you can see it at 0 % and at 100 %. Nothing is saved and
+  the screen keeps showing the real sensors.
+- **Top bar and status bar**: the save state sits under the theme's name; the
+  status bar says what is selected or what a drag does, and has three chips
+  for the sensors, Bezel (draw time and memory, with Copy diagnostics) and the
+  screen (live state, frames, theme and active profile).
+- **Panels**: widgets in four groups, sensors by category with full names and
+  small graphs, an Align bar in Layers, and media that say where they are used.
+- **Theme gallery** with real previews, the sensors each theme reads, where it
+  is used, a 30-second try on the live screen and export to `.bezeltheme`.
+
+### Widgets
+- **Values and texts**: parts (prefix, number, unit, suffix, hours, minutes…)
+  with their own font, colour and size, raised units, fixed-width digits,
+  long text that shrinks, is cut or scrolls, Count and Roll transitions, an
+  average over readings and a text shadow.
+- **Analog clocks**: dial, ticks, numbers, three hands, shapes, date.
+- **Needle gauges**: zones, ticks and numbers, needle shapes, pivot cap, a value
+  in the centre and a peak marker.
+- **Animated weather icons**: still, gentle or lively, each condition with its
+  own movement.
+- **Images and GIFs**: an anchor point for cropped pictures; GIFs play once or
+  in a loop, at the speed you choose.
+- **Graphs**: two series in different styles; bar thickness.
+- **Four new themes** for 1920×480 screens: Pixel, Nebula, Paper and Now
+  Playing, with the fonts Fraunces, Instrument Sans, Space Grotesk and
+  Bricolage Grotesque now included.
+
+### Profiles
+- **New rules**: a sensor above or below a value for a while, times and days,
+  idle, PC locked; combine a profile's rules with *any* or *all*.
+- **A new Profiles dialog**: automatic or manual, the profile active now and
+  why, rules as sentences, automatic saving and a 30-second try.
+
 ## [0.1.64] - 2026-10-20
 
 ### Widgets

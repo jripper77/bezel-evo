@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, setPanelWidths } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, setPanelWidths, openSection } from './helpers.mjs';
 
 const canvas = (page) => page.locator('#canvas-box');
 const scale = (page) => canvas(page).evaluate(node => node.getBoundingClientRect().width / node.querySelector('canvas').width);
@@ -141,6 +141,7 @@ test('framing wheel still zooms the video; Ctrl+wheel still zooms only the view'
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=dragon');
   await expect(page.locator('#theme-name')).toHaveValue('Dragon Ball');
+  await openSection(page, 'color');
   await page.locator('#inspector').getByRole('button', { name: t('framing.onCanvas') }).click();
   const surface = page.getByRole('application', { name: t('framing.surface') });
   await expect(surface).toBeFocused();

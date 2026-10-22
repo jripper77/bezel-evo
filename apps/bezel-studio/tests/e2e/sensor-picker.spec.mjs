@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, pickSensor, clickAddWidget as add } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, pickSensor, clickAddWidget as add, toggleButton, setToggle, openSection } from './helpers.mjs';
 
 test('pointer selection survives native focus moving from search into a result',async({page,t})=>{
   const errors=watchErrors(page);
@@ -54,8 +54,10 @@ test('motion uses the same picker with numeric scope and practical controls',asy
   const errors=watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await add(page,t,'shape');
-  const section=page.locator('[data-section="sensor-motion"]');
-  await section.getByRole('switch',{name:t('insp.sensorMotionEnabled'),exact:true}).check();
+  await openSection(page,'layout');
+  await page.locator('#inspector').getByRole('button',{name:t('insp.sensorMotion'),exact:true}).click();
+  const section=page.locator('[data-section="rotation-binding"]');
+  await setToggle(toggleButton(section, t('insp.sensorMotionEnabled')), true);
   await expect(section.getByRole('spinbutton',{name:t('insp.motionPeriod'),exact:true})).toHaveValue('1');
   await section.getByRole('button',{name:t('insp.motionImmediate'),exact:true}).click();
   await expect(section.getByRole('button',{name:t('insp.motionImmediate'),exact:true})).toHaveAttribute('aria-pressed','true');

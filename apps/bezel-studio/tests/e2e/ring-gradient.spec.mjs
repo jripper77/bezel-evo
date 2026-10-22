@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste, colorButton, setColor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, colorButton, setColor, openInspectorTab, toggleButton, setToggle, choose } from './helpers.mjs';
 
 test('ring arc gradient, full-scale test, copy and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -6,27 +6,28 @@ test('ring arc gradient, full-scale test, copy and Undo', async ({ page, t }) =>
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('button', { name: t('library.addWidget', { name: t('widget.ring') }), exact: true }).click();
   const detail = page.locator('#inspector');
-  await detail.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
-  const checkbox = detail.getByRole('switch', { name: t('ring.testFull'), exact: true });
-  await expect(checkbox).not.toBeChecked();
-  await checkbox.check();
-  await detail.getByRole('combobox', { name: t('ring.fillMode'), exact: true }).selectOption('arc');
+  await openInspectorTab(page, t, 'inspector.tab.look');
+  const checkbox = toggleButton(detail, t('ring.testFull'));
+  await expect(checkbox).toHaveAttribute('aria-pressed', 'false');
+  await setToggle(checkbox, true);
+  // The arc gradient is the ring's Gradient choice.
+  await choose(detail, t('ring.fillMode'), 'gradient');
   const colorInput = (key) => colorButton(detail, t(key));
   await setColor(page, t, detail, t('ring.startColor'), '#0000ff');
   await setColor(page, t, detail, t('ring.endColor'), '#ff0000');
-  await detail.getByRole('slider', { name: new RegExp(t('ring.transition')) }).fill('25');
-  await detail.getByRole('slider', { name: new RegExp(t('ring.transition')) }).dispatchEvent('change');
+  await detail.getByRole('spinbutton', { name: t('ring.transition'), exact: true }).fill('25');
+  await detail.getByRole('spinbutton', { name: t('ring.transition'), exact: true }).press('Tab');
   await copyAndPaste(page);
-  await expect(checkbox).toBeChecked();
+  await expect(checkbox).toHaveAttribute('aria-pressed', 'true');
   await expect(colorInput('ring.startColor')).toHaveAttribute('data-color', /^#0000ff/);
   await expect(colorInput('ring.endColor')).toHaveAttribute('data-color', /^#ff0000/);
-  await expect(detail.getByRole('slider', { name: new RegExp(t('ring.transition')) })).toHaveValue('25');
-  await checkbox.uncheck();
+  await expect(detail.getByRole('spinbutton', { name: t('ring.transition'), exact: true })).toHaveValue('25');
+  await setToggle(checkbox, false);
   await page.locator('#undo').click();
-  await expect(checkbox).toBeChecked();
-  await detail.getByRole('combobox', { name: t('ring.fillMode'), exact: true }).selectOption('solid');
-  await expect(detail.getByRole('slider', { name: new RegExp(t('ring.transition')) })).toHaveCount(0);
-  await expect(checkbox).toBeChecked();
+  await expect(checkbox).toHaveAttribute('aria-pressed', 'true');
+  await choose(detail, t('ring.fillMode'), 'solid');
+  await expect(detail.getByRole('spinbutton', { name: t('ring.transition'), exact: true })).toHaveCount(0);
+  await expect(checkbox).toHaveAttribute('aria-pressed', 'true');
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });

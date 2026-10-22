@@ -4,7 +4,7 @@
 // widen it; an empty result says why and offers new themes and "Show all";
 // a theme that cannot be drawn shows "no preview"; a saved theme gets a new
 // thumbnail; without a screen every theme is listed.
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, themeSize, sizeText } from './helpers.mjs';
 import { screenLabel } from '../../src/theme-filter.js';
 import { DEMO_LIBRARY } from '../../src/demo-data.js';
 
@@ -105,7 +105,7 @@ test('an empty result says why and offers new themes and "show all"', async ({ p
   await axis.getByRole('button', { name: t('axis.horizontal'), exact: true }).click();
   await grid.getByRole('button', { name: t('themes.newHorizontal') }).click();
   await expect(page.locator('#theme-name')).toHaveValue(t('themes.untitled'));
-  await expect(page.locator('#inspector')).toContainText(t('inspector.canvas', { width: 1920, height: 480 }));
+  await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText({ width: 1920, height: 480 })}$`));
   await page.keyboard.press('Control+s');
   await expect(cards(page)).toHaveCount(1);
   await expect(cards(page).first()).toContainText(t('themes.untitled'));

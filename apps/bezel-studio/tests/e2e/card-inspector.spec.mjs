@@ -1,8 +1,13 @@
-// The card's inspector (artboards CardFaces, CardMotion, CardTriggers):
-// the face list with its ⋮ menu, the shared background row, "Move", the
-// Card's one transition, the timed triggers, effect cards, the rule
-// sentences, their order and the common return. Every edit is one Undo step.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, setPanelWidths, cardFaceList, faceAction } from './helpers.mjs';
+// The card's inspector (artboard Card, D-2026-10-20-studio-ux-v2-03): the
+// Faces section with the face list, its ⋮ menu, the shared background row
+// and "Move"; the Behavior section with the Card's one transition, the
+// timed triggers, the rule sentences, their order and the common return.
+// Every edit is one Undo step.
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, openSection, setPanelWidths, cardFaceList, faceAction } from './helpers.mjs';
+
+/** The Card's Faces and Behavior sections. */
+const facesRegion = (inspector, t) => inspector.getByRole('region', { name: t('card.tab.faces'), exact: true });
+const behaviorRegion = (inspector, t) => inspector.getByRole('region', { name: t('insp.section.behavior'), exact: true });
 
 /** A card with two faces: a text in the base, a ring in face 1, a bar and a graph in face 2 (in view). */
 async function twoFaceCard(page, t) {
@@ -41,7 +46,7 @@ test('faces are a numbered list; the shared background is its own row; Move send
   await expect(faces.getByText(t('layers.inView'), { exact: true })).toHaveCount(1);
   const editSecond = second.getByRole('button', { name: t('cardInsp.editFace', { name: face(2) }), exact: true });
   await expect(editSecond).toHaveAttribute('aria-pressed', 'true');
-  await expect(editSecond).toHaveText(t('cardInsp.edit'));
+  await expect(editSecond.locator('svg')).toHaveCount(1);
   await expect(faces.locator('[data-face="0"]')).not.toHaveAttribute('aria-current', 'true');
   // No thumbnails, no pair chips, no horizontal strip.
   await expect(inspector.locator('.face-chip, .face-transition, .screen-thumb')).toHaveCount(0);
@@ -79,10 +84,10 @@ test('faces are a numbered list; the shared background is its own row; Move send
   await faces.getByRole('button', { name: t('cardInsp.editFace', { name: face(2) }), exact: true }).click();
   // A list card selects its object.
   await objects.getByRole('button', { name: t('cardInsp.selectObject', { name: t('widget.graph') }), exact: true }).click();
-  await expect(inspector.getByRole('tab', { name: t('card.tab.faces'), exact: true })).toHaveCount(0);
+  await expect(faces).toHaveCount(0);
   await selectCard();
   await expect(inspector.getByText(t('cardInsp.dropHint'), { exact: true })).toBeVisible();
-  await inspector.getByRole('tabpanel', { name: t('card.tab.faces'), exact: true }).screenshot({ path: test.info().outputPath('faces-content.png') });
+  await facesRegion(inspector, t).screenshot({ path: test.info().outputPath('faces-content.png') });
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
@@ -149,15 +154,18 @@ test('the ⋮ menu renames, duplicates, moves and deletes a face, from the keybo
   expect(errors).toEqual([]);
 });
 
-test('one transition for the whole Card: effect, duration and direction in Faces, the same in Motion, with Undo', async ({ page, t }) => {
+test('one transition for the whole Card: effect, duration and direction in Behavior, with Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
   const { inspector } = await twoFaceCard(page, t);
-  const section = inspector.locator('[data-section="transition"]');
+  await openSection(page, 'behavior');
+  const section = inspector.locator('[data-section="animation"]');
   await expect(section.getByRole('heading')).toHaveText(t('cardInsp.transitionTitle'));
-  const effect = section.getByRole('combobox', { name: t('card.effect'), exact: true });
-  await expect(effect).toHaveValue('none');
+  const effects = section.getByRole('group', { name: t('card.effect'), exact: true });
+  const effect = (name) => effects.getByRole('button', { name: t(`card.effect.${name}`), exact: true });
+  await expect(effects.getByRole('button')).toHaveCount(4);
+  await expect(effect('none')).toHaveAttribute('aria-pressed', 'true');
   await expect(section.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveCount(0);
-  await effect.selectOption('flip');
+  await effect('flip').click();
   const duration = section.getByRole('spinbutton', { name: t('card.duration'), exact: true });
   await expect(duration).toHaveValue('650');
   await duration.fill('437'); await duration.press('Tab');
@@ -172,32 +180,28 @@ test('one transition for the whole Card: effect, duration and direction in Faces
   await page.locator('#undo').click();
   await expect(duration).toHaveValue('450');
   // A fade has no direction.
-  await effect.selectOption('fade');
+  await effect('fade').click();
   await expect(section.getByRole('group', { name: t('common.direction'), exact: true })).toHaveCount(0);
   await expect(duration).toHaveValue('450');
-  await expect(section.getByRole('button', { name: t('card.animateNext'), exact: true })).toBeEnabled();
-  // Motion edits the same transition; nothing about pairs anywhere.
-  await tab(page, t, 'card.tab.motion');
-  const motion = inspector.locator('[data-section="animation"]');
-  await expect(motion.getByRole('heading')).toHaveText(t('cardInsp.transitionTitle'));
-  await expect(motion).toContainText(t('cardInsp.transitionHint'));
-  await expect(motion.getByRole('radio', { name: t('card.effect.fade'), exact: true })).toBeChecked();
-  await expect(motion.getByRole('slider', { name: new RegExp(t('card.duration')) })).toHaveValue('450');
-  await motion.getByRole('radio', { name: t('card.effect.slide'), exact: true }).check();
-  await tab(page, t, 'card.tab.faces');
-  await expect(effect).toHaveValue('slide');
-  await tab(page, t, 'card.tab.triggers');
+  // Whether the shared background moves is part of the same transition.
+  const shared = section.getByRole('button', { name: t('cardInsp.animateShared'), exact: true });
+  await expect(shared).toHaveAttribute('aria-pressed', 'true');
+  await shared.click();
+  await expect(shared).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('#undo').click();
+  await expect(shared).toHaveAttribute('aria-pressed', 'true');
+  // ▶ in the header tries it; there is one editor of the transition and nothing about pairs.
+  await expect(inspector.getByRole('button', { name: t('insp.tryObject'), exact: true })).toBeEnabled();
+  await expect(inspector.getByRole('group', { name: t('card.effect'), exact: true })).toHaveCount(1);
   await expect(inspector.locator('[data-section*="pair"], .face-transition')).toHaveCount(0);
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
 
-test('timed triggers edit intervals with bounds and Undo; general effects are picture cards', async ({ page, t }) => {
+test('timed triggers edit intervals with bounds and Undo; the effects are four choices', async ({ page, t }) => {
   const errors = watchErrors(page);
   const { inspector } = await twoFaceCard(page, t);
-  await tab(page, t, 'card.tab.motion');
-  await expect(inspector.getByRole('switch', { name: t('card.autoRotate'), exact: true })).toHaveCount(0);
-  await tab(page, t, 'card.tab.triggers');
+  await openSection(page, 'behavior');
   await inspector.getByRole('button', { name: t('cardInsp.addTimed'), exact: true }).click();
   const seconds = inspector.getByRole('spinbutton', { name: t('cardInsp.interval'), exact: true });
   const unit = inspector.getByRole('combobox', { name: t('cardInsp.intervalUnit'), exact: true });
@@ -217,23 +221,19 @@ test('timed triggers edit intervals with bounds and Undo; general effects are pi
   await expect(face).toHaveValue('next');
   await face.selectOption('0'); await expect(face).toHaveValue('0');
   await page.locator('#undo').click(); await expect(face).toHaveValue('next');
-  await tab(page, t, 'card.tab.motion');
-  // Effects: four radio cards, each with its picture.
-  const effects = inspector.getByRole('radiogroup', { name: t('card.effect'), exact: true });
-  await expect(effects.getByRole('radio')).toHaveCount(4);
-  await expect(effects.locator('svg.effect-art')).toHaveCount(4);
-  await expect(effects.getByRole('radio', { name: t('card.effect.none'), exact: true })).toBeChecked();
-  await expect(inspector.getByRole('slider', { name: new RegExp(t('card.duration')) })).toHaveCount(0);
-  await effects.getByRole('radio', { name: t('card.effect.slide'), exact: true }).check();
-  await expect(inspector.getByRole('slider', { name: new RegExp(t('card.duration')) })).toHaveValue('650');
-  await expect(inspector.locator('.card-scale')).toContainText(t('cardInsp.fast'));
+  // Effects: four choices; a slide has a duration and a direction, each one Undo step.
+  const effects = inspector.getByRole('group', { name: t('card.effect'), exact: true });
+  await expect(effects.getByRole('button')).toHaveCount(4);
+  await expect(effects.getByRole('button', { name: t('card.effect.none'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(inspector.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveCount(0);
+  await effects.getByRole('button', { name: t('card.effect.slide'), exact: true }).click();
+  await expect(inspector.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveValue('650');
   const up = inspector.getByRole('group', { name: t('common.direction'), exact: true }).getByRole('button', { name: t('card.direction.up'), exact: true });
   await up.click();
   await expect(up).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#undo').click();
   await expect(inspector.getByRole('group', { name: t('common.direction'), exact: true }).getByRole('button', { name: t('common.left'), exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(inspector.getByRole('button', { name: t('card.animateNext'), exact: true })).toBeEnabled();
-  await inspector.getByRole('tabpanel', { name: t('card.tab.motion'), exact: true }).screenshot({ path: test.info().outputPath('motion-content.png') });
+  await behaviorRegion(inspector, t).screenshot({ path: test.info().outputPath('motion-content.png') });
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
@@ -241,7 +241,7 @@ test('timed triggers edit intervals with bounds and Undo; general effects are pi
 test('triggers read as sentences with tokens, reorder by keyboard, and share one return', async ({ page, t }) => {
   const errors = watchErrors(page);
   const { inspector } = await twoFaceCard(page, t);
-  await tab(page, t, 'card.tab.triggers');
+  await openSection(page, 'behavior');
   await expect(inspector).toContainText(t('cardInsp.triggersIntro'));
   const returnTo = inspector.getByRole('combobox', { name: t('trigger.returnFace'), exact: true });
   await expect(returnTo).toBeDisabled();
@@ -291,7 +291,7 @@ test('triggers read as sentences with tokens, reorder by keyboard, and share one
   await page.locator('#undo').click();
   await expect(returnTo).toHaveValue('previous');
   await expect(inspector).toContainText(t('cardInsp.priorityHint'));
-  await inspector.getByRole('tabpanel', { name: t('card.tab.triggers'), exact: true }).screenshot({ path: test.info().outputPath('triggers-content.png') });
+  await behaviorRegion(inspector, t).screenshot({ path: test.info().outputPath('triggers-content.png') });
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
@@ -324,16 +324,14 @@ test.describe('Italian mockup comparison', () => {
     await setPanelWidths(page, { inspector: 360 });
     const { inspector } = await twoFaceCard(page, t);
     expect(await inspector.evaluate(node => node.getBoundingClientRect().width)).toBe(360);
-    await inspector.getByRole('tabpanel', { name: t('card.tab.faces'), exact: true }).screenshot({ path: test.info().outputPath('CardFaces-it.png') });
-    await tab(page, t, 'card.tab.motion');
-    await inspector.getByRole('radio', { name: t('card.effect.slide'), exact: true }).check();
-    await inspector.getByRole('tabpanel', { name: t('card.tab.motion'), exact: true }).screenshot({ path: test.info().outputPath('CardMotion-it.png') });
-    await tab(page, t, 'card.tab.triggers');
+    await facesRegion(inspector, t).screenshot({ path: test.info().outputPath('CardFaces-it.png') });
+    await openSection(page, 'behavior');
+    await inspector.getByRole('group', { name: t('card.effect'), exact: true }).getByRole('button', { name: t('card.effect.slide'), exact: true }).click();
     await inspector.getByRole('button', { name: t('trigger.add'), exact: true }).click();
     await inspector.getByRole('button', { name: t('trigger.add'), exact: true }).click();
     await inspector.getByRole('button', { name: t('cardInsp.addTimed'), exact: true }).click();
     await expect(inspector.getByRole('spinbutton', { name: t('cardInsp.interval'), exact: true })).toHaveValue('10');
-    await inspector.getByRole('tabpanel', { name: t('card.tab.triggers'), exact: true }).screenshot({ path: test.info().outputPath('CardTriggers-it.png') });
+    await behaviorRegion(inspector, t).screenshot({ path: test.info().outputPath('CardBehavior-it.png') });
     await expectAccessible(page);
     expect(errors).toEqual([]);
   });
@@ -342,10 +340,10 @@ test.describe('Italian mockup comparison', () => {
 test('the shared context supplies live trigger app choices', async ({ page, t, lang }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
-  // Exercise the pending host wiring without editing the frozen inspector.
+  // The Card module alone, with a sample whose activity can stop.
   await page.evaluate(async locale => {
     const [{ renderCardPanel }, { createStore }, { createDemoBackend }, { translator }, { el }, { propertySection }] = await Promise.all([
-      import('/ui/inspector-card.js'), import('/editor/store.js'), import('/demo-backend.js'), import('/i18n/index.js'), import('/ui/dom.js'), import('/ui/fields.js'),
+      import('/ui/inspector/card.js'), import('/editor/store.js'), import('/demo-backend.js'), import('/i18n/index.js'), import('/ui/dom.js'), import('/ui/fields.js'),
     ]);
     const bridge = createDemoBackend('turing88');
     const store = createStore((await bridge.session()).theme);

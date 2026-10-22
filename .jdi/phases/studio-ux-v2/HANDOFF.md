@@ -7,7 +7,7 @@
 (codice finale `fff89d4`, esportazione `.bezeltheme` confermata dall'utente, vedi `SUMMARY-T-9c.md`);
 T-9b → **Claude**: completata e integrata (vedi `SUMMARY-T-9b.md`).
 T-9d avviata da Codex e completata da Claude: integrata (vedi `SUMMARY-T-9d.md`). **Wave 2 chiusa.** T-11 (video negli oggetti Immagine) **rinviata a tempo indeterminato** dall'utente il 21 ottobre.
-**T-10 → Claude**, in corso (worktree `F:/dev/bezel-ux2-t10`, branch `ux2/t10`). Non prendere la task dell'altro.
+**T-10 completata e integrata** (Claude, vedi `REVIEW.md`): fase in APPROVED_PENDING_MANUAL, in attesa che l'utente approvi `evidence/final/index.html` e faccia le prove a vista.
 T-9c non tocca `index.html` né `app.js` (di T-9b): espone funzioni e annota
 il collegamento nel SUMMARY. Se T-9c richiede Rust (▶ prova di 30 s del
 profilo), avvisare: Claude in T-9b non tocca crate Rust.

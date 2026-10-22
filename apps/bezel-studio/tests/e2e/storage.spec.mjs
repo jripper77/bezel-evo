@@ -6,7 +6,7 @@
 // files are options of each medium's list, and the actions act on the one
 // selected (the storage manager's toolbar). No console errors, no serious or
 // critical accessibility violations.
-import { test, expect, watchErrors, expectAccessible, prefixOf, suffixOf, dragTo } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, prefixOf, suffixOf, dragTo, storageFileAction, sendFileTo } from './helpers.mjs';
 import { formatBytes, formatMiB } from '../../src/ui/storage.js';
 import { VENDOR_STORAGE } from '../../src/demo-data.js';
 import { DEMO_LET_GO_EVENT } from '../../src/bridge.js';
@@ -30,10 +30,9 @@ async function dropFile(page, zone, name, type) {
 /** The option of the file called `name` in a medium's list. */
 const option = (medium, name) => medium.getByRole('option').filter({ hasText: name });
 
-/** Selects the file called `name` and presses the toolbar's `action` (`storage.action.*`). */
+/** Runs `action` (`storage.action.*`) from the menu of the file called `name` (T-7c). */
 async function actOn(t, medium, name, action) {
-  await option(medium, name).click();
-  await medium.getByRole('button', { name: t(`storage.action.${action}`) }).click();
+  await (await storageFileAction(medium.page(), t, medium, name, action)).click();
 }
 
 /** Where the summary says a file goes: "in the internal memory (videos)". */
@@ -68,7 +67,7 @@ test('storage tab upload progress and confirmed delete', async ({ page, t, lang 
   await expectAccessible(page);
 
   // Sending shows a summary first, then a progress bar with Cancel.
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   const summary = page.getByRole('dialog', { name: t('storage.confirmUploadTitle', { name: 'ferias.mp4' }) });
   await expect(summary).toContainText(placeIn(t, 'internal', 'video'));
   await expect(summary).toContainText(t('storage.summary.converted', { width: 480, height: 1920 }));
@@ -80,8 +79,10 @@ test('storage tab upload progress and confirmed delete', async ({ page, t, lang 
   await letGo(page);
   await expect(page.getByText(t('storage.phase.upload'), { exact: true })).toBeVisible();
   await expect.poll(() => bar.evaluate((b) => b.value)).toBeGreaterThan(0);
-  await expect(internal.getByRole('button', { name: t('storage.choose') })).toBeDisabled();
-  await expect(internal.getByRole('button', { name: t('storage.action.delete') })).toBeDisabled();
+  // While a file goes, nothing else can be sent or deleted.
+  await expect(page.getByRole('button', { name: t('storagePanel.sendFile'), exact: true })).toBeDisabled();
+  await expect(await storageFileAction(page, t, internal, 'logo.png', 'delete')).toBeDisabled();
+  await page.keyboard.press('Escape');
   await expectAccessible(page);
   await page.getByRole('button', { name: t('storage.cancel') }).click();
   const cancelled = page.getByRole('region', { name: t('storage.cancelled') });
@@ -110,14 +111,14 @@ test('storage tab upload progress and confirmed delete', async ({ page, t, lang 
   await expect(option(internal, 'ferias.mp4')).toHaveCount(0);
 
   // A complete upload lists the stored file.
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   await page.getByRole('dialog').getByRole('button', { name: t('storage.confirmUploadAction'), exact: true }).click();
   await letGo(page, 2);
   await expect(toast(page)).toHaveText(t('storage.uploaded', { name: 'ferias.mp4' }), UPLOAD);
   await expect(option(internal, 'ferias.mp4')).toContainText('MB');
 
   // The same file again replaces it, and the summary says so.
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   const replace = page.getByRole('dialog', { name: t('storage.confirmUploadTitle', { name: 'ferias.mp4' }) });
   await expect(replace).toContainText(suffixOf(t, 'storage.summary.replaces', ['name', 'size', 'place']));
   await replace.getByRole('button', { name: t('dialog.cancel') }).click();
@@ -137,7 +138,7 @@ test('storage tab explains a missing ffmpeg and locates it', async ({ page, t })
   await expectAccessible(page);
 
   const internal = page.getByRole('region', { name: t('storage.medium.internal') });
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   const refused = page.getByRole('region', { name: t('storage.refusedTitle', { name: 'ferias.mp4' }) });
   const details = [t('storage.mismatch.audio'), t('storage.mismatch.resolution', { found: '1920x1080', expected: '480x1920' })].join('; ');
   await expect(refused).toContainText(t('storage.refused.needsConverter', { details }));
@@ -147,7 +148,7 @@ test('storage tab explains a missing ffmpeg and locates it', async ({ page, t })
   await expect(toast(page)).toHaveText(t('storage.ffmpegReady', { version: '7.1' }));
   await expect(ffmpeg).toHaveCount(0);
 
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   await expect(page.getByRole('dialog', { name: t('storage.confirmUploadTitle', { name: 'ferias.mp4' }) })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -163,8 +164,8 @@ test('a live theme video missing on the screen is sent on request', async ({ pag
   await expect(page.locator('#status-device')).toHaveText(t('status.liveVideoMissing'));
   // While live, the theme covers what the screen plays.
   const internal = page.getByRole('region', { name: t('storage.medium.internal') });
-  await option(internal, 'logo.png').click();
-  await expect(internal.getByRole('button', { name: t('storage.action.play') })).toBeDisabled();
+  await expect(await storageFileAction(page, t, internal, 'logo.png', 'play')).toBeDisabled();
+  await page.keyboard.press('Escape');
   await expect(page.getByText(t('storage.liveHint'))).toBeVisible();
   await expectAccessible(page);
 
@@ -185,7 +186,8 @@ test('the boot media asks first, files drop on a medium and TUR_USB keeps its ow
   await openStorage(page, t);
   const internal = page.getByRole('region', { name: t('storage.medium.internal') });
   const card = page.getByRole('region', { name: t('storage.medium.sd') });
-  const slot = page.getByRole('region', { name: t('storage.bootTitle') });
+  // The drop target inside the At start section (the section's own region has the same name).
+  const slot = page.locator('#storage-panel .boot-section');
 
   await actOn(t, card, 'chuva.mp4', 'boot');
   const boot = page.getByRole('dialog', { name: t('storage.confirmBootTitle', { name: 'chuva.mp4' }) });
@@ -230,11 +232,11 @@ test('the boot media asks first, files drop on a medium and TUR_USB keeps its ow
   await openStorage(page, t);
   await expect(page.getByText(t('storage.limitedHint'))).toBeVisible();
   const usbInternal = page.getByRole('region', { name: t('storage.medium.internal') });
-  await option(usbInternal, 'logo.png').click();
-  const remove = usbInternal.getByRole('button', { name: t('storage.action.delete') });
+  const remove = await storageFileAction(page, t, usbInternal, 'logo.png', 'delete');
   await expect(remove).toBeDisabled();
   await expect(remove).toHaveAttribute('title', t('storage.reason.deleteUnsupported'));
-  await expect(usbInternal.getByRole('button', { name: t('storage.action.play') })).toBeEnabled();
+  await expect(page.getByRole('menuitem', { name: t('storage.action.play'), exact: true })).toBeEnabled();
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('region', { name: t('storage.bootTitle') })).toHaveCount(0);
   await expect(page.locator('#storage-panel')).not.toContainText('null');
   await expectAccessible(page);
@@ -294,7 +296,8 @@ test('storage shows real boot media, kind bars and keyboard place filters', asyn
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=vendorCard');
   await openStorage(page, t);
-  const slot = page.getByRole('region', { name: t('storage.bootTitle') });
+  // The drop target inside the At start section (the section's own region has the same name).
+  const slot = page.locator('#storage-panel .boot-section');
   await expect(slot.locator('.boot-name')).toHaveText('earth.mp4');
   const meters = page.locator('.storage-meter');
   await expect(meters).toHaveCount(2);
@@ -335,11 +338,15 @@ test('the boot drop target highlights during a drag and clears before confirmati
   await openStorage(page, t);
   const internal = page.getByRole('region', { name: t('storage.medium.internal') });
   const file = option(internal, 'logo.png');
-  await file.click();
-  const play = internal.getByRole('button', { name: t('storage.action.play'), exact: true });
+  const play = await storageFileAction(page, t, internal, 'logo.png', 'play');
   await expect(play).toBeEnabled();
-  await expect(play).toHaveAttribute('title', t('storage.action.play'));
-  const slot = page.getByRole('region', { name: t('storage.bootTitle') });
+  await expect(play).not.toHaveAttribute('title');
+  await page.keyboard.press('Escape');
+  // Fold Space, so the file and the At start slot are both in view for the drag.
+  await page.locator('#storage-panel').getByRole('button', { name: t('storagePanel.space'), exact: true }).click();
+  await file.click();
+  // The drop target inside the At start section (the section's own region has the same name).
+  const slot = page.locator('#storage-panel .boot-section');
   const from = await file.boundingBox();
   const to = await slot.boundingBox();
   // Inspect the intermediate pointer state, before the shared dragTo helper

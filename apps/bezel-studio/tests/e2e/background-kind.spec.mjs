@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as card, changeBackgroundButton as changeButton, backgroundChooser as chooser, backgroundSourceButton as source } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as card, changeBackgroundButton as changeButton, backgroundChooser as chooser, backgroundSourceButton as source, openSection, storageFileAction } from './helpers.mjs';
 
 // The theme's background is one card with only the options of its kind
 // (D-2026-10-16-studio-redesign-fidelity-25, replacing the three tabs of
@@ -10,6 +10,7 @@ const section = (page) => inspector(page).locator('[data-section="background"]')
 test('each kind shows only its own options, and each change is one undo step', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
+  await openSection(page, 'color');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   // No tabs of kinds any more: one card, a solid colour's options only.
   await expect(section(page).getByRole('group', { name: t('insp.bgSolid'), exact: true })).toHaveCount(1);
@@ -17,7 +18,7 @@ test('each kind shows only its own options, and each change is one undo step', a
   await expect(card(page, t, 'insp.bgSolid')).toContainText(t('insp.bgSolidHint'));
   await expect(card(page, t, 'insp.bgSolid').locator('.bg-status')).toHaveCount(0);
   await expect(section(page).locator('.color-button')).toHaveCount(1);
-  await expect(section(page).getByRole('switch', { name: t('deviceVideo.loop'), exact: true })).toHaveCount(0);
+  await expect(section(page).getByRole('button', { name: t('deviceVideo.loop'), exact: true })).toHaveCount(0);
   await expect(page.locator('#framing-canvas')).toHaveCount(0);
   await expectAccessible(page);
 
@@ -59,17 +60,17 @@ test('each kind shows only its own options, and each change is one undo step', a
 test('a video stored on the screen: its loop, its video windows and the link to Screen › Storage', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=vendorCard');
+  await openSection(page, 'color');
   await page.getByRole('tab', { name: t('library.screen'), exact: true }).click();
   await page.getByRole('tab', { name: t('screen.storageTab'), exact: true }).click();
   const sd = page.getByRole('region', { name: t('storage.medium.sd'), exact: true });
-  await sd.getByRole('option').filter({ has: page.getByText('AMD.mp4', { exact: true }) }).click();
-  await sd.getByRole('button', { name: t('storage.action.background'), exact: true }).click();
+  await (await storageFileAction(page, t, sd, 'AMD.mp4', 'background')).click();
   await page.locator('#tab-widgets').click();
   const stored = card(page, t, 'insp.bgScreenVideo');
   await expect(stored.locator('.bg-type')).toHaveText(t('insp.bgScreenVideo'));
   await expect(stored.locator('.bg-name')).toHaveText('AMD.mp4');
   await expect(stored).toContainText(t('insp.bgScreenHint'));
-  await expect(inspector(page).getByRole('switch', { name: t('deviceVideo.loop'), exact: true })).toBeChecked();
+  await expect(inspector(page).getByRole('button', { name: t('deviceVideo.loop'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(inspector(page)).toContainText(t('insp.bgWindowsHint'));
   await expect(inspector(page)).toContainText(t('insp.bgWindowsNone'));
   await expect(inspector(page).getByRole('button', { name: t('insp.bgSelect'), exact: true })).toHaveCount(0);

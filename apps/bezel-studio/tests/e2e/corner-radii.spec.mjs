@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection } from './helpers.mjs';
 
 // One corner-radius control everywhere (D-2026-10-15-studio-redesign-fidelity-22):
 // the drawing of the object's corners with the shared radius beside it, or
@@ -16,10 +16,10 @@ test('shapes, bars and the player cover share the corner control, by mouse and k
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const inspector = page.locator('#inspector');
-  const look = () => inspector.getByRole('tab', { name: t('inspector.tab.look'), exact: true });
 
   // Shape: one radius drawn beside its field, then each corner its own.
   await addWidget(page, t, 'shape');
+  await openSection(page, 'shape');
   let control = inspector.getByRole('group', { name: t('inspector.radius'), exact: true });
   await expect(control).toHaveAttribute('data-mode', 'same');
   const radius = control.getByRole('spinbutton', { name: t('inspector.radius'), exact: true });
@@ -28,6 +28,7 @@ test('shapes, bars and the player cover share the corner control, by mouse and k
   const drawn = await radiusOf(control);
   expect(parseFloat(drawn)).toBeGreaterThan(0);
   // D-24: a small radius on a large object is still visibly round (not the 1 px of a strict scale).
+  await openSection(page, 'layout');
   const size = inspector.getByRole('spinbutton', { name: t('inspector.width'), exact: true });
   await size.fill('342'); await size.press('Tab');
   const tall = inspector.getByRole('spinbutton', { name: t('inspector.height'), exact: true });
@@ -74,7 +75,7 @@ test('shapes, bars and the player cover share the corner control, by mouse and k
 
   // Bar: one radius only, the same drawing.
   await addWidget(page, t, 'bar');
-  await look().click();
+  await openSection(page, 'shape');
   control = inspector.getByRole('group', { name: t('inspector.radius'), exact: true });
   await expect(control.locator('.corner-shape')).toBeVisible();
   await expect(inspector.getByRole('button', { name: t('insp.cornersEach'), exact: true })).toHaveCount(0);
@@ -84,7 +85,7 @@ test('shapes, bars and the player cover share the corner control, by mouse and k
 
   // Player cover: the same control, under its own title.
   await addWidget(page, t, 'player');
-  await look().click();
+  await openSection(page, 'shape');
   control = inspector.getByRole('group', { name: t('player.coverRadius'), exact: true });
   await expect(control.locator('.corner-shape')).toBeVisible();
   // The cover is drawn on its own (square) box.

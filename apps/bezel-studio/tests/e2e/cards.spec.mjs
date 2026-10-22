@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste, cardFaceList, faceAction } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, cardFaceList, faceAction, openSection } from './helpers.mjs';
 
 test('card faces, shared base, grouping and clipboard are editable', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -12,12 +12,12 @@ test('card faces, shared base, grouping and clipboard are editable', async ({ pa
   // The face in view is the current row of the card's face list.
   const faces = cardFaceList(page, t);
   const inView = faces.locator('[aria-current="true"]');
-  const tab = name => detail.getByRole('tab', { name: t(name), exact: true }).click();
   await add('card');
   const cardName = await detail.getByLabel(t('common.name'), { exact: true }).inputValue();
   await detail.getByLabel(t('card.faceTitle'), { exact: true }).fill('Metrics');
   await detail.getByLabel(t('card.faceTitle'), { exact: true }).press('Tab');
   await add('text');
+  await openSection(page, 'layout');
   await expect(detail.getByRole('combobox', { name: t('card.face'), exact: true })).toHaveValue('0');
   await detail.getByRole('combobox', { name: t('card.face'), exact: true }).selectOption('');
   const selectCard = async () => {
@@ -29,6 +29,7 @@ test('card faces, shared base, grouping and clipboard are editable', async ({ pa
   await expect(inView).toHaveAttribute('data-face', '1');
   await add('ring');
   await add('ring');
+  await openSection(page, 'layout');
   await expect(detail.getByRole('combobox', { name: t('card.face'), exact: true })).toHaveValue('1');
   await page.locator('#tab-layers').click();
   const tree = page.locator('.layer-card').filter({ has: page.locator('.layer-name').filter({ hasText: cardName }) }).first();
@@ -51,7 +52,7 @@ test('card faces, shared base, grouping and clipboard are editable', async ({ pa
   await expect(detail.getByRole('combobox', { name: t('card.face'), exact: true })).toHaveValue('1');
   await expect(tree.locator('[data-face="1"]')).toHaveClass(/active-face/);
   await selectCard();
-  await tab('card.tab.triggers');
+  await openSection(page, 'behavior');
   await detail.getByRole('button', { name: t('cardInsp.addTimed'), exact: true }).click();
   await expect(detail.getByRole('spinbutton', { name: t('cardInsp.interval'), exact: true })).toHaveValue('10');
   await detail.getByRole('spinbutton', { name: t('cardInsp.interval'), exact: true }).fill('5');
@@ -60,7 +61,6 @@ test('card faces, shared base, grouping and clipboard are editable', async ({ pa
   await page.screenshot({ path: test.info().outputPath('card-timer.png') });
   await detail.getByRole('button', { name: t('trigger.remove'), exact: true }).click();
   await expect(detail.getByRole('spinbutton', { name: t('cardInsp.interval'), exact: true })).toHaveCount(0);
-  await tab('card.tab.faces');
   await faceAction(page, t, 1, 'card.duplicateFace');
   await expect(inView).toHaveAttribute('data-face', '2');
   await faceAction(page, t, 2, 'card.previous');

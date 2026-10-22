@@ -74,8 +74,9 @@ Bezel.
 
 ## No Studio
 
-**Tela → Ajustes → Quando o computador desligar**: escolha uma das quatro; cada
-**?** explica a sua. Uma escolha que não vale fica acinzentada com o motivo: a
+**Tela → Ajustes → Quando o computador desligar**: escolha uma das quatro; a
+linha embaixo de cada uma diz o que ela faz, e o quadro abaixo explica a
+escolhida. Uma escolha que não vale fica acinzentada, com o motivo embaixo: a
 tela não está conectada, não é uma tela Turing rev C, não há cartão de memória
 ou nenhum vídeo está guardado. Para mudar a escolha, a tela precisa estar
 conectada.

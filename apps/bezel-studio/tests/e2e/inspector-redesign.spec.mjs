@@ -8,6 +8,8 @@ test('all widget inspectors separate navigation from geometry and keep integrate
   for (const kind of ['value', 'text', 'clock', 'weather', 'bar', 'ring', 'needle', 'graph', 'spectrum', 'player', 'image', 'shape', 'card']) {
     await page.locator('#tab-widgets').click();
     await clickAddWidget(page, t, kind);
+    // Position, size and membership are in Layout, which then stays open beside the others.
+    await openSection(page, 'layout');
     const position = inspector.locator('[data-section="position"]');
     const geometry = position.locator('.geometry-fields, .size-field');
     await expect(geometry.getByRole('spinbutton')).toHaveCount(4);
@@ -47,9 +49,9 @@ test('sensor formatting offers temperature controls only for temperatures and tr
   await openSection(page, 'behavior');
   const transition = inspector.locator('[data-section="transition"]');
   await transition.getByRole('button', { name: t('insp.transitionSmooth'), exact: true }).click();
-  await expect(transition.locator('.slider-field-inline output')).toHaveText('400 ms');
+  await expect(transition.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveValue('400');
   await transition.getByRole('button', { name: t('fade.none'), exact: true }).click();
-  await expect(transition.getByRole('slider')).toHaveCount(0);
+  await expect(transition.getByRole('spinbutton', { name: t('card.duration'), exact: true })).toHaveCount(0);
   await transition.getByRole('button', { name: t('insp.transitionSmooth'), exact: true }).click();
   await pickSensor(page, t, inspector, 'gpu.usage');
   for (const tab of ['data', 'look']) {

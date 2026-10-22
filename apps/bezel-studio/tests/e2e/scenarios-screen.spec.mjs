@@ -4,7 +4,7 @@
 // screen is restarted after one, a live screen that drops is connected
 // again, saying so, and the Screen panel shows only the screen chosen at the
 // top.
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, toggleButton, setToggle, sendFileTo } from './helpers.mjs';
 
 test('without a screen, live mode explains itself', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -33,9 +33,8 @@ test('live mode and start at login', async ({ page, t }) => {
   await expect(page.getByRole('switch')).toBeChecked();
   await expect(page.locator('#status-device')).toHaveText(t('status.live'));
   await page.getByRole('tab', { name: t('library.screen') }).click();
-  const autostart = page.getByRole('checkbox', { name: t('screenPanel.autostart'), exact: true });
-  await autostart.check();
-  await expect(autostart).toBeChecked();
+  const autostart = toggleButton(page.locator('#panel-screen'), t('screenPanel.autostart'));
+  await setToggle(autostart, true);
   await page.getByRole('switch').click({ force: true });
   await expect(page.getByRole('switch')).not.toBeChecked();
   await expectAccessible(page);
@@ -53,12 +52,11 @@ test('the Screen panel shows only the screen chosen at the top', async ({ page, 
   const first = await picker.inputValue();
   const second = Object.keys(names).find((key) => key !== first);
   const slider = panel.getByRole('slider', { name: t('screen.brightness') });
-  const autostart = panel.getByRole('checkbox', { name: t('screenPanel.autostart'), exact: true });
-  const advanced = panel.getByRole('group', { name: t('screen.advanced'), exact: true });
-  // Only the chosen screen: one card, one brightness, one set of advanced actions.
-  await expect(panel.locator('.screen-block')).toHaveCount(1);
-  await expect(panel.getByRole('region', { name: names[first], exact: true })).toBeVisible();
-  await expect(panel.getByRole('region', { name: names[second], exact: true })).toHaveCount(0);
+  const autostart = toggleButton(panel, t('screenPanel.autostart'));
+  const advanced = panel.getByRole('button', { name: t('screenPanel.actions'), exact: true });
+  // Only the chosen screen: one card, one brightness, one menu of screen actions.
+  await expect(panel.locator('.screen-card')).toHaveCount(1);
+  await expect(panel.locator('.screen-card strong')).toHaveText(names[first]);
   await expect(panel.locator('.screen-card .meta')).toHaveText(new RegExp(`^${first.replace(/[/.]/g, '\$&')} · `));
   await expect(slider).toHaveCount(1);
   await expect(advanced).toHaveCount(1);
@@ -69,9 +67,7 @@ test('the Screen panel shows only the screen chosen at the top', async ({ page, 
 
   // The other screen shows once chosen at the top, with its own brightness.
   await picker.selectOption(second);
-  await expect(panel.getByRole('region', { name: names[second], exact: true })).toBeVisible();
-  await expect(panel.getByRole('region', { name: names[first], exact: true })).toHaveCount(0);
-  await expect(panel.locator('.screen-block')).toHaveCount(1);
+  await expect(panel.locator('.screen-card')).toHaveCount(1);
   await expect(panel.locator('.screen-card .meta')).toHaveText(new RegExp(`^${second.replace(/[/.]/g, '\$&')} · `));
   await expect(slider).toHaveCount(1);
   await expect(slider).toHaveValue('70');
@@ -81,7 +77,7 @@ test('the Screen panel shows only the screen chosen at the top', async ({ page, 
 
   // And back: the first keeps the level set on it.
   await picker.selectOption(first);
-  await expect(panel.getByRole('region', { name: names[first], exact: true })).toBeVisible();
+  await expect(panel.locator('.screen-card strong')).toHaveText(names[first]);
   await expect(slider).toHaveValue('40');
   expect(errors).toEqual([]);
 });
@@ -129,16 +125,17 @@ test('a hung screen offers the restart, which asks first and brings it back', as
   await expect(page.locator('#toast')).toHaveText(t('toast.liveStopped', { message: t('error.hung') }));
   await expect(page.getByRole('switch')).not.toBeChecked();
   await page.getByRole('tab', { name: t('library.screen') }).click();
-  // The warning and the restart sit in the screen's advanced actions.
-  const card = page.getByRole('group', { name: t('screen.advanced'), exact: true });
+  // The warning shows under the settings; the restart is in the screen's menu.
+  const card = page.locator('#panel-screen');
   await expect(card).toContainText(t('restart.hung'));
-  await expect(card.getByRole('button', { name: t('screen.restart') })).toBeVisible();
+  await card.getByRole('button', { name: t('screenPanel.actions'), exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: t('screen.restart'), exact: true })).toBeEnabled();
+  await page.keyboard.press('Escape');
   await expectAccessible(page);
 
   // An upload stops too, and its error offers the restart.
   await page.getByRole('tab', { name: t('screen.storageTab') }).click();
-  const internal = page.getByRole('region', { name: t('storage.medium.internal') });
-  await internal.getByRole('button', { name: t('storage.choose') }).click();
+  await sendFileTo(page, t, 'internal');
   await page.getByRole('dialog').getByRole('button', { name: t('storage.confirmUploadAction'), exact: true }).click();
   const failed = page.getByRole('region', { name: t('storage.errorTitle') });
   await expect(failed).toContainText(t('error.hung'), { timeout: 15_000 });
@@ -172,7 +169,11 @@ test('screens without a wake chip offer no restart', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turzx');
   await page.getByRole('tab', { name: t('library.screen') }).click();
-  await expect(page.getByRole('region', { name: 'Turing 2.1" Round (USB)' })).toBeVisible();
+  await expect(page.locator('#panel-screen .screen-card strong')).toHaveText('Turing 2.1" Round (USB)');
+  await page.locator('#panel-screen').getByRole('button', { name: t('screenPanel.actions'), exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: t('screen.release'), exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: t('screen.restart'), exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: t('screen.restart') })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

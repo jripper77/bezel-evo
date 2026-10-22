@@ -1,14 +1,14 @@
-import { pickSensor, test, expect, watchErrors, expectAccessible, clickAddWidget, colorButton, setColor } from './helpers.mjs';
+import { pickSensor, test, expect, watchErrors, expectAccessible, clickAddWidget, colorButton, setColor, openInspectorTab, toggleButton, openSection } from './helpers.mjs';
 
 test('colour rules edit values and colours, reorder, remove and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'bar');
-  await page.locator('#inspector').getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
+  await openInspectorTab(page, t, 'inspector.tab.look');
   const section = page.locator('[data-section="value-color"]');
-  const toggle = section.getByRole('switch', { name: t('insp.colorByValue'), exact: true });
-  await expect(toggle).not.toBeChecked();
+  const toggle = toggleButton(section, t('insp.colorByValue'));
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await toggle.click();
   const add = section.getByRole('button', { name: t('insp.colorAdd'), exact: true });
   await add.click();
@@ -61,8 +61,9 @@ test('shapes choose a rule sensor; turning the rule off preserves fixed paint', 
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'shape');
+  await openSection(page, 'color');
   const section = page.locator('[data-section="value-color"]');
-  const toggle = section.getByRole('switch', { name: t('insp.colorByValue'), exact: true });
+  const toggle = toggleButton(section, t('insp.colorByValue'));
   await toggle.click();
   await pickSensor(page, t, section, 'cpu.temperature');
   await expect(section.getByRole('combobox', { name: t('inspector.sensor'), exact: true })).toHaveAttribute('data-sensor-key', 'cpu.temperature');

@@ -330,6 +330,7 @@ function fakeCanvases() {
         get: (_, name) => {
           if (name === 'getImageData') return () => ({ data: new Uint8ClampedArray(width * height * 4) });
           if (name === 'createLinearGradient') return () => ({ addColorStop() {} });
+          if (name === 'measureText') return (text) => ({ width: String(text).length * 8 });
           if (name === 'rotate' || name === 'drawImage') return (...args) => log.push([name, ...args.map((a) => (typeof a === 'number' ? Math.round(a * 1000) / 1000 : `${a.width}x${a.height}`))]);
           return () => {};
         },

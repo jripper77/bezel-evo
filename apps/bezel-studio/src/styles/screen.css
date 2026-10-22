@@ -200,12 +200,11 @@
 .standby-radio[aria-checked="true"] .standby-mark { border: 5px solid var(--accent); background: var(--accent-text); }
 .standby-radio[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
 .standby-label { font-weight: 600; overflow-wrap: anywhere; }
-.standby-detail { grid-column: 2; color: var(--muted); font-size: var(--fs-compact); font-weight: 400; line-height: 1.4; overflow-wrap: anywhere; }
-.standby-option > .help-button { position: absolute; top: 8px; right: 8px; }
+.standby-detail { margin: 4px 4px 0; text-align: center; line-height: 1.35; overflow-wrap: anywhere; }
 
 /* Plan B (the screen's own sleep timer): a quiet row under the choices. */
-.standby .sleep-settings { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--well); }
-.sleep-label { flex: 1; min-width: 0; color: var(--text-3); font-size: var(--fs-compact); }
+.standby .sleep-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--well); }
+.sleep-label { flex: 1 1 12ch; min-width: 0; color: var(--text-3); font-size: var(--fs-compact); }
 .standby .sleep-button { gap: 6px; min-height: 28px; padding: 0 10px; border-radius: 6px; border-color: var(--border); background: transparent; font-size: var(--fs-compact); font-weight: 500; }
 .standby .sleep-button svg { width: 12px; height: 12px; }
 .standby-dialog .field select { width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); }
@@ -258,11 +257,9 @@
 .standby-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .standby-option { min-width: 0; }
 .standby-radio { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; text-align: center; }
-.standby-radio .standby-detail { display: none; }
 .standby-radio .standby-label { overflow-wrap: anywhere; }
 .standby-current { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
 .standby-current .hint { margin: 0; }
-.standby-option > .help-button { display: none; }
 #storage-panel .storage-body { gap: 0; }
 #storage-panel .storage-meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; padding: 0; border: 0; border-radius: 0; background: transparent; }
 #storage-panel .storage-bar { grid-column: 1 / -1; }

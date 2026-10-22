@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, openInspectorTab, toggleButton, setToggle, choose, chosen } from './helpers.mjs';
 
 test('weather city selection, appearance options and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -12,24 +12,25 @@ test('weather city selection, appearance options and Undo', async ({ page, t }) 
   await page.locator('#weather-results').getByRole('button', { name: 'Milano, Lazio, Italia', exact: true }).click();
   await expect(detail).toContainText(t('weather.location', { city: 'Milano' }));
   await detail.getByRole('combobox', { name: t('weather.language'), exact: true }).selectOption('it');
-  await detail.getByRole('switch', { name: t('inspector.fahrenheit'), exact: true }).check();
-  await detail.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
-  await detail.getByRole('combobox', { name: t('weather.iconStyle'), exact: true }).selectOption('filled');
+  await choose(detail, t('insp.weather.units'), 'f');
+  await openInspectorTab(page, t, 'inspector.tab.look');
+  const filled = detail.getByRole('group', { name: t('weather.iconStyle'), exact: true }).getByRole('button', { name: t('icons.filled'), exact: true });
+  await filled.click();
   await detail.getByLabel(t('weather.iconGap'), { exact: true }).fill('20');
   await detail.getByLabel(t('weather.iconGap'), { exact: true }).press('Tab');
-  await detail.getByLabel(t('weather.iconSize'), { exact: true }).fill('64');
-  await detail.getByLabel(t('weather.iconSize'), { exact: true }).press('Tab');
-  await detail.getByRole('switch', { name: t('weather.icon'), exact: true }).uncheck();
+  await detail.getByLabel(t('insp.weather.iconSize'), { exact: true }).fill('64');
+  await detail.getByLabel(t('insp.weather.iconSize'), { exact: true }).press('Tab');
+  await setToggle(toggleButton(detail, t('weather.icon')), false);
   await page.locator('#undo').click();
-  await expect(detail.getByRole('switch', { name: t('weather.icon'), exact: true })).toBeChecked();
+  await expect(toggleButton(detail, t('weather.icon'))).toHaveAttribute('aria-pressed', 'true');
   await copyAndPaste(page);
   await expect(detail).toContainText(t('weather.location', { city: 'Milano' }));
-  await detail.getByRole('tab', { name: t('inspector.tab.data'), exact: true }).click();
-  await expect(detail.getByRole('switch', { name: t('inspector.fahrenheit'), exact: true })).toBeChecked();
-  await detail.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
-  await expect(detail.getByRole('combobox', { name: t('weather.iconStyle'), exact: true })).toHaveValue('filled');
+  await openInspectorTab(page, t, 'inspector.tab.data');
+  await expect.poll(() => chosen(detail, t('insp.weather.units'))).toBe('f');
+  await openInspectorTab(page, t, 'inspector.tab.look');
+  await expect(filled).toHaveAttribute('aria-pressed', 'true');
   await expect(detail.getByLabel(t('weather.iconGap'), { exact: true })).toHaveValue('20');
-  await expect(detail.getByLabel(t('weather.iconSize'), { exact: true })).toHaveValue('64');
+  await expect(detail.getByLabel(t('insp.weather.iconSize'), { exact: true })).toHaveValue('64');
   await expect(detail).toContainText('Open-Meteo.com');
   await expectAccessible(page);
   expect(errors).toEqual([]);

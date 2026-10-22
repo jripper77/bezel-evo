@@ -28,11 +28,13 @@ const HANG_PARTIAL = 29_577_216;
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Opens the Storage tab of a demo scenario whose jobs hold until let go. */
+/** Opens the full-width storage manager of a demo scenario whose jobs hold until let go. */
 async function openManager(page, t, demo = 'vendorCard') {
   await page.goto(`/index.html?demo=${demo}&hold`);
   await page.getByRole('tab', { name: t('library.screen') }).click();
   await page.getByRole('tab', { name: t('screen.storageTab') }).click();
+  // The manager with every tool is the full-width view, opened on request (T-7c).
+  await page.getByRole('button', { name: t('storagePanel.expand'), exact: true }).click();
   const internal = page.getByRole('region', { name: t('storage.medium.internal') });
   const card = page.getByRole('region', { name: t('storage.medium.sd') });
   await expect(internal.getByRole('listbox')).toBeVisible();

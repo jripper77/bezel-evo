@@ -50,7 +50,7 @@ test('theme and multi selection keep their complete controls in canonical sectio
   const inspector = page.locator('#inspector');
   await openSection(page, 'color'); await openSection(page, 'behavior');
   await expect(inspector.getByRole('button', { name: t('insp.bgChange'), exact: true })).toBeVisible();
-  await expect(inspector.getByRole('group', { name: t('inspector.refresh'), exact: true })).toBeVisible();
+  await expect(inspector.getByRole('region', { name: t('inspector.refresh'), exact: true })).toBeVisible();
   await inspector.getByRole('button', { name: t('insp.bgChange'), exact: true }).click();
   await expect(inspector.getByRole('region', { name: t('insp.bgChooserTitle'), exact: true })).toBeVisible();
   await clickAddWidget(page, t, 'ring'); await clickAddWidget(page, t, 'bar');

@@ -9,7 +9,7 @@
 // video and stops with reduced motion; without ffmpeg it shows the poster and
 // the guide is one click away. No console errors, no serious or critical
 // accessibility violations.
-import { test, expect, watchErrors, expectAccessible, colorButton, setColor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, colorButton, setColor, openSection } from './helpers.mjs';
 
 const inspector = (page) => page.locator('#inspector');
 const framing = (page, t) => inspector(page).getByRole('group', { name: t('framing.title') });
@@ -42,6 +42,7 @@ const picturesIn = (page, ms) => page.evaluate(async (span) => {
 
 async function openDragon(page, scenario = 'dragon') {
   await page.goto(`/index.html?demo=${scenario}`);
+  await openSection(page, 'color');
   await expect(page.locator('#theme-name')).toHaveValue('Dragon Ball');
 }
 
@@ -157,7 +158,7 @@ test('video framing on the canvas: drag, wheel and keys, one undo step each', as
 
   // Elements cannot be selected meanwhile: a click on the title frames, it does not select.
   await page.mouse.click(box.x + 1600 * scale, box.y + 385 * scale);
-  await expect(inspector(page).getByRole('heading', { name: t('inspector.theme') })).toBeVisible();
+  await expect(inspector(page)).toHaveClass(/inspector-theme/);
   await expect(page.locator('#overlay .sel-box')).toHaveCount(0);
 
   // Keys: + zooms 5 %, - back, an arrow moves it, 0 resets; one undo step each.

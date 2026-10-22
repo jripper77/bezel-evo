@@ -9,8 +9,6 @@ import { widgetOf } from '../../editor/widgets.js';
 import { selectionRoots } from '../../editor/cards.js';
 import { MAX_RULES, ROTATION_MIN, ROTATION_MAX, TRIGGER_SOURCES, appSuggestions, clampPriority, clampReturn, commonReturn, moveRule, newRule, newTimedRule, timedParts, timedSeconds, sentenceOf, withApp, withReturn, withSource, dropIndex } from '../../card-rules.js';
 import { CARD_DURATION, cardDuration, withCardEffect } from '../../card-config.js';
-import { CARD_TABS as ALL_CARD_TABS } from '../../inspector-tabs.js';
-export const CARD_TABS = Object.freeze(ALL_CARD_TABS.slice(0, -1));
 /** Per store and Card: the face in view when the shared background was chosen for editing. */
 const baseViews = new WeakMap();
 const tool = (label, name, onclick, disabled = false, extra = '') => iconButton(label, ICONS[name], onclick, { size: 16, disabled, class: extra });

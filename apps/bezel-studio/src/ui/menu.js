@@ -39,7 +39,7 @@ export function openMenu({ label, items, x, y, anchor = null, onClose = () => {}
   const dismiss = () => close('dismiss');
   const menu = el('div', { class: 'object-menu', role: 'menu', 'aria-label': label }, items.map((item) => item === SEPARATOR
     ? el('hr', { role: 'separator' })
-    : el('button', { type: 'button', role: 'menuitem', disabled: Boolean(item.disabled), text: item.label, onclick: () => { close(null); item.run(); onClose('item'); } })));
+    : el('button', { type: 'button', role: 'menuitem', disabled: Boolean(item.disabled), ...(item.title ? { title: item.title } : {}), text: item.label, onclick: () => { close(null); item.run(); onClose('item'); } })));
   closeOpen = close;
   (anchor?.closest('dialog[open]') ?? document.body).append(menu);
   keepOnScreen(menu, x, y);

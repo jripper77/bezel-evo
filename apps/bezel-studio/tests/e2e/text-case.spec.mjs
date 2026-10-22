@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, clickAddWidget } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openInspectorTab, choose, chosen } from './helpers.mjs';
 
 test('demo pixels and fit measurement use display case without rewriting content', async ({ page }) => {
   await page.goto('/index.html?demo=turing88');
@@ -33,21 +33,22 @@ test('letter case preserves source text and supports Undo across text widgets', 
   const source = inspector.getByRole('textbox', { name: t('common.text'), exact: true });
   await source.fill('è GIÀ una BELLA giornata');
   await source.press('Tab');
-  await inspector.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
-  const casing = inspector.getByRole('combobox', { name: t('textCase.label'), exact: true });
+  await openInspectorTab(page, t, 'inspector.tab.look');
+  const label = t('textCase.label');
   for (const mode of ['upper', 'lower', 'sentence', 'title']) {
-    await casing.selectOption(mode);
-    await expect(casing).toHaveValue(mode);
+    await choose(inspector, label, mode);
+    await expect.poll(() => chosen(inspector, label)).toBe(mode);
   }
   await page.locator('#undo').click();
-  await expect(casing).toHaveValue('sentence');
+  await expect.poll(() => chosen(inspector, label)).toBe('sentence');
   await expectAccessible(page);
-  await inspector.getByRole('tab', { name: t('inspector.tab.data'), exact: true }).click();
+  await openInspectorTab(page, t, 'inspector.tab.data');
   await expect(inspector.getByRole('textbox', { name: t('common.text'), exact: true })).toHaveValue('è GIÀ una BELLA giornata');
   for (const widget of ['value', 'player', 'weather']) {
     await clickAddWidget(page, t, widget);
-    await inspector.getByRole('tab', { name: t('inspector.tab.look'), exact: true }).click();
-    await inspector.getByRole('combobox', { name: t('textCase.label'), exact: true }).selectOption('lower');
+    await openInspectorTab(page, t, 'inspector.tab.look');
+    await choose(inspector, t('textCase.label'), 'lower');
+    await expect.poll(() => chosen(inspector, t('textCase.label')), widget).toBe('lower');
   }
   expect(errors).toEqual([]);
 });

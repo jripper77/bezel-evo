@@ -143,7 +143,7 @@ export function segmented(label, value, options, onChange, { bare = false } = {}
 export function iconChoice(label, value, options, onChange, { wide = false, iconOnly = false, bare = false } = {}) {
   const group = el('div', { class: `segmented field-choice${wide ? ' is-wide' : ''}`, role: 'group', 'aria-label': label });
   for (const [v, text, name] of options) group.append(el('button', {
-    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), onclick: () => onChange(v),
+    type: 'button', title: text, 'aria-label': text, 'aria-pressed': String(v === value), dataset: { value: String(v) }, onclick: () => onChange(v),
   }, [name ? icon(Array.isArray(name) ? name : ICONS[name], 18) : null, iconOnly ? null : text]));
   return bare ? group : el('div', { class: 'field' }, [el('span', { text: label }), group]);
 }
@@ -872,7 +872,9 @@ function openColorPanel(button, label, start, onChange, { texts, source, alpha, 
   const pickStatus = el('p', { class: 'hint cp-pick-status', role: 'status', hidden: true });
   const eyedropper = pickScreenColor
     ? iconButton(texts.eyedropper, ICONS.eyedropper, async () => {
-      eyedropper.disabled = true;
+      // aria-disabled, not disabled: the button keeps the focus, so Escape still closes the popover.
+      if (eyedropper.getAttribute('aria-disabled') === 'true') return;
+      eyedropper.setAttribute('aria-disabled', 'true');
       pickStatus.hidden = false;
       pickStatus.textContent = texts.eyedropperHint;
       try {
@@ -886,7 +888,7 @@ function openColorPanel(button, label, start, onChange, { texts, source, alpha, 
         pickStatus.hidden = error?.name === 'AbortError';
         pickStatus.textContent = texts.eyedropperError;
       } finally {
-        eyedropper.disabled = false;
+        eyedropper.removeAttribute('aria-disabled');
       }
     }, { class: 'cp-eyedropper' })
     : null;

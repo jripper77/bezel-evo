@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createWidget } from '../../src/editor/widgets.js';
-import { test, expect, watchErrors, expectAccessible, copyAndPaste } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, openSection } from './helpers.mjs';
 const fixture = JSON.parse(readFileSync(new URL('../../../../crates/bezel-core/tests/fixtures/rotation-parity.json', import.meta.url)));
 const object = (id = 1, patch = {}) => ({ id, name: `Rotation ${id}`, frame: { ...fixture.frame }, opacity: 1, visible: true, locked: false, kind: { type: 'shape', shape: 'rect', radius: 0, fill: '#ff0000ff', stroke: null, strokeWidth: 0 }, ...patch });
 const theme = (elements = [object()]) => ({ schema: 1, name: 'Rotation', canvas: fixture.canvas, orientation: 'portrait', refreshSeconds: 1, background: { type: 'color', color: '#00000000' }, elements });
@@ -11,7 +11,8 @@ async function open(page, value = theme()) {
   await page.locator('#tab-layers').click();
 }
 const field = (page, t) => page.locator('#inspector').getByRole('spinbutton', { name: t('insp.rotation'), exact: true });
-async function select(page, id = 1) { await page.locator(`.layer-row[data-element-id="${id}"] .layer-name`).click(); }
+// Rotation is in Layout: open it, so a missing field means there is none.
+async function select(page, id = 1) { await page.locator(`.layer-row[data-element-id="${id}"] .layer-name`).click(); await openSection(page, 'layout'); }
 async function setAngle(page, t, angle) { await field(page,t).fill(String(angle)); await field(page,t).press('Tab'); }
 async function canvasPoint(page, x, y) {
   const b = await page.locator('#canvas-box').boundingBox();
@@ -49,7 +50,7 @@ test('rotation field and handle turn an object, Shift snaps to 15\u00b0 and one 
 test('a click hits the rotated box, not the unrotated corners', async ({page,t}) => {
   const errors=watchErrors(page); await open(page,theme([object(1,{rotation:30})]));
   const inside=await canvasPoint(page,...fixture.ink[1]); await page.mouse.click(inside.x,inside.y);
-  await expect(field(page,t)).toHaveValue('30');
+  await openSection(page,'layout'); await expect(field(page,t)).toHaveValue('30');
   const outside=await canvasPoint(page,...fixture.empty[0]); await page.mouse.click(outside.x,outside.y);
   await expect(page.locator('.sel-box')).toHaveCount(0);
   await expect(field(page,t)).toHaveCount(0);

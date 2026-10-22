@@ -3,15 +3,16 @@
 // per change and per drag, the theme's own swatches (saved, renamed,
 // reordered, deleted, copied and never linked), the colours the theme uses,
 // recent ones, and the eyedropper only where the system has one.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget, openInspectorTab, colorButton, colorPanel, setColor } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openInspectorTab, openSection, colorButton, colorPanel, setColor } from './helpers.mjs';
 
 const inspector = (page) => page.locator('#inspector');
 
 async function addShape(page, t) {
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  // A shape's properties are on one page, without tabs.
+  // A shape's fill is in its Color section.
   await clickAddWidget(page, t, 'shape');
+  await openSection(page, 'color');
   const fill = colorButton(inspector(page), t('inspector.fill'));
   await expect(fill).toBeVisible();
   return fill;

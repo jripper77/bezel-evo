@@ -151,7 +151,7 @@ export default {
     { name: 'unsaved', run: (app) => app.add('ring') },
     { name: 'live', run: (app) => app.click('label.live-toggle') },
     { name: 'grid', run: (app) => app.click('#grid-toggle') },
-    { name: 'preferences', run: (app) => app.click('#preferences') },
+    { name: 'preferences', run: async (app) => { await app.click('#more-menu'); await app.page.getByRole('menuitem').first().click(); } },
     // No screen: the Connect card over the stage (outside the gallery, D-5 revised).
     { name: 'no-screen', demo: 'empty', run: async () => {} },
   ],

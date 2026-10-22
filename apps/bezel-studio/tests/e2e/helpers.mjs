@@ -123,13 +123,16 @@ export async function faceAction(page, t, face, action) {
 
 /** Theme background controls shared by the chooser and video regression specs. */
 export const themeInspector = (page) => page.locator('#inspector');
+/** The theme inspector's screen and size line ("Turing 8.8\" · 1920 × 480"), shown with nothing selected. */
+export const themeSize = (page) => page.locator('#inspector .theme-facts .mono');
+export const sizeText = ({ width, height }) => `${width} × ${height}`;
 export const backgroundCard = (page, t, key) => themeInspector(page).getByRole('group', { name: t(key), exact: true });
 export const changeBackgroundButton = (page, t) => themeInspector(page).getByRole('button', { name: t('insp.bgChange'), exact: true });
 export const backgroundChooser = (page, t) => themeInspector(page).getByRole('region', { name: t('insp.bgChooserTitle'), exact: true });
 export const backgroundSourceButton = (page, t, key) => backgroundChooser(page, t).locator('.bg-source-head').filter({ hasText: t(key) });
 
 /** The colour picker's button named `label` (D-2026-10-16-studio-redesign-fidelity-29) in `scope`; its `data-color` is the colour. */
-export const colorButton = (scope, label) => scope.getByRole('button', { name: label, exact: true });
+export const colorButton = (scope, label) => scope.getByRole('button', { name: label, exact: true }).and(scope.locator('.color-button'));
 
 /** The open colour panel. */
 export const colorPanel = (page) => page.locator('.picker-popover:has(.cp-area)');
@@ -154,4 +157,44 @@ export async function setColor(page, t, scope, label, hex) {
   await field.press('Enter');
   await page.keyboard.press('Escape');
   await expect(colorPanel(page)).toHaveCount(0);
+}
+
+/** Opens the menu of `file` in a Storage column (`region`) and returns its `action` item (storage.action.*). */
+export async function storageFileAction(page, t, region, file, action) {
+  await region.getByRole('button', { name: t('cardInsp.faceActions', { name: file }), exact: true }).click();
+  return page.getByRole('menuitem', { name: t(`storage.action.${action}`), exact: true });
+}
+
+/** An inspector on/off control: a button with a pressed state (they replaced the switches in studio-ux-v2). */
+export const toggleButton = (scope, name) => scope.getByRole('button', { name, exact: true }).and(scope.locator('[aria-pressed]'));
+
+/** Turns `toggle` on or off (nothing when it already is) and checks it took. */
+export async function setToggle(toggle, on) {
+  if ((await toggle.getAttribute('aria-pressed')) !== String(on)) await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', String(on));
+}
+
+/** A choice named `label` in `scope`: a row of buttons (each with its data-value) or a list. */
+const choiceControl = (scope, label) => scope.getByRole('group', { name: label, exact: true }).or(scope.getByRole('combobox', { name: label, exact: true }));
+
+/** Picks `value` in the choice named `label`. */
+export async function choose(scope, label, value) {
+  const control = choiceControl(scope, label);
+  if (await control.evaluate((n) => n.tagName === 'SELECT')) await control.selectOption(value);
+  else await control.locator(`button[data-value="${value}"]`).click();
+}
+
+/** The value chosen in the choice named `label` ('' when none is). */
+export const chosen = (scope, label) => choiceControl(scope, label).evaluate((n) => (n.tagName === 'SELECT' ? n.value : n.querySelector('button[aria-pressed="true"]')?.dataset.value ?? ''));
+
+/** Opens Storage's "Send file" menu and picks the `medium` (internal, sd) to send to. */
+export async function sendFileTo(page, t, medium) {
+  await page.getByRole('button', { name: t('storagePanel.sendFile'), exact: true }).click();
+  await page.getByRole('menuitem', { name: t(`storage.medium.${medium}`), exact: true }).click();
+}
+
+/** Opens Preferences from the top bar's ⋯ menu (`t` may be another language's translator). */
+export async function openPreferences(page, t) {
+  await page.locator('#more-menu').click();
+  await page.getByRole('menuitem', { name: t('prefs.title'), exact: true }).click();
 }

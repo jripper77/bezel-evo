@@ -79,7 +79,7 @@ test('sensors draw their recent values, say how often they update and bind when 
   await tab(page, t, 'sensors');
   const panel = page.locator('#panel-sensors');
   await expect(panel.getByRole('searchbox', { name: t('library.searchSensors'), exact: true })).toHaveAttribute('placeholder', t('sensorsPanel.search'));
-  await expect(panel.locator('#sensor-rate')).toHaveText(`20 · ${t('insp.theme.every', { seconds: 1 })}`, { timeout: 10_000 });
+  await expect(panel.locator('#sensor-rate')).toHaveText(`26 · ${t('insp.theme.every', { seconds: 1 })}`, { timeout: 10_000 });
   await expect(panel.locator('svg[data-spark-for="cpu.usage"] path')).toHaveAttribute('d', /^M0 [\d.]+ L/, { timeout: 10_000 });
   await expect(panel.locator('.sensor-group .accordion-title').first()).toHaveText(t('category.cpu'));
   await expectAccessible(page);
@@ -432,7 +432,7 @@ test('sensor categories fold with their headline values, rows keep whole names a
   }
   const panel = page.locator('#panel-sensors');
   const cpu = panel.getByRole('button', { name: t('category.cpu'), exact: true });
-  await expect(cpu.locator('.accordion-summary')).toHaveText(/^5 · \S+%/);
+  await expect(cpu.locator('.accordion-summary')).toHaveText(/^6 · \S+%/);
   await cpu.click(); await expect(cpu).toHaveAttribute('aria-expanded', 'false');
   await expect(cpu.locator('.accordion-summary')).toBeVisible();
   // A sensor that cannot be read says why instead of its key, without a sparkline.

@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection } from './helpers.mjs';
 
 async function dragRow(page, source, target, before = true, cancel = false, allowed = true) {
   const from = await source.boundingBox(), to = await target.boundingBox();
@@ -31,7 +31,7 @@ test('layer row dragging reorders with Undo, cancellation, and outside-canvas de
   const stage = await page.locator('#stage-scroll').boundingBox();
   await page.mouse.click(stage.x + 8, stage.y + 8);
   await expect(page.locator('.sel-box')).toHaveCount(0);
-  await expect(page.locator('#inspector h2').first()).toHaveText(t('inspector.theme'));
+  await expect(page.locator('#inspector')).toHaveClass(/inspector-theme/);
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
   await dragRow(page, rows.last(), rows.first());
   expect(await ids()).toEqual([original.at(-1), ...original.slice(0, -1)]);
@@ -74,6 +74,7 @@ test('dragging card rows keeps member scopes, moves complete cards and preserves
   const before = await ids();
   await dragRow(page, rows.last(), rows.first());
   expect(await ids()).toEqual([...before].reverse());
+  await openSection(page, 'layout');
   await expect(page.locator('#inspector').getByRole('combobox', { name: t('card.face'), exact: true })).toHaveValue('1');
   await page.locator('#undo').click(); expect(await ids()).toEqual(before);
   await dragRow(page, rows.last(), card.locator('[data-face="1"] .layer-row').first(), true, false, true);

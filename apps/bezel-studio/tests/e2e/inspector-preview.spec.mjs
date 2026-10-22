@@ -284,21 +284,21 @@ test('the player lists the apps with a media session, the playing one marked, an
   await expect(apps.getByRole('button', { name: t('insp.automatic'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(source).toHaveCount(0);
 
-  await openSection(page, 'behavior');
-  const stopped = inspector.getByRole('radiogroup', { name: t('insp.stopped'), exact: true });
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedText')) })).toBeChecked();
+  // What shows when nothing plays: two choices in Data, each one Undo step.
+  const stopped = inspector.getByRole('group', { name: t('insp.stopped'), exact: true });
+  const choice = (key) => stopped.getByRole('button', { name: t(key), exact: true });
+  await expect(choice('insp.stoppedText')).toHaveAttribute('aria-pressed', 'true');
   await expect(inspector.getByRole('textbox', { name: t('player.empty'), exact: true })).toBeVisible();
-  await stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedHide')) }).check();
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedHide')) })).toBeChecked();
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedHide')) })).toBeFocused();
+  await choice('insp.stoppedHide').click();
+  await expect(choice('insp.stoppedHide')).toHaveAttribute('aria-pressed', 'true');
+  await expect(choice('insp.stoppedHide')).toBeFocused();
   await expect(inspector.getByRole('textbox', { name: t('player.empty'), exact: true })).toHaveCount(0);
-  await page.keyboard.press('ArrowDown');
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedText')) })).toBeChecked();
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedText')) })).toBeFocused();
-  await page.keyboard.press('ArrowUp');
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedHide')) })).toBeChecked();
+  await choice('insp.stoppedText').click();
+  await expect(choice('insp.stoppedText')).toHaveAttribute('aria-pressed', 'true');
+  await choice('insp.stoppedHide').click();
+  await expect(choice('insp.stoppedHide')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#undo').click();
-  await expect(stopped.getByRole('radio', { name: new RegExp(t('insp.stoppedText')) })).toBeChecked();
+  await expect(choice('insp.stoppedText')).toHaveAttribute('aria-pressed', 'true');
 
   await tab(page, t, 'inspector.tab.look');
   const gap = inspector.getByRole('spinbutton', { name: t('player.coverGap'), exact: true });

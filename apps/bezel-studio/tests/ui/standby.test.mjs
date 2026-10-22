@@ -57,7 +57,7 @@ test('four choices, keep first; an option the answer lacks is refused as unsuppo
   assert.deepEqual(optionOf(null, 'keep'), { choice: 'keep', enabled: false, reason: 'unsupported' });
   for (const reason of REASONS) assert.ok(isKey(`standby.reason.${reason}`), reason);
   for (const choice of CHOICES) {
-    for (const key of [`standby.choice.${choice}`, `standby.explain.${choice}`]) assert.ok(isKey(key), key);
+    for (const key of [`standby.choice.${choice}`, `screenPanel.standby.${choice}`]) assert.ok(isKey(key), key);
   }
 });
 

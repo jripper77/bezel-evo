@@ -135,7 +135,7 @@ export function dropIndex(mids, y) {
 }
 
 // Rotation presets and graph windows share the same duration formatting.
-export { durationParts } from './inspector-tabs.js';
+export { durationParts } from './inspector-helpers.js';
 
 /** Timed rules keep a baseline face; app overrides pause their schedule. */
 export function newTimedRule(card) { return withSource(newRule(card), 'timer'); }

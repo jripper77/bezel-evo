@@ -7,7 +7,7 @@
 // image), and without ffmpeg the video comes without a poster and the
 // inspector says what ffmpeg is for. No console errors, no serious or
 // critical accessibility violations.
-import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as bgCard, changeBackgroundButton as changeButton, backgroundChooser as chooser, addMedia } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, themeInspector as inspector, backgroundCard as bgCard, changeBackgroundButton as changeButton, backgroundChooser as chooser, addMedia, openSection } from './helpers.mjs';
 import { formatBytes } from '../../src/ui/storage.js';
 import { formatDuration } from '../../src/editor/background.js';
 
@@ -35,6 +35,7 @@ async function dropFile(page, target, name, size = 4096) {
 test('a video added from the Media panel becomes the background, and undo takes it back', async ({ page, t, lang }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
+  await openSection(page, 'color');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await page.getByRole('tab', { name: t('library.media') }).click();
   // The compact drop area (T-9a): what to do, then + for a picture or a video.
@@ -92,6 +93,7 @@ test('a video added from the Media panel becomes the background, and undo takes 
 test('files dropped on the editing area become the background; a GIF is a video', async ({ page, t, lang }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
+  await openSection(page, 'color');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   const stage = page.locator('#stage');
 
@@ -143,6 +145,7 @@ test('files dropped on the editing area become the background; a GIF is a video'
 test('without ffmpeg the video comes without a poster and the inspector says why', async ({ page, t, lang }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=noffmpeg');
+  await openSection(page, 'color');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await chooseFromComputer(page, t);
   await chooser(page, t).getByRole('button', { name: t('insp.bgPickFile'), exact: true }).click();

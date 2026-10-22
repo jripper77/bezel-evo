@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection } from './helpers.mjs';
 
 // A shape's picture: chosen from the theme's images (an SVG icon here), how
 // it covers the shape, and scale/offset only for the natural-size repeats.
@@ -19,6 +19,7 @@ test('a shape takes an SVG picture, tiles it, scales it and drops it again', asy
   // A shape: its inspector offers the picture after the fill.
   await page.locator('#tab-widgets').click();
   await page.getByRole('button', { name: t('library.addWidget', { name: t('widget.shape') }), exact: true }).click();
+  await openSection(page, 'color');
   const picture = inspector.getByRole('combobox', { name: t('common.image'), exact: true });
   await expect(picture).toHaveValue('');
   const repeats = inspector.getByRole('group', { name: t('shape.repeat'), exact: true });
@@ -39,7 +40,7 @@ test('a shape takes an SVG picture, tiles it, scales it and drops it again', asy
   const right = inspector.getByRole('spinbutton', { name: t('shape.imageOffsetX'), exact: true });
   await right.fill('4'); await right.press('Tab');
   await expect(right).toHaveValue('4');
-  await expect(inspector.getByRole('slider', { name: t('shape.imageOpacity'), exact: true })).toHaveValue('100');
+  await expect(inspector.getByRole('spinbutton', { name: t('shape.imageOpacity'), exact: true })).toHaveValue('100');
   await expectAccessible(page);
 
   // Undo steps back one change at a time; back to Stretch hides the size.

@@ -5,7 +5,7 @@
 // theme, closing the window, quitting from the tray), the screen turns
 // between vertical and horizontal, and the preferences switch the language,
 // set the sensors and keep the Light switch.
-import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey, openSection, themeSize, sizeText, openPreferences } from './helpers.mjs';
 import { translator } from '../../src/i18n/index.js';
 
 test('the editor opens the demo theme', async ({ page, t, lang }) => {
@@ -17,7 +17,9 @@ test('the editor opens the demo theme', async ({ page, t, lang }) => {
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
   // The Bezel chip says the last render time (T-9b).
   await expect(page.locator('#status-render')).toHaveText(/^\d+ ms$/);
-  await expect(page.getByRole('heading', { name: t('inspector.theme') })).toBeVisible();
+  // With nothing selected the inspector shows the theme, with its Background section.
+  await expect(page.locator('#inspector')).toHaveClass(/inspector-theme/);
+  await expect(page.locator('#inspector').getByRole('heading', { name: t('common.background'), exact: true })).toBeVisible();
   const box = await page.locator('#canvas-box').boundingBox();
   expect(Math.round(box.height / box.width)).toBe(4);
   await expectAccessible(page);
@@ -41,7 +43,7 @@ test('every panel reads in one language, with no key or placeholder showing', as
   await page.getByRole('tab', { name: t('screen.storageTab') }).click();
   await expect(page.getByRole('region', { name: t('storage.medium.internal') })).toBeVisible();
   expect(await page.locator('body').innerText()).not.toMatch(leftovers);
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   await expect(page.getByRole('dialog', { name: t('prefs.title') })).toBeVisible();
   expect(await page.locator('body').innerText()).not.toMatch(leftovers);
   expect(errors).toEqual([]);
@@ -52,6 +54,7 @@ test('keyboard move and undo', async ({ page, t }) => {
   await page.goto('/index.html?demo=turing88');
   await page.getByRole('tab', { name: t('library.layers') }).click();
   await page.getByRole('button', { name: /^CPU/ }).click();
+  await openSection(page, 'layout');
   const x = page.getByRole('spinbutton', { name: t('inspector.x'), exact: true });
   await expect(x).toHaveValue('90');
 
@@ -92,6 +95,7 @@ test('arrow keys on tabs switch tabs and leave the element alone', async ({ page
   await page.goto('/index.html?demo=turing88');
   await page.getByRole('tab', { name: t('library.layers') }).click();
   await page.getByRole('button', { name: /^CPU/ }).click();
+  await openSection(page, 'layout');
   const x = page.getByRole('spinbutton', { name: t('inspector.x'), exact: true });
   await expect(x).toHaveValue('90');
 
@@ -262,11 +266,11 @@ test('switch between vertical and horizontal', async ({ page, t }) => {
   await expect(vertical).toHaveAttribute('aria-pressed', 'false');
   await expect(turn).toHaveAttribute('aria-pressed', 'true');
   await shows('horizontal');
-  await expect(page.locator('#inspector')).toContainText(t('inspector.canvas', { width: 1920, height: 480 }));
+  await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText({ width: 1920, height: 480 })}$`));
   const wide = await page.locator('#canvas-box').boundingBox();
   expect(wide.width).toBeGreaterThan(wide.height);
   await page.keyboard.press('Control+a');
-  await expect(page.locator('.sel-box')).toHaveCount(3);
+  await expect(page.locator('.sel-box:not(.selection-union)')).toHaveCount(3);
   await expectInside(page, '.sel-box', '#canvas-box');
   await page.keyboard.press('Escape');
   await expect(page.locator('#status-main')).toHaveText(t('status.unsaved'));
@@ -285,7 +289,7 @@ test('switch between vertical and horizontal', async ({ page, t }) => {
   await turn.click();
   await expect(turn).toHaveAttribute('aria-pressed', 'false');
   await shows('vertical');
-  await expect(page.locator('#inspector')).toContainText(t('inspector.canvas', { width: 480, height: 1920 }));
+  await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText({ width: 480, height: 1920 })}$`));
   await turn.focus();
   await page.keyboard.press('Space');
   await expect(turn).toHaveAttribute('aria-pressed', 'true');
@@ -296,7 +300,7 @@ test('switch between vertical and horizontal', async ({ page, t }) => {
   await expect(horizontal).toHaveAttribute('aria-pressed', 'true');
   await shows('horizontal');
   await expect(turn).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#inspector')).toContainText(t('inspector.canvas', { width: 1920, height: 480 }));
+  await expect(themeSize(page)).toHaveText(new RegExp(`${sizeText({ width: 1920, height: 480 })}$`));
   await expectAccessible(page);
   expect(errors).toEqual([]);
 });
@@ -309,7 +313,7 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await expect(html).toHaveAttribute('lang', lang);
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const language = dialog.getByRole('combobox', { name: t('prefs.language') });
   await expect(language).toBeFocused();
@@ -323,14 +327,14 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await expect(page.getByRole('dialog', { name: u('prefs.title') })).toBeVisible();
   await expect(page.getByRole('tab', { name: u('common.sensors') })).toBeVisible();
   await expect(page.locator('#status-main')).toHaveText(u('status.saved'));
-  await expect(page.locator('#inspector').getByRole('heading', { name: u('inspector.theme') })).toBeVisible();
+  await expect(page.locator('#inspector').getByRole('heading', { name: u('common.background'), exact: true })).toBeVisible();
   await expectAccessible(page);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: u('prefs.title') })).toBeFocused();
+  await expect(page.locator('#more-menu')).toBeFocused();
 
   // Back to the system's.
-  await page.getByRole('button', { name: u('prefs.title') }).click();
+  await openPreferences(page, u);
   await page.getByRole('dialog').getByRole('combobox', { name: u('prefs.language') }).selectOption('');
   await expect(html).toHaveAttribute('lang', lang);
   await page.getByRole('dialog').getByRole('button', { name: t('common.done') }).click();
@@ -342,7 +346,7 @@ test('the ping target is set in the preferences', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const host = dialog.getByRole('textbox', { name: t('prefs.pingHost') });
   await expect(host).toHaveValue('8.8.8.8');
@@ -370,7 +374,7 @@ test('closing always hands over to Light and protects unsaved live edits', async
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   // No close preference: Light always keeps the screen once Studio closes.
-  await page.getByRole('button', { name: t('prefs.title') }).click();
+  await openPreferences(page, t);
   const prefs = page.getByRole('dialog', { name: t('prefs.title') });
   await expect(prefs.getByRole('switch', { name: t('prefs.debugEnable') })).toBeVisible();
   await expect(prefs.locator('#prefs-light-on-close')).toHaveCount(0);

@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openInspectorTab as tab, toggleButton, setToggle, choose, chosen, openPreferences } from './helpers.mjs';
 async function setup(page,t,player=true) {
   await page.goto('/index.html?demo=turing88');
   if(player) await add(page,t,'player');
@@ -17,11 +17,11 @@ test('spectrum follows one Player; demo, presets, gradients and band thresholds 
   const canvas=inspector.locator('canvas');const before=await canvas.evaluate(c=>c.toDataURL());await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
   await tab(page,t,'inspector.tab.look');
   await expect(inspector.getByRole('button',{name:t('spectrum.balanced'),exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(inspector.getByRole('switch',{name:t('spectrum.peaks'),exact:true})).toBeChecked();
+  await expect(toggleButton(inspector, t('spectrum.peaks'))).toHaveAttribute('aria-pressed', 'true');
   await inspector.getByRole('button',{name:t('spectrum.snappy'),exact:true}).click();await expect(inspector.getByRole('button',{name:t('spectrum.snappy'),exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:t('top.undo'),exact:true}).click();await expect(inspector.getByRole('button',{name:t('spectrum.balanced'),exact:true})).toHaveAttribute('aria-pressed','true');
-  await inspector.getByRole('combobox',{name:t('inspector.fill'),exact:true}).selectOption('gradient');
-  await inspector.getByRole('switch',{name:t('insp.colorByValue'),exact:true}).check();await expect(inspector.getByText(t('spectrum.levelScale'),{exact:true})).toBeVisible();
+  await choose(inspector,t('inspector.fill'),'gradient');await expect.poll(()=>chosen(inspector,t('inspector.fill'))).toBe('gradient');
+  await setToggle(toggleButton(inspector, t('insp.colorByValue')), true);await expect(inspector.getByText(t('spectrum.levelScale'),{exact:true})).toBeVisible();
   await expectAccessible(page);expect(errors).toEqual([]);
 });
 test('the whole PC output needs no Player and hides the Player controls (D-AS-13)',async({page,t})=>{
@@ -40,10 +40,10 @@ test('missing Player is explicit and audio capture is on until turned off locall
   const errors=watchErrors(page), inspector=await setup(page,t,false);
   await expect(inspector.getByRole('status')).toHaveText(t('spectrum.playerMissing'));
   await expect(inspector.getByText(t('spectrum.browser'),{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:t('prefs.title'),exact:true}).click();const dialog=page.getByRole('dialog',{name:t('prefs.title')});
+  await openPreferences(page,t);const dialog=page.getByRole('dialog',{name:t('prefs.title')});
   const consent=dialog.getByRole('switch',{name:t('spectrum.consent'),exact:true});await expect(consent).toBeChecked();await expect(dialog.getByText(t('spectrum.privacy'),{exact:true})).toBeVisible();
   await consent.uncheck();await expect(consent).not.toBeChecked();await expectAccessible(page);
-  await dialog.getByRole('button',{name:t('common.done'),exact:true}).click();await page.getByRole('button',{name:t('prefs.title'),exact:true}).click();
+  await dialog.getByRole('button',{name:t('common.done'),exact:true}).click();await openPreferences(page,t);
   await expect(page.getByRole('switch',{name:t('spectrum.consent'),exact:true})).not.toBeChecked();expect(errors).toEqual([]);
 });
 test('the bars corners switch between one radius and four, under their own title',async({page,t})=>{
@@ -61,17 +61,20 @@ test('each style shows only its own fields, one Undo step per change (D-AS-11)',
   const errors=watchErrors(page), inspector=await setup(page,t);
   await inspector.getByRole('button',{name:t('spectrum.demo'),exact:true}).click();
   await tab(page,t,'inspector.tab.look');
-  const style=inspector.getByRole('combobox',{name:t('spectrum.style'),exact:true});await expect(style).toHaveValue('mirrored');
+  // The five styles are picture tiles named after them.
+  const LABELS={mirrored:'spectrum.mirrored',bars:'graph.bars',blocks:'spectrum.blocks',line:'graph.line',radial:'fade.radial'};
+  const tile=v=>inspector.getByRole('group',{name:t('spectrum.style'),exact:true}).getByRole('button',{name:t(LABELS[v]),exact:true});
+  const style={selectOption:v=>tile(v).click()};await expect(tile('mirrored')).toHaveAttribute('aria-pressed','true');
   const field=name=>inspector.getByRole('spinbutton',{name:t(name),exact:true});
-  const toggle=name=>inspector.getByRole('switch',{name:t(name),exact:true});
+  const toggle=name=>toggleButton(inspector, t(name));
   await expect(toggle('spectrum.centre')).toBeVisible();await expect(field('spectrum.block')).toHaveCount(0);
   await style.selectOption('blocks');await expect(field('spectrum.block')).toHaveValue('6');
   await expect(inspector.getByText(t('spectrum.blockColors'),{exact:true})).toBeVisible();await expect(toggle('spectrum.centre')).toHaveCount(0);
-  await style.selectOption('line');await expect(field('spectrum.stroke')).toHaveValue('2');await expect(toggle('spectrum.fill')).toBeChecked();
+  await style.selectOption('line');await expect(field('spectrum.stroke')).toHaveValue('2');await expect(toggle('spectrum.fill')).toHaveAttribute('aria-pressed', 'true');
   await expect(field('spectrum.thickness')).toHaveCount(0);await expect(toggle('spectrum.peaks')).toHaveCount(0);
   await expect(inspector.getByRole('heading',{name:t('insp.cornersTitle'),exact:true})).toHaveCount(0);
   await style.selectOption('radial');await expect(field('spectrum.inner')).toHaveValue('40');await expect(toggle('spectrum.ring')).toBeVisible();
   await style.selectOption('bars');await expect(toggle('spectrum.baseline')).toBeVisible();
-  await page.getByRole('button',{name:t('top.undo'),exact:true}).click();await expect(style).toHaveValue('radial');
+  await page.getByRole('button',{name:t('top.undo'),exact:true}).click();await expect(tile('radial')).toHaveAttribute('aria-pressed','true');
   await expectAccessible(page);expect(errors).toEqual([]);
 });

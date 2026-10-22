@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, openSection } from './helpers.mjs';
 
 test('date language, presets, custom pattern, letter case and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -10,11 +10,12 @@ test('date language, presets, custom pattern, letter case and Undo', async ({ pa
   await detail.getByRole('combobox', { name: t('clock.language'), exact: true }).selectOption('it');
   await detail.getByRole('combobox', { name: t('clock.format'), exact: true }).selectOption('%A %e %B');
   await expect(page.locator('#clock-preview')).toContainText('luned\u00ec 5 ottobre');
-  await detail.getByRole('combobox', { name: t('clock.casing'), exact: true }).selectOption('upper');
+  await openSection(page, 'text');
+  await detail.getByRole('group', { name: t('textCase.label'), exact: true }).getByRole('button', { name: t('textCase.upper'), exact: true }).click();
   await expect(page.locator('#clock-preview')).toContainText('LUNED\u00cc 5 OTTOBRE');
   await page.getByRole('button', { name: t('top.undo'), exact: true }).click();
   await expect(page.locator('#clock-preview')).toContainText('luned\u00ec 5 ottobre');
-  await detail.getByRole('combobox', { name: t('clock.casing'), exact: true }).selectOption('title');
+  await detail.getByRole('group', { name: t('textCase.label'), exact: true }).getByRole('button', { name: t('textCase.title'), exact: true }).click();
   await expect(page.locator('#clock-preview')).toContainText('Luned\u00ec 5 Ottobre');
   await detail.getByRole('combobox', { name: t('clock.language'), exact: true }).selectOption('en');
   await expect(page.locator('#clock-preview')).toContainText('Monday 5 October');

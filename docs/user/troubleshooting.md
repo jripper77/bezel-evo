@@ -160,8 +160,8 @@ Studio and Light write their logs to one folder:
 %LOCALAPPDATA%\io.github.slipalison.bezel\logs
 ```
 
-To open it, use **Preferences → Logs → Open logs folder** in Studio (the sliders
-icon in the top bar). Light's log is `light.log`. The logs are written also when
+To open it, use **Preferences → Logs → Open logs folder** in Studio (**⋯ →
+Preferences** in the top bar). Light's log is `light.log`. The logs are written also when
 **Debug** is off; **Preferences → Debug → Enable diagnostic logs** adds detail
 about rendering, transfers and sensors while you reproduce a problem. Logs rotate
 at 2 MiB and never record network requests. The hardware sensor reader keeps its

@@ -175,6 +175,7 @@
 .inspector .geometry-rotation { width: min(100%, 180px); }
 .inspector .geometry-rotation .fld-prefix { width: auto; }
 .inspector .align-row { gap: 4px; }
+.inspector .geometry-actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .inspector .align-row .icon-button { border-color: transparent; background: var(--surface-2); }
 .inspector .slider-field-inline { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 6px 10px; align-items: center; }
 .inspector .slider-field-inline .slider-head { display: contents; }
@@ -251,9 +252,8 @@
 .inspector-linked [data-section="content"] > .section-head,
 .inspector-linked [data-section="color"] > .section-head,
 .inspector-linked [data-section="style"] > .section-head { display: none; }
-.inspector-linked .geometry-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.inspector-linked .geometry-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .inspector-linked .geometry-fields .fld-prefix { width: auto; border: 0; padding: 0; }
-.inspector-linked .geometry-rotation { width: auto; }
 .inspector-linked .number-field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .inspector-linked .number-control { width: 100%; }
 .inspector-linked .option-tiles { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }

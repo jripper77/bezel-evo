@@ -14,9 +14,9 @@ test('activity requests follow Player and triggered Card editors and stop in Sto
   await add(page, t, 'card');
   await expect(requests).not.toHaveAttribute('data-demo-sensors', anyActivity);
   await expect(page.locator('.face-row').first()).toBeVisible();
-  await page.getByRole('button', { name: t('card.addFace'), exact: true }).click();
+  await page.locator('#inspector').getByRole('button', { name: t('card.addFace'), exact: true }).click();
   await tab(page, t, 'card.tab.triggers');
-  await page.getByRole('button', { name: t('trigger.add'), exact: true }).click();
+  await page.locator('#inspector').getByRole('button', { name: t('trigger.add'), exact: true }).click();
   await expect(requests).toHaveAttribute('data-demo-sensors', activity);
   await page.locator('#undo').click();
   await expect(requests).not.toHaveAttribute('data-demo-sensors', anyActivity);
@@ -24,6 +24,8 @@ test('activity requests follow Player and triggered Card editors and stop in Sto
   await expect(requests).toHaveAttribute('data-demo-sensors', activity);
   await page.locator('#tab-screen').click();
   await page.locator('#subtab-storage').click();
+  // The storage manager takes the editor's place only when opened full width (T-7c).
+  await page.getByRole('button', { name: t('storagePanel.expand'), exact: true }).click();
   await expect(requests).not.toHaveAttribute('data-demo-sensors', anyActivity);
   await page.locator('#tab-widgets').click();
   await expect(requests).toHaveAttribute('data-demo-sensors', activity);

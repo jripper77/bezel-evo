@@ -1,19 +1,20 @@
-import { test, expect, watchErrors, expectAccessible, clickAddWidget as add } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget as add, openSection } from './helpers.mjs';
 
 test('value transitions offer inertia with settling time and undo',async({page,t},info)=>{
   const errors=watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await add(page,t,'value');
+  await openSection(page,'behavior');
   const section=page.locator('[data-section="transition"]');
   await section.getByRole('button',{name:t('insp.transitionInertia'),exact:true}).click();
   await expect(section.getByRole('button',{name:t('insp.transitionInertia'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(section).toContainText(t('insp.transitionSettling'));
   await expect(section).toContainText(t('insp.transitionInertiaHint'));
-  const slider=section.getByRole('slider');
-  await slider.press('ArrowRight');
-  await expect(section.locator('output')).toHaveText('450 ms');
+  const settling=section.getByRole('spinbutton',{name:t('insp.transitionSettling'),exact:true});
+  await settling.press('ArrowUp');
+  await expect(settling).toHaveValue('450');
   await page.locator('#undo').click();
-  await expect(section.locator('output')).toHaveText('400 ms');
+  await expect(settling).toHaveValue('400');
   await page.locator('#undo').click();
   await expect(section.getByRole('button',{name:t('insp.transitionSmooth'),exact:true})).toHaveAttribute('aria-pressed','true');
   await section.getByRole('button',{name:t('insp.transitionInertia'),exact:true}).click();

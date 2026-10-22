@@ -1,54 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CARD_TABS, DURATION_UNITS, GRAPH_INTERVAL_MAX, HISTORY_MAX, HISTORY_MIN, INTERVAL_UNITS, OBJECT_TABS, QUICK_DURATIONS, QUICK_REFRESHES, RULER_TICKS_MAX, TIME_UNITS, appChips, appName, arcDrawing, createTabMemory, durationParts, graphRuler, graphSentence, graphTiming, graphTimingPatch, graphWindowRange, intervalParts, pluralOf, layerFacts, quickDurations, refreshChoices, tabAfterKey, tabsOf } from '../../src/inspector-tabs.js';
-
-test('a card has faces, motion, triggers and look; every other object data and look', () => {
-  assert.deepEqual(tabsOf('card'), ['faces', 'motion', 'triggers', 'look']);
-  assert.equal(tabsOf('card'), CARD_TABS);
-  for (const kind of ['ring', 'graph', 'text', 'group', 'shape']) assert.equal(tabsOf(kind), OBJECT_TABS);
-  assert.deepEqual(OBJECT_TABS, ['data', 'look']);
-  assert.ok(Object.isFrozen(CARD_TABS) && Object.isFrozen(OBJECT_TABS));
-});
-
-test('a kind opens on its first offered tab until one is chosen', () => {
-  const memory = createTabMemory();
-  assert.equal(memory.current('ring', OBJECT_TABS), 'data');
-  assert.equal(memory.current('shape', ['look']), 'look');
-  assert.equal(memory.current('card', CARD_TABS), 'faces');
-  assert.equal(memory.current('ring', []), null);
-});
-
-test('the chosen tab stays open for its kind only, through any number of renders', () => {
-  const memory = createTabMemory();
-  memory.choose('ring', 'look');
-  for (let i = 0; i < 3; i++) assert.equal(memory.current('ring', OBJECT_TABS), 'look');
-  assert.equal(memory.current('graph', OBJECT_TABS), 'data');
-  memory.choose('card', 'triggers');
-  assert.equal(memory.current('card', CARD_TABS), 'triggers');
-  assert.equal(memory.current('ring', OBJECT_TABS), 'look');
-});
-
-test('a chosen tab no longer offered falls back to the first, and comes back when offered again', () => {
-  const memory = createTabMemory();
-  memory.choose('shape', 'data');
-  assert.equal(memory.current('shape', ['look']), 'look');
-  assert.equal(memory.current('shape', OBJECT_TABS), 'data');
-});
-
-test('arrow keys step through the tabs and wrap; Home and End go to the ends', () => {
-  assert.equal(tabAfterKey(CARD_TABS, 'faces', 'ArrowRight'), 'motion');
-  assert.equal(tabAfterKey(CARD_TABS, 'look', 'ArrowRight'), 'faces');
-  assert.equal(tabAfterKey(CARD_TABS, 'faces', 'ArrowLeft'), 'look');
-  assert.equal(tabAfterKey(CARD_TABS, 'triggers', 'ArrowLeft'), 'motion');
-  assert.equal(tabAfterKey(CARD_TABS, 'triggers', 'Home'), 'faces');
-  assert.equal(tabAfterKey(CARD_TABS, 'motion', 'End'), 'look');
-  assert.equal(tabAfterKey(OBJECT_TABS, 'unknown', 'ArrowRight'), 'look');
-});
-
-test('other keys and an empty tab list move nowhere', () => {
-  for (const key of ['ArrowUp', 'ArrowDown', 'Enter', 'Tab', 'a']) assert.equal(tabAfterKey(OBJECT_TABS, 'data', key), null);
-  assert.equal(tabAfterKey([], 'data', 'ArrowRight'), null);
-});
+import { DURATION_UNITS, GRAPH_INTERVAL_MAX, HISTORY_MAX, HISTORY_MIN, INTERVAL_UNITS, QUICK_DURATIONS, QUICK_REFRESHES, RULER_TICKS_MAX, TIME_UNITS, appChips, appName, arcDrawing, durationParts, graphRuler, graphSentence, graphTiming, graphTimingPatch, graphWindowRange, intervalParts, pluralOf, layerFacts, quickDurations, refreshChoices } from '../../src/inspector-helpers.js';
 
 const theme = {
   elements: [
