@@ -155,3 +155,7 @@ Meteo: `toggleField(..., { leading: true })` porta il comando prima della didasc
 - Card: i chip degli oggetti e la disclosure di spostamento riusano `chipButton`/`detailsField`; i comandi di spostamento restano quelli esistenti. Le miniature sono canvas decorativi con frame del renderer esistente, non nuovi controlli.
 - `cardFacePreviewTheme` in card-config.js prepara la copia isolata e validata per una faccia; coperta da unitari. Non modifica lo store né aggiunge campi al tema.
 - Tema: stato con `pill` e orientamento con `iconChoice`; l’azione di giro conserva uno stato booleano indipendente dalla scelta dell’asse nello stesso gruppo.
+
+## Fedelt? shell/pannelli, 22 ottobre
+
+`numberField` usa ora gli stessi bordi/input in `base.css` anche fuori dall?inspector (Luminosit?, dialoghi); nessuna variante per Schermo. I controlli numerici restano nativi, senza spinner interno che sottrae spazio alle cifre.

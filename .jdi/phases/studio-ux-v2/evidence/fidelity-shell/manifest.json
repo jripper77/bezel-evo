@@ -1,0 +1,154 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-sensors",
+    "file": "dark/app/shell/ux2-status-sensors.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "ux2-status-bezel",
+    "file": "dark/app/shell/ux2-status-bezel.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "main",
+    "file": "dark/app/shell/main.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "shell",
+    "state": "unsaved",
+    "file": "dark/app/shell/unsaved.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-sensors",
+    "file": "light/app/shell/ux2-status-sensors.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "ux2-status-bezel",
+    "file": "light/app/shell/ux2-status-bezel.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "main",
+    "file": "light/app/shell/main.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "shell",
+    "state": "unsaved",
+    "file": "light/app/shell/unsaved.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "screen",
+    "state": "ux2-settings",
+    "file": "dark/app/screen/ux2-settings.png",
+    "detail": "dark/app/screen/ux2-settings-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "screen",
+    "state": "ux2-storage",
+    "file": "dark/app/screen/ux2-storage.png",
+    "detail": "dark/app/screen/ux2-storage-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "screen",
+    "state": "ux2-settings",
+    "file": "light/app/screen/ux2-settings.png",
+    "detail": "light/app/screen/ux2-settings-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "screen",
+    "state": "ux2-storage",
+    "file": "light/app/screen/ux2-storage.png",
+    "detail": "light/app/screen/ux2-storage-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "widgets",
+    "file": "dark/app/library/widgets.png",
+    "detail": "dark/app/library/widgets-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "sensors-libre",
+    "file": "dark/app/library/sensors-libre.png",
+    "detail": "dark/app/library/sensors-libre-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "layers-selection",
+    "file": "dark/app/library/layers-selection.png",
+    "detail": "dark/app/library/layers-selection-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "library",
+    "state": "media-filled",
+    "file": "dark/app/library/media-filled.png",
+    "detail": "dark/app/library/media-filled-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "widgets",
+    "file": "light/app/library/widgets.png",
+    "detail": "light/app/library/widgets-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "sensors-libre",
+    "file": "light/app/library/sensors-libre.png",
+    "detail": "light/app/library/sensors-libre-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "layers-selection",
+    "file": "light/app/library/layers-selection.png",
+    "detail": "light/app/library/layers-selection-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "library",
+    "state": "media-filled",
+    "file": "light/app/library/media-filled.png",
+    "detail": "light/app/library/media-filled-detail.png"
+  }
+]

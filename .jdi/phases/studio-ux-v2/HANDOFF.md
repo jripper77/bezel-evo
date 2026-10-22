@@ -17,7 +17,7 @@ Il lavoro complessivo resta aperto; stop al blocco verificato per limite dei tok
 | Lancetta/Orologio analogico | completato, `9cf8f43`, `fid/inspector-instruments` | SUMMARY-FIDELITY-INSTRUMENTS.md |
 | Contenitori/Tema/multipla | completato, `5f4ce4c`, `fid/inspector-containers` | SUMMARY-FIDELITY-CONTAINERS.md |
 | Shell/pannelli | **prossimo** | MainNew, LibraryPanelsNew, StatusBarNew, Schermo/Archivio, larghezze/catture R00–R03 |
-| Profili/Galleria | da fare | ProfilesNew/ThemesNew, stato runtime reale, proporzioni e filtri |
+| Profili/Galleria | **prossimo** | ProfilesNew/ThemesNew, stato runtime reale, proporzioni e filtri |
 | Chiusura visiva | da fare | tutte le tavole/stati censiti, galleria finale rigenerata e REVIEW aggiornato prima delle verifiche dell’utente |
 
 Le nuove evidenze sono separate in `evidence/fidelity-paint/`, `fidelity-text/`,

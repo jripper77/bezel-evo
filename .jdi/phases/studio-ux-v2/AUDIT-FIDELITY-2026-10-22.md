@@ -1,3 +1,9 @@
+## Aggiornamento ? shell/pannelli, 22 ottobre
+
+Correzioni in `12f7879`, test e differenze motivate in `SUMMARY-FIDELITY-SHELL.md`.
+R01 corretto senza sostituire preferenze esistenti; R00 corretto per Libreria/Schermo;
+R02 esteso a Card/gruppi e asset in uso. Resta Profili/Galleria e chiusura visiva.
+
 ## Aggiornamento — contenitori/Tema/multipla, 22 ottobre
 
 Blocco corretto in `5f4ce4c`: facce con miniature del renderer e conteggi reali, chip e spostamento, transizioni compatte, Tema e multipla. Vedi `SUMMARY-FIDELITY-CONTAINERS.md` per test, confronto visivo e differenze motivate. Prossimo blocco: shell/pannelli, poi Profili/Galleria. Revisione finale ancora aperta.
