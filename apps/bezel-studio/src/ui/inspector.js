@@ -31,7 +31,7 @@ import { closeSensorPicker, refreshSensorPicker } from './sensor-picker.js';
 
 import { el, icon, svgEl as node } from './dom.js';
 import { ICONS } from './icons.js';
-import { accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, bindButton, numberField, prefixedField, rangeField, propertySection as section, segmented, iconChoice, selectField } from './fields.js';
+import { fieldAction, accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, bindButton, numberField, prefixedField, rangeField, propertySection as section, segmented, iconChoice, selectField } from './fields.js';
 import { withChildren } from '../editor/cards.js';
 import { splitColor } from '../color-math.js';
 
@@ -530,7 +530,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       const seconds = timingOf(e).duration;
       specific.data?.find(group => group?.dataset.section === 'window')?.append(el('div', { class: 'inspector-preview-axis', 'aria-hidden': 'true' }, [el('span', { text: t('insp.ago', { duration: durationText(seconds) }) }), el('span', { text: t('insp.now') })]));
     }
-    const opacity = numberField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%' });
+    const opacity = numberField(t('inspector.opacity'), Math.round((e.opacity ?? 1) * 100), v => update(e.id, { opacity: Math.max(0, Math.min(100, v)) / 100 }), { min: 0, max: 100, unit: '%', compact: true });
     const linked = !e.card && !e.isGroup;
     const motion = sensorMotionSection(e);
     if (linked && motion && (rotationBindings.get(e.id) ?? Boolean(e.sensorMotion))) {
@@ -560,15 +560,27 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     if (textPaint) look.push(section('color', t('inspector.color'), [textPaint]));
     const conditional = valueColorSection(e, assets);
     if (conditional) {
-      const paint = look.filter(group => ['color', 'spectrum-paint'].includes(group.dataset.section)).flatMap(group => [...group.querySelectorAll('.color-field')])[0] ?? look.flatMap(group => [...group.querySelectorAll('.color-field')])[0];
-      const group = paint?.closest('.property-section');
-      if (['color', 'spectrum-paint'].includes(group?.dataset.section)) group.querySelector('.property-section-body').append(conditional);
-      else if (paint) paint.after(conditional);
-      else look.push(section('color', t('inspector.color'), [conditional]));
+      const colors = look.filter(group => ['color', 'spectrum-paint'].includes(group.dataset.section));
+      const paint = colors.map(group => group.querySelector('.paint-fields, .color-field')).find(Boolean)
+        ?? look.map(group => group.querySelector('.color-field')).find(Boolean);
+      if (paint) {
+        const action = conditional.querySelector('.bind-button');
+        conditional.querySelector('.inspector-toggle').remove();
+        const field = paint.matches('.paint-fields') ? paint.firstElementChild : paint;
+        fieldAction(field, action);
+        paint.before(conditional);
+        conditional.prepend(paint);
+      } else look.push(section('color', t('inspector.color'), [conditional]));
     }
     const transparency = look.find(group => group.dataset.section === 'transparency');
+    const colors = look.find(group => group.dataset.section === 'track') ?? look.find(group => group.dataset.section === 'color');
     if (transparency) transparency.querySelector('.property-section-body').append(opacity);
-    else look.push(section('visibility', t('insp.visibility'), [opacity]));
+    else if (colors) colors.querySelector('.property-section-body').append(opacity);
+    else look.push(section('visibility', t('inspector.opacity'), [opacity], { showIcon: false }));
+    // The accordion already names Color. Retain only meaningful inner captions.
+    for (const group of look.filter(group => ['color', 'spectrum-paint'].includes(group.dataset.section))) {
+      group.querySelector(':scope > .section-head')?.remove();
+    }
     const rank = group => { const index = LOOK_ORDER.indexOf(group.dataset.section); return index < 0 ? LOOK_ORDER.length : index; };
     look.sort((a, b) => rank(a) - rank(b));
     return {

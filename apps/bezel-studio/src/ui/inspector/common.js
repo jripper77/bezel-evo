@@ -35,8 +35,10 @@ export function createCommonFields({ t, store, update, root, sensors, host, pick
 
   /** The same track toggle and paint for bars and rings. */
   const trackFields = (e) => [
-    toggleField(t('inspector.showTrack'), Boolean(e.kind.track), (on) => update(e.id, { kind: { track: on ? '#ffffff26' : null } })),
-    e.kind.track && colorField(t('inspector.track'), typeof e.kind.track === 'string' ? e.kind.track : '#ffffff26', (v) => update(e.id, { kind: { track: v } })),
+    el('div', { class: 'bound-field' }, [
+      iconButton(t('inspector.showTrack'), ICONS.eye, () => update(e.id, { kind: { track: e.kind.track ? null : '#ffffff26' } }), { 'aria-pressed': String(Boolean(e.kind.track)) }),
+      e.kind.track && colorField(t('inspector.track'), typeof e.kind.track === 'string' ? e.kind.track : '#ffffff26', (v) => update(e.id, { kind: { track: v } }), { hideLabel: true }),
+    ]),
   ];
 
   const manualSource = (e) => textField(t('player.source'), e.kind.content.source ?? '', (source) => update(e.id, { kind: { content: { source: source.slice(0, 160) } } }));

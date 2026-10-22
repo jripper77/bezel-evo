@@ -167,6 +167,28 @@ export function bindButton(label, connected, onClick) {
   return iconButton(label, ICONS.bolt ?? ICONS.sliders, onClick, { class: 'bind-button', 'aria-pressed': String(Boolean(connected)) });
 }
 
+/** An existing field with a related action beside its control, below its caption. */
+export function fieldAction(field, action) {
+  const control = field.lastElementChild;
+  field.append(el('div', { class: 'bound-field' }, [control, action]));
+  return field;
+}
+
+/** Endpoints use the regular colour picker; the arc midpoint is a native slider. */
+export function gradientField(start, end, { stops, midpoint = null, onMidpoint, label, hint } = {}) {
+  const control = el('div', { class: 'gradient-control' });
+  control.style.setProperty('--paint-gradient', `linear-gradient(to right, ${stops.map(([at, color]) => `${normalizeHex(color) ?? '#00000000'} ${Math.max(0, Math.min(1, at)) * 100}%`).join(', ')})`);
+  if (midpoint !== null) {
+    const slider = el('input', { type: 'range', min: 0, max: 100, value: String(midpoint), 'aria-label': label });
+    slider.addEventListener('change', () => onMidpoint(Number(slider.value)));
+    control.append(slider);
+  }
+  const row = el('div', { class: 'gradient-row' }, [start, control, end]);
+  // Exact numeric editing is retained alongside the same midpoint, with no second state.
+  const detail = midpoint !== null ? numberField(label, midpoint, onMidpoint, { min: 0, max: 100, unit: '%' }) : null;
+  return el('div', { class: 'gradient-field' }, [row, detail, hint ? el('p', { class: 'hint', text: hint }) : null]);
+}
+
 /** A compact header, whose preview comes from the renderer rather than an example. */
 export function objectHeader({ preview, name, subtitle, live, tryButton, menuButton }) {
   return el('div', { class: 'object-header' }, [preview,
@@ -352,13 +374,13 @@ const SECTION_ICONS = Object.freeze({
   motion: 'play', triggers: 'sliders', actions: 'more', refresh: 'refresh',
 });
 
-export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true } = {}) {
+export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true, caption = false } = {}) {
   const contents = nodes.filter(Boolean);
   if (!contents.length) return null;
   const head = sectionTitle(label, { count: n });
-  if (showIcon) head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
+  if (showIcon && !caption) head.querySelector('h3').prepend(icon(ICONS[SECTION_ICONS[key] ?? 'sliders'], 17));
   if (tool) head.append(tool);
-  return el('section', { class: 'property-section', dataset: { section: key } }, [head, el('div', { class: 'property-section-body' }, contents)]);
+  return el('section', { class: `property-section${caption ? ' is-caption' : ''}`, dataset: { section: key } }, [head, el('div', { class: 'property-section-body' }, contents)]);
 }
 
 /**
@@ -739,7 +761,7 @@ export function swatchChip(hex, extra = '', end = undefined) {
  *   where nothing is saved; `alpha` false for an opaque colour; `live`
  *   false hands a drag's colour over only when it ends (a change that is costly)
  */
-export function colorPicker(label, hex, onChange, { texts, source, alpha = true, gesture = null, live = true, hideLabel = false }) {
+export function colorPicker(label, hex, onChange, { texts, source, alpha = true, gesture = null, live = true, hideLabel = false, swatchOnly = false }) {
   const value = normalizeHex(hex) ?? '#ffffffff';
   const id = fieldId();
   const readout = el('span', { class: 'color-button-value', id: `${id}-v` }, [
@@ -754,7 +776,7 @@ export function colorPicker(label, hex, onChange, { texts, source, alpha = true,
     if (button.getAttribute('aria-expanded') === 'true') return;
     openColorPanel(button, label, value, onChange, { texts, source, alpha, gesture, live });
   });
-  return el('div', { class: 'field color-field' }, [hideLabel ? null : el('label', { for: id, text: label }), button]);
+  return el('div', { class: `field color-field${swatchOnly ? ' is-swatch-only' : ''}` }, [hideLabel || swatchOnly ? null : el('label', { for: id, text: label }), button]);
 }
 
 /** A slider of the colour panel (area or bar) with its keyboard. */
