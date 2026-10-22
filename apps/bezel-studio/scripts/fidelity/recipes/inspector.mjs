@@ -80,6 +80,7 @@ export default {
       }
       if (kind === 'raster') { await app.page.locator('#tab-media').click(); await addMedia(app.page, t, 'image'); await app.page.locator('.media-item').first().hover(); await app.page.locator('.media-item').first().getByRole('button', { name: t('media.addImage'), exact: true }).click(); }
       if (kind === 'gif') { await app.page.locator('#tab-layers').click(); await app.page.locator('.layer-name').first().click(); }
+      if (kind === 'weather') { const city = root.getByRole('searchbox', { name: t('weather.city'), exact: true }); await city.press('Enter'); await root.locator('#weather-results button').first().waitFor(); }
       if (kind === 'analog') await root.getByRole('button', { name: t('insp.clock.analog'), exact: true }).click();
       if (kind === 'player') await root.locator('[data-section="cover-fade"]').getByRole('button', { name: t('fade.linear'), exact: true }).click();
       for (const section of await root.locator(':scope > [data-inspector-section]').all()) await openSection(app.page, await section.getAttribute('data-inspector-section'));

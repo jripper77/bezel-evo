@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, copyAndPaste, openInspectorTab, toggleButton, setToggle, choose, chosen } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, copyAndPaste, openInspectorTab, toggleButton, setToggle, choose, chosen, openSection, setPanelWidths } from './helpers.mjs';
 
 test('weather city selection, appearance options and Undo', async ({ page, t }) => {
   const errors = watchErrors(page);
@@ -34,4 +34,36 @@ test('weather city selection, appearance options and Undo', async ({ page, t }) 
   await expect(detail).toContainText('Open-Meteo.com');
   await expectAccessible(page);
   expect(errors).toEqual([]);
+});
+
+test('weather search works by keyboard and compact controls fit a 320 px inspector', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await setPanelWidths(page, { inspector: 320 });
+  await page.goto('/index.html?demo=turing88');
+  await page.getByRole('button', { name: t('library.addWidget', { name: t('widget.weather') }), exact: true }).click();
+  const root = page.locator('#inspector');
+  const search = root.getByRole('searchbox', { name: t('weather.city'), exact: true });
+  await search.fill('Milano'); await search.press('Enter');
+  const result = page.locator('#weather-results').getByRole('button', { name: 'Milano, Lazio, Italia', exact: true });
+  await expect(result).toBeVisible(); await result.focus(); await result.press('Enter');
+  await expect(root).toContainText(t('weather.location', { city: 'Milano' }));
+  await page.locator('#undo').click();
+  await expect(root).toContainText(t('weather.location', { city: 'Roma' }));
+  const units = root.getByRole('group', { name: t('insp.weather.units'), exact: true });
+  const language = root.getByRole('combobox', { name: t('weather.language'), exact: true });
+  const [u, l] = await Promise.all([units.boundingBox(), language.boundingBox()]);
+  expect(Math.abs(u.y - l.y)).toBeLessThan(2);
+  await openSection(page, 'shape');
+  const size = root.getByRole('spinbutton', { name: t('insp.weather.iconSize'), exact: true });
+  const gap = root.getByRole('spinbutton', { name: t('weather.iconGap'), exact: true });
+  const [a, b] = await Promise.all([size.boundingBox(), gap.boundingBox()]);
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  await size.fill('64'); await size.press('Tab'); await expect(size).toHaveValue('64');
+  await page.locator('#undo').click(); await expect(size).toHaveValue('');
+  expect(await root.evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
+  await openSection(page, 'behavior');
+  const movement = root.getByRole('group', { name: t('insp.weather.motion'), exact: true });
+  for (const button of await movement.getByRole('button').all()) await expect(button.locator('svg')).toHaveCount(1);
+  expect(await root.evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
+  await expectAccessible(page); expect(errors).toEqual([]);
 });

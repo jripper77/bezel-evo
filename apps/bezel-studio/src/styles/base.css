@@ -526,3 +526,5 @@ button.pill:hover { border-color: var(--accent); }
 .fade-preview { width: 64px; height: 64px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; touch-action: none; background: repeating-conic-gradient(var(--surface-3) 0 25%, var(--surface) 0 50%) 0 0 / 10px 10px; }
 .fade-preview canvas { display: block; width: 64px; height: 64px; }
 .fade-preview:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+.inspector-toggle.is-leading { justify-content: flex-start; }

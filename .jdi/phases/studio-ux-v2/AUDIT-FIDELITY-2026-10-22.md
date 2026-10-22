@@ -1,3 +1,7 @@
+## Aggiornamento — Meteo, 22 ottobre
+
+Ricerca, righe compatte, ordine Colore e icone del movimento corrette in `3d37a0a`. Test, catture e differenze vincolate ai primitivi/alla decisione D-09 in `SUMMARY-FIDELITY-WEATHER.md`. Restano gli altri blocchi sotto e la chiusura generale.
+
 ## Aggiornamento — media, 22 ottobre
 
 Immagine/GIF, Forma e Player corretti nel blocco `616a7be`; controlli condivisi, test e differenze motivate in `SUMMARY-FIDELITY-MEDIA.md`. Catture it chiaro/scuro in `evidence/fidelity-media/`. Restano aperti gli altri blocchi e la rigenerazione finale; il registro iniziale sotto resta la traccia del confronto di partenza.
