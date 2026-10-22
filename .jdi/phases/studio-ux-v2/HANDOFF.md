@@ -1,5 +1,12 @@
 # Passaggio — Studio UX v2
 
+**Checkpoint 22 ottobre, ChatGPT:** T-12 in corso, branch `ux2/t12`, worktree
+`F:/dev/bezel-ux2-t12`, base `fb6b42f`; codice non committato e non pronto al merge.
+L'utente ha richiesto un confronto autonomo dell'interfaccia e un piano per la ripresa,
+poi salvataggio e spegnimento normale del PC. Vedere `HANDOFF-T-12.md`,
+`AUDIT-FIDELITY-2026-10-22.md` e `PLAN-FIDELITY-FOLLOWUP.md`.
+La fedeltà non è approvata: non ripartire da una dichiarazione di completamento di T-12.
+
 **T-8 completata e integrata** (`c694a83`, vedi `SUMMARY-T-8.md`).
 **T-9a completata e integrata** (vedi `SUMMARY-T-9a.md`).
 **Assegnazioni (21 ottobre, decise dall'utente):** T-9c → **Codex/ChatGPT**

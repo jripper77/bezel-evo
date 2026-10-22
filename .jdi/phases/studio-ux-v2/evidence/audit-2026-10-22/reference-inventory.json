@@ -1,0 +1,302 @@
+[
+  {
+    "title": "Editor — nuovo stile (anello selezionato)",
+    "htmlTitle": "Bezel Evo — editor (nuovo stile)",
+    "board": "MainNew",
+    "bytes": 151032,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Primo avvio — nessuno schermo",
+    "htmlTitle": "Bezel Evo — collega uno schermo",
+    "board": "Connect",
+    "bytes": 118497,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Barra di stato di Studio — nuovo schema",
+    "htmlTitle": "Barra di stato di Studio",
+    "board": "StatusBarNew",
+    "bytes": 137500,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Sensori, Livelli e Media — nuovo schema",
+    "htmlTitle": "Pannelli libreria",
+    "board": "LibraryPanelsNew",
+    "bytes": 147398,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Galleria temi — nuovo schema",
+    "htmlTitle": "Galleria temi",
+    "board": "ThemesNew",
+    "bytes": 137235,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Profili e automazioni — nuovo schema",
+    "htmlTitle": "Profili e automazioni",
+    "board": "ProfilesNew",
+    "bytes": 135583,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Logo e icona app",
+    "htmlTitle": "Logo Bezel Evo",
+    "board": "Logo",
+    "bytes": 117317,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Maniglie sul canvas — per ogni oggetto",
+    "htmlTitle": "Maniglie sul canvas",
+    "board": "CanvasHandles",
+    "bytes": 154445,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Display — schermata di caricamento 1920×480",
+    "htmlTitle": "Display — accensione",
+    "board": "DeviceBoot",
+    "bytes": 110727,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Tema · Pixel",
+    "htmlTitle": "Tema Pixel",
+    "board": "ThemePixel",
+    "bytes": 138193,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": false,
+    "designCssEqual": true
+  },
+  {
+    "title": "Tema · Nebula",
+    "htmlTitle": "Tema Nebula",
+    "board": "ThemeNebula",
+    "bytes": 278287,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": false,
+    "designCssEqual": true
+  },
+  {
+    "title": "Tema · Carta",
+    "htmlTitle": "Tema Carta",
+    "board": "ThemePaper",
+    "bytes": 606441,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": false,
+    "designCssEqual": true
+  },
+  {
+    "title": "Tema · Now Playing",
+    "htmlTitle": "Tema Now Playing",
+    "board": "ThemeNowPlaying",
+    "bytes": 372704,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": false,
+    "designCssEqual": true
+  },
+  {
+    "title": "Anello — tutte le sezioni aperte",
+    "htmlTitle": "Anello — tutto aperto",
+    "board": "RingInspectorOpen",
+    "bytes": 133359,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Media player — tutte le sezioni aperte",
+    "htmlTitle": "Media player — tutto aperto",
+    "board": "PlayerInspectorOpen",
+    "bytes": 139888,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Card — tutte le sezioni aperte",
+    "htmlTitle": "Card — tutto aperto",
+    "board": "CardInspectorOpen",
+    "bytes": 137013,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Grafico — tutte le sezioni aperte",
+    "htmlTitle": "Grafico — tutto aperto",
+    "board": "GraphInspectorOpen",
+    "bytes": 130973,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Tema (nessuna selezione) — aperto e chiuso",
+    "htmlTitle": "Tema — inspector",
+    "board": "ThemeInspectorOpen",
+    "bytes": 120692,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Schermo — Impostazioni e Archivio (nuovo schema)",
+    "htmlTitle": "Schermo — impostazioni e archivio",
+    "board": "ScreenPanelsOpen",
+    "bytes": 130688,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Componenti dell'inspector — specifiche",
+    "htmlTitle": "Componenti dell&#39;inspector",
+    "board": "InspectorComponents",
+    "bytes": 149117,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Meteo — icone animate (nuovo)",
+    "htmlTitle": "Meteo · icone animate",
+    "board": "WeatherAnimations",
+    "bytes": 180567,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Orologio — digitale e analogico (nuovo)",
+    "htmlTitle": "Orologio — digitale e analogico",
+    "board": "ClockInspectorOpen",
+    "bytes": 155387,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Meteo — tutte le sezioni aperte",
+    "htmlTitle": "Meteo",
+    "board": "WeatherInspectorOpen",
+    "bytes": 136875,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Lancetta — tutte le sezioni aperte",
+    "htmlTitle": "Lancetta",
+    "board": "NeedleInspectorOpen",
+    "bytes": 140343,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Barra — tutte le sezioni aperte",
+    "htmlTitle": "Barra",
+    "board": "BarInspectorOpen",
+    "bytes": 133422,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Spettro audio — tutte le sezioni aperte",
+    "htmlTitle": "Spettro Audio",
+    "board": "SpectrumInspectorOpen",
+    "bytes": 132064,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Forma — tutte le sezioni aperte",
+    "htmlTitle": "Forma",
+    "board": "ShapeInspectorOpen",
+    "bytes": 128759,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Valore e testo fisso — tutte le sezioni aperte",
+    "htmlTitle": "Valore e testo fisso",
+    "board": "ValueInspectorOpen",
+    "bytes": 159841,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Immagine, GIF e video — tutte le sezioni aperte",
+    "htmlTitle": "Immagine, GIF e video",
+    "board": "ImageInspectorOpen",
+    "bytes": 130713,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  },
+  {
+    "title": "Più oggetti selezionati",
+    "htmlTitle": "Più oggetti selezionati",
+    "board": "MultiInspectorOpen",
+    "bytes": 123431,
+    "normalizedEqual": false,
+    "contentEqual": false,
+    "cssEqual": true,
+    "designCssEqual": true
+  }
+]
