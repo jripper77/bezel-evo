@@ -133,6 +133,8 @@ pub mod keys {
     pub const GPU_FREQUENCY: &str = "gpu.frequency";
     /// Primary GPU fan duty, percent.
     pub const GPU_FAN: &str = "gpu.fan";
+    /// Primary GPU fan speed, RPM (the vendor app's `GPUFAN`).
+    pub const GPU_FAN_RPM: &str = "gpu.fan.rpm";
     /// Primary GPU core voltage, V.
     pub const GPU_VOLTAGE: &str = "gpu.voltage";
     /// Primary GPU model, text.
@@ -149,6 +151,8 @@ pub mod keys {
     pub const MEMORY_AVAILABLE: &str = "memory.available";
     /// RAM programs can still get, percent of the total.
     pub const MEMORY_AVAILABLE_PERCENT: &str = "memory.available.percent";
+    /// The installed memory modules' model, text.
+    pub const MEMORY_NAME: &str = "memory.name";
     /// Swap (the page file on Windows) in use, bytes.
     pub const SWAP_USED: &str = "memory.swap.used";
     /// Swap size, bytes.
@@ -211,7 +215,7 @@ pub mod keys {
     /// turing-smart-screen-python bind to that Bezel's own themes did not
     /// use before. Every source lists them, so an imported theme finds each
     /// one measured, or unavailable with the reason.
-    pub const IMPORTED: [&str; 12] = [
+    pub const IMPORTED: [&str; 14] = [
         CPU_FAN,
         FAN_PUMP,
         FAN_CASE_1,
@@ -224,6 +228,8 @@ pub mod keys {
         NET_UP_TOTAL,
         MEMORY_AVAILABLE_PERCENT,
         SYSTEM_VOLUME,
+        GPU_FAN_RPM,
+        MEMORY_NAME,
     ];
 }
 
@@ -352,7 +358,7 @@ pub fn quantity_of(key: &SensorKey) -> Quantity {
 /// What the well-known keys measure, for those whose name alone would
 /// mislead (`gpu.fan` is a duty in percent, `fan.pump` a speed) or say
 /// nothing (`cpu.name`).
-const WELL_KNOWN: [(&str, Quantity); 30] = [
+const WELL_KNOWN: [(&str, Quantity); 32] = [
     (keys::CPU_USAGE, Quantity::Percent),
     (keys::GPU_USAGE, Quantity::Percent),
     (keys::GPU_FAN, Quantity::Percent),
@@ -369,6 +375,7 @@ const WELL_KNOWN: [(&str, Quantity); 30] = [
     (keys::FAN_PUMP, Quantity::Rpm),
     (keys::FAN_CASE_1, Quantity::Rpm),
     (keys::FAN_CASE_2, Quantity::Rpm),
+    (keys::GPU_FAN_RPM, Quantity::Rpm),
     (keys::CPU_LOAD_1, Quantity::Number),
     (keys::GPU_FPS, Quantity::Number),
     (keys::NET_PING, Quantity::Number),
@@ -382,6 +389,7 @@ const WELL_KNOWN: [(&str, Quantity); 30] = [
     (keys::UPTIME, Quantity::Seconds),
     (keys::CPU_NAME, Quantity::Text),
     (keys::GPU_NAME, Quantity::Text),
+    (keys::MEMORY_NAME, Quantity::Text),
     (keys::HOSTNAME, Quantity::Text),
 ];
 
@@ -734,6 +742,12 @@ mod tests {
         assert_eq!(q(keys::ROOT_DISK_PERCENT), Quantity::Percent);
         assert_eq!(q(keys::CPU_NAME), Quantity::Text);
         assert_eq!(q(keys::HOSTNAME), Quantity::Text);
+        assert_eq!(
+            q(keys::GPU_FAN_RPM),
+            Quantity::Rpm,
+            "a speed, beside the duty"
+        );
+        assert_eq!(q(keys::MEMORY_NAME), Quantity::Text);
         assert_eq!(
             q("CPU.FAN"),
             Quantity::Rpm,

@@ -2,9 +2,10 @@
 //! `root\LibreHardwareMonitor`) mapped to keys: every sensor as
 //! `lhm.<identifier>` (`/amdcpu/0/temperature/2` → `lhm.amdcpu.0.temperature.2`)
 //! plus `cpu.temperature`, `cpu.temperature.ccdN` and `cpu.power` picked by
-//! name from the CPU's own sensors, and `cpu.fan`, `fan.pump`, `fan.case1`,
-//! `fan.case2` and `cpu.voltage` picked by name with the same label rules as
-//! hwmon on Linux (D-2026-09-30-release-polish-5).
+//! name from the CPU's own sensors, `gpu.fan.rpm` from the GPU's fan, and
+//! `cpu.fan`, `fan.pump`, `fan.case1`, `fan.case2` and `cpu.voltage` picked
+//! by name with the same label rules as hwmon on Linux
+//! (D-2026-09-30-release-polish-5).
 //!
 //! LHM units: `Data` is GiB and `SmallData` MiB (binary, whatever the
 //! "GB"/"MB" labels say), `Throughput` B/s, `Frequency` Hz, `Clock` MHz.
@@ -123,6 +124,14 @@ fn fan(rows: &[Row], role: FanRole, nth: usize) -> Option<&Row> {
     fans.get(nth).copied()
 }
 
+/// The GPU fan speed: LHM reports it as a `Fan` of the GPU (its duty is a
+/// `Control`), a discrete GPU's before an integrated one's.
+fn gpu_fan(rows: &[Row]) -> Option<&Row> {
+    rows.iter()
+        .filter(|r| r.sensor_type == "Fan" && category(&r.identifier) == Category::Gpu)
+        .min_by_key(|r| (r.identifier.contains("integrated"), r.identifier.as_str()))
+}
+
 /// The CPU core rail: the CPU's own sensor before the board's.
 fn cpu_voltage(rows: &[Row]) -> Option<&Row> {
     rows.iter()
@@ -163,6 +172,8 @@ enum Pick {
     Fan(FanRole, usize),
     /// The CPU core rail.
     CpuVoltage,
+    /// The first GPU fan's speed, a discrete GPU's first.
+    GpuFan,
 }
 
 impl Pick {
@@ -171,6 +182,7 @@ impl Pick {
         match self {
             Pick::Fan(role, nth) => fan(rows, role, nth),
             Pick::CpuVoltage => cpu_voltage(rows),
+            Pick::GpuFan => gpu_fan(rows),
         }
     }
 }
@@ -185,7 +197,7 @@ struct Picked {
     missing: &'static str,
 }
 
-const PICKED: [Picked; 5] = [
+const PICKED: [Picked; 6] = [
     Picked {
         key: keys::CPU_FAN,
         category: Category::Cpu,
@@ -225,6 +237,14 @@ const PICKED: [Picked; 5] = [
         quantity: Quantity::Rpm,
         pick: Pick::Fan(FanRole::Case, 1),
         missing: "no second LibreHardwareMonitor fan is named chassis, case or system",
+    },
+    Picked {
+        key: keys::GPU_FAN_RPM,
+        category: Category::Gpu,
+        label: "GPU fan speed",
+        quantity: Quantity::Rpm,
+        pick: Pick::GpuFan,
+        missing: "LibreHardwareMonitor reports no GPU fan speed",
     },
 ];
 
@@ -534,6 +554,27 @@ mod tests {
     }
 
     #[test]
+    fn the_gpu_fan_speed_comes_from_a_discrete_gpu_fan() {
+        let rows = vec![
+            row("/gpu-intel-integrated/0/fan/0", "GPU Fan", "Fan", 900.0),
+            row("/gpu-nvidia/0/control/1", "GPU Fan", "Control", 42.0),
+            row("/gpu-nvidia/0/fan/1", "GPU Fan 1", "Fan", 1450.0),
+            row("/lpc/nct6798d/0/fan/1", "CPU Fan", "Fan", 1200.0),
+        ];
+        let m = Mapping::discover(Some(&rows), &HashMap::new());
+        assert_eq!(
+            reading(&m, &rows, keys::GPU_FAN_RPM),
+            Reading::Value(1450.0)
+        );
+        assert_eq!(reading(&m, &rows, keys::CPU_FAN), Reading::Value(1200.0));
+        let none = vec![row("/lpc/nct6798d/0/fan/1", "CPU Fan", "Fan", 1200.0)];
+        let m = Mapping::discover(Some(&none), &HashMap::new());
+        assert!(
+            matches!(reading(&m, &none, keys::GPU_FAN_RPM), Reading::Unavailable(r) if r.contains("GPU fan"))
+        );
+    }
+
+    #[test]
     fn cpu_keys_come_from_the_cpu_not_the_board() {
         let rows = rows();
         let m = Mapping::discover(Some(&rows), &hardware());
@@ -591,7 +632,8 @@ mod tests {
                 keys::CPU_VOLTAGE,
                 keys::FAN_PUMP,
                 keys::FAN_CASE_1,
-                keys::FAN_CASE_2
+                keys::FAN_CASE_2,
+                keys::GPU_FAN_RPM
             ]
         );
         let readings = m.readings(Err(HINT));

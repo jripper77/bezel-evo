@@ -1,7 +1,10 @@
-//! Windows system information, default audio endpoint and power status.
+//! Windows system information, default audio endpoint, power status and the
+//! memory modules' model.
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use bezel_core::domain::sensor::{Category, Quantity, Reading, SensorInfo, Snapshot, keys};
+use serde::Deserialize;
 use sysinfo::System as SysSystem;
 
 use crate::provider::{Provider, describe, put};
@@ -9,6 +12,9 @@ use crate::provider::{Provider, describe, put};
 pub(super) struct System {
     catalog: Vec<SensorInfo>,
     processes: SysSystem,
+    /// Read once by a worker: WMI may take a moment and the modules do not
+    /// change while Windows runs.
+    memory_model: Arc<Mutex<Option<Reading>>>,
 }
 
 impl System {
@@ -46,10 +52,31 @@ impl System {
         .filter_map(|(key, label, quantity)| {
             describe(key, Category::System, label, quantity, "Windows")
         })
+        .chain(describe(
+            keys::MEMORY_NAME,
+            Category::Memory,
+            "Memory model",
+            Quantity::Text,
+            "Windows",
+        ))
         .collect();
+        let memory_model = Arc::new(Mutex::new(None));
+        let shared = Arc::clone(&memory_model);
+        let started = std::thread::Builder::new()
+            .name("bezel-memory-model".into())
+            .spawn(move || {
+                let reading = read_memory_model();
+                if let Ok(mut slot) = shared.lock() {
+                    *slot = Some(reading);
+                }
+            });
+        if let Err(e) = started {
+            tracing::warn!("cannot start the memory model reader: {e}");
+        }
         Self {
             catalog,
             processes: SysSystem::new(),
+            memory_model,
         }
     }
 }
@@ -123,7 +150,77 @@ impl Provider for System {
         for (key, reading) in power_readings(power.as_ref()) {
             put(out, key, reading);
         }
+        let model = self.memory_model.lock().ok().and_then(|m| m.clone());
+        put(
+            out,
+            keys::MEMORY_NAME,
+            model.unwrap_or_else(|| Reading::Unavailable("reading the memory modules".into())),
+        );
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct MemoryModule {
+    manufacturer: Option<String>,
+    part_number: Option<String>,
+    /// Bytes.
+    capacity: Option<u64>,
+}
+
+fn read_memory_model() -> Reading {
+    let modules: Result<Vec<MemoryModule>, String> = wmi::WMIConnection::new()
+        .and_then(|conn| {
+            conn.raw_query("SELECT Manufacturer, PartNumber, Capacity FROM Win32_PhysicalMemory")
+        })
+        .map_err(|e| e.to_string());
+    match modules {
+        Ok(modules) => {
+            let modules: Vec<(String, String, u64)> = modules
+                .into_iter()
+                .map(|m| {
+                    (
+                        m.manufacturer.unwrap_or_default(),
+                        m.part_number.unwrap_or_default(),
+                        m.capacity.unwrap_or(0),
+                    )
+                })
+                .collect();
+            memory_model_text(&modules).map_or_else(
+                || Reading::Unavailable("Windows did not report the memory modules' model".into()),
+                Reading::Text,
+            )
+        }
+        Err(e) => Reading::Unavailable(format!("memory modules unavailable: {e}")),
+    }
+}
+
+/// `Kingston KF556C40-16 (2 x 16 GB)` from the modules' manufacturer, part
+/// number and size in bytes; placeholder manufacturers are left out and the
+/// first module's model names a mixed set.
+fn memory_model_text(modules: &[(String, String, u64)]) -> Option<String> {
+    let placeholder = |m: &str| {
+        let m = m.trim();
+        m.is_empty() || m.eq_ignore_ascii_case("unknown") || m.chars().all(|c| c == '0')
+    };
+    let (manufacturer, part, size) = modules
+        .iter()
+        .find(|(_, part, _)| !part.trim().is_empty())?;
+    let model = if placeholder(manufacturer) {
+        part.trim().to_string()
+    } else {
+        format!("{} {}", manufacturer.trim(), part.trim())
+    };
+    let same = modules
+        .iter()
+        .filter(|(_, p, s)| p.trim() == part.trim() && s == size)
+        .count();
+    const GIB: u64 = 1024 * 1024 * 1024;
+    Some(if *size >= GIB {
+        format!("{model} ({same} x {} GB)", size / GIB)
+    } else {
+        model
+    })
 }
 
 fn text(value: Option<String>, reason: &str) -> Reading {
@@ -240,6 +337,34 @@ mod tests {
         let (volume, _muted, device) = audio().expect("default audio output");
         assert!((0.0..=1.0).contains(&volume));
         assert!(matches!(device, Reading::Text(name) if !name.trim().is_empty()));
+    }
+
+    #[test]
+    fn the_memory_model_names_the_modules_and_counts_the_same_ones() {
+        let module = |m: &str, p: &str, gib: u64| (m.to_string(), p.to_string(), gib << 30);
+        assert_eq!(
+            memory_model_text(&[
+                module("Kingston", "KF556C40-16   ", 16),
+                module("Kingston", "KF556C40-16", 16)
+            ]),
+            Some("Kingston KF556C40-16 (2 x 16 GB)".into())
+        );
+        assert_eq!(
+            memory_model_text(&[module("Unknown", "CMK32GX5M2B5600C36", 16)]),
+            Some("CMK32GX5M2B5600C36 (1 x 16 GB)".into())
+        );
+        assert_eq!(memory_model_text(&[module("0000", "", 8)]), None);
+        assert_eq!(memory_model_text(&[]), None);
+    }
+
+    #[test]
+    #[ignore = "reads the memory modules through WMI on a Windows PC"]
+    fn windows_reports_the_memory_model() {
+        let reading = read_memory_model();
+        assert!(
+            matches!(&reading, Reading::Text(model) if !model.trim().is_empty()),
+            "{reading:?}"
+        );
     }
 
     fn status(flag: u8, percent: u8, remaining: u32) -> SYSTEM_POWER_STATUS {

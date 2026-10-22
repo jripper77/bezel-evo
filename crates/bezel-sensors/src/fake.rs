@@ -233,6 +233,14 @@ const DEMO: &[DemoRow] = &[
         false,
     ),
     (
+        keys::GPU_FAN_RPM,
+        Category::Gpu,
+        "GPU fan speed",
+        Quantity::Rpm,
+        Demo::Value(1450.0),
+        false,
+    ),
+    (
         keys::MEMORY_USED,
         Category::Memory,
         "RAM used",
@@ -246,6 +254,14 @@ const DEMO: &[DemoRow] = &[
         "RAM total",
         Quantity::Bytes,
         Demo::Value(64.0 * GIB),
+        false,
+    ),
+    (
+        keys::MEMORY_NAME,
+        Category::Memory,
+        "Memory model",
+        Quantity::Text,
+        Demo::Text("Demo DDR5 2 x 32 GB"),
         false,
     ),
     (
