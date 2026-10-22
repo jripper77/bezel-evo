@@ -11,10 +11,10 @@ const openStatus = async (page, t) => {
 test('compact status shows probes and counts without hardware details', async ({ page, t }, info) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88&libre=partial');
-  await expect(page.locator('#status-libre-label')).toHaveText(t('sensorChip.active', { available: 22, total: 23 }));
+  await expect(page.locator('#status-libre-label')).toHaveText(t('sensorChip.active', { available: 28, total: 29 }));
   await expect(page.locator('#status-libre-toggle')).toHaveAttribute('data-tone', 'warn');
   const popup = await openStatus(page, t);
-  await expect(popup.locator('#libre-popover-title')).toHaveText(t('sensorChip.activeTitle', { available: 22, total: 23 }));
+  await expect(popup.locator('#libre-popover-title')).toHaveText(t('sensorChip.activeTitle', { available: 28, total: 29 }));
   await expect(popup.getByRole('listitem')).toHaveCount(2);
   const libre = popup.locator('.probe-row[data-probe="LibreHardwareMonitor"]');
   await expect(libre).toHaveAttribute('data-state', 'partial');
@@ -50,7 +50,7 @@ test('failed count opens the filtered library and still detects recovery', async
   await expect(panel.locator('.sensor-row')).toHaveAttribute('data-key', 'lhm.psu.corsair.0.voltage.3');
   await panel.getByRole('button', { name: t('sensorsPanel.startLibre'), exact: true }).click();
   await expect(panel.locator('.sensor-row')).toHaveCount(0);
-  await expect(panel.locator('#sensor-result-count')).toHaveText(t('sensorsPanel.results', { shown: 0, total: 23 }));
+  await expect(panel.locator('#sensor-result-count')).toHaveText(t('sensorsPanel.results', { shown: 0, total: 29 }));
   await panel.getByRole('combobox', { name: t('sensorsPanel.status'), exact: true }).selectOption('available');
   await expect(panel.locator('.sensor-row')).toHaveCount(3);
   await expectAccessible(page);
@@ -79,7 +79,7 @@ test('probe, state, category and search combine and generic open resets filters'
   await expect(panel.locator('.filters-toggle')).toHaveAttribute('aria-expanded', 'false');
   await expect(panel.locator('select[data-sensor-filter="probe"]')).toHaveValue('all');
   await expect(panel.locator('select[data-sensor-filter="status"]')).toHaveValue('all');
-  await expect(rows).toHaveCount(23);
+  await expect(rows).toHaveCount(29);
   await openStatus(page, t);
   await page.screenshot({ path: info.outputPath('sensor-filters-overview.png') });
   expect(errors).toEqual([]);

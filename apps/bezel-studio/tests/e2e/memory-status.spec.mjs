@@ -41,6 +41,8 @@ test('the Bezel chip shows render time and memory, and its dialog the breakdown,
   // The statusbar remains available while Storage owns the wide workspace.
   await page.locator('#tab-screen').click();
   await page.getByRole('tab', { name: t('screen.storageTab'), exact: true }).click();
+  // Storage takes the wide workspace when opened full width (T-7c).
+  await page.getByRole('button', { name: t('storagePanel.expand'), exact: true }).click();
   await expect(page.locator('.workspace')).toHaveClass(/storage-wide/);
   await toggle.click();
   await expect(popover).toBeVisible();
