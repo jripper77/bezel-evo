@@ -1,4 +1,11 @@
-## Aggiornamento ? shell/pannelli, 22 ottobre
+## Aggiornamento — Profili/Galleria, 22 ottobre
+
+Blocco in `f5c7653` e `7e1ea7c`, verifica in `SUMMARY-FIDELITY-DIALOGS.md`.
+Profili con aggiunta 2×3, priorità e transizioni comuni; Galleria con strisce,
+filtri e azioni compatti. R03 corretto con stati runtime distinti e contenuto
+completo. Resta la rigenerazione e revisione generale prima dell’utente.
+
+## Aggiornamento — shell/pannelli, 22 ottobre
 
 Correzioni in `12f7879`, test e differenze motivate in `SUMMARY-FIDELITY-SHELL.md`.
 R01 corretto senza sostituire preferenze esistenti; R00 corretto per Libreria/Schermo;
