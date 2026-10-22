@@ -68,7 +68,7 @@ export function adoptControl(current, fresh) {
 }
 
 /** A labelled number input. `step` 1 rounds to integers. */
-export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false, placeholder, compact = false } = {}) {
+export function numberField(label, value, onChange, { min, max, step = 1, unit, iconName, prefix, binding = null, nullable = false, placeholder, compact = false, caption = label } = {}) {
   if (prefix !== undefined) {
     const field = prefixedField(prefix, label, value, onChange, { min, max, step, unit, iconName, nullable, placeholder });
     return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
@@ -76,7 +76,7 @@ export function numberField(label, value, onChange, { min, max, step = 1, unit, 
   const id = fieldId();
   const input = numberInput({ id, value: String(value ?? ''), min, max, placeholder, 'aria-label': label }, step, onChange, nullable);
   const field = el('label', { class: `field number-field${compact ? ' is-compact' : ''}`, for: id }, [
-    el('span', { class: 'field-label' }, [!compact && iconName ? icon(ICONS[iconName], 16) : null, label]),
+    el('span', { class: 'field-label' }, [!compact && iconName ? icon(ICONS[iconName], 16) : null, caption]),
     el('span', { class: 'number-control' }, [compact && iconName ? icon(ICONS[iconName], 16) : null, input, unit ? el('span', { class: 'fld-unit', 'aria-hidden': 'true', text: unit }) : null]),
   ]);
   return binding ? el('div', { class: 'bound-field' }, [field, bindButton(binding.label, binding.connected, binding.onClick)]) : field;
@@ -432,8 +432,9 @@ export function sentence(parts, attrs = {}) {
 
 /** Prefixed fields two by two (position and size, min and max). */
 export const fieldGrid = (fields, { tail = false, lead = false, columns = null } = {}) => {
-  const grid = el('div', { class: `fld-grid${tail ? ' has-tail' : ''}${lead ? ' has-lead' : ''}` }, fields);
-  if (columns) { grid.dataset.columns = String(columns); grid.style.setProperty('--field-columns', String(columns)); }
+  const grid = el('div', { class: `fld-grid${tail ? ' has-tail' : ''}${lead ? ' has-lead' : ''}`, style: { alignItems: 'end' } }, fields);
+  if (Array.isArray(columns)) grid.style.gridTemplateColumns = columns.join(' ');
+  else if (columns) { grid.dataset.columns = String(columns); grid.style.setProperty('--field-columns', String(columns)); }
   return grid;
 };
 

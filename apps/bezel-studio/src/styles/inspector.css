@@ -254,8 +254,6 @@
 .inspector-linked .option-tiles { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }
 .inspector-linked .field textarea { min-height: 72px; resize: vertical; }
 .inspector-linked .field-choice button { min-width: 0; padding-inline: 7px; }
-.inspector-linked .needle-zone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-block: 8px; border-bottom: 1px solid var(--border); }
-.inspector-linked .needle-zone > .fld-grid { grid-column: 1 / -1; }
 .inspector-linked .multi-heading { display: grid; gap: 12px; }
 .inspector-linked .multi-preview { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; flex: 0 0 72px; border-radius: var(--control-radius); background: var(--surface-2); color: var(--accent-ink); }
 .inspector-linked .multi-preview canvas { width: 48px; height: 48px; object-fit: contain; }

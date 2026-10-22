@@ -93,8 +93,9 @@ test('needle exposes zones, ticks, cap, centre parts and peak memory with Undo',
   await inspector.getByRole('group', { name: t('insp.needle.ticks'), exact: true }).getByRole('button', { name: t('insp.needle.ticks.major'), exact: true }).click();
   await change(number(page, t, 'insp.needle.length'), 75);
   await expect(number(page, t, 'insp.needle.length')).toHaveValue('75');
-  await openSection(page, 'text');
+  await openSection(page, 'shape');
   await inspector.getByRole('button', { name: t('insp.needle.center'), exact: true }).click();
+  await inspector.locator('[data-section="needle-center"] summary').click();
   await expect(inspector.getByRole('group', { name: t('insp.valueParts'), exact: true })).toBeVisible();
   await expect(inspector.getByRole('button', { name: t('insp.tabularDigits'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await openSection(page, 'color');

@@ -2,7 +2,7 @@
 const GROUPS = {
   layout: ['position', 'membership', 'actions', 'rotation-binding'],
   data: ['source', 'content', 'scale', 'series', 'window', 'secondary-source', 'spectrum-source', 'spectrum-bands', 'apps', 'time', 'stopped'],
-  shape: ['show', 'shape', 'visualization', 'style', 'clock-dial', 'clock-parts', 'cover-fade', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance'],
+  shape: ['show', 'shape', 'visualization', 'style', 'clock-dial', 'clock-parts', 'cover-fade', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'needle-center', 'needle-picture', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance'],
   text: ['font'],
   color: ['picture', 'color', 'spectrum-paint', 'fill', 'track', 'shadow', 'transparency', 'visibility', 'background'],
   behavior: ['clock-seconds', 'clock-blink', 'weather-motion', 'image-playback', 'spectrum-motion', 'transition', 'sensor-motion', 'preview', 'refresh', 'overflow', 'peak'],

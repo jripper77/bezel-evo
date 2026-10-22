@@ -34,3 +34,8 @@ test('linked resize preserves aspect ratio without storing it in the theme', () 
  assert.deepEqual(resizedFrame({width:0,height:40},{width:10},true),{width:10});
  assert.deepEqual(resizedFrame({width:40,height:0},{height:10},true),{height:10});
 });
+
+test('needle centre and optional picture belong to its Shape controls', () => {
+  assert.equal(sectionFor('needle-center'), 'shape');
+  assert.equal(sectionFor('needle-picture'), 'shape');
+});
