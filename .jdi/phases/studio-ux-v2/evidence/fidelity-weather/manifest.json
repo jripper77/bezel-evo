@@ -1,0 +1,18 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-media-weather",
+    "file": "dark/app/inspector/ux2-media-weather.png",
+    "detail": "dark/app/inspector/ux2-media-weather-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-media-weather",
+    "file": "light/app/inspector/ux2-media-weather.png",
+    "detail": "light/app/inspector/ux2-media-weather-detail.png"
+  }
+]

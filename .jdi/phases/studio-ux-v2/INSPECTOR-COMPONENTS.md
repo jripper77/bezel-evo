@@ -140,3 +140,5 @@ Nessuna duplicazione dei primitivi. Le nuove opzioni del modello sono in D-20.
 - `imageField`: `asset`, `changeLabel`, `browseLabel`, `onBrowse` per la scheda compatta con selezione nativa e miniatura reale; il chiamante fornisce metadati di `imageAssetFacts`.
 - `fadeField`: anteprima 64×64 trascinabile/tastiera e campi numerici compatti, senza modello aggiuntivo. Testi aggiuntivi `x, y, from, to, midPrefix, extentPrefix, directionControl, centerControl`. Un callback al rilascio, nessuno su annullamento.
 - `fadeHandlePatch` puro e testato in shape-fade.js; `imageAssetFacts` puro e testato in media-inspector.js. Nessuna geometria nel modulo DOM specifico di un oggetto.
+
+Meteo: `toggleField(..., { leading: true })` porta il comando prima della didascalia con lo stesso pulsante/stato condiviso; nessuna seconda implementazione del toggle. Ricerca riusa `searchField`, `fieldAction`, `iconButton` e `listCard`.

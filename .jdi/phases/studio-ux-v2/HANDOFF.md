@@ -13,15 +13,16 @@ Il lavoro complessivo resta aperto; stop al blocco verificato per limite dei tok
 | Geometria Anello/Barra/Angoli | completato, `28aa63a`, `fid/inspector-geometry` | SUMMARY-FIDELITY-GEOMETRY.md |
 | Grafico/Spettro | completato, `1eb18be`, `fid/inspector-plots` | SUMMARY-FIDELITY-PLOTS.md |
 | Immagine/GIF/Forma/Player | completato, `616a7be`, `fid/inspector-media` | SUMMARY-FIDELITY-MEDIA.md |
-| Composizioni residue | **prossimo** | Meteo, Lancetta e Orologio analogico |
+| Meteo | completato, `3d37a0a`, `fid/inspector-weather` | SUMMARY-FIDELITY-WEATHER.md |
+| Composizioni residue | **prossimo** | Lancetta e Orologio analogico |
 | Contenitori/Tema/multipla | da fare | Card/facce, sfondo, controlli multipli secondo audit |
 | Shell/pannelli | da fare | MainNew, LibraryPanelsNew, StatusBarNew, Schermo/Archivio, larghezze/catture R00–R03 |
 | Profili/Galleria | da fare | ProfilesNew/ThemesNew, stato runtime reale, proporzioni e filtri |
 | Chiusura visiva | da fare | tutte le tavole/stati censiti, galleria finale rigenerata e REVIEW aggiornato prima delle verifiche dell’utente |
 
 Le nuove evidenze sono separate in `evidence/fidelity-paint/`, `fidelity-text/`,
-`fidelity-geometry/`, `fidelity-plots/` e `fidelity-media/`. **`evidence/final/` è ancora la galleria
-al termine di T-12**, non quella di questi cinque blocchi. Rigenerarla una sola
+`fidelity-geometry/`, `fidelity-plots/`, `fidelity-media/` e `fidelity-weather/`. **`evidence/final/` è ancora la galleria
+al termine di T-12**, non quella di questi sei blocchi. Rigenerarla una sola
 volta alla fine degli interventi restanti; `ux2-gallery.mjs` ora include anche
 il Grafico Area con due sensori (oltre alle barre arrotondate).
 
