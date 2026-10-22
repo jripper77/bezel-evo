@@ -148,3 +148,10 @@ Meteo: `toggleField(..., { leading: true })` porta il comando prima della didasc
 - `numberField(..., { caption })`: didascalia breve distinta dal nome accessibile `label`; il comportamento numerico è lo stesso.
 - `fieldGrid(..., { columns })`: oltre al numero di colonne, accetta una lista di larghezze CSS per campi con azioni ai lati; allineamento in basso comune, utile quando una didascalia va su due righe. Riutilizzato dalle zone della Lancetta, senza regole locali.
 - La disclosure del centro Lancetta usa `detailsField`, testo/parti usano i builder del Valore; apertura nella memoria del relativo store, senza nuovi campi del tema.
+
+## Fedeltà contenitori — 22 ottobre
+
+- `objectHeader`: il titolo h2 usa la stessa tipografia del nome dell’oggetto; nessun secondo header per la multipla.
+- Card: i chip degli oggetti e la disclosure di spostamento riusano `chipButton`/`detailsField`; i comandi di spostamento restano quelli esistenti. Le miniature sono canvas decorativi con frame del renderer esistente, non nuovi controlli.
+- `cardFacePreviewTheme` in card-config.js prepara la copia isolata e validata per una faccia; coperta da unitari. Non modifica lo store né aggiunge campi al tema.
+- Tema: stato con `pill` e orientamento con `iconChoice`; l’azione di giro conserva uno stato booleano indipendente dalla scelta dell’asse nello stesso gruppo.

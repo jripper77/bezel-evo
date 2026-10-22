@@ -1,0 +1,66 @@
+[
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-card",
+    "file": "dark/app/inspector/ux2-card.png",
+    "detail": "dark/app/inspector/ux2-card-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-linked-multi",
+    "file": "dark/app/inspector/ux2-linked-multi.png",
+    "detail": "dark/app/inspector/ux2-linked-multi-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-card",
+    "file": "light/app/inspector/ux2-card.png",
+    "detail": "light/app/inspector/ux2-card-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-linked-multi",
+    "file": "light/app/inspector/ux2-linked-multi.png",
+    "detail": "light/app/inspector/ux2-linked-multi-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-theme-open",
+    "file": "dark/app/inspector/ux2-theme-open.png",
+    "detail": "dark/app/inspector/ux2-theme-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "dark",
+    "area": "inspector",
+    "state": "ux2-theme-closed",
+    "file": "dark/app/inspector/ux2-theme-closed.png",
+    "detail": "dark/app/inspector/ux2-theme-closed-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-theme-open",
+    "file": "light/app/inspector/ux2-theme-open.png",
+    "detail": "light/app/inspector/ux2-theme-open-detail.png"
+  },
+  {
+    "kind": "app",
+    "scheme": "light",
+    "area": "inspector",
+    "state": "ux2-theme-closed",
+    "file": "light/app/inspector/ux2-theme-closed.png",
+    "detail": "light/app/inspector/ux2-theme-closed-detail.png"
+  }
+]
