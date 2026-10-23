@@ -14,6 +14,7 @@ use bezel_core::domain::theme::{
     AssetRef, Background, Binding, BoxF, Cap, Direction, ElementKind, Fit, FontSpec, GraphStyle,
     HAlign, Paint, Segments, ShapeKind, TextContent, TextStyle, Theme, VAlign,
 };
+use bezel_core::domain::weather::{IconMotion, Weather};
 
 use super::colors::{self, Known};
 use super::nrbf::{Class, Graph, Limits, Object, ObjectId, Primitive, Value};
@@ -159,10 +160,7 @@ const SENSORS: [Spec; 38] = [
     },
     spec("GPULOAD", keys::GPU_USAGE, 1.0, 100.0),
     spec("GPUPWR", keys::GPU_POWER, 1.0, 500.0),
-    Spec {
-        note: Some(Code::GpuFanPercent),
-        ..spec("GPUFAN", keys::GPU_FAN, 1.0, 100.0)
-    },
+    spec("GPUFAN", keys::GPU_FAN_RPM, 1.0, 8000.0),
     Spec {
         decimals: Some(2),
         ..spec("GPUVOLTAGE", keys::GPU_VOLTAGE, 1.0, 100.0)
@@ -181,10 +179,7 @@ const SENSORS: [Spec; 38] = [
         decimals: None,
         ..spec("RAMTOTAL", keys::MEMORY_TOTAL, MIB, 100.0)
     },
-    Spec {
-        note: Some(Code::MemoryModel),
-        ..spec("RAMMODEL", "vendor.RAMMODEL", 1.0, 100.0)
-    },
+    spec("RAMMODEL", keys::MEMORY_NAME, 1.0, 100.0),
     Spec {
         decimals: Some(1),
         ..spec("RAM_GB", keys::MEMORY_USED, GIB, 100.0)
@@ -197,22 +192,10 @@ const SENSORS: [Spec; 38] = [
         decimals: Some(1),
         ..spec("RAMTOTAL_GB", keys::MEMORY_TOTAL, GIB, 100.0)
     },
-    Spec {
-        note: Some(Code::RebindSensor),
-        ..spec("WATERPUMP", keys::FAN_PUMP, 1.0, 8000.0)
-    },
-    Spec {
-        note: Some(Code::RebindSensor),
-        ..spec("CASEFAN1", keys::FAN_CASE_1, 1.0, 8000.0)
-    },
-    Spec {
-        note: Some(Code::RebindSensor),
-        ..spec("CASEFAN2", keys::FAN_CASE_2, 1.0, 8000.0)
-    },
-    Spec {
-        note: Some(Code::DriveLetters),
-        ..spec("DRVLOAD", "disk.{}:.percent", 1.0, 100.0)
-    },
+    spec("WATERPUMP", keys::FAN_PUMP, 1.0, 8000.0),
+    spec("CASEFAN1", keys::FAN_CASE_1, 1.0, 8000.0),
+    spec("CASEFAN2", keys::FAN_CASE_2, 1.0, 8000.0),
+    spec("DRVLOAD", "disk.{}:.percent", 1.0, 100.0),
     spec("HDDTEMP", "disk.{}.temperature", 1.0, 100.0),
     spec("HDDUSED", "disk.{}.activity", 1.0, 100.0),
     Spec {
@@ -223,16 +206,89 @@ const SENSORS: [Spec; 38] = [
         decimals: None,
         ..spec("DOWNDSPEED", keys::NET_DOWN, 1024.0, 100.0)
     },
+    spec("Volume", keys::SYSTEM_VOLUME, 1.0, 100.0),
     Spec {
-        note: Some(Code::SensorNotSupported),
-        ..spec("Volume", keys::SYSTEM_VOLUME, 1.0, 100.0)
-    },
-    Spec {
-        note: Some(Code::VendorWeather),
+        note: Some(Code::UnsupportedBinding),
         ..spec("Weather", "vendor.Weather", 1.0, 100.0)
     },
     spec("FPS", keys::GPU_FPS, 1.0, 100.0),
 ];
+
+/// Sensors the vendor app lets the user pick, or reads from a part of the
+/// PC that may be missing: a text bound to one this PC does not measure
+/// shows the vendor's own text instead.
+const TEXT_WHEN_UNMEASURED: [&str; 4] = [
+    keys::FAN_PUMP,
+    keys::FAN_CASE_1,
+    keys::FAN_CASE_2,
+    keys::MEMORY_NAME,
+];
+
+/// A family Bezel includes, used for a font found nowhere.
+pub const FALLBACK_FONT: &str = "Inter";
+
+/// Where the weather of an imported theme is, until the user picks a city:
+/// the vendor keeps its city in its own settings, not in the theme.
+const WEATHER_CITY: (&str, f64, f64) = ("Roma", 41.9028, 12.4964);
+
+/// A font file found for a family a theme names.
+pub struct FoundFont {
+    /// The file's name, kept as the asset's name.
+    pub file_name: String,
+    /// Its content.
+    pub bytes: Vec<u8>,
+}
+
+/// What the importer asks of the computer it runs on.
+pub struct Host<'a> {
+    /// The background video the theme names, found next to the theme.
+    pub video: &'a mut dyn FnMut(&str) -> Option<Vec<u8>>,
+    /// A font file for a family, from the vendor app's fonts folder.
+    pub font: &'a mut dyn FnMut(&str) -> Option<FoundFont>,
+    /// True for a family installed on this PC.
+    pub installed_font: &'a dyn Fn(&str) -> bool,
+    /// True for a sensor this PC measures.
+    pub measured: &'a dyn Fn(&SensorKey) -> bool,
+}
+
+/// How a family the theme names is drawn.
+#[derive(Clone)]
+enum Resolved {
+    /// From a font file bundled with the theme.
+    Bundled(AssetRef),
+    /// Installed on this PC, as this family and, for a style the name
+    /// carried, this weight.
+    Installed(String, Option<u16>),
+    /// Found nowhere: [`FALLBACK_FONT`].
+    Fallback,
+}
+
+/// Style words a family name may end with (`Bahnschrift SemiBold`), with
+/// their weights.
+const STYLE_WORDS: [(&str, u16); 12] = [
+    ("thin", 100),
+    ("extralight", 200),
+    ("ultralight", 200),
+    ("light", 300),
+    ("semilight", 350),
+    ("regular", 400),
+    ("medium", 500),
+    ("semibold", 600),
+    ("demibold", 600),
+    ("bold", 700),
+    ("extrabold", 800),
+    ("black", 900),
+];
+
+/// `Bahnschrift SemiBold` → (`Bahnschrift`, 600).
+fn split_style(family: &str) -> Option<(&str, u16)> {
+    let (base, last) = family.trim().rsplit_once(' ')?;
+    let weight = STYLE_WORDS
+        .iter()
+        .find(|(word, _)| last.eq_ignore_ascii_case(word))?
+        .1;
+    Some((base.trim_end(), weight))
+}
 
 /// A resolved vendor sensor.
 struct Sensor {
@@ -260,13 +316,8 @@ fn px(v: f64) -> f32 {
     v.clamp(-100_000.0, 100_000.0) as f32
 }
 
-/// Imports a `.turtheme`. `video` returns the bytes of the background video
-/// file named by the theme, when it can be found next to the theme.
-pub fn import(
-    bytes: &[u8],
-    fallback_name: &str,
-    video: &mut dyn FnMut(&str) -> Option<Vec<u8>>,
-) -> Result<Imported, String> {
+/// Imports a `.turtheme`, asking `host` for the files and facts of this PC.
+pub fn import(bytes: &[u8], fallback_name: &str, host: Host<'_>) -> Result<Imported, String> {
     let graph =
         Graph::parse(bytes, &Limits::default(), &allowed_class).map_err(|e| e.to_string())?;
     let root = graph
@@ -278,10 +329,20 @@ pub fn import(
         })
         .ok_or("the root object is not a UsbMonitorL.Theme")?;
     let (canvas, orientation) = canvas(root)?;
+    let Host {
+        video,
+        font,
+        installed_font,
+        measured,
+    } = host;
     let mut im = Importer {
         b: Builder::default(),
-        fonts: BTreeSet::new(),
+        fonts: HashMap::new(),
+        replaced: BTreeSet::new(),
         bitmaps: HashMap::new(),
+        font,
+        installed_font,
+        measured,
     };
     let items = graph_list(root);
     let (background, rest) = im.background(root, &items, canvas, video);
@@ -464,13 +525,19 @@ fn short(text: &str) -> String {
     out
 }
 
-struct Importer {
+struct Importer<'h> {
     b: Builder,
-    fonts: BTreeSet<String>,
+    /// Each family the theme names, resolved once.
+    fonts: HashMap<String, Resolved>,
+    /// Families drawn with [`FALLBACK_FONT`].
+    replaced: BTreeSet<String>,
     bitmaps: HashMap<ObjectId, AssetRef>,
+    font: &'h mut dyn FnMut(&str) -> Option<FoundFont>,
+    installed_font: &'h dyn Fn(&str) -> bool,
+    measured: &'h dyn Fn(&SensorKey) -> bool,
 }
 
-impl Importer {
+impl Importer<'_> {
     fn warn(&mut self, warning: impl Into<ImportWarning>) {
         self.b.report.warn(warning.into());
     }
@@ -629,12 +696,50 @@ impl Importer {
         let sample = md
             .and_then(|m| m.text("ValueWithUnit").or_else(|| m.text("_Value")))
             .unwrap_or_default();
+        let mut lines = sample.lines().count().max(1) as f32;
         let (content, name, chars) = match md {
+            Some(_) if item.kind() == "Data" && data == "Weather" => {
+                let (city, latitude, longitude) = WEATHER_CITY;
+                self.warn(ImportWarning::new(Code::WeatherCity).arg("city", city));
+                // Bezel's weather reads city, temperature and condition.
+                lines = 3.0;
+                let content = TextContent::Weather(Weather {
+                    city: city.to_string(),
+                    latitude,
+                    longitude,
+                    language: None,
+                    fahrenheit: item.flag("fahrenheit"),
+                    show_icon: false,
+                    icon_style: Default::default(),
+                    icon_color: None,
+                    icon_gap: None,
+                    icon_size: None,
+                    icon_motion: IconMotion::Still,
+                    icon_speed: 1.0,
+                });
+                let chars = sample.chars().count().max(12);
+                (content, "Weather".to_string(), chars)
+            }
             Some(md) if item.kind() == "Data" && data != "StaticText" => {
                 let Some(content) = self.data_content(md, item.flag("fahrenheit")) else {
                     return;
                 };
                 let chars = sample.chars().count().max(4) + 3;
+                let content = match content {
+                    TextContent::Sensor { key, .. }
+                        if TEXT_WHEN_UNMEASURED.contains(&key.as_str())
+                            && !(self.measured)(&key)
+                            && !sample.trim().is_empty() =>
+                    {
+                        self.warn(
+                            ImportWarning::new(Code::SensorAsText)
+                                .arg("source", data)
+                                .arg("text", sample.trim()),
+                        );
+                        TextContent::Static(sample.trim().to_string())
+                    }
+                    content => content,
+                };
                 (content, format!("Data: {}", label(md)), chars)
             }
             _ => {
@@ -644,7 +749,6 @@ impl Importer {
             }
         };
         let style = self.text_style(fc);
-        let lines = sample.lines().count().max(1) as f32;
         let width = text_width(chars, style.size);
         let height = line_height(style.size) * lines;
         let (x, y) = item.pos();
@@ -851,7 +955,7 @@ impl Importer {
             .filter(|n| !n.is_empty())
             .unwrap_or("Microsoft YaHei")
             .to_string();
-        self.fonts.insert(family.clone());
+        let font = self.font_spec(&family, if fc.flag("isBold") { 700 } else { 400 });
         let points = fc
             .num("size")
             .filter(|s| *s > 0.0)
@@ -869,12 +973,7 @@ impl Importer {
             _ => HAlign::Left,
         };
         TextStyle {
-            font: FontSpec {
-                family,
-                weight: if fc.flag("isBold") { 700 } else { 400 },
-                italic: false,
-                asset: None,
-            },
+            font,
             size: (points * 96.0 / 72.0) as f32,
             paint,
             align,
@@ -905,10 +1004,71 @@ impl Importer {
         }
     }
 
+    /// The font for `family`: the vendor app's own file, bundled with the
+    /// theme; else the family installed on this PC; else [`FALLBACK_FONT`].
+    fn font_spec(&mut self, family: &str, weight: u16) -> FontSpec {
+        let resolved = match self.fonts.get(family) {
+            Some(resolved) => resolved.clone(),
+            None => {
+                let resolved = self.resolve_font(family);
+                self.fonts.insert(family.to_string(), resolved.clone());
+                resolved
+            }
+        };
+        let spec = |family: &str, weight: u16, asset: Option<AssetRef>| FontSpec {
+            family: family.to_string(),
+            weight,
+            italic: false,
+            asset,
+        };
+        match resolved {
+            Resolved::Bundled(asset) => spec(family, weight, Some(asset)),
+            Resolved::Installed(name, style) => {
+                spec(&name, style.map_or(weight, |w| w.max(weight)), None)
+            }
+            Resolved::Fallback => {
+                self.replaced.insert(family.to_string());
+                spec(FALLBACK_FONT, weight, None)
+            }
+        }
+    }
+
+    fn resolve_font(&mut self, family: &str) -> Resolved {
+        if let Some(found) = (self.font)(family) {
+            let name = file_name(&found.file_name).unwrap_or_else(|| "font.ttf".to_string());
+            let bytes = found.bytes;
+            let mut path = format!("assets/fonts/{name}");
+            let mut suffix = 1;
+            while self
+                .b
+                .assets
+                .get(&AssetRef(path.clone()))
+                .is_some_and(|existing| *existing != bytes)
+            {
+                path = format!("assets/fonts/{suffix}-{name}");
+                suffix += 1;
+            }
+            return Resolved::Bundled(self.b.asset(path, || bytes));
+        }
+        if (self.installed_font)(family) {
+            return Resolved::Installed(family.to_string(), None);
+        }
+        match split_style(family) {
+            Some((base, weight)) if (self.installed_font)(base) => {
+                Resolved::Installed(base.to_string(), Some(weight))
+            }
+            _ => Resolved::Fallback,
+        }
+    }
+
     fn report_fonts(&mut self) {
-        if !self.fonts.is_empty() {
-            let list = self.fonts.iter().cloned().collect::<Vec<_>>().join(", ");
-            self.warn(ImportWarning::new(Code::FontsNotStored).arg("fonts", list));
+        if !self.replaced.is_empty() {
+            let list = self.replaced.iter().cloned().collect::<Vec<_>>().join(", ");
+            self.warn(
+                ImportWarning::new(Code::FontFallback)
+                    .arg("fonts", list)
+                    .arg("fallback", FALLBACK_FONT),
+            );
         }
     }
 

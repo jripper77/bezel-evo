@@ -58,16 +58,10 @@ warning_codes! {
         => "the {field} format \"{format}\" is unknown; a default is used",
     UnknownDataSource = "unknownDataSource"
         => "the data source \"{source}\" is unknown; it was kept as vendor.{source}",
-    GpuFanPercent = "gpuFanPercent"
-        => "{source}: the vendor app shows the GPU fan in RPM; Bezel shows its duty in percent",
-    MemoryModel = "memoryModel" => "{source}: the memory \"model\" text has no Bezel equivalent",
-    RebindSensor = "rebindSensor"
-        => "{source}: the vendor app lets the user pick this sensor; rebind it in the editor",
-    DriveLetters = "driveLetters"
-        => "{source}: Windows drive letters were kept; rebind the layer to a mount point",
-    SensorNotSupported = "sensorNotSupported"
-        => "{source}: not supported yet; the layer shows it as unavailable",
-    VendorWeather = "vendorWeather" => "{source}: the vendor weather service is not supported",
+    SensorAsText = "sensorAsText"
+        => "{source}: this PC does not measure it, so the layer shows the vendor's text \"{text}\"",
+    WeatherCity = "weatherCity"
+        => "the weather is Bezel's, for {city}: choose your city in the inspector",
     UnsupportedBinding = "unsupportedBinding"
         => "bars, rings, needles and charts bound to {source} are not supported; bound to \
             vendor.{source}",
@@ -75,8 +69,8 @@ warning_codes! {
         => "Windows system colors were replaced by their Windows 10 defaults",
     UnknownKnownColor = "unknownKnownColor" => "the .NET known color {index} is unknown",
     UnknownColorName = "unknownColorName" => "the color name \"{color}\" is unknown",
-    FontsNotStored = "fontsNotStored"
-        => "fonts are not stored in .turtheme files; install them or pick others: {fonts}",
+    FontFallback = "fontFallback"
+        => "fonts found neither in the vendor app's fonts folder nor on this PC use {fallback}: {fonts}",
     LayerWithoutData = "layerWithoutData" => "a {layer} without a data source was dropped",
     InvertedBar = "invertedBar"
         => "inverted bars (1 - value) are not supported; they fill normally",

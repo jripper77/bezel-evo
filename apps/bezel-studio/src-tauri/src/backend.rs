@@ -27,7 +27,7 @@ use bezel_core::ports::{
 use bezel_render::{FontCatalog, FontFace};
 use bezel_sensors::SensorOptions;
 use bezel_themes::dto::{BackgroundDto, ThemeDto};
-use bezel_themes::import::import_path;
+use bezel_themes::import::{ImportOptions, import_path_with};
 use bezel_themes::native::{is_native, native_location};
 
 use crate::diag::{self, DiagCode};
@@ -1561,7 +1561,29 @@ impl Backend {
             let (theme, assets) = self.store.load(&native_location(path))?;
             (theme, assets, Vec::new())
         } else {
-            let (theme, assets, report) = import_path(path)?;
+            let fonts = self.current_fonts();
+            // A temporarily unreachable engine must not prevent file import.
+            // Without its catalog, leave the bindings available for rebinding.
+            let sensors = self.catalog().ok();
+            let installed_font = |name: &str| {
+                fonts.families.iter().any(|family| {
+                    family.name.eq_ignore_ascii_case(name)
+                        || family
+                            .aliases
+                            .iter()
+                            .any(|alias| alias.eq_ignore_ascii_case(name))
+                })
+            };
+            let measured = |key: &SensorKey| {
+                sensors
+                    .as_ref()
+                    .is_none_or(|catalog| catalog.iter().any(|sensor| sensor.key == key.as_str()))
+            };
+            let options = ImportOptions {
+                installed_font: &installed_font,
+                measured: &measured,
+            };
+            let (theme, assets, report) = import_path_with(path, &options)?;
             (
                 theme,
                 assets,

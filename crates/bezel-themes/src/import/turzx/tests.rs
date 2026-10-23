@@ -6,6 +6,17 @@ use super::*;
 use crate::import::nrbf::write::{Stream, Ty};
 use crate::import::test_png;
 
+macro_rules! host {
+    ($video:expr) => {
+        Host {
+            video: $video,
+            font: &mut no_font,
+            installed_font: &|_| true,
+            measured: &|_| true,
+        }
+    };
+}
+
 /// A value of the synthetic object tree.
 enum N {
     I(i32),
@@ -315,7 +326,7 @@ fn run(root: &N, video: Option<&[u8]>) -> Imported {
     let bytes = encode(root);
     assert!(looks_like_turtheme(&bytes));
     let mut find = |_: &str| video.map(<[u8]>::to_vec);
-    import(&bytes, "fallback", &mut find).expect("imports")
+    import(&bytes, "fallback", host!(&mut find)).expect("imports")
 }
 
 fn has(report: &crate::import::ImportReport, needle: &str) -> bool {
@@ -658,7 +669,6 @@ fn maps_every_layer_kind() {
 
     for needle in [
         "the data source \"FOO\" is unknown",
-        "DRVLOAD: Windows drive letters",
         "a video layer above the background",
         "inverted bars",
         "charts scrolling from right to left",
@@ -666,7 +676,6 @@ fn maps_every_layer_kind() {
         "a text layer without font settings",
         "unknown type \"Blink\"",
         "a chart without a data source",
-        "fonts are not stored in .turtheme files; install them or pick others: Arial, GeForce",
     ] {
         assert!(has(&report, needle), "{needle}: {:#?}", report.warnings);
     }
@@ -841,24 +850,24 @@ fn backgrounds_that_do_not_cover_the_canvas_become_layers() {
 #[test]
 fn refuses_what_is_not_a_vendor_theme() {
     let mut none = |_: &str| None;
-    assert!(import(b"junk", "x", &mut none).is_err());
+    assert!(import(b"junk", "x", host!(&mut none)).is_err());
     let not_theme = encode(&O("UsbMonitorL.GraphItem", vec![]));
-    let e = import(&not_theme, "x", &mut none).expect_err("refused");
+    let e = import(&not_theme, "x", host!(&mut none)).expect_err("refused");
     assert!(e.contains("not a UsbMonitorL.Theme"), "{e}");
     let bad_size = encode(&theme(0, 1920, None, vec![]));
-    let e = import(&bad_size, "x", &mut none).expect_err("refused");
+    let e = import(&bad_size, "x", host!(&mut none)).expect_err("refused");
     assert!(e.contains("bad canvas size"), "{e}");
     let gadget = encode(&O(
         "UsbMonitorL.Theme",
         vec![("x", O("System.Diagnostics.Process", vec![]))],
     ));
-    let e = import(&gadget, "x", &mut none).expect_err("refused");
+    let e = import(&gadget, "x", host!(&mut none)).expect_err("refused");
     assert!(e.contains("is not allowed"), "{e}");
     let unnamed = encode(&O(
         "UsbMonitorL.Theme",
         vec![("width", I(10)), ("height", I(10))],
     ));
-    let (t, _, _) = import(&unnamed, "", &mut none).expect("imports");
+    let (t, _, _) = import(&unnamed, "", host!(&mut none)).expect("imports");
     assert_eq!(t.name, "Imported theme");
     assert!(!looks_like_turtheme(b"\0short"));
 }
@@ -886,17 +895,27 @@ fn class_whitelist() {
     }
 }
 
-fn importer() -> Importer {
-    Importer {
-        b: Builder::default(),
-        fonts: BTreeSet::new(),
-        bitmaps: HashMap::new(),
-    }
+fn no_font(_: &str) -> Option<FoundFont> {
+    None
+}
+
+macro_rules! importer {
+    () => {
+        Importer {
+            b: Builder::default(),
+            fonts: HashMap::new(),
+            replaced: BTreeSet::new(),
+            bitmaps: HashMap::new(),
+            font: &mut no_font,
+            installed_font: &|_| true,
+            measured: &|_| true,
+        }
+    };
 }
 
 #[test]
 fn clock_formats() {
-    let mut im = importer();
+    let mut im = importer!();
     let cases = [
         ("TIME", None, "%H:%M"),
         ("TIME", Some("hm"), "%H:%M"),
@@ -931,7 +950,7 @@ fn clock_formats() {
 
 #[test]
 fn sensors_and_ranges() {
-    let mut im = importer();
+    let mut im = importer!();
     let s = im.sensor("CPUCLOCK_G", None, false).expect("sensor");
     assert_eq!(
         (s.key, s.max, s.decimals),
@@ -963,7 +982,7 @@ fn obj_of(n: &N) -> Graph {
 
 #[test]
 fn colors_follow_the_state_bits() {
-    let mut im = importer();
+    let mut im = importer!();
     let mut color_of = |n: N| {
         let g = obj_of(&n);
         let obj = Obj {
@@ -1057,7 +1076,7 @@ fn needles_can_run_backwards_and_rings_can_fill_from_the_end() {
 
 #[test]
 fn text_paint_needs_a_second_color_and_no_spacing() {
-    let mut im = importer();
+    let mut im = importer!();
     let mut paint_of = |n: N, spacing: f64| {
         let g = obj_of(&n);
         let obj = Obj {
@@ -1080,7 +1099,7 @@ fn text_paint_needs_a_second_color_and_no_spacing() {
 
 #[test]
 fn imported_sensors_use_the_catalog_keys() {
-    let mut im = importer();
+    let mut im = importer!();
     for (data, expected) in [
         ("CPUFAN", keys::CPU_FAN),
         ("CPUVOLTAGE", keys::CPU_VOLTAGE),
@@ -1094,19 +1113,160 @@ fn imported_sensors_use_the_catalog_keys() {
         let s = im.sensor(data, None, false).expect("sensor");
         assert_eq!(s.key, key(expected), "{data}");
     }
-    // The GPU fan is a duty: a full bar is 100 %, not the vendor's 8000 RPM.
     let fan = im.sensor("GPUFAN", None, false).expect("sensor");
-    assert_eq!((fan.key, fan.max), (key(keys::GPU_FAN), 100.0));
-    assert!(has(
-        &im.b.report,
-        "GPUFAN: the vendor app shows the GPU fan in RPM"
-    ));
-    // FPS is measured now; the volume is not, and the report says so.
-    assert!(!has(&im.b.report, "FPS"), "{:?}", im.b.report.warnings);
-    assert!(
-        has(&im.b.report, "Volume: not supported yet"),
-        "{:?}",
-        im.b.report.warnings
+    assert_eq!((fan.key, fan.max), (key(keys::GPU_FAN_RPM), 8000.0));
+    let memory = im.sensor("RAMMODEL", None, false).expect("sensor");
+    assert_eq!(memory.key, key(keys::MEMORY_NAME));
+    assert!(im.b.report.is_clean(), "{:?}", im.b.report.warnings);
+}
+
+#[test]
+fn resolves_vendor_installed_and_missing_fonts_once() {
+    let mut calls = 0;
+    let mut lookup = |family: &str| {
+        calls += 1;
+        (family == "Vendor").then(|| FoundFont {
+            file_name: "vendor.ttf".to_string(),
+            bytes: vec![1, 2, 3],
+        })
+    };
+    let mut im = importer!();
+    im.font = &mut lookup;
+    im.installed_font = &|family| family == "Bahnschrift";
+    let bundled = im.font_spec("Vendor", 400);
+    assert_eq!(
+        bundled.asset,
+        Some(AssetRef("assets/fonts/vendor.ttf".to_string()))
     );
-    assert!(!has(&im.b.report, "does not measure"));
+    assert_eq!(im.font_spec("Vendor", 700).weight, 700);
+    let installed = im.font_spec("Bahnschrift SemiBold", 400);
+    assert_eq!(
+        (installed.family.as_str(), installed.weight),
+        ("Bahnschrift", 600)
+    );
+    assert!(installed.asset.is_none());
+    assert_eq!(im.font_spec("Missing", 400).family, FALLBACK_FONT);
+    im.font_spec("Missing", 700);
+    im.report_fonts();
+    assert_eq!(im.b.report.warnings.len(), 1);
+    assert!(has(&im.b.report, "Missing"));
+    assert_eq!(im.b.assets.len(), 1);
+    drop(im);
+    assert_eq!(calls, 3);
+}
+
+#[test]
+fn converts_weather_and_preserves_unmeasured_sensor_text() {
+    let root = theme(
+        480,
+        1920,
+        None,
+        vec![
+            data("Weather", None, (0, 0), plain_font()),
+            data("CASEFAN1", None, (0, 100), plain_font()),
+            data("RAMMODEL", None, (0, 200), plain_font()),
+            data("CPULOAD", None, (0, 300), plain_font()),
+        ],
+    );
+    let bytes = encode(&root);
+    for measured in [false, true] {
+        let mut video = |_: &str| None;
+        let measured_sensor = |_: &SensorKey| measured;
+        let mut host = host!(&mut video);
+        host.measured = &measured_sensor;
+        let (theme, _, report) = import(&bytes, "test", host).expect("imports");
+        let ElementKind::Text {
+            content: TextContent::Weather(weather),
+            ..
+        } = &theme.elements[0].kind
+        else {
+            panic!("weather")
+        };
+        assert_eq!(weather.city, "Roma");
+        assert!(!weather.show_icon);
+        for element in &theme.elements[1..3] {
+            let ElementKind::Text { content, .. } = &element.kind else {
+                panic!("text")
+            };
+            if measured {
+                assert!(matches!(content, TextContent::Sensor { .. }));
+            } else {
+                assert_eq!(*content, TextContent::Static("88%".to_string()));
+            }
+        }
+        assert!(matches!(
+            theme.elements[3].kind,
+            ElementKind::Text {
+                content: TextContent::Sensor { .. },
+                ..
+            }
+        ));
+        assert_eq!(
+            report
+                .warnings
+                .iter()
+                .filter(|w| w.code() == Code::SensorAsText)
+                .count(),
+            if measured { 0 } else { 2 }
+        );
+        assert!(has(&report, "choose your city"));
+    }
+}
+
+#[test]
+fn imported_vendor_font_survives_native_save_and_reload() {
+    use crate::FsThemeStore;
+    use crate::import::{ImportOptions, import_path_with};
+    use bezel_core::ports::{ThemeLocation, ThemeStore};
+
+    let scratch = tempfile::tempdir().expect("scratch");
+    let folder = scratch.path();
+    std::fs::create_dir(folder.join("fonts")).expect("fonts directory");
+    let bytes = include_bytes!("../../../../bezel-render/tests/fonts/JetBrainsMonoNL-Regular.ttf");
+    std::fs::write(folder.join("fonts/vendor.ttf"), bytes).expect("font");
+    let root = theme(
+        480,
+        1920,
+        None,
+        vec![data(
+            "CPULOAD",
+            None,
+            (0, 0),
+            font("JetBrains Mono NL", 12, known(164), 0, 0, empty()),
+        )],
+    );
+    let path = folder.join("source.turtheme");
+    std::fs::write(&path, encode(&root)).expect("source theme");
+    let options = ImportOptions {
+        installed_font: &|_| false,
+        measured: &|_| true,
+    };
+    let (theme, assets, report) = import_path_with(&path, &options).expect("imports");
+    assert!(report.is_clean(), "{:?}", report.warnings);
+    assert_eq!(assets.len(), 1);
+    assert_eq!(assets.values().next().expect("bundled font"), bytes);
+    let location = ThemeLocation(folder.join("saved.bezeltheme").display().to_string());
+    FsThemeStore
+        .save(&location, &theme, &assets)
+        .expect("saves");
+    let (loaded, loaded_assets) = FsThemeStore.load(&location).expect("loads");
+    assert_eq!(loaded, theme);
+    assert_eq!(loaded_assets, assets);
+}
+
+#[test]
+fn vendor_fonts_with_the_same_filename_keep_their_own_bytes() {
+    let mut lookup = |family: &str| {
+        Some(FoundFont {
+            file_name: "font.ttf".to_string(),
+            bytes: family.as_bytes().to_vec(),
+        })
+    };
+    let mut im = importer!();
+    im.font = &mut lookup;
+    let first = im.font_spec("First", 400).asset.expect("first asset");
+    let second = im.font_spec("Second", 400).asset.expect("second asset");
+    assert_ne!(first, second);
+    assert_eq!(im.b.assets[&first], b"First");
+    assert_eq!(im.b.assets[&second], b"Second");
 }

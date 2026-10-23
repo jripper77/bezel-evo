@@ -9,6 +9,7 @@
 //! [`ImportReport`] listing what could not be mapped exactly.
 
 pub mod colors;
+mod fonts;
 pub mod nrbf;
 pub mod python_yaml;
 pub mod turzx;
@@ -22,6 +23,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 
 use bezel_core::domain::geometry::Size;
+use bezel_core::domain::sensor::SensorKey;
 use bezel_core::domain::theme::{AssetRef, BoxF, Element, ElementId, ElementKind, Fit, Theme};
 use bezel_core::{BezelError, Result};
 
@@ -55,10 +57,44 @@ const MAX_TURTHEME: u64 = 64 * 1024 * 1024;
 /// Largest background video bundled from next to a vendor theme.
 const MAX_VIDEO: u64 = 512 * 1024 * 1024;
 
+/// What the app importing a theme knows about this PC.
+pub struct ImportOptions<'a> {
+    /// True for a font family installed on this PC; a `.turtheme` font that
+    /// is not, nor in the vendor app's fonts folder, is drawn with
+    /// [`turzx::FALLBACK_FONT`].
+    pub installed_font: &'a dyn Fn(&str) -> bool,
+    /// True for a sensor this PC measures; a vendor text bound to a pump,
+    /// a case fan or the memory model it does not measure keeps its text.
+    pub measured: &'a dyn Fn(&SensorKey) -> bool,
+}
+
+fn installed_anywhere(_: &str) -> bool {
+    true
+}
+
+fn measured_anywhere(_: &SensorKey) -> bool {
+    true
+}
+
+impl Default for ImportOptions<'_> {
+    /// Without facts about the PC: every font and sensor is taken as present.
+    fn default() -> Self {
+        Self {
+            installed_font: &installed_anywhere,
+            measured: &measured_anywhere,
+        }
+    }
+}
+
 /// Imports the theme at `path`, choosing the importer by content and name:
 /// an NRBF stream (`.turtheme`), a folder with a `theme.yaml`, or a
 /// `theme.yaml` file itself.
 pub fn import_path(path: &Path) -> Result<Imported> {
+    import_path_with(path, &ImportOptions::default())
+}
+
+/// [`import_path`] with what the app knows about this PC.
+pub fn import_path_with(path: &Path, options: &ImportOptions<'_>) -> Result<Imported> {
     let fail = |e: String| BezelError::ThemeFile(format!("import {}: {e}", path.display()));
     if path.is_dir() {
         return python_yaml::import_dir(path).map_err(fail);
@@ -79,7 +115,15 @@ pub fn import_path(path: &Path) -> Result<Imported> {
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
     let mut video = |file: &str| find_video(path, file);
-    turzx::import(&bytes, &name, &mut video).map_err(fail)
+    let mut folders = fonts::FontFolders::new(fonts::vendor_font_folders(path));
+    let mut font = |family: &str| folders.find(family);
+    let host = turzx::Host {
+        video: &mut video,
+        font: &mut font,
+        installed_font: options.installed_font,
+        measured: options.measured,
+    };
+    turzx::import(&bytes, &name, host).map_err(fail)
 }
 
 /// Extensions of the background videos the vendor app accepts.

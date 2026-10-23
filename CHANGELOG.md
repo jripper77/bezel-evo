@@ -7,6 +7,16 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Studio
+- Importing `.turtheme` files includes fonts found in the vendor app's `fonts`
+  folder. Studio uses installed families when available and reports missing
+  fonts replaced with Inter.
+- Imported GPU fan readings use RPM, and memory model text uses the memory
+  sensor. Optional fan and memory text keeps the vendor's saved text when
+  the PC has no matching sensor.
+- Imported weather text uses Bezel's weather, initially for Rome, with a
+  reminder to choose your city in the inspector.
+
 ### Fixes
 - The media player's cover gap no longer shows a long decimal such as
   7.199999999999999 px in the inspector; it reads 7.2 px.

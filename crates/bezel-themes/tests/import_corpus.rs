@@ -95,8 +95,8 @@ fn imports_the_local_corpus() {
     let (turzx, python) = corpus();
     assert!(turzx.len() > 1, "no .turtheme files found");
     assert!(!python.is_empty(), "no Python themes found");
-    let scratch = std::env::temp_dir().join(format!("bezel-corpus-{}", std::process::id()));
-    let _ = fs::remove_dir_all(&scratch);
+    let scratch_guard = tempfile::tempdir().expect("corpus scratch directory");
+    let scratch = scratch_guard.path();
     let mut kinds: BTreeMap<String, usize> = BTreeMap::new();
     let mut failures = Vec::new();
     let all = turzx.iter().chain(python.iter());
@@ -130,7 +130,6 @@ fn imports_the_local_corpus() {
         assert_eq!(loaded_assets, assets, "{}", path.display());
         let _ = fs::remove_dir_all(scratch.join(format!("t{i}")));
     }
-    let _ = fs::remove_dir_all(&scratch);
     let mut ranked: Vec<(&String, &usize)> = kinds.iter().collect();
     ranked.sort_by(|a, b| b.1.cmp(a.1));
     eprintln!(

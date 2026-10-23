@@ -141,12 +141,13 @@
       "field",
       "format"
     ],
-    "driveLetters": [
-      "source"
-    ],
     "fileUnreadable": [
       "error",
       "name"
+    ],
+    "fontFallback": [
+      "fallback",
+      "fonts"
     ],
     "fontNotBundled": [
       "error",
@@ -154,12 +155,6 @@
     ],
     "fontPathOutside": [
       "path"
-    ],
-    "fontsNotStored": [
-      "fonts"
-    ],
-    "gpuFanPercent": [
-      "source"
     ],
     "graphAxes": [
       "name"
@@ -170,9 +165,6 @@
     ],
     "layerWithoutPicture": [
       "layer"
-    ],
-    "memoryModel": [
-      "source"
     ],
     "noFontsFolder": [],
     "noLayers": [],
@@ -198,11 +190,9 @@
     "radialWithoutRadius": [
       "name"
     ],
-    "rebindSensor": [
-      "source"
-    ],
-    "sensorNotSupported": [
-      "source"
+    "sensorAsText": [
+      "source",
+      "text"
     ],
     "systemColors": [],
     "textWithoutFont": [],
@@ -248,15 +238,15 @@
     "unusedTopKey": [
       "key"
     ],
-    "vendorWeather": [
-      "source"
-    ],
     "videoLayer": [],
     "videoNotFound": [
       "name",
       "path"
     ],
     "videoWithoutName": [],
+    "weatherCity": [
+      "city"
+    ],
     "weatherNotSupported": [
       "name"
     ],

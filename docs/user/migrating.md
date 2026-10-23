@@ -37,6 +37,15 @@ bezel run mytheme.bezeltheme
 `bezel run` and `bezel render` also take the theme folder directly and convert
 it on the fly. Themes of the vendor app (`.turtheme`) import the same way.
 
+Keep a `.turtheme` in its vendor folder when importing: Bezel looks for fonts
+in a nearby `fonts` folder, including `<vendor app>/fonts`, and includes the
+files it finds in the imported theme. Studio also checks the PC's installed
+fonts; missing families use Inter and appear in the import report. Optional
+fan and memory model text keeps the vendor's saved text when the PC has no
+matching sensor. Imported weather starts with Rome; choose your city in the
+inspector after importing.
+
+
 ## 3. Your settings
 
 | `config.yaml` | In Bezel |
