@@ -414,7 +414,7 @@ export default {
   'importWarning.fontNotBundled': 'A fonte {path} não foi incluída: {error}.',
   'importWarning.fontPathOutside': 'O caminho de fonte “{path}” sai da pasta de fontes; a fonte não foi incluída.',
   "importWarning.fontFallback": "As fontes ausentes na pasta do fabricante e neste PC usam {fallback}: {fonts}.",
-  "importWarning.sensorAsText": "{source}: este PC n?o mede esse sensor, ent?o a camada mant?m o texto do fabricante ?{text}?.",
+  "importWarning.sensorAsText": "{source}: este PC n\u00e3o mede esse sensor, ent\u00e3o a camada mant\u00e9m o texto do fabricante \"{text}\".",
   "importWarning.weatherCity": "O clima importado usa o clima do Bezel para {city}; escolha sua cidade no inspetor.",
   'importWarning.graphAxes': 'STATS.{name}: eixos e rótulos de gráfico de linha não são suportados.',
   'importWarning.invertedBar': 'Barras invertidas (1 − valor) não são suportadas; elas enchem normalmente.',
