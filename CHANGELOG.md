@@ -5,7 +5,7 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-24
 
 ### Studio
 - Importing `.turtheme` files includes fonts found in the vendor app's `fonts`
