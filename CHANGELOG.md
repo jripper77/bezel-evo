@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.3] - 2026-10-24
+
+0.2.1 and 0.2.2 were local builds; these entries cover them.
+
+### Studio
+- Opening or importing a theme turns Live off for the selected display, so
+  the new theme can be checked in Studio before sending it to the hardware.
+  Failed file reads keep the current theme and Live state.
+- The Live control briefly pulses with an amber halo when sending stops.
+  Reduced-motion mode uses a static halo instead.
+
 ## [0.2.2] - 2026-10-24
 
 0.2.1 was a local build; this entry and the one below cover it.
