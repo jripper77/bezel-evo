@@ -2246,3 +2246,89 @@ fn a_new_document_has_no_old_snapshot_and_renders_despite_video_setup_failure() 
         "keep the actionable failure reason"
     );
 }
+
+#[test]
+fn a_bundled_video_missing_on_the_display_still_presents_the_theme() {
+    for card in [false, true] {
+        let mut f = fixture();
+        let mut storage = FakeStorage::default();
+        if card {
+            storage = storage.with_card(1024);
+        }
+        f.physical = FakeConnector::with_storage(storage);
+        f.owner = Owner::new(Arc::new(f.physical.clone()));
+        f.engine.connector = Arc::new(f.owner.client(true));
+        let mut imported = doc();
+        let asset = AssetRef("assets/imported.mp4".into());
+        imported.theme.background = Background::Video {
+            asset: asset.clone(),
+            poster: None,
+            framing: None,
+        };
+        imported.assets.insert(asset, vec![1, 2, 3]);
+        f.engine.document(&f.key, 0, imported, true).unwrap();
+        f.engine.live(&f.key, true).unwrap();
+        advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+        assert_eq!(f.engine.scenes[&f.key].error, None);
+        let VideoState::VideoMissing(missing) = f.engine.scenes[&f.key].runtime.video() else {
+            panic!("expected missing video")
+        };
+        assert_eq!(missing.path.to_string().starts_with("sd/"), card);
+        assert!(
+            !f.physical.log().frames.is_empty(),
+            "missing video must not block the live theme"
+        );
+        let calls = f.physical.log().storage.calls;
+        assert_eq!(calls.iter().filter(|c| **c == StorageCall::Info).count(), 1);
+        assert!(
+            calls.iter().all(|c| !c.changes_the_screen()),
+            "discovery must not upload or change stored files"
+        );
+    }
+}
+
+#[test]
+fn a_bundled_video_already_stored_on_the_display_starts_and_presents() {
+    let mut imported = doc();
+    let asset = AssetRef("assets/imported.mp4".into());
+    imported.theme.background = Background::Video {
+        asset: asset.clone(),
+        poster: None,
+        framing: None,
+    };
+    imported.assets.insert(asset, vec![1, 2, 3]);
+    let mut probe = fixture();
+    probe
+        .engine
+        .document(&probe.key, 0, imported.clone(), true)
+        .unwrap();
+    probe.engine.live(&probe.key, true).unwrap();
+    advance(&mut probe.engine, Duration::ZERO, time()).unwrap();
+    let VideoState::VideoMissing(missing) = probe.engine.scenes[&probe.key].runtime.video() else {
+        panic!("expected missing path")
+    };
+    let path = missing.path.clone();
+    drop(probe);
+    let mut f = fixture();
+    f.physical =
+        FakeConnector::with_storage(FakeStorage::default().with_file(path.clone(), vec![1, 2, 3]));
+    f.owner = Owner::new(Arc::new(f.physical.clone()));
+    f.engine.connector = Arc::new(f.owner.client(true));
+    f.engine.document(&f.key, 0, imported, true).unwrap();
+    f.engine.live(&f.key, true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    assert_eq!(
+        f.engine.scenes[&f.key].runtime.video(),
+        &VideoState::OnDevice(path)
+    );
+    assert_eq!(f.engine.scenes[&f.key].error, None);
+    assert!(!f.physical.log().frames.is_empty());
+    assert!(
+        f.physical
+            .log()
+            .storage
+            .calls
+            .iter()
+            .any(|c| matches!(c, StorageCall::PlayVideo(_, _)))
+    );
+}

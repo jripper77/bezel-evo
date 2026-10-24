@@ -24,6 +24,7 @@ const PENDING: &str = "asynchronous device query pending";
 enum Control {
     Orientation(Orientation),
     Size(RemotePath),
+    Info,
     Resume(RemotePath, Repeat),
     Stop,
 }
@@ -38,6 +39,8 @@ struct State {
     completion: Option<TransferStats>,
     completed: u64,
     sizes: BTreeMap<RemotePath, Option<Result<Option<u64>>>>,
+    info: Option<Result<StorageInfo>>,
+    info_pending: bool,
 }
 struct Shared {
     state: Mutex<State>,
@@ -79,6 +82,8 @@ impl Presenter {
                 completion: None,
                 completed: 0,
                 sizes: BTreeMap::new(),
+                info: None,
+                info_pending: false,
             }),
             wake: Condvar::new(),
         });
@@ -138,6 +143,8 @@ impl Presenter {
                             .lock()
                             .unwrap_or_else(std::sync::PoisonError::into_inner);
                         state.sizes.clear();
+                        state.info = None;
+                        state.info_pending = false;
                         state.commands.clear();
                         state.frame = None;
                         state.opened = Some((screen.clone(), identity, storage));
@@ -181,6 +188,24 @@ impl Presenter {
                             drop(state);
                             match command {
                                 Some(Control::Orientation(o)) => link.set_orientation(o)?,
+                                Some(Control::Info) => {
+                                    let result = link
+                                        .storage()
+                                        .ok_or_else(|| BezelError::Unsupported("storage".into()))?
+                                        .info();
+                                    if result
+                                        .as_ref()
+                                        .is_err_and(|e| !matches!(e, BezelError::Unsupported(_)))
+                                    {
+                                        return result.map(|_| ());
+                                    }
+                                    let mut state = worker
+                                        .state
+                                        .lock()
+                                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                                    state.info = Some(result);
+                                    state.info_pending = false;
+                                }
                                 Some(Control::Size(path)) => {
                                     let result = link
                                         .storage()
@@ -258,6 +283,8 @@ impl Presenter {
                     state.frame = None;
                     state.commands.clear();
                     state.sizes.clear();
+                    state.info = None;
+                    state.info_pending = false;
                     let deadline = Instant::now() + Duration::from_secs(2);
                     while !state.stop && Instant::now() < deadline {
                         state = worker
@@ -419,7 +446,24 @@ impl ScreenStorage for Link {
         self.enqueue(Control::Stop)
     }
     fn info(&mut self) -> Result<StorageInfo> {
-        unsupported()
+        let mut state = self
+            .shared
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(result) = &state.info {
+            return result.clone();
+        }
+        if !state.info_pending {
+            if state.commands.len() >= 64 {
+                return Err(BezelError::InvalidInput("video query limit".into()));
+            }
+            state.info_pending = true;
+            state.commands.push_back(Control::Info);
+            self.shared.wake.notify_one();
+        }
+        self.pending = true;
+        Err(BezelError::Transport(PENDING.into()))
     }
     fn list(&mut self, _: StorageLocation) -> Result<Vec<FileName>> {
         unsupported()
