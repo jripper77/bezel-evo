@@ -43,6 +43,9 @@ paths. It writes a stop marker after it has finished; the collector also has a
 bounded lifetime if the client never arrives. `run-admin.ps1 -GameProcessId <PID>`
 checks the expected Windrose process, records 45 seconds of baseline and console
 each, then prepares that same separate collector for a normal-user API client.
+For a shorter retry, use `-SkipGameBaseline -GameSeconds 25 -StartDelaySeconds 10`,
+then pass `--seconds 25` to the separate normal-user API client. The delay lets
+the player return from the chat/UAC prompt to the game before measurement.
 
 For a running game, use `evaluate.py --pid <PID>` with the same required paths;
 it never launches or terminates the game. `--modes console,api --seconds 60`
@@ -72,6 +75,13 @@ from the repository for attribution/window tests.
   reported both relative to one core and normalized over logical processors.
 - The synthetic workload validates acquisition and rate changes. Its paced,
   lightweight rendering cannot establish game performance overhead.
+- Game runs record target CPU/memory counters, total system CPU and whether
+  the target PID owns the foreground window at every sample. A background-game
+  capture must not be compared with a foreground capture. A baseline without
+  ETW contains CPU/memory counters, not an FPS measurement.
+- Dynamic API queries may return a cached nonzero value after Alt-Tab. Success
+  of a query alone does not establish fresh data. Focus, source-frame age and
+  capture lifecycle need explicit handling in any product integration.
 - Startup-inclusive short-run memory growth is not a memory-leak test.
 - A few valid rows are not enough: inspect source coverage and rate changes.
   Zero/absent samples, capture failures and occlusion invalidate a comparison.

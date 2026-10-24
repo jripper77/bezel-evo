@@ -69,7 +69,7 @@ def source_seconds(row):
 
 def resource_summary(samples):
     summary = {}
-    for name in ["capture", "reader", "workload"]:
+    for name in ["capture", "reader", "workload", "target"]:
         available = [(r["elapsed"], r[name]) for r in samples if r.get(name)]
         if len(available) < 2:
             continue
@@ -82,6 +82,11 @@ def resource_summary(samples):
             "peak_rss_mib": max(v["rss_bytes"] for _, v in available) / 2**20,
             "private_growth_mib": (end[1]["private_bytes"] - begin[1]["private_bytes"]) / 2**20,
         }
+    system = [row["system_cpu"] for row in samples if row.get("system_cpu")]
+    if len(system) >= 2:
+        total = system[-1]["total"] - system[0]["total"]
+        idle = system[-1]["idle"] - system[0]["idle"]
+        summary["system_cpu_percent"] = 100 * (total - idle) / total if total else None
     return summary
 
 
@@ -89,6 +94,8 @@ def summarize(result):
     summary = {key: result.get(key) for key in
                ["mode", "pid", "seconds", "error", "capture_exit", "api_version"]}
     summary["resources"] = resource_summary(result["resources"])
+    focus = [row["target_foreground"] for row in result["resources"] if "target_foreground" in row]
+    summary["target_foreground_percent"] = 100 * sum(focus) / len(focus) if focus else None
     if result["mode"] == "api":
         chains = [chain for sample in result["samples"] for chain in sample.get("chains", [])
                   if chain["swap_chain_address"] != "0x0" and (chain.get("presented_fps") or 0) > 0]

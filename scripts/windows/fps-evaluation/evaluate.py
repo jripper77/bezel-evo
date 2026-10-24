@@ -158,6 +158,24 @@ def resources(process):
             "rss_bytes": counters.rss, "private_bytes": counters.private}
 
 
+def system_cpu():
+    kernel = ct.WinDLL("kernel32", use_last_error=True)
+    kernel.GetSystemTimes.argtypes = [ct.POINTER(ct.c_uint64)] * 3
+    idle, system, user = (ct.c_uint64() for _ in range(3))
+    if not kernel.GetSystemTimes(ct.byref(idle), ct.byref(system), ct.byref(user)):
+        return None
+    return {"idle": idle.value, "total": system.value + user.value}
+
+
+def target_is_foreground(pid):
+    user = ct.WinDLL("user32", use_last_error=True)
+    user.GetForegroundWindow.restype = ct.c_void_p
+    user.GetWindowThreadProcessId.argtypes = [ct.c_void_p, ct.POINTER(ct.c_uint32)]
+    owner = ct.c_uint32()
+    user.GetWindowThreadProcessId(user.GetForegroundWindow(), ct.byref(owner))
+    return owner.value == pid
+
+
 def stop_owned(process, graceful=False):
     if process is None or process.poll() is not None:
         return "already-exited"
@@ -182,7 +200,7 @@ def run_once(args, mode, output):
     session_name = "BezelFpsEval-" + suffix
     pipe = "\\\\.\\pipe\\" + session_name
     service_dir = args.extracted / "Intel" / "PresentMonSharedService"
-    workload = capture = api = None
+    workload = capture = api = target = None
     result = {"mode": mode, "seconds": args.seconds, "pid": args.pid,
               "synthetic": args.pid is None, "session_name": session_name,
               "samples": [], "resources": []}
@@ -195,6 +213,15 @@ def run_once(args, mode, output):
                 stdout=work_out, creationflags=subprocess.CREATE_NO_WINDOW)
             result["pid"] = workload.pid
         pid = result["pid"]
+        if args.pid:
+            kernel = ct.WinDLL("kernel32", use_last_error=True)
+            kernel.OpenProcess.argtypes = [ct.c_uint32, ct.c_int, ct.c_uint32]
+            kernel.OpenProcess.restype = ct.c_void_p
+            handle = kernel.OpenProcess(0x1000, 0, pid)  # Query counters only.
+            if handle:
+                target = SimpleNamespace(_handle=handle)
+            else:
+                result["target_counters_error"] = ct.get_last_error()
         err = open(output / "capture.stderr.log", "w", encoding="utf-8")
         handles.append(err)
         stdout = open(output / "capture.stdout.log", "w", encoding="utf-8")
@@ -255,9 +282,11 @@ def run_once(args, mode, output):
             if api:
                 result["samples"].append({"elapsed": elapsed, "chains": api.poll()})
             processes = [("workload", workload), ("capture", capture),
+                         ("target", target),
                          ("reader", SimpleNamespace(_handle=-1))]
             result["resources"].append({"elapsed": elapsed, **{
-                name: resources(proc) for name, proc in processes if proc}})
+                name: resources(proc) for name, proc in processes if proc},
+                "system_cpu": system_cpu(), "target_foreground": target_is_foreground(pid)})
             if capture and capture.poll() is not None:
                 result["capture_exit"] = capture.returncode
                 break
@@ -285,6 +314,10 @@ def run_once(args, mode, output):
         result["capture_stop"] = stop_owned(capture, graceful=mode == "api")
         result["workload_stop"] = stop_owned(workload)
         result["workload_exit"] = workload.returncode if workload else None
+        if target:
+            kernel = ct.WinDLL("kernel32", use_last_error=True)
+            kernel.CloseHandle.argtypes = [ct.c_void_p]
+            kernel.CloseHandle(target._handle)
         for handle in handles:
             handle.close()
         result["capture_exit"] = capture.returncode if capture else None

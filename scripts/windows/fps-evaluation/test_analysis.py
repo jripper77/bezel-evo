@@ -36,6 +36,20 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result["other_pid_frames"], 1)
         self.assertIsNone(result["presented_fps"]["median"])
 
+    def test_game_counters_allow_multiple_cores_and_report_foreground_coverage(self):
+        rows = [
+            {"elapsed": 0, "target_foreground": True,
+             "target": {"cpu_seconds": 2, "rss_bytes": 2**20, "private_bytes": 2 * 2**20},
+             "system_cpu": {"idle": 10, "total": 100}},
+            {"elapsed": 2, "target_foreground": False,
+             "target": {"cpu_seconds": 6, "rss_bytes": 2 * 2**20, "private_bytes": 4 * 2**20},
+             "system_cpu": {"idle": 30, "total": 200}},
+        ]
+        result = summarize({"mode": "baseline", "resources": rows})
+        self.assertEqual(result["resources"]["target"]["cpu_percent_one_core"], 200)
+        self.assertEqual(result["resources"]["system_cpu_percent"], 80)
+        self.assertEqual(result["target_foreground_percent"], 50)
+
 
 if __name__ == "__main__":
     unittest.main()

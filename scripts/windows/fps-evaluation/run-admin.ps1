@@ -3,7 +3,10 @@ param(
     [string]$Python = 'C:\Users\danie\miniconda3\python.exe',
     [switch]$SmokeOnly,
     [switch]$NormalClientProbe,
-    [int]$GameProcessId = 0
+    [int]$GameProcessId = 0,
+    [ValidateRange(10,120)][int]$GameSeconds = 45,
+    [switch]$SkipGameBaseline,
+    [ValidateRange(0,30)][int]$StartDelaySeconds = 0
 )
 $ErrorActionPreference = 'Stop'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -58,7 +61,9 @@ try {
         }
         $result.game = $game.Name
         $result.gamePid = $GameProcessId
-        & $Python @probeArgs --pid $GameProcessId --output (Join-Path $runLogs 'game') --seconds 45 --modes baseline,console *> (Join-Path $runLogs 'game.log')
+        if ($StartDelaySeconds) { Start-Sleep -Seconds $StartDelaySeconds }
+        $gameModes = if ($SkipGameBaseline) { 'console' } else { 'baseline,console' }
+        & $Python @probeArgs --pid $GameProcessId --output (Join-Path $runLogs 'game') --seconds $GameSeconds --modes $gameModes *> (Join-Path $runLogs 'game.log')
         if ($LASTEXITCODE -ne 0) { throw 'Game console test failed; inspect game.log.' }
     } elseif (-not $NormalClientProbe) {
         # First smoke test; proceed to repeated runs only if both readers work.
