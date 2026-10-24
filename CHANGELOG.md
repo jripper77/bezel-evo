@@ -5,6 +5,25 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.5] - 2026-10-24
+
+0.2.1 through 0.2.4 were local builds; these entries cover them.
+
+### Studio
+- Importing a theme checks the connected display for its background video.
+  If the copy is missing, confirm a transfer from the included local source,
+  or choose a video file when that source is unavailable. Live stays off.
+- Video framing buttons use the same neutral borders and selected states
+  as the rest of the inspector.
+
+### Fixes
+- Reuse compatible native videos stored under their original vendor names,
+  including case and punctuation. Default framing can also use the native
+  device copy when its local source is unavailable.
+- The Bezel status indicator refreshes once per second using average render
+  time, avoiding flicker from individual frames. Detailed samples remain
+  available in its popover.
+
 ## [0.2.4] - 2026-10-24
 
 0.2.1 through 0.2.3 were local builds; these entries cover them.
