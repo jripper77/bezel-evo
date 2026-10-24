@@ -2176,3 +2176,73 @@ fn a_thirty_second_theme_trial_restores_without_changing_saved_documents() {
     assert!(f.engine.profile_status().unwrap().preview.is_none());
     assert_eq!(file.load().unwrap(), config);
 }
+
+#[test]
+#[ignore = "requires BEZEL_IMPORT_THEME pointing at a local vendor theme"]
+fn imported_theme_replaces_the_previous_runtime_frame() {
+    let path = std::env::var_os("BEZEL_IMPORT_THEME").expect("BEZEL_IMPORT_THEME");
+    let (theme, assets, _) =
+        bezel_themes::import::import_path(std::path::Path::new(&path)).unwrap();
+    let mut f = fixture();
+    let mut previous = doc();
+    previous.theme.background = Background::Color(Rgba::BLACK);
+    f.engine.document(&f.key, 0, previous, true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    f.engine
+        .document(
+            &f.key,
+            1,
+            Document {
+                theme: theme.clone(),
+                assets,
+            },
+            false,
+        )
+        .unwrap();
+    advance(&mut f.engine, Duration::from_millis(100), time()).unwrap();
+    assert_eq!(f.engine.scenes[&f.key].error, None);
+    assert_eq!(f.seen.lock().unwrap().last().unwrap().theme, theme.name);
+}
+
+#[test]
+fn a_new_document_has_no_old_snapshot_and_renders_despite_video_setup_failure() {
+    let mut f = fixture();
+    let mut previous = doc();
+    previous.theme.background = Background::Color(Rgba::BLACK);
+    f.engine
+        .document(&f.key, 0, previous.clone(), true)
+        .unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    assert!(f.engine.image(&f.key, 0, 320).unwrap().frame.is_some());
+    let blocked = f._directory.path().join("not-a-directory");
+    std::fs::write(&blocked, b"blocked cache path").unwrap();
+    f.engine.cache = blocked;
+    let mut imported = previous;
+    imported.theme.name = "Imported video theme".into();
+    let asset = AssetRef("assets/imported.mp4".into());
+    imported.theme.background = Background::Video {
+        asset: asset.clone(),
+        poster: None,
+        framing: None,
+    };
+    imported.assets.insert(asset, vec![1, 2, 3]);
+    f.engine.document(&f.key, 1, imported, false).unwrap();
+    assert!(
+        f.engine.image(&f.key, 0, 320).unwrap().frame.is_none(),
+        "the previous picture must be invalidated immediately"
+    );
+    advance(&mut f.engine, Duration::from_millis(100), time()).unwrap();
+    assert!(
+        f.engine.image(&f.key, 0, 320).unwrap().frame.is_some(),
+        "the new document renders without its video"
+    );
+    assert_eq!(
+        f.seen.lock().unwrap().last().unwrap().theme,
+        "Imported video theme"
+    );
+    let error = f.engine.scenes[&f.key].error.as_deref().unwrap();
+    assert_ne!(
+        error, "scene update failed",
+        "keep the actionable failure reason"
+    );
+}

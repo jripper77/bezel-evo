@@ -31,6 +31,12 @@ impl Images {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(key.into(), Arc::new(snapshot));
     }
+    pub(crate) fn forget(&self, key: &str) {
+        self.frames
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .remove(key);
+    }
     pub fn latest(&self, key: &str, after: u64, max: u32) -> Result<wire::Image> {
         if max == 0 || max > 2320 {
             return Err(invalid("invalid canvas bound"));

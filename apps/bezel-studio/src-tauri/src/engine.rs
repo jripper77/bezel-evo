@@ -189,6 +189,7 @@ impl EngineBridge {
             },
         );
         state.revision = state.revision.saturating_add(1);
+        state.cursor = None;
         let revision = state.revision;
         self.call(
             &mut state,
@@ -572,5 +573,31 @@ mod tests {
         bridge.sync("editor", (1, 1), document(), true).unwrap();
         assert_eq!(built.load(Ordering::SeqCst), 1);
         bridge.canvas("editor", 320, true).unwrap();
+    }
+    #[test]
+    fn a_changed_document_gets_a_full_canvas_even_when_its_pixels_are_identical() {
+        let (bridge, connection, _) = setup();
+        bridge.sync("editor", (1, 1), document(), true).unwrap();
+        connection
+            .server
+            .lock()
+            .unwrap()
+            .tick_at(Duration::ZERO, time())
+            .unwrap();
+        assert!(bridge.canvas("editor", 320, true).unwrap().len() > 20);
+        assert_eq!(bridge.canvas("editor", 320, true).unwrap().len(), 20);
+        let mut next = document();
+        next.theme.name = "Opened document".into();
+        bridge.sync("editor", (2, 1), next, false).unwrap();
+        connection
+            .server
+            .lock()
+            .unwrap()
+            .tick_at(Duration::from_millis(100), time())
+            .unwrap();
+        assert!(
+            bridge.canvas("editor", 320, true).unwrap().len() > 20,
+            "a cleared canvas needs the complete new snapshot, even with unchanged pixel bytes"
+        );
     }
 }

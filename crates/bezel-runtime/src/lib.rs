@@ -346,6 +346,11 @@ impl Engine {
         }
         if let Some(scene) = self.scenes.get_mut(key) {
             scene.restore_profile();
+            if scene.runtime.theme() != &document.theme
+                || scene.runtime.assets() != &document.assets
+            {
+                self.images.forget(key);
+            }
             if saved {
                 scene.saved = document.clone();
             }
@@ -944,50 +949,64 @@ impl Engine {
                 if !scene.dirty && now < due {
                     return Ok(audio_wait.map_or(due - now, |wait| wait.min(due - now)));
                 }
-                Self::source(scene, self.media.as_mut(), &self.cache)?;
-                if let Some(link) = &mut scene.link {
-                    if scene
-                        .runtime
-                        .theme()
-                        .misfit(link.identity().model.panel)
-                        .is_some()
-                    {
-                        return Err(invalid("theme does not fit screen"));
+                // A video/device failure must not keep the preceding document's
+                // picture on the editor canvas: its poster and objects still render.
+                let playback = (|| -> Result<bool> {
+                    Self::source(scene, self.media.as_mut(), &self.cache)?;
+                    if let Some(link) = &mut scene.link {
+                        if scene
+                            .runtime
+                            .theme()
+                            .misfit(link.identity().model.panel)
+                            .is_some()
+                        {
+                            return Err(invalid("theme does not fit screen"));
+                        }
+                        let orientation = scene.runtime.theme().orientation;
+                        if scene.orientation != Some(orientation) {
+                            link.set_orientation(orientation)?;
+                            scene.orientation = Some(orientation);
+                        }
+                        if scene.video_dirty
+                            || matches!(scene.runtime.video(), VideoState::NotStarted)
+                        {
+                            link.pending = false;
+                            let host = scene.source.as_ref().map(|source| HostVideo {
+                                media: self.media.as_mut(),
+                                source: source.clone(),
+                                fps: HOST_VIDEO_FPS,
+                            });
+                            let result = scene.runtime.start_video(link, host);
+                            if link.pending {
+                                return Ok(false);
+                            }
+                            result?;
+                            scene.video_started = now;
+                            scene.video_dirty = false;
+                        }
                     }
-                    let orientation = scene.runtime.theme().orientation;
-                    if scene.orientation != Some(orientation) {
-                        link.set_orientation(orientation)?;
-                        scene.orientation = Some(orientation);
-                    }
-                    if scene.video_dirty || matches!(scene.runtime.video(), VideoState::NotStarted)
+                    if scene.link.is_none()
+                        && !scene.live
+                        && matches!(scene.runtime.video(), VideoState::NotStarted)
+                        && let Some(source) = &scene.source
                     {
-                        link.pending = false;
-                        let host = scene.source.as_ref().map(|source| HostVideo {
+                        scene.runtime.start_host_video(HostVideo {
                             media: self.media.as_mut(),
                             source: source.clone(),
                             fps: HOST_VIDEO_FPS,
-                        });
-                        let result = scene.runtime.start_video(link, host);
-                        if link.pending {
-                            return Ok(Duration::from_millis(5));
-                        }
-                        result?;
+                        })?;
                         scene.video_started = now;
-                        scene.video_dirty = false;
                     }
-                }
-                if scene.link.is_none()
-                    && !scene.live
-                    && matches!(scene.runtime.video(), VideoState::NotStarted)
-                    && let Some(source) = &scene.source
-                {
-                    scene.runtime.start_host_video(HostVideo {
-                        media: self.media.as_mut(),
-                        source: source.clone(),
-                        fps: HOST_VIDEO_FPS,
-                    })?;
-                    scene.video_started = now;
-                }
+                    Ok(true)
+                })();
+                let playback_ready = match playback {
+                    Ok(ready) => ready,
+                    Err(error) => {
+                        scene.error = Some(error.to_string());
+                        light(LightEvent::ScreenError, scene.id, 0.0, "video");
+                        false
+                    }
+                };
                 self.renderer.set_scene(scene.id);
                 self.renderer.set_motion(true);
                 let render_started = Instant::now();
@@ -1035,6 +1054,7 @@ impl Engine {
                         .iter()
                         .any(|r| r.key.starts_with(&format!("{}/", scene.id))))
                     && scene.live
+                    && playback_ready
                     && scene.link.is_some()
                     && let Some(presenter) = &scene.presenter
                 {
@@ -1046,7 +1066,7 @@ impl Engine {
                 if frame_changed || !audible {
                     scene.rendered_at = now;
                 }
-                scene.dirty = false;
+                scene.dirty = !playback_ready;
                 let mut delay = scene.runtime.next_due().saturating_sub(now);
                 if scene.profile_animation.is_some() {
                     delay = delay.min(COVER_FRAME);
@@ -1065,12 +1085,16 @@ impl Engine {
                         },
                     );
                 }
-                Ok(delay)
+                Ok(if playback_ready {
+                    delay
+                } else {
+                    delay.min(Duration::from_millis(5))
+                })
             })();
             match result {
                 Ok(delay) => next = next.min(delay),
-                Err(_) => {
-                    scene.error = Some("scene update failed".into());
+                Err(error) => {
+                    scene.error = Some(error.to_string());
                     light(LightEvent::ScreenError, scene.id, 0.0, "scene");
                 }
             }
