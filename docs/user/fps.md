@@ -2,58 +2,74 @@
 
 [Português (Brasil)](pt-BR/fps.md)
 
-The game FPS sensors (`gpu.fps` and its related metrics) show the frame rate
-of the game you are playing. Bezel does not hook into games: on Windows it
-reads Intel PresentMon, and falls back to what RivaTuner Statistics Server, a
-frame-rate tool you may already run, publishes. Drag a sensor onto a theme
-like any other.
+On Windows, Bezel can read Intel PresentMon's console application, with
+RivaTuner Statistics Server (RTSS) as the fallback for `gpu.fps`. Neither
+reader makes Bezel inject code into a game. Drag the sensors onto a theme
+like any other readings.
 
-> The FPS readers follow the published formats of these tools and were
-> checked against a running game on real hardware (2026-10-18). If a value
-> looks wrong, please report it.
+## PresentMon setup
 
-## Windows: Intel PresentMon (preferred)
+1. Download the tested [PresentMon 2.6.0 console application](https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0).
+   Use the console executable, not Intel's graphical capture application.
+2. Set `presentmonPath` in Studio's `settings.json` or pass
+   `--presentmon-path` to the CLI. Alternatively, put the console executable
+   in `tools\` or `sensors\` beside Bezel. Discovery also checks Intel's
+   `PresentMon\PresentMonConsoleApplication\` installation folder, then
+   the older `PresentMon\` layout. It never searches `PATH`.
+   `PresentMon.exe` and versioned console names such as
+   `PresentMon-2.6.0-x64.exe` are accepted; numbered versions sort numerically.
+3. ETW capture needs administrator rights or membership in Windows'
+   **Performance Log Users** group. Group changes can require signing out
+   and back in. Bezel does not grant these rights or elevate itself.
+4. Request an FPS sensor and bring the game to the foreground. Automatic
+   discovery chooses that process ID, filtering common shell, browser and
+   launcher programs. It is a foreground graphics-app heuristic, not a
+   complete database of games.
 
-Bezel reads frame metrics directly from Intel PresentMon's console
-application. It starts PresentMon on demand, only while a game is running and
-a theme requests the sensors, and stops it about 60 seconds after the last
-frame. It is never installed as a service.
+PresentMon starts only on demand, with its console hidden. Bezel targets the
+chosen PID and measures one swap chain within it, selected by recent frame
+count. Another foreground candidate can replace the target. Stored samples
+keep PresentMon's QPC time, so delayed pipe output cannot refresh old frames.
 
-1. Download the Intel PresentMon console application (v2.6.0 or newer). Both
-   the plain `PresentMon.exe` and versioned release names such as
-   `PresentMon-2.6.0-x64.exe` work.
-2. Place it in one of these locations (checked in this order):
-   - The path configured in Bezel: the `presentmonPath` key in `settings.json`,
-     or `--presentmon-path` on the command line.
-   - A `tools\` or `sensors\` folder next to the Bezel executable.
-   - `C:\Program Files\Intel\PresentMon\`.
-3. **Administrator rights required**: PresentMon reads ETW events. Run Bezel
-   as Administrator, or add your user to the "Performance Log Users" group. If
-   the rights are missing, the sensors read as unavailable with a message
-   explaining the fix.
-4. Start the game. Bezel automatically starts PresentMon, excludes
-   compositor and overlay processes (like `dwm.exe`, `explorer.exe`,
-   `discord.exe`), and shows `gpu.fps`, `gpu.frametime`, `gpu.fps_low_1p`,
-   `gpu.fps_low_01p`, `gpu.fps_min`, `gpu.fps_max`, `gpu.fps.source`,
-   `gpu.game` and `gpu.limiter`.
+Stopping all FPS requests closes the child. Without frames, a probe stops
+after 10 seconds; after it has measured frames, it tolerates a pause of up to
+60 seconds. Failures use RTSS when available and retry PresentMon with bounded
+backoff. Missing tools and idle probes retry at most once per minute.
+Only one Bezel instance owns its fixed capture session at a time; another
+uses the fallback instead of stealing it. The capture child is assigned to
+a kill-on-close Windows job before capture startup completes.
 
-If PresentMon is not found or fails to start, `gpu.fps` falls back to
-RivaTuner Statistics Server (RTSS) exactly as before, and the catalog says
-which source is active.
+## Available sensors
 
-## Windows: RivaTuner Statistics Server (fallback)
+| Key | Meaning |
+|---|---|
+| `gpu.fps` | Average FPS over the last second, using present intervals when available |
+| `gpu.frametime` | Mean frame interval over the last second, in milliseconds |
+| `gpu.fps_low_1p` | Reciprocal of the mean of the slowest 1% of frame intervals in up to 30 seconds |
+| `gpu.fps_low_01p` | The same calculation for the slowest 0.1% |
+| `gpu.fps_min` / `gpu.fps_max` | Slowest / fastest individual frame in that history, expressed as FPS |
+| `gpu.game` | Executable name of the measured process |
+| `gpu.fps.source` | PresentMon or RTSS |
+| `gpu.limiter` | Conservative CPU / GPU / frame-cap estimate; unavailable when evidence is ambiguous |
 
-1. Install RivaTuner Statistics Server (RTSS). It comes with MSI Afterburner, or
-   on its own.
-2. Start RTSS and leave it running (it can sit in the tray).
-3. Start the game. Bezel shows the frame rate of the game RTSS measured last.
+Lows need enough frames: at least 100 for 1% and 1000 for 0.1% inside the
+history window. Until then, Studio says it is collecting data. A very low
+frame rate may never supply 1000 frames in 30 seconds. Queue overflow makes
+history statistics unavailable while a complete window is collected again.
 
-While RTSS is not running the sensor is unavailable and says so ("RivaTuner
-Statistics Server is not running: start it ...").
+These FPS do not guarantee a separate count of native and generated frames.
+The console and service paths were compared in Windrose with Frame Generation
+on and off; the service's application/displayed metrics did not establish a
+verified native/generated split in that configuration. Do not divide a reading
+by a presumed multiplier to invent a native frame rate.
 
-## What you see
+## RTSS fallback
 
-- A number while the game runs. A 0 reported by the tool is shown as 0.
-- `—` when no tool is measuring a game, or when the last value is older than
-  3 seconds (game paused, minimized or closed). Bezel never keeps showing an
-  old value.
+Run RTSS (available separately or with MSI Afterburner), then start the game.
+It supplies the FPS of the application it measured most recently. Other new
+frame statistics remain unavailable; `gpu.fps.source` reports RTSS. If neither
+tool can read, Studio shows a reason and keeps the raw diagnostic detail.
+
+A live zero from RTSS remains zero. Missing or stale data is unavailable,
+never the last successful value held indefinitely. PresentMon's one-second
+statistics expire without recent frames even while its process remains alive.

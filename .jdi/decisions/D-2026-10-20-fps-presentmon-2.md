@@ -1,35 +1,38 @@
-# D-2026-10-20-fps-presentmon-2: PresentMon integration on the v0.1.59 base
+# D-2026-10-20-fps-presentmon-2: sorgente PresentMon su Windows
 
-**Context**: The FPS module was reworked for v0.1.59 (Windows-only, RTSS as
-the single source). The hardware-validated PresentMon integration from the
-`presentmon` branch needs to be rebuilt on this base, including the two
-changes agreed with the maintainer in PR #1.
+Decisione originaria proposta da DarkK3y-v2 nella PR #2, conservata nei commit
+originali. Integrazione locale aggiornata il 25 ottobre dopo il confronto
+console/API su Windrose.
 
-**Decision**: Re-add PresentMon as a full `FrameRateSource` on Windows,
-started and stopped on demand, with two agreed changes to the earlier
-design:
+## Decisione
 
-1. **No `PATH` lookup**: the executable is discovered only via the
-   configured path, `tools\` and `sensors\` next to `bezel.exe`, and Intel's
-   installation directory. Discovery stays predictable.
-2. **A fixed, Bezel-specific ETW session name** (`BezelPresentMon`), so
-   `--stop_existing_session` never touches unrelated PresentMon sessions,
-   while a leaked session after a crash is still cleaned up on the next
-   start.
+Console PresentMon facoltativo per i nove sensori FPS, RTSS come ripiego per
+il solo frame rate. Nessun servizio Intel installato da questa integrazione.
+Conservati i vincoli concordati: nessuna ricerca in PATH e sessione ETW fissa
+BezelPresentMon, con stop_existing_session limitato a quel nome.
+Un semaforo globale evita che due istanze aggiornate si rubino la cattura.
 
-Additionally, versioned release names such as `PresentMon-2.6.0-x64.exe`
-are accepted (plain `PresentMon.exe` wins), and placeholder process names
-in angle brackets (`<unknown>`) are never treated as a game.
+## Correzioni del ramo di integrazione
 
-**Rationale**: See D-2026-10-15-fps-presentmon-1 for the original
-rationale (on-demand console app, safe CSV parsing, job object lifecycle,
-RTSS fallback). This record only updates it for the new base and the two
-maintainer-requested changes.
+PID della finestra in primo piano come candidato e una sola swap chain,
+scelta per conteggio recente. L'identificazione automatica rimane euristica.
+Tempi QPC originali, richiesta qpc_time_ms, media un secondo e storico massimo
+30 secondi. Code limitate e statistiche sospese in caso di perdita di dati.
+Lows con almeno 100/1000 frame. Limite CPU/GPU/cap solo stimato quando chiaro.
 
-**Consequences**:
-- Windows-only; RTSS remains the fallback for `gpu.fps`.
-- Requires Administrator rights or "Performance Log Users" membership.
-- The 9 FrameMetrics sensors (`gpu.fps`, `gpu.frametime`, `gpu.fps_low_1p`,
-  `gpu.fps_low_01p`, `gpu.fps_min`, `gpu.fps_max`, `gpu.game`,
-  `gpu.limiter`, `gpu.fps.source`) come back with this integration.
-- Hardware-validated on the previous base (E1–E9); re-validated per build.
+Console nascosta, job kill-on-close, lettori e code isolati per cattura.
+Errori dopo lo spawn passano subito al ripiego; retry limitati e backoff
+azzerato solo dopo frame validi. Il job viene associato prima del completamento
+dell'avvio; non si sostiene una garanzia atomica fra spawn e associazione.
+
+## Conseguenze
+
+Servono diritti ETW: amministratore o Performance Log Users. Bezel non li
+concede automaticamente. Fonte, indisponibilità e dettagli devono essere
+leggibili, con messaggi Studio nelle tre lingue.
+
+Autore e validazione hardware originari restano attribuiti alla PR. Le prove
+console/API del 25 ottobre non sono una validazione completa dell'adattatore
+Rust integrato su ogni gioco. Prima del merge sul ramo principale condividere
+modifiche e risultati con l'autore, come concordato. Nessuna pubblicazione
+autorizzata da questo documento.

@@ -5,6 +5,21 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Studio
+- Optional on-demand PresentMon console capture adds frame intervals, FPS lows,
+  min/max, game name, source and a conservative limiter estimate. RTSS remains
+  the FPS fallback. Sensor labels and availability messages use all three UI
+  languages. Original contribution by [DarkK3y-v2](https://github.com/DarkK3y-v2)
+  in [PR #2](https://github.com/jripper77/bezel-evo/pull/2).
+
+### Fixes
+- FPS capture targets a process and one swap chain, keeps source QPC timestamps,
+  expires stale readings, hides its console and recovers through RTSS after a
+  failed child process. Concurrent Bezel instances cannot steal each other's
+  capture session.
+
 ## [0.2.5] - 2026-10-24
 
 0.2.1 through 0.2.4 were local builds; these entries cover them.

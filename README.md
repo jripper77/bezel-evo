@@ -90,6 +90,9 @@ Studio has been redesigned from the ground up, in dark and light.
   a shared background under all of them, **one transition** for the whole Card
   (fade, slide or flip) and **timed triggers** ("every 30 s, the next face")
   next to the app and media triggers.
+- **Game frame metrics on demand.** Optional PresentMon console capture with
+  RTSS fallback for FPS, plus frame intervals, lows and source information.
+  [Setup and metric definitions](docs/user/fps.md).
 - **Values that glide.** Rings, bars, needles and numbers move smoothly to each
   new reading instead of jumping, with smooth easing or inertia that preserves
   movement when the target changes, without flooding the screen with frames.
@@ -222,6 +225,12 @@ The Setup and the programs are not code-signed, so Windows SmartScreen may warn 
 - [Sensors](docs/user/sensors.md) / [Storage and video](docs/user/storage-and-video.md) / [Troubleshooting and logs](docs/user/troubleshooting.md)
 - [What's new](CHANGELOG.md) / [Technical documentation](docs/) / [Windows builds](docs/build-windows.md) / [Fork changes and validation](FORK.md)
 - [Whole-scene H.264 experiment](docs/experiments/scene-streaming.md): a developer prototype with mixed independent outputs; not a Studio setting or a hardware-verified frame-rate claim.
+
+## Support
+
+Bezel Evo is free and open source. If it is useful to you, you can support its development on Ko-fi.
+
+<a href="https://ko-fi.com/jripper"><img src="https://img.shields.io/badge/Ko--fi-support%20Bezel%20Evo-FF9248?logo=kofi&amp;logoColor=white" alt="Support Bezel Evo on Ko-fi"></a>
 
 ## Credits & licence
 
