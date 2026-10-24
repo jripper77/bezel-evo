@@ -252,3 +252,17 @@ body.resizing { cursor: col-resize; user-select: none; }
 
 /* Status chips keep the neutral well; only the live display is tinted. */
 #status-libre-toggle[data-tone="ok"], #status-memory-toggle[data-tone="ok"] { background: var(--surface-2); border-color: var(--border-2); color: var(--muted); }
+
+/* A short cue makes stopping live output apparent without moving the control. */
+.live-toggle.live-attention {
+  border-color: var(--signal-warn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal-warn) 30%, transparent);
+  animation: live-stopped-attention 1.4s ease-out 2;
+}
+@keyframes live-stopped-attention {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal-warn) 30%, transparent); }
+  60% { box-shadow: 0 0 0 9px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-toggle.live-attention { animation: none; }
+}

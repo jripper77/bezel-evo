@@ -1622,7 +1622,10 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     },
     openTheme: (location) => {
       const found = saved.find((s) => s.location === location);
-      if (found) return Promise.resolve(structuredClone(found.theme));
+      if (found) {
+        live = null;
+        return Promise.resolve(structuredClone(found.theme));
+      }
       return Promise.reject(Object.assign(new Error(`${location} is not in the theme library; import it instead`), { code: 'notInLibrary', args: { location } }));
     },
     newTheme: (screen, name = 'Untitled', orientation = null) => {
@@ -1634,7 +1637,10 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const canvas = isHorizontal(chosenOrientation) ? { width: long, height: short } : { width: short, height: long };
       return Promise.resolve({ ...structuredClone(DEMO_THEME), name, orientation: chosenOrientation, canvas, elements: [] });
     },
-    importTheme: () => Promise.resolve({ theme: { ...structuredClone(DEMO_THEME), name: 'Imported' }, warnings: structuredClone(DEMO_IMPORT_WARNINGS) }),
+    importTheme: () => {
+      live = null;
+      return Promise.resolve({ theme: { ...structuredClone(DEMO_THEME), name: 'Imported' }, warnings: structuredClone(DEMO_IMPORT_WARNINGS) });
+    },
     addImage: () => {
       const ref = `assets/image-${images.length + 1}.png`;
       images.push(ref);

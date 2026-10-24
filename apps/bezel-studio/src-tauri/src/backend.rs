@@ -771,6 +771,33 @@ impl Backend {
         Ok(RestartedDto { key, live })
     }
 
+    fn pause_live_for_open(&self) -> UiResult<()> {
+        let previous = {
+            let mut studio = self.idle_studio();
+            if studio.shutting_down() {
+                return Err(UiError::new(ErrorCode::Busy));
+            }
+            studio.stop_live()
+        };
+        drop(previous);
+        self.finish_live_off()
+    }
+
+    fn finish_live_off(&self) -> UiResult<()> {
+        if let Some(engine) = &self.engine {
+            let key = self.sync_engine(false)?;
+            engine.live(&key, false)?;
+        }
+        let selected = self.studio().selected_screen().map(str::to_owned);
+        self.settings.update(|s| {
+            if let Some(key) = selected {
+                s.live_screens.retain(|k| *k != key);
+            }
+            s.live_screen = s.live_screens.last().cloned();
+        });
+        Ok(())
+    }
+
     /// Starts (`screen` given, by either of its ports) or stops showing the
     /// edited theme live. The screen goes live under its one key, the
     /// address it is listed by once connected (its display's;
@@ -795,18 +822,7 @@ impl Backend {
         };
         drop(previous);
         if !on {
-            if let Some(engine) = &self.engine {
-                let key = self.sync_engine(false)?;
-                engine.live(&key, false)?;
-            }
-            let selected = self.studio().selected_screen().map(str::to_owned);
-            self.settings.update(|s| {
-                if let Some(key) = selected {
-                    s.live_screens.retain(|k| *k != key);
-                }
-                s.live_screen = s.live_screens.last().cloned();
-            });
-            return Ok(());
+            return self.finish_live_off();
         }
         let asked = screen.ok_or_else(|| UiError::new(ErrorCode::NoScreenChosen))?;
         let (key, orientation) = {
@@ -1457,7 +1473,12 @@ impl Backend {
         if !self.library.allows(&location) {
             return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location.0));
         }
-        self.open_at(location)
+        let (theme, assets) = self.store.load(&location)?;
+        self.pause_live_for_open()?;
+        self.studio().start(theme, assets, Some(location.clone()));
+        self.remember_document(&location);
+        self.sync_engine(true)?;
+        Ok(ThemeDto::from(self.studio().theme()))
     }
 
     /// Opens the theme at `location`, which the app chose itself.
@@ -1590,6 +1611,7 @@ impl Backend {
                 report.warnings.iter().map(Into::into).collect(),
             )
         };
+        self.pause_live_for_open()?;
         let mut studio = self.studio();
         // A copy: saving writes to the user folder, not over the imported file.
         studio.start(theme, assets, None);
@@ -4238,6 +4260,40 @@ static_text:
         let imported = f.backend.import(&folder.join("theme.json")).unwrap();
         assert_eq!(imported.theme.name, "Start");
         assert!(imported.warnings.is_empty());
+    }
+
+    #[test]
+    fn opening_and_importing_pause_only_the_selected_live_screen_after_loading_succeeds() {
+        let f = fixture("open-offline");
+        let location = f
+            .backend
+            .save(&f.backend.session().theme, None)
+            .unwrap()
+            .location;
+        f.backend.set_live(true, Some(KEY), TIME).unwrap();
+        let missing = f.root.join("missing.turtheme");
+        assert!(f.backend.import(&missing).is_err());
+        assert!(
+            f.backend.sample().live.is_some(),
+            "a failed file read preserves live output"
+        );
+        f.backend
+            .settings
+            .update(|s| s.live_screens.push("other-screen".into()));
+        f.backend.open(&location).unwrap();
+        assert_eq!(f.backend.sample().live, None);
+        assert_eq!(f.backend.settings.load().live_screens, ["other-screen"]);
+        f.backend.set_live(true, Some(KEY), TIME).unwrap();
+        f.backend.import(Path::new(&location)).unwrap();
+        assert_eq!(f.backend.sample().live, None);
+        assert!(
+            !f.backend
+                .settings
+                .load()
+                .live_screens
+                .contains(&KEY.to_string())
+        );
+        assert_eq!(f.backend.session().location, None);
     }
 
     #[test]

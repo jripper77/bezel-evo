@@ -659,6 +659,7 @@ let lastSample = null;
 
 async function sampleLoop() {
   const screen = state.screen;
+  const generation = documentGeneration;
   try {
     const s = await bridge.sample();
     // Libre can finish opening hardware after Studio's initial catalog. A
@@ -676,7 +677,7 @@ async function sampleLoop() {
       state.liveFps = s.liveFps ?? null;
       renderScreenPill();
     }
-    if (!switchingScreen && screen === state.screen) syncLive(s);
+    if (!switchingScreen && screen === state.screen && generation === documentGeneration) syncLive(s);
     lastSample = s;
     sensorStatus.update({ health: libreStatus(state.catalog, s.readings), sampleMillis: s.sampleMillis, sampledAt: Date.now(), readings: s.readings, catalog: state.catalog, error: null });
   } catch (e) {
@@ -858,6 +859,26 @@ function syncLive(s) {
   renderScreenSelect();
 }
 
+let liveAttentionTimer = null;
+function highlightLiveOff() {
+  const control = $('live').closest('.live-toggle');
+  clearTimeout(liveAttentionTimer);
+  control.classList.remove('live-attention');
+  void control.offsetWidth;
+  control.classList.add('live-attention');
+  liveAttentionTimer = setTimeout(() => control.classList.remove('live-attention'), 3000);
+}
+
+function documentOpenedOffline() {
+  const wasLive = state.live;
+  state.live = false;
+  $('live').checked = false;
+  state.liveVideo = null;
+  state.reconnecting = null;
+  renderScreenSelect();
+  if (wasLive) highlightLiveOff();
+}
+
 async function setLive(on) {
   if (on && !state.screen) {
     toast(t('toast.noScreen'));
@@ -867,6 +888,8 @@ async function setLive(on) {
   try {
     await bridge.setLive(on, state.screen);
     state.live = on;
+    if (!on) highlightLiveOff();
+    else $('live').closest('.live-toggle').classList.remove('live-attention');
     if (state.denied?.key === state.screen) state.denied = null;
     if (on) await bridge.pushTheme(store.getState().theme);
   } catch (e) {
@@ -1061,6 +1084,7 @@ async function openTheme(location) {
   try {
     await changeDocument(async () => {
       const theme = await bridge.openTheme(location);
+      documentOpenedOffline();
       state.location = location;
       state.savedAt = null;
       savedAtFrom(listedThemes);
@@ -1100,6 +1124,7 @@ async function importTheme() {
     await changeDocument(async () => {
       const result = await bridge.importTheme();
       if (!result) return;
+      documentOpenedOffline();
       store.load(result.theme);
       state.location = null;
       state.savedAt = null;

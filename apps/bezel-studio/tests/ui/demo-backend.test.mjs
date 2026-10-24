@@ -925,3 +925,18 @@ test('native-format demo export uses the saved selection, preserves the editor a
   assert.equal(await cancelled.exportTheme('demo://Demo'),null);
   assert.equal(cancelled.exportedTheme('demo://exports/Demo.bezeltheme'),null);
 });
+
+test('opening and importing pause Live while failed file opening preserves it', async () => {
+  const demo = createDemoBackend('turing88', fixed);
+  const screens = (await demo.listDevices()).screens;
+  const key = screens[0].key;
+  await demo.setLive(true, key);
+  await assert.rejects(demo.openTheme('demo://missing'));
+  assert.ok((await demo.sample()).live);
+  const entries = await demo.listThemes();
+  await demo.openTheme(entries[0].location);
+  assert.equal((await demo.sample()).live, null);
+  await demo.setLive(true, key);
+  await demo.importTheme();
+  assert.equal((await demo.sample()).live, null);
+});

@@ -145,3 +145,27 @@ test('an imported document clears the outgoing frame while its first snapshot is
   await expect(page.locator('.sel-box')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('importing turns Live off and briefly highlights its control', async ({ page, t }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/index.html?demo=turing88');
+  await page.locator('#live').check();
+  await expect(page.locator('#live')).toBeChecked();
+  await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.getByRole('button', { name: t('themes.import') }).click();
+  await expect(page.locator('#theme-name')).toHaveValue('Imported');
+  await expect(page.locator('#live')).not.toBeChecked();
+  await expect(page.locator('.live-toggle')).toHaveClass(/live-attention/);
+  await expect(page.locator('.live-toggle')).toHaveCSS('animation-name', 'live-stopped-attention');
+  await expect(page.locator('.live-toggle')).not.toHaveClass(/live-attention/, { timeout: 5000 });
+});
+
+test('stopping Live gives a static cue with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/index.html?demo=turing88');
+  await page.locator('#live').check();
+  await page.locator('#live').uncheck();
+  await expect(page.locator('.live-toggle')).toHaveClass(/live-attention/);
+  await expect(page.locator('.live-toggle')).toHaveCSS('animation-name', 'none');
+  expect(await page.locator('.live-toggle').evaluate(el => getComputedStyle(el).boxShadow)).not.toBe('none');
+});

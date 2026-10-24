@@ -59,7 +59,10 @@ whole screen. [Editing in Studio](studio-editing.md) covers every tool.
 
 ## 3. Show it on the screen
 
-Click **Live** in the top bar. The screen follows your edits as you make them.
+Click **Live** in the top bar. The screen follows your edits as you make them. Opening or importing another theme turns Live off for that display, so you
+can check the new theme in Studio first. The Live control briefly highlights
+when sending stops; click it again when you are ready to send the new theme.
+
 Click **Save** (**Ctrl+S**) to keep the theme in your library.
 
 If the screen stops taking frames while live (a cable glitch, a frozen
