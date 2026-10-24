@@ -56,3 +56,18 @@ export function sensorLabel(t, sensor) {
   const key = `sensor.${sensor.key}`;
   return t.has(key) ? t(key) : sensor.label;
 }
+
+/** Translate coded FPS availability and the estimated limiter's text values. */
+export function fpsReadings(t, readings) {
+  return Object.fromEntries(Object.entries(readings).map(([key, reading]) => {
+    if (!/^gpu\.(fps(?:[._]|$)|frametime$|game$|limiter$)/.test(key)) return [key, reading];
+    const coded = /^fps\.([A-Za-z]+):(.*)$/s.exec(reading?.unavailable ?? '');
+    if (coded && t.has(`fps.reason.${coded[1]}`)) {
+      return [key, { ...reading, unavailable: t(`fps.reason.${coded[1]}`, { detail: coded[2] }) }];
+    }
+    if (key === 'gpu.limiter' && !reading?.unavailable && t.has(`fps.limit.${reading?.display}`)) {
+      return [key, { ...reading, display: t(`fps.limit.${reading.display}`) }];
+    }
+    return [key, reading];
+  }));
+}
