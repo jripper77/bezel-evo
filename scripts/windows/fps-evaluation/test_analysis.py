@@ -1,6 +1,6 @@
 """Check attribution and time windows before trusting the comparison report."""
 import unittest
-from analyze import console_rows, console_fps, distribution, summarize
+from analyze import console_rows, console_fps, distribution, foreground_intervals, summarize
 
 
 class AnalysisTests(unittest.TestCase):
@@ -49,6 +49,23 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result["resources"]["target"]["cpu_percent_one_core"], 200)
         self.assertEqual(result["resources"]["system_cpu_percent"], 80)
         self.assertEqual(result["target_foreground_percent"], 50)
+
+    def test_background_and_resume_windows_do_not_enter_qualified_fps(self):
+        frames = [{"CPUStartQPCTimeInMs": str(i * 1000 / 60),
+                   "MsBetweenPresents": str(1000 / 60),
+                   "SwapChainAddress": "0x1"} for i in range(301)]
+        result = console_fps(frames, [(2, 5)])
+        self.assertEqual(result["count"], 9)
+        self.assertAlmostEqual(result["median"], 60)
+        self.assertEqual(console_fps(frames, [(2, 2.5)])["count"], 0)
+
+    def test_foreground_intervals_do_not_bridge_missing_observations(self):
+        resources = [
+            {"elapsed": t, "target_foreground": visible}
+            for t, visible in [(0, True), (0.25, True), (0.5, False),
+                               (1, True), (1.25, True), (4, True), (4.25, True)]
+        ]
+        self.assertEqual(foreground_intervals(resources), [(0, 0.25), (1, 1.25), (4, 4.25)])
 
 
 if __name__ == "__main__":

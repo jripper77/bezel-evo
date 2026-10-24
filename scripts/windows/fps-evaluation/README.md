@@ -82,6 +82,11 @@ from the repository for attribution/window tests.
 - Dynamic API queries may return a cached nonzero value after Alt-Tab. Success
   of a query alone does not establish fresh data. Focus, source-frame age and
   capture lifecycle need explicit handling in any product integration.
+- Analysis preserves unqualified statistics and also emits
+  `foreground_window_*` distributions. These use only one-second windows
+  fully inside observed foreground intervals, excluding one second after a
+  return to the game and never bridging missing focus samples. These filters
+  improve the comparison; they do not replace source-frame freshness checks.
 - Startup-inclusive short-run memory growth is not a memory-leak test.
 - A few valid rows are not enough: inspect source coverage and rate changes.
   Zero/absent samples, capture failures and occlusion invalidate a comparison.

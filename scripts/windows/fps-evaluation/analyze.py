@@ -35,7 +35,7 @@ def console_rows(samples):
     return list(csv.DictReader(io.StringIO("\n".join(lines[start:]))))
 
 
-def console_fps(rows):
+def console_fps(rows, intervals=None):
     """One-second windows per swap chain, using source time, not pipe arrival."""
     chains = defaultdict(list)
     for row in rows:
@@ -53,11 +53,31 @@ def console_fps(rows):
                 left += 1
             while right < len(frames) and frames[right][0] <= at:
                 right += 1
-            if right - left >= 2:
+            allowed = intervals is None or any(begin + 1 <= at <= end for begin, end in intervals)
+            if allowed and right - left >= 2:
                 mean = statistics.mean(interval for _, interval in frames[left:right])
                 values.append(1000.0 / mean)
             at += 0.25
     return distribution(values)
+
+
+def foreground_intervals(resources):
+    """Conservative intervals bounded by observed foreground samples."""
+    intervals = []
+    begin = previous = None
+    for row in resources:
+        at = row["elapsed"]
+        visible = row.get("target_foreground") is True
+        gap = previous is not None and at - previous > 0.5
+        if begin is not None and (not visible or gap):
+            intervals.append((begin, previous))
+            begin = None
+        if visible and begin is None:
+            begin = at
+        previous = at
+    if begin is not None:
+        intervals.append((begin, previous))
+    return intervals
 
 
 def source_seconds(row):
@@ -96,12 +116,21 @@ def summarize(result):
     summary["resources"] = resource_summary(result["resources"])
     focus = [row["target_foreground"] for row in result["resources"] if "target_foreground" in row]
     summary["target_foreground_percent"] = 100 * sum(focus) / len(focus) if focus else None
+    intervals = foreground_intervals(result["resources"]) if focus else None
+    if intervals is not None:
+        summary["foreground_intervals_seconds"] = intervals
     if result["mode"] == "api":
         chains = [chain for sample in result["samples"] for chain in sample.get("chains", [])
                   if chain["swap_chain_address"] != "0x0" and (chain.get("presented_fps") or 0) > 0]
         summary["swap_chains"] = sorted({row["swap_chain_address"] for row in chains})
         for metric in ["presented_fps", "displayed_fps", "application_fps", "cpu_frame_time"]:
             summary[metric] = distribution([row.get(metric) for row in chains])
+            if intervals is not None:
+                qualified = [chain.get(metric) for sample in result["samples"]
+                    if any(begin + 1 <= sample["elapsed"] <= end for begin, end in intervals)
+                    for chain in sample.get("chains", [])
+                    if chain["swap_chain_address"] != "0x0" and (chain.get("presented_fps") or 0) > 0]
+                summary["foreground_window_" + metric] = distribution(qualified)
         summary["first_valid_sample_seconds"] = next((row["elapsed"] for row in result["samples"]
             if any((chain.get("presented_fps") or 0) > 0 for chain in row.get("chains", []))), None)
     if result["mode"] == "console":
@@ -114,6 +143,10 @@ def summarize(result):
         summary["other_pid_frames"] = len(rows) - len(target)
         summary["columns"] = list(rows[0]) if rows else []
         summary["presented_fps"] = console_fps(target)
+        if intervals is not None:
+            absolute = [(begin + result["started_perf_counter"], end + result["started_perf_counter"])
+                        for begin, end in intervals]
+            summary["foreground_window_presented_fps"] = console_fps(target, absolute)
         summary["swap_chains"] = sorted({row["SwapChainAddress"] for row in target})
         # These remain distinct: do not treat CPU frame duration as displayed FPS.
         for column in ["MsBetweenPresents", "FrameTime", "CPUFrameTime", "DisplayedTime"]:
