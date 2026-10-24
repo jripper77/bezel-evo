@@ -1,5 +1,26 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Aggiornamento: consegna locale 0.2.6
+
+Su richiesta dell'utente preparati risposta all'autore (bozza inglese in
+docs/experiments/presentmon-pr2-review.md), credito esplicito README/changelog
+e note cumulative in F:/Dev/bezel/dist/Bezel-Evo-0.2.6-release-notes.md.
+Nessun messaggio inviato. Commit documentazione 60bf856; versione d5cdd78.
+Il seguito descrive il precedente stato prima della consegna.
+
+Build Windows 0.2.6 riuscita con build-evo.ps1 -Version 0.2.6; versione CLI e
+metadati Studio verificati, prova CLI con sensori simulati riuscita. Studio e
+Light risultavano chiusi prima della copia: dist/bezel aggiornata in posto,
+senza cancellazioni. Hash verificati in target/logs/fps-integration/
+installed-hashes-0.2.6.json. Copiata in tools la console Intel 2.6.0 già firmata
+e verificata, esclusivamente per la prova locale; nessun servizio installato.
+Studio avviato elevato, PID 40400, rispondente e titolo Bezel Evo 0.2.6;
+runtime Light PID 32384. Permessi ETW non presenti nella sessione normale;
+nessun gruppo o permesso permanente modificato. Attesa conferma utente
+Windrose pronto e stato FG per la prova integrata. Non aggiunta dicitura DLSS:
+nessun riconoscimento affidabile della tecnologia o separazione nativi/generati.
+Ramo principale, GitHub e ultima release pubblicata 0.2.0 invariati.
+
 ## Ramo e ambito
 
 fid/fps-presentmon in F:/Dev/bezel-fps-presentmon, base 08f42569. Merge locale
