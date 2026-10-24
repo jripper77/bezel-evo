@@ -29,3 +29,18 @@ Il nome normalizzato da Bezel non coincideva con quello originale (maiuscole/pun
 ## Consegna
 
 Build locale 0.2.5 tramite build-evo.ps1. Prima esecuzione bloccata dalla CLI ancora aperta; utente ha poi confermato salvataggio e chiusura di Studio/Light, assenza processi verificata prima del retry -Version 0.2.5. Nessun push o pubblicazione richiesti.
+
+
+## Consegna completata
+
+Build-evo.ps1 -Version 0.2.5 completata in 1m32s dopo la chiusura confermata.
+Commit: core 193ab99d, controlli/indicatore c7ddc756, importazione 3918d186,
+versione/changelog 6326624.
+La cartella canonica dist/bezel era assente: ripristinata senza creare una cartella per versione, con i due eseguibili, risorse sensori, temi stock e launcher. Nessuna cartella precedente o dato utente eliminato; installazione ufficiale LocalAppData non modificata.
+CLI --version e metadati Studio confermano 0.2.5. Hash delle copie confrontati con target/release:
+- CLI: 8BBEE9C289D7DD6F8D34451CCE21BA71327ABC3585232F397D9E304BB8215B1A.
+- Studio: 3D90CC682F6F3F81E8D13A642CFE3EC3040B48769119926C776F99C3C145C5DD.
+Verbale target/logs/import-video-polish/build-verification-0.2.5.json.
+Studio riaperto da dist/bezel, PID 12672, rispondente, titolo Bezel Evo 0.2.5;
+Light PID 22044 dalla stessa cartella. Log del lancio nel gruppo della prova.
+Da confermare con l'utente sul display reale: reimportare JTR2 Black, riuso del video originale e successivo Live. Nessuna prova di riproduzione fisica dichiarata completata. Nessun setup, push o pubblicazione.
