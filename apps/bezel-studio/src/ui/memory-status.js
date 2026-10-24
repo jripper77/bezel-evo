@@ -41,14 +41,24 @@ export function createMemoryStatus({ t, root, notify = () => {}, now = () => Dat
 
   const status = () => bezelStatus(history.last(), history.values(), last, t);
 
-  function render() {
-    const s = status();
-    name.textContent = t('shell.bezel');
-    ms.textContent = history.last() === null ? '' : t('shell.ms', { ms: Math.round(history.last()) });
-    mb.textContent = s.memory.amount;
+  let lastPaint = -Infinity;
+  function render(force = false) {
+    const at = now();
+    if (!force && at - lastPaint < 1000) return;
+    lastPaint = at;
+    const average = history.average(1000, at);
+    const s = bezelStatus(average, history.values(), last, t);
+    const text = (node, value) => { if (node.textContent !== value) node.textContent = value; };
+    text(name, t('shell.bezel'));
+    text(ms, average === null ? '' : t('shell.ms', { ms: Math.round(average) }));
+    text(mb, s.memory.amount);
     toggle.dataset.tone = error ? 'warn' : s.tone;
     toggle.title = [s.label, error, s.memory.note].filter(Boolean).join('\n');
     toggle.dataset.demo = String(s.memory.demo);
+    if (popover.matches(':popover-open')) renderDetails(status());
+  }
+
+  function renderDetails(s) {
     head.querySelector('h2').replaceChildren(headDot, t('shell.bezelTitle'));
     headDot.dataset.state = error || s.tone === 'warn' ? 'partial' : s.tone === 'ok' ? 'ok' : 'idle';
     close.title = t('dialog.close');
@@ -79,16 +89,21 @@ export function createMemoryStatus({ t, root, notify = () => {}, now = () => Dat
   }
   popover.addEventListener('beforetoggle', evt => {
     toggle.setAttribute('aria-expanded', String(evt.newState === 'open'));
-    if (evt.newState === 'open') place();
+    if (evt.newState === 'open') { renderDetails(status()); place(); }
   });
   window.addEventListener('resize', () => { if (popover.matches(':popover-open')) place(); });
   render();
   return {
-    update(report) { last = report; render(); },
+    update(report) { const first = last === null; last = report; render(first); },
     /** A frame of the canvas took `millis` to render. */
-    rendered(millis) { error = null; history.push(millis, now()); render(); },
+    rendered(millis) {
+      const force = error !== null || history.last() === null;
+      error = null;
+      history.push(millis, now());
+      render(force);
+    },
     /** The canvas could not render: `message` says why. */
-    failed(message) { error = message; render(); },
-    retranslate: render,
+    failed(message) { error = message; render(true); },
+    retranslate: () => { render(true); if (popover.matches(':popover-open')) renderDetails(status()); },
   };
 }

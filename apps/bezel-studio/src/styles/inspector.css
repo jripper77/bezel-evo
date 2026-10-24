@@ -88,18 +88,15 @@
 .inspector .framing { margin: 4px 0 12px; padding: 10px 12px 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
 .inspector .framing h3 { margin: 0 0 8px; }
 .framing .hint { margin: 2px 0 8px; }
-.framing-toggle { width: 100%; justify-content: center; border-color: var(--accent); font-weight: 600; }
+.framing-toggle { width: 100%; justify-content: center; font-weight: 600; }
 
-.framing-toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.framing-toggle[aria-pressed="true"] { background: var(--seg-thumb); color: var(--text); box-shadow: var(--seg-shadow); }
 .framing-choice { width: 100%; }
 .framing-choice button { flex: 1 1 auto; white-space: nowrap; }
-.framing-choice button + button { border-left: 1px solid var(--border); }
-.framing-choice button[aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
 
 /* Rotation: Auto (with the angle it found) on top, the four angles below. */
 .framing-choice.framing-rotation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.framing-choice.framing-rotation button:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--border); }
-.framing-choice.framing-rotation button:nth-child(2) { border-left: 0; }
+.framing-choice.framing-rotation button:first-child { grid-column: 1 / -1; }
 .framing-zoom { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 8px; align-items: end; }
 .framing-zoom input[type="number"] { width: 100%; margin-bottom: 8px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
 .framing .field output { font-variant-numeric: tabular-nums; color: var(--text); }

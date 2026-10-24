@@ -114,3 +114,14 @@ test('the active profile comes from the engine, by name and mode, and is never i
   assert.equal(activeProfile({ config, status: { active: { profile: 'gone' } } }, t), null);
   assert.equal(activeProfile(null, t), null);
 });
+
+test('the Bezel chip averages recent render times without retaining an isolated spike', () => {
+  const history = createRenderHistory();
+  for (let i = 0; i < 10; i += 1) history.push(i === 4 ? 100 : 5, i * 50);
+  assert.equal(history.average(1000, 500), 14.5);
+  assert.equal(history.last(), 5);
+  history.push(50, 1600);
+  history.push(60, 1700);
+  assert.equal(history.average(1000, 1700), 55);
+  assert.equal(history.average(1000, 3000), null);
+});

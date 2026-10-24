@@ -26,6 +26,10 @@ export function createRenderHistory(windowMs = RENDER_WINDOW_MS) {
     },
     values: () => points.map(p => p.ms),
     last: () => points.at(-1)?.ms ?? null,
+    average(recentMs, at) {
+      const recent = points.filter(p => at - p.at < recentMs);
+      return recent.length ? recent.reduce((sum, p) => sum + p.ms, 0) / recent.length : null;
+    },
   };
 }
 
