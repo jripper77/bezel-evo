@@ -43,6 +43,8 @@ pub struct Settings {
     pub language: Option<String>,
     /// The host `net.ping` measures; without one, the sensors' default.
     pub ping_host: Option<String>,
+    /// Path to the PresentMon executable; absent means automatic search.
+    pub presentmon_path: Option<String>,
     /// Which themes the Themes tab lists ([`THEME_SCOPES`]); without one,
     /// those for the screen in use when one is known.
     pub themes_shown: Option<String>,
@@ -79,6 +81,7 @@ impl Settings {
         let defaults = SensorOptions::default();
         SensorOptions {
             ping_host: self.ping_host.clone().unwrap_or(defaults.ping_host),
+            presentmon_path: self.presentmon_path.as_ref().map(PathBuf::from),
         }
     }
 

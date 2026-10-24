@@ -11,6 +11,7 @@ pub struct Options {
     pub ping_host: String,
     #[serde(default)]
     pub audio_capture: bool,
+    pub presentmon_path: Option<String>,
     pub ffmpeg: Option<String>,
 }
 

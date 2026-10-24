@@ -286,6 +286,7 @@ impl Backend {
             engine.options(bezel_runtime::wire::Options {
                 audio_capture: settings.audio_capture.0,
                 ping_host: options.ping_host,
+                presentmon_path: settings.presentmon_path,
 
                 ffmpeg: settings.ffmpeg_path,
             })?;

@@ -223,12 +223,6 @@ The Setup and the programs are not code-signed, so Windows SmartScreen may warn 
 - [What's new](CHANGELOG.md) / [Technical documentation](docs/) / [Windows builds](docs/build-windows.md) / [Fork changes and validation](FORK.md)
 - [Whole-scene H.264 experiment](docs/experiments/scene-streaming.md): a developer prototype with mixed independent outputs; not a Studio setting or a hardware-verified frame-rate claim.
 
-## Support
-
-Bezel Evo is free and open source. If it is useful to you, you can support its development on Ko-fi.
-
-<a href="https://ko-fi.com/jripper"><img src="https://img.shields.io/badge/Ko--fi-support%20Bezel%20Evo-FF9248?logo=kofi&amp;logoColor=white" alt="Support Bezel Evo on Ko-fi"></a>
-
 ## Credits & licence
 
 © 2026 [jripper77](https://github.com/jripper77). Bezel Evo is a **fork of [slipalison/bezel](https://github.com/slipalison/bezel)**, created by [Alison Amorim (@slipalison)](https://github.com/slipalison); original authorship, research and copyright notices are preserved (see [NOTICE](NOTICE)).
