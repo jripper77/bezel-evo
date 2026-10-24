@@ -642,14 +642,14 @@ fn the_stored_dragon_ball_video_loops_without_an_upload() {
         turing_88(stored_bytes("internal/video/dragon.mp4", DRAGON_BYTES));
     let mut rt = runtime(dragon_ball(None));
 
-    // Without the probed size Auto turns nothing: the copy turned to the
-    // panel is looked for, and the poster stays.
+    // Without the local source, the native vendor copy can be reused with
+    // default framing. Checking it does not start playback.
     assert_eq!(rt.video_framing().map(|f| f.turns), Some(0));
-    let state = rt.start_video(screen.as_mut(), None).expect("start");
-    let VideoState::VideoMissing(missing) = state else {
-        panic!("{state:?}")
-    };
-    assert_eq!(missing.path, path("internal/video/dragon_90.mp4"));
+    assert_eq!(
+        rt.check_video(screen.as_mut()).expect("check"),
+        VideoState::OnDevice(dragon.clone())
+    );
+    assert!(changes(&connector).is_empty());
 
     // Probed (the MP4 header), the video is panel-native in a landscape
     // theme: 270 degrees on the canvas, nothing in total on the panel. The
@@ -1007,4 +1007,85 @@ fn exact_screen_video_reports_missing_and_unsupported_screens() {
             .expect("valid test state"),
         &VideoState::NoPlayback
     );
+}
+
+#[test]
+fn native_vendor_video_keeps_its_original_case_and_punctuation_on_the_device() {
+    let name = "0_Abstract_Background_1920x1080.mp415055558.mp4";
+    for card in [false, true] {
+        let prefix = if card { "sd/video/" } else { "internal/video/" };
+        let original = path(&format!("{prefix}{name}"));
+        let mut storage = FakeStorage::default().with_file(original.clone(), vec![7; 1000]);
+        if card {
+            storage = storage.with_card(CARD);
+        }
+        let (connector, mut screen) = turing_88(storage);
+        let mut rt = runtime(video_theme(&format!("assets/{name}")));
+        rt.set_video_info(Some(mp4(Size::new(480, 1920), 1000)));
+        assert_eq!(
+            rt.check_video(screen.as_mut()).expect("read-only check"),
+            VideoState::OnDevice(original.clone())
+        );
+        assert!(
+            changes(&connector).is_empty(),
+            "checking must not start playback"
+        );
+        assert_eq!(
+            rt.start_video(screen.as_mut(), None).expect("start"),
+            &VideoState::OnDevice(original.clone())
+        );
+        assert_eq!(
+            changes(&connector),
+            [StorageCall::PlayVideo(original, Repeat::Loop)]
+        );
+    }
+}
+
+#[test]
+fn original_vendor_video_is_not_reused_with_wrong_bytes_or_changed_framing() {
+    let name = "0_Abstract_Background_1920x1080.mp415055558.mp4";
+    for zoomed in [false, true] {
+        let original = format!("internal/video/{name}");
+        let (connector, mut screen) =
+            turing_88(stored_bytes(&original, if zoomed { 1000 } else { 999 }));
+        let mut theme = video_theme(&format!("assets/{name}"));
+        if zoomed && let Background::Video { framing, .. } = &mut theme.background {
+            *framing = Some(VideoFraming {
+                zoom: Zoom::from_percent(125),
+                ..Default::default()
+            });
+        }
+        let mut rt = runtime(theme);
+        rt.set_video_info(Some(mp4(Size::new(480, 1920), 1000)));
+        assert!(matches!(
+            rt.start_video(screen.as_mut(), None).expect("start"),
+            VideoState::VideoMissing(_)
+        ));
+        assert!(changes(&connector).is_empty());
+    }
+}
+
+#[test]
+fn a_vendor_copy_without_its_local_source_needs_no_file_selection_for_default_framing() {
+    let name = "Native.Vendor.MP4";
+    for zoomed in [false, true] {
+        let original = path(&format!("internal/video/{name}"));
+        let (connector, mut screen) =
+            turing_88(FakeStorage::default().with_file(original.clone(), vec![7; 1000]));
+        let mut theme = video_theme(&format!("assets/{name}"));
+        if zoomed && let Background::Video { framing, .. } = &mut theme.background {
+            *framing = Some(VideoFraming {
+                zoom: Zoom::from_percent(125),
+                ..Default::default()
+            });
+        }
+        let mut rt = runtime(theme);
+        let state = rt.check_video(screen.as_mut()).expect("read-only check");
+        if zoomed {
+            assert!(matches!(state, VideoState::VideoMissing(_)));
+        } else {
+            assert_eq!(state, VideoState::OnDevice(original));
+        }
+        assert!(changes(&connector).is_empty());
+    }
 }

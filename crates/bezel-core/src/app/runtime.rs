@@ -402,6 +402,10 @@ impl Expect {
 struct DeviceVideo {
     /// The name its copy has ([`device_video_name`]).
     name: FileName,
+    /// An unchanged, compatible asset may already be stored under its original
+    /// vendor name (including case and punctuation), before Bezel normalized it.
+    /// Without a local source, default framing can reuse that native MP4.
+    original: Option<FileName>,
     /// The conversion that makes that copy (the identity: the asset as it
     /// is).
     options: ConvertOptions,
@@ -422,7 +426,12 @@ enum Lookup {
 /// meets `expect` is the video; without one, a file of another size keeps
 /// the place (sending replaces it), else the card's folder when there is a
 /// card, the internal one otherwise.
-fn find_video(storage: &mut dyn ScreenStorage, name: FileName, expect: Expect) -> Result<Lookup> {
+fn find_video(
+    storage: &mut dyn ScreenStorage,
+    name: FileName,
+    original: Option<FileName>,
+    expect: Expect,
+) -> Result<Lookup> {
     let card = storage.info()?.card.is_some();
     let media: &[Medium] = if card {
         &[Medium::Internal, Medium::Card]
@@ -439,6 +448,14 @@ fn find_video(storage: &mut dyn ScreenStorage, name: FileName, expect: Expect) -
         }
         if found != Presence::Absent && taken.is_none() {
             taken = Some(path);
+        }
+    }
+    if let Some(original) = &original {
+        for medium in media {
+            let path = RemotePath::new(at(*medium), original.clone());
+            if expect.met_by(presence(storage, &path)?) {
+                return Ok(Lookup::Stored(path));
+            }
         }
     }
     let target = if card { Medium::Card } else { Medium::Internal };
@@ -875,6 +892,26 @@ impl ThemeRuntime {
         });
         Some(DeviceVideo {
             name: device_video_name(asset, &on_panel, &profile),
+            original: {
+                let file = asset.0.rsplit(['/', '\\']).next()?;
+                // The device's existing MP4 is the native source when the
+                // local original is unavailable. Custom framing still needs
+                // its own converted copy; known local media is checked above.
+                let native_framing = framing_of(&self.scene.theme)
+                    .resolve(Some(profile.video_size), orientation, self.video_panel())
+                    .turned(orientation.quarter_turns_to(model.native_orientation));
+                let stored_native = self.info.is_none()
+                    && framing_of(&self.scene.theme).is_default()
+                    && native_framing.turns == 0
+                    && file
+                        .rsplit_once('.')
+                        .is_some_and(|(_, ext)| ext.eq_ignore_ascii_case("mp4"));
+                let original = FileName::parse(file).ok();
+                original.filter(|original| {
+                    (as_is.is_some() || stored_native)
+                        && *original != device_video_name(asset, &on_panel, &profile)
+                })
+            },
             options,
             expect: as_is.map_or(Expect::Any, |info| Expect::Bytes(info.bytes)),
         })
@@ -960,6 +997,35 @@ impl ThemeRuntime {
         Ok(&self.video)
     }
 
+    /// Checks the device copy without starting playback or changing stored files.
+    /// Intended for import/preflight runtimes, before enabling live output.
+    pub fn check_video(&mut self, screen: &mut dyn ScreenLink) -> Result<VideoState> {
+        self.screen = Some(screen.identity().model);
+        let Some((asset, _)) = video_of(&self.scene.theme) else {
+            return Ok(VideoState::NoVideo);
+        };
+        let asset = asset.clone();
+        match (self.device_video(), screen.storage()) {
+            (Some(device), Some(storage)) => Self::locate_device_video(storage, asset, device),
+            _ => Ok(VideoState::NoPlayback),
+        }
+    }
+
+    fn locate_device_video(
+        storage: &mut dyn ScreenStorage,
+        asset: AssetRef,
+        device: DeviceVideo,
+    ) -> Result<VideoState> {
+        match find_video(storage, device.name, device.original, device.expect)? {
+            Lookup::Stored(path) => Ok(VideoState::OnDevice(path)),
+            Lookup::Absent(path) => Ok(VideoState::VideoMissing(MissingVideo {
+                asset,
+                path,
+                options: device.options,
+            })),
+        }
+    }
+
     /// Loops the stored copy of the video, or says where it belongs.
     fn on_device(
         &mut self,
@@ -967,18 +1033,12 @@ impl ThemeRuntime {
         asset: AssetRef,
         device: DeviceVideo,
     ) -> Result<VideoState> {
-        match find_video(storage, device.name, device.expect)? {
-            Lookup::Stored(path) => {
-                storage.resume_video(&path, Repeat::Loop)?;
-                self.playing = Some(path.clone());
-                Ok(VideoState::OnDevice(path))
-            }
-            Lookup::Absent(path) => Ok(VideoState::VideoMissing(MissingVideo {
-                asset,
-                path,
-                options: device.options,
-            })),
+        let state = Self::locate_device_video(storage, asset, device)?;
+        if let VideoState::OnDevice(path) = &state {
+            storage.resume_video(path, Repeat::Loop)?;
+            self.playing = Some(path.clone());
         }
+        Ok(state)
     }
 
     /// Starts an offline scene's video on the host through the same decoder
