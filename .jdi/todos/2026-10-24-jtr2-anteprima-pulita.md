@@ -30,3 +30,6 @@ L'utente segnala JTR2 Black non funzionante e il vecchio tema Pixel ancora visib
 ## Consegna
 
 Build locale 0.2.2 avviata con build-evo.ps1. Studio PID 10876 e Light PID 49548 erano aperti da target/release; richiesto all'utente di salvare e chiudere prima di sostituire gli eseguibili, secondo AGENTS.md. Nessun processo terminato forzatamente. Nessun push/installazione/pubblicazione. Prova visiva finale JTR2 Black ancora da fare dopo il riavvio della build nuova.
+## Build e riavvio completati
+
+Dopo la conferma dell'utente sul salvataggio e la chiusura di Studio/Light, ripetuta build-evo.ps1 -Version 0.2.2: riuscita (1m35s). CLI e metadati Studio verificati 0.2.2; commit versione eda3633. Hash CLI 7F18AABB60BDA5563EF4249B26DE7F65E7262346960900C68379BEFAC957723B, Studio 62496E60E91B6CDBB1A266AF45B1DB469EFFA91BAB5BDB31E25388FBF7FD219D; verbale JSON in target/logs/jtr2-open-document/build-verification-0.2.2.json. Rendering JTR2 Black con la nuova CLI riuscito, PNG jtr2-black-0.2.2.png nella stessa directory. Studio riaperto direttamente da target/release (PID 4200); prova visiva dell'import e dell'eventuale video sul dispositivo ancora da confermare dall'utente. Nessun installer, push o pubblicazione; installazione personale invariata.
