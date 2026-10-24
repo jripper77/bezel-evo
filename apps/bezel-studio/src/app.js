@@ -132,6 +132,7 @@ let switchingScreen = false;
 /** Sensor keys a sample read outside the catalog, for which the catalog was asked again. */
 const askedSensors = new Set();
 let previewWork = Promise.resolve();
+let documentGeneration = 0;
 let autoWork = Promise.resolve();
 let liveWork = Promise.resolve();
 // The fastest refresh a theme may ask for comes from the backend (the
@@ -510,6 +511,7 @@ async function drawPreview() {
   if (switchingScreen) return;
   const screen = state.screen;
   const started = performance.now();
+  const generation = documentGeneration;
   try {
     const { theme, selection } = store.getState();
     const editingCard = theme.elements.some(e => selection.includes(e.id) && (e.card || e.cardMember));
@@ -518,7 +520,7 @@ async function drawPreview() {
     const work = bridge.render(theme, { motion: motionAllowed(), cardRotation: !editingCard, maxSide, ...trialValues.options() });
     previewWork = work.catch(() => {});
     const frame = await work;
-    if (screen !== state.screen || switchingScreen) return;
+    if (screen !== state.screen || switchingScreen || generation !== documentGeneration) return;
     if (!frame.unchanged) {
       canvasView.drawFrame(frame);
       inspector.frameShown();
@@ -580,6 +582,10 @@ function reportUnsaved() {
 }
 
 function refreshChrome(reason) {
+  if (reason === 'load') {
+    documentGeneration += 1;
+    canvasView.clearFrame();
+  }
   const { theme } = store.getState();
   reportShownSensors();
   reportUnsaved();
@@ -1035,18 +1041,35 @@ async function settleAllDocuments() {
   return true;
 }
 
+/** A file starts a clean document after outgoing work has finished. */
+async function changeDocument(open) {
+  if (switchingScreen) return;
+  switchingScreen = true;
+  clearTimeout(liveTimer);
+  try {
+    await Promise.all([previewWork, autoWork, liveWork]);
+    await open();
+  } finally {
+    switchingScreen = false;
+    renderNow();
+    pushLive();
+  }
+}
+
 async function openTheme(location) {
   if (!(await settleUnsaved())) return;
   try {
-    const theme = await bridge.openTheme(location);
-    state.location = location;
-    state.savedAt = null;
-    savedAtFrom(listedThemes);
-    library.showImportReport(null);
-    store.load(theme);
-    await refreshAssets();
-    canvasView.fit();
-    toast(t('toast.opened', { name: theme.name }));
+    await changeDocument(async () => {
+      const theme = await bridge.openTheme(location);
+      state.location = location;
+      state.savedAt = null;
+      savedAtFrom(listedThemes);
+      library.showImportReport(null);
+      store.load(theme);
+      await refreshAssets();
+      canvasView.fit();
+      toast(t('toast.opened', { name: theme.name }));
+    });
   } catch (e) {
     fail(e);
   }
@@ -1057,13 +1080,15 @@ async function openTheme(location) {
 async function newTheme(axis) {
   if (!(await settleUnsaved())) return;
   try {
-    const orientation = orientationOf(axis, isTurned(store.getState().theme.orientation));
-    store.load(await bridge.newTheme(state.screen, t('themes.untitled'), orientation));
-    state.location = null;
-    state.savedAt = null;
-    library.showImportReport(null);
-    await refreshAssets();
-    canvasView.fit();
+    await changeDocument(async () => {
+      const orientation = orientationOf(axis, isTurned(store.getState().theme.orientation));
+      store.load(await bridge.newTheme(state.screen, t('themes.untitled'), orientation));
+      state.location = null;
+      state.savedAt = null;
+      library.showImportReport(null);
+      await refreshAssets();
+      canvasView.fit();
+    });
   } catch (e) {
     fail(e);
   }
@@ -1072,17 +1097,19 @@ async function newTheme(axis) {
 async function importTheme() {
   if (!(await settleUnsaved())) return;
   try {
-    const result = await bridge.importTheme();
-    if (!result) return;
-    store.load(result.theme);
-    state.location = null;
-    state.savedAt = null;
-    await refreshAssets();
-    canvasView.fit();
-    const warnings = result.warnings ?? [];
-    library.showImportReport({ name: result.theme.name, warnings });
-    if (warnings.length === 0) toast(t('toast.imported'));
-    else toast(warnings.length === 1 ? t('toast.importedWithOneWarning') : t('toast.importedWithWarnings', { count: warnings.length }));
+    await changeDocument(async () => {
+      const result = await bridge.importTheme();
+      if (!result) return;
+      store.load(result.theme);
+      state.location = null;
+      state.savedAt = null;
+      await refreshAssets();
+      canvasView.fit();
+      const warnings = result.warnings ?? [];
+      library.showImportReport({ name: result.theme.name, warnings });
+      if (warnings.length === 0) toast(t('toast.imported'));
+      else toast(warnings.length === 1 ? t('toast.importedWithOneWarning') : t('toast.importedWithWarnings', { count: warnings.length }));
+    });
   } catch (e) {
     fail(e);
   }

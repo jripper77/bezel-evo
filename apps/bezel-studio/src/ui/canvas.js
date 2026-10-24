@@ -908,6 +908,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     zoom: () => zoom,
     setCanvasSize,
     drawFrame,
+    clearFrame: () => ctx.clearRect(0, 0, canvas.width, canvas.height),
     drawOverlay,
     point,
     containsClient,

@@ -122,3 +122,26 @@ test('an animated GIF moves in the preview at its own pace', async ({ page }) =>
   expect(colors.length).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);
 });
+
+test('an imported document clears the outgoing frame while its first snapshot is not ready', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await page.route('**/demo-backend.js', async route => {
+    const response = await route.fetch();
+    const marker = 'render: (next, { motion = true, cardRotation = true, trialMs = null, trialHold = null } = {}) => {';
+    const body = (await response.text()).replace(marker, `${marker}
+      if (next.name === 'Imported') return Promise.resolve({ unchanged: true, millis: 0 });`);
+    await route.fulfill({ response, body, contentType: 'application/javascript' });
+  });
+  await page.goto('/index.html?demo=turing88');
+  const painted = () => page.locator('#preview').evaluate(canvas => {
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    return data.some((value, index) => index % 4 === 3 && value !== 0);
+  });
+  await expect.poll(painted).toBe(true);
+  await page.getByRole('tab', { name: t('library.themes') }).click();
+  await page.getByRole('button', { name: t('themes.import') }).click();
+  await expect(page.locator('#theme-name')).toHaveValue('Imported');
+  await expect.poll(painted).toBe(false);
+  await expect(page.locator('.sel-box')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
