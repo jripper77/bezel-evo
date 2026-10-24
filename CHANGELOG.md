@@ -5,6 +5,18 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.2] - 2026-10-24
+
+0.2.1 was a local build; this entry and the one below cover it.
+
+### Fixes
+- Opening, importing or creating a theme clears the previous canvas image and
+  waits for outgoing preview work before replacing the document.
+- A video or display setup error no longer prevents the new theme's poster
+  and objects from appearing in Studio. Runtime errors retain their cause.
+- Changed documents request a complete preview even when their pixels match
+  the previous frame.
+
 ## [0.2.1] - 2026-10-24
 
 ### Studio
