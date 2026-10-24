@@ -1286,7 +1286,7 @@ fn sensor_options_status_and_catalog_use_engine_sources_without_losing_histories
     let options = wire::Options {
         audio_capture: false,
         ping_host: "127.0.0.1".into(),
-
+        presentmon_path: None,
         ffmpeg: None,
     };
     for _ in 0..2 {
@@ -1805,6 +1805,7 @@ fn rejected_options_do_not_grant_capture_permission() {
     let invalid = wire::Options {
         audio_capture: true,
         ping_host: "x".repeat(254),
+        presentmon_path: None,
         ffmpeg: None,
     };
     assert!(f.engine.options(invalid).is_err());

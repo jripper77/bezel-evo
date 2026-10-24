@@ -382,7 +382,7 @@ pub fn quantity_of(key: &SensorKey) -> Quantity {
 /// What the well-known keys measure, for those whose name alone would
 /// mislead (`gpu.fan` is a duty in percent, `fan.pump` a speed) or say
 /// nothing (`cpu.name`).
-const WELL_KNOWN: [(&str, Quantity); 32] = [
+const WELL_KNOWN: [(&str, Quantity); 35] = [
     (keys::CPU_USAGE, Quantity::Percent),
     (keys::GPU_USAGE, Quantity::Percent),
     (keys::GPU_FAN, Quantity::Percent),
@@ -402,6 +402,9 @@ const WELL_KNOWN: [(&str, Quantity); 32] = [
     (keys::GPU_FAN_RPM, Quantity::Rpm),
     (keys::CPU_LOAD_1, Quantity::Number),
     (keys::GPU_FPS, Quantity::Number),
+    (keys::GPU_FPS_SOURCE, Quantity::Text),
+    (keys::GPU_GAME, Quantity::Text),
+    (keys::GPU_LIMITER, Quantity::Text),
     (keys::NET_PING, Quantity::Number),
     (keys::MEMORY_USED, Quantity::Bytes),
     (keys::MEMORY_TOTAL, Quantity::Bytes),

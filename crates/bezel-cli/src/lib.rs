@@ -590,7 +590,12 @@ mod tests {
             ping_host: Some("1.1.1.1".to_string()),
             presentmon_path: Some(PathBuf::from("/tools/PresentMon.exe")),
         };
-        let flags = ["--ping-host", "1.1.1.1", "--presentmon-path", "/tools/PresentMon.exe"];
+        let flags = [
+            "--ping-host",
+            "1.1.1.1",
+            "--presentmon-path",
+            "/tools/PresentMon.exe",
+        ];
         let sensors =
             Cli::try_parse_from(["bezel", "sensors", "--json"].iter().chain(&flags)).unwrap();
         assert_eq!(sensors.command.sensor_settings(), Some(&wanted));

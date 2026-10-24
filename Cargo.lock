@@ -484,6 +484,7 @@ dependencies = [
  "serde_json",
  "socket2",
  "sysinfo",
+ "tempfile",
  "tracing",
  "ureq",
  "windows",

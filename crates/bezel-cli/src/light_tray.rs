@@ -530,7 +530,10 @@ fn make_engine(
                 Box::new(bezel_sensors::SystemSensors::with_options(
                     bezel_sensors::SensorOptions {
                         ping_host: options.ping_host.clone(),
-                        presentmon_path: options.presentmon_path.as_ref().map(std::path::PathBuf::from),
+                        presentmon_path: options
+                            .presentmon_path
+                            .as_ref()
+                            .map(std::path::PathBuf::from),
                     },
                 ))
             };
