@@ -5,6 +5,15 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.4] - 2026-10-24
+
+0.2.1 through 0.2.3 were local builds; these entries cover them.
+
+### Fixes
+- Live output now checks display storage correctly for bundled background
+  videos. A missing video shows the theme's poster and objects instead of
+  blocking output; an existing device copy can start normally.
+
 ## [0.2.3] - 2026-10-24
 
 0.2.1 and 0.2.2 were local builds; these entries cover them.
