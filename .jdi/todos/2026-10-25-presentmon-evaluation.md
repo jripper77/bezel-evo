@@ -83,3 +83,12 @@ lunga, recupero, fallback RTSS e installazione/aggiornamento ufficiale. Chiesta
 conferma asincrona di scena pronta e stato FG; Windrose non rilevato al momento
 di questo verbale. Driver predisposto con -GameProcessId, poi lettore normale
 --connect. Attendere la scena pronta prima della fase dipendente.
+
+## Seguito completato su Windrose
+
+Eseguite prove FG attiva e spenta con consenso dell'utente e focus del PID
+registrato. Risultati e qualificazione delle finestre nel verbale
+2026-10-25-windrose-fps.md. Entrambe praticabili, console più leggera; beneficio
+API per separazione nativi/generati non dimostrato nel caso provato. Indicazione:
+console corretta con fallback RTSS per il contatore principale, API eventuale
+evoluzione. Nessuna integrazione/merge/rilascio eseguiti in questa fase.
