@@ -1,5 +1,9 @@
 // Portuguese (Brazil) strings. Keys must match en.js (checked by tests/ui/i18n.test.mjs).
 export default {
+  "import.videoFileTitle": "Copiar o v\u00eddeo de fundo?",
+  "import.videoFileBody": "O v\u00eddeo \"{name}\" n\u00e3o est\u00e1 na tela e o modelo n\u00e3o tem uma c\u00f3pia local. Escolha o arquivo para preparar a c\u00f3pia para a tela.",
+  "import.videoChoose": "Escolher v\u00eddeo...",
+  "import.videoOnly": "Escolha um arquivo de v\u00eddeo para este fundo.",
   "textCase.label": "Maiúsculas e minúsculas",
   "textCase.normal": "Original",
   "textCase.upper": "TUDO MAIÚSCULO",
@@ -301,7 +305,7 @@ export default {
   'error.noModel': 'Nenhum modelo de tela para dimensionar o tema.',
   'error.noScreenAddress': 'A tela não tem um endereço que o Bezel consiga abrir.',
   'error.noScreenChosen': 'Escolha uma tela primeiro.',
-  'error.noVideo': 'O vídeo de fundo do tema já está na tela, ou o Ao vivo está desligado.',
+  "error.noVideo": "O tema n\u00e3o tem v\u00eddeo de fundo para copiar, ou a c\u00f3pia no dispositivo j\u00e1 est\u00e1 presente.",
   'error.notAnImage': '{file} não é uma imagem que o Bezel consiga usar (PNG, JPEG ou GIF).',
   'error.notConfirmed': 'Nada foi feito: a operação precisa da sua confirmação.',
   'error.notInCollection': 'Este item não está mais na coleção.',

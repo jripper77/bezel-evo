@@ -556,6 +556,15 @@ pub struct ImportedDto {
     pub warnings: Vec<WarningDto>,
 }
 
+/// Read-only presence of an imported background video on the selected display.
+#[derive(Debug, Clone, Serialize)]
+pub struct ThemeVideoDto {
+    pub present: bool,
+    pub local: bool,
+    pub name: String,
+    pub path: String,
+}
+
 /// An asset added to the theme.
 #[derive(Debug, Clone, Serialize)]
 pub struct AddedDto {

@@ -263,7 +263,7 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     await prepare(() => bridge.prepareThemeVideo(view.key), t('storage.themeVideo'));
   }
 
-  async function prepare(ask, label) {
+  async function prepare(ask, label, onStart = null) {
     view.working = true;
     view.notice = null;
     renderAll();
@@ -277,7 +277,7 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     if (answer?.status === 'refused') view.notice = { kind: 'refused', name: label, refusal: answer };
     renderAll();
     if (answer?.status !== 'ready') return;
-    if (await confirm(summaryDialog(answer))) await runJob(answer);
+    if (await confirm(summaryDialog(answer))) await runJob(answer, onStart);
   }
 
   function summaryDialog(p) {
@@ -312,10 +312,11 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     };
   }
 
-  async function runJob(prepared) {
+  async function runJob(prepared, onStart = null) {
     view.job = { kind: 'upload', name: prepared.target.name, phase: prepared.convert ? 'convert' : 'upload', done: 0, total: 0, step: null, cancelling: false };
     view.notice = null;
     renderAll();
+    onStart?.();
     let result = null;
     try {
       result = await bridge.runUpload(prepared.ticket, Boolean(prepared.replaces));
@@ -811,7 +812,7 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
     /** The tab became visible: load what the screen stores. */
     show() {
       view.shown = true;
-      if (view.status === 'idle' || view.status === 'error') load();
+      if ((view.status === 'idle' || view.status === 'error') && !busy()) load();
       else renderAll();
     },
     hide() {
@@ -844,6 +845,14 @@ export function createStoragePanel({ root, t, locale, bridge, notify, context, r
       if (busy()) return;
       if (view.status !== 'ready') await load();
       if (view.status === 'ready' && !busy()) await manager.restore(medium, path);
+    },
+    /** Import reuses the normal conversion summary, progress and upload flow. */
+    async offerThemeVideo(reveal) {
+      if (busy()) return;
+      view.key = screen()?.key ?? null;
+      if (!view.key) return;
+      await prepare(() => bridge.prepareThemeVideo(view.key), t('storage.themeVideo'), reveal);
+      if (view.notice) reveal();
     },
     /** Asks for a file and sends it to `medium` (the background chooser's "Send a video to the screen…"). */
     choose: (medium) => choose(medium),

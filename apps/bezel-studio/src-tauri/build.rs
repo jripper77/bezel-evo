@@ -51,6 +51,7 @@ const COMMANDS: &[&str] = &[
     "locate_ffmpeg",
     "pick_media",
     "prepare_upload",
+    "check_theme_video",
     "prepare_theme_video",
     "run_upload",
     "cancel_job",

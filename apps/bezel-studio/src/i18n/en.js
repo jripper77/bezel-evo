@@ -1,5 +1,9 @@
 // English strings. Keys must match pt-BR.js (checked by tests/ui/i18n.test.mjs).
 export default {
+  "import.videoFileTitle": "Copy the background video?",
+  "import.videoFileBody": "The video \"{name}\" is missing from the display and the template has no local copy. Choose its file to prepare copying it to the display.",
+  "import.videoChoose": "Choose video...",
+  "import.videoOnly": "Choose a video file for this background.",
   "textCase.label": "Letter case",
   "textCase.normal": "Original",
   "textCase.upper": "UPPERCASE",
@@ -301,7 +305,7 @@ export default {
   'error.noModel': 'No screen model to size the theme.',
   'error.noScreenAddress': 'The screen has no address Bezel can open.',
   'error.noScreenChosen': 'Choose a screen first.',
-  'error.noVideo': 'The theme’s background video is already on the screen, or live mode is off.',
+  "error.noVideo": "The theme has no background video to copy, or its device copy is already present.",
   'error.notAnImage': '{file} is not an image Bezel can use (PNG, JPEG or GIF).',
   'error.notConfirmed': 'Nothing was done: this needs your confirmation.',
   'error.notInCollection': 'This item is no longer in the collection.',

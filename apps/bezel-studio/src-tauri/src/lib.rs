@@ -352,6 +352,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::locate_ffmpeg,
             commands::pick_media,
             commands::prepare_upload,
+            commands::check_theme_video,
             commands::prepare_theme_video,
             commands::run_upload,
             commands::cancel_job,

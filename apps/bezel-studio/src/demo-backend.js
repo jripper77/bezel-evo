@@ -691,9 +691,9 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
    * asset's exact bytes, a converted one when present
    * (D-2026-10-01-video-background-framing-4).
    */
-  function videoOfTheme() {
+  function videoOfTheme(offline = false) {
     const current = theme();
-    if (!live() || current.background?.type !== 'video') return null;
+    if ((!offline && !live()) || current.background?.type !== 'video') return null;
     const info = videoInfo(current.background.asset);
     const { name, asIs } = demoThemeVideo(current, autoOf(current), info);
     const holds = (p) => (asIs ? files.get(p) === info.bytes : files.get(p) > 0);
@@ -1060,9 +1060,15 @@ function createDemoStorage(chosen, { delay, now, live, isLive, theme, themes, sc
       if (!local || !screenOf(key)) return refuse('fileError', `${source}: no such file`, { file: source, reason: 'no such file' });
       return Promise.resolve(check({ ...local, source }, medium, capOf(key)));
     },
+    checkThemeVideo: () => {
+      const video = videoOfTheme(true);
+      if (!video) return Promise.resolve(null);
+      const asset = theme().background.asset;
+      return Promise.resolve({ present: video.state === 'onDevice', local: videoInfo(asset) != null, name: fileNameOf(asset), path: video.path });
+    },
     prepareThemeVideo: (key) => {
-      const video = videoOfTheme();
-      if (!isLive(key) || video?.state !== 'missing') return refuse('noVideo', 'the live screen is not missing the theme video');
+      const video = videoOfTheme(true);
+      if (video?.state !== 'missing') return refuse('noVideo', 'the live screen is not missing the theme video');
       const [medium, , name] = video.path.split('/');
       const asset = theme().background.asset;
       const info = videoInfo(asset);

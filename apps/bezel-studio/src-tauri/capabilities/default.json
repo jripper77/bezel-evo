@@ -53,6 +53,7 @@
     "allow-locate-ffmpeg",
     "allow-pick-media",
     "allow-prepare-upload",
+    "allow-check-theme-video",
     "allow-prepare-theme-video",
     "allow-run-upload",
     "allow-cancel-job",

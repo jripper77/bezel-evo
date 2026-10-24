@@ -1,5 +1,9 @@
 // Italian strings. Keys must match en.js and pt-BR.js (checked by tests/ui/i18n.test.mjs).
 export default {
+  "import.videoFileTitle": "Copiare il video di sfondo?",
+  "import.videoFileBody": "Il video \"{name}\" manca sullo schermo e il template non contiene una copia locale. Scegli il file per preparare la copia sullo schermo.",
+  "import.videoChoose": "Scegli video...",
+  "import.videoOnly": "Scegli un file video per questo sfondo.",
   "textCase.label": "Maiuscole e minuscole",
   "textCase.normal": "Originale",
   "textCase.upper": "TUTTO MAIUSCOLO",
@@ -301,7 +305,7 @@ export default {
   "error.noModel": "Nessun modello di schermo per dimensionare il tema.",
   "error.noScreenAddress": "Lo schermo non ha un indirizzo che Bezel possa aprire.",
   "error.noScreenChosen": "Prima scegli uno schermo.",
-  "error.noVideo": "Il video di sfondo del tema è già sullo schermo, oppure la diretta è disattivata.",
+  "error.noVideo": "Il tema non ha un video di sfondo da copiare, oppure la copia sul dispositivo \u00e8 gi\u00e0 presente.",
   "error.notAnImage": "{file} non è un'immagine che Bezel può usare (PNG, JPEG o GIF).",
   "error.notConfirmed": "Non è stato fatto nulla: serve la tua conferma.",
   "error.notInCollection": "Questo elemento non è più nella collezione.",

@@ -354,6 +354,7 @@ impl StorageState {
     }
 
     fn keep(&self, screen: &str, prepared: PreparedUpload, scratch: Option<PathBuf>) -> u64 {
+        let retained_scratch = scratch.clone();
         let ticket = self.ticket();
         let previous = lock(&self.pending).replace(Pending {
             ticket,
@@ -362,7 +363,11 @@ impl StorageState {
             scratch,
         });
         if let Some(previous) = previous {
-            previous.discard();
+            // Re-preparing the same asset has just refreshed this shared path.
+            // Its old ticket must not remove the new ticket's source file.
+            if previous.scratch != retained_scratch {
+                previous.discard();
+            }
         }
         ticket
     }
@@ -561,6 +566,78 @@ impl Backend {
         self.with_screen(screen, Resume::Frames, time, overview)
     }
 
+    /// Inspect the current theme's device copy without enabling Live or playback.
+    fn theme_video_lookup(
+        &self,
+        screen: &str,
+        time: LocalTime,
+    ) -> UiResult<Option<(bezel_core::app::VideoState, bool, String)>> {
+        let (theme, language, asset, bytes) = {
+            let studio = self.studio();
+            let bezel_core::domain::theme::Background::Video { asset, .. } =
+                &studio.theme().background
+            else {
+                return Ok(None);
+            };
+            (
+                studio.theme().clone(),
+                studio.language(),
+                asset.clone(),
+                studio.assets().get(asset).cloned(),
+            )
+        };
+        let local = bytes.is_some();
+        let mut runtime = bezel_core::app::ThemeRuntime::new(theme, Default::default(), language);
+        if let Some(bytes) = bytes {
+            let file = asset.0.rsplit(['/', '\\']).next().unwrap_or("video.mp4");
+            let (stem, extension) = file.rsplit_once('.').unwrap_or((file, "mp4"));
+            let probe_asset = AssetRef(format!(
+                "{stem}-probe-{}.{}",
+                self.storage.ticket(),
+                extension
+            ));
+            let scratch = self.storage.write_scratch(&probe_asset, &bytes)?;
+            let info = self
+                .storage
+                .media()
+                .probe(&MediaLocation(scratch.display().to_string()))
+                .ok();
+            remove_scratch(Some(&scratch));
+            runtime.set_video_info(info);
+        }
+        let state = self.with_screen(screen, Resume::Frames, time, |link| {
+            runtime.check_video(link)
+        })?;
+        let name = asset
+            .0
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or(&asset.0)
+            .to_string();
+        Ok(Some((state, local, name)))
+    }
+
+    pub fn check_theme_video(
+        &self,
+        screen: &str,
+        time: LocalTime,
+    ) -> UiResult<Option<crate::dto::ThemeVideoDto>> {
+        let Some((state, local, name)) = self.theme_video_lookup(screen, time)? else {
+            return Ok(None);
+        };
+        let (present, path) = match state {
+            bezel_core::app::VideoState::OnDevice(path) => (true, path),
+            bezel_core::app::VideoState::VideoMissing(missing) => (false, missing.path),
+            _ => return Ok(None),
+        };
+        Ok(Some(crate::dto::ThemeVideoDto {
+            present,
+            local,
+            name,
+            path: path.to_string(),
+        }))
+    }
+
     /// Whether ffmpeg can convert videos.
     pub fn media_tools(&self) -> MediaToolsDto {
         let tools = self.storage.media().tools();
@@ -679,17 +756,19 @@ impl Backend {
     /// is sent as it is under the same name, within the screen's size cap;
     /// any other framing needs ffmpeg, and is refused without it.
     pub fn prepare_theme_video(&self, screen: &str, time: LocalTime) -> UiResult<PrepareDto> {
-        let (missing, bytes) = {
-            let studio = self.studio();
-            let missing = studio
-                .missing_video(screen)
-                .ok_or_else(|| UiError::new(ErrorCode::NoVideo))?;
-            let bytes = studio.assets().get(&missing.asset).cloned();
-            let bytes = bytes.ok_or_else(|| {
+        let Some((bezel_core::app::VideoState::VideoMissing(missing), _, _)) =
+            self.theme_video_lookup(screen, time)?
+        else {
+            return Err(UiError::new(ErrorCode::NoVideo));
+        };
+        let bytes = self
+            .studio()
+            .assets()
+            .get(&missing.asset)
+            .cloned()
+            .ok_or_else(|| {
                 UiError::new(ErrorCode::VideoNotInTheme).arg("asset", &missing.asset.0)
             })?;
-            (missing, bytes)
-        };
         let file = self.storage.write_scratch(&missing.asset, &bytes)?;
         let location = MediaLocation(file.display().to_string());
         let source = file_name(&file);

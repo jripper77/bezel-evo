@@ -888,6 +888,15 @@ pub async fn prepare_upload(
     .await
 }
 
+/// Check an imported background video on storage without starting playback.
+#[tauri::command]
+pub async fn check_theme_video(
+    state: State<'_, Shared>,
+    screen: String,
+) -> UiResult<Option<crate::dto::ThemeVideoDto>> {
+    blocking(&state, move |b| b.check_theme_video(&screen, now())).await
+}
+
 /// The preflight of sending the theme's video to the live screen.
 #[tauri::command]
 pub async fn prepare_theme_video(state: State<'_, Shared>, screen: String) -> UiResult<PrepareDto> {

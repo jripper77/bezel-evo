@@ -46,6 +46,13 @@ matching sensor. Imported weather starts with Rome; choose your city in the
 inspector after importing.
 
 
+Importing keeps Live off. For a video background, Studio checks the connected
+screen's storage first and reuses an existing compatible copy. If it is missing,
+Studio asks before copying the video included in the imported theme. If that
+local source is missing too, choose a video file, then confirm its conversion
+and transfer. Cancelling leaves the imported theme open with Live off.
+
+
 ## 3. Your settings
 
 | `config.yaml` | In Bezel |

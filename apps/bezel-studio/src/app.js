@@ -1120,12 +1120,14 @@ async function newTheme(axis) {
 
 async function importTheme() {
   if (!(await settleUnsaved())) return;
+  let imported = false;
   try {
     await changeDocument(async () => {
       const result = await bridge.importTheme();
       if (!result) return;
       documentOpenedOffline();
       store.load(result.theme);
+      imported = true;
       state.location = null;
       state.savedAt = null;
       await refreshAssets();
@@ -1135,9 +1137,40 @@ async function importTheme() {
       if (warnings.length === 0) toast(t('toast.imported'));
       else toast(warnings.length === 1 ? t('toast.importedWithOneWarning') : t('toast.importedWithWarnings', { count: warnings.length }));
     });
+    if (imported) await offerImportedVideo();
   } catch (e) {
     fail(e);
   }
+}
+
+/** Check a file's device video before asking for a copy; keep Live disabled. */
+async function offerImportedVideo() {
+  const screen = state.screen;
+  let theme = store.getState().theme;
+  if (!screen || theme.background.type !== 'video') return;
+  await bridge.pushTheme(theme);
+  let found = await bridge.checkThemeVideo(screen);
+  if (!found || found.present || state.screen !== screen || store.getState().theme !== theme) return;
+  if (!found.local) {
+    const pick = await askChoice(t, {
+      title: t('import.videoFileTitle'),
+      body: t('import.videoFileBody', { name: found.name }),
+      actions: [{ id: 'pick', label: t('import.videoChoose'), kind: 'primary' }],
+      initial: 'pick',
+    });
+    if (pick !== 'pick' || store.getState().theme !== theme) return;
+    const added = await bridge.addMedia();
+    if (!added || state.screen !== screen || store.getState().theme !== theme) return;
+    if (added.kind !== 'video') { toast(t('import.videoOnly')); return; }
+    store.dispatch('setTheme', { patch: { background: { ...theme.background, ...backgroundOf(added) } } });
+    await refreshAssets();
+    theme = store.getState().theme;
+    await bridge.pushTheme(theme);
+    found = await bridge.checkThemeVideo(screen);
+    if (!found || found.present) return;
+  }
+  if (state.screen !== screen || store.getState().theme !== theme) return;
+  await storage.offerThemeVideo(openStorage);
 }
 
 async function addImage() {

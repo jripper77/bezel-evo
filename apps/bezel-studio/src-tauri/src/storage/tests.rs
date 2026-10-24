@@ -1138,8 +1138,14 @@ fn sending_the_theme_video_lets_the_live_screen_play_it() {
     let f = fixture("theme-video");
     let (theme, assets) = video_theme();
     f.backend.studio().start(theme, assets, None);
-    let err = f.backend.prepare_theme_video(KEY, TIME).unwrap_err();
-    assert_eq!(err.code(), "noVideo", "not live");
+    assert!(
+        matches!(
+            f.backend.prepare_theme_video(KEY, TIME).unwrap(),
+            PrepareDto::Ready(_)
+        ),
+        "a video can be prepared before Live starts"
+    );
+    assert!(f.writes().is_empty());
 
     f.backend.set_live(true, Some(KEY), TIME).unwrap();
     let video = f.backend.sample().video.unwrap();
@@ -1464,4 +1470,76 @@ fn the_archive_per_call_is_locked_only_while_it_is_called() {
     store.discard(&content).unwrap();
     assert!(free());
     assert_eq!(store.read(&content).unwrap(), None);
+}
+
+#[test]
+fn imported_video_check_is_offline_read_only_and_recognizes_the_vendor_filename() {
+    let name = "native.Vendor.MP4";
+    let path = format!("internal/video/{name}");
+    let f = fixture_with(
+        "import-video-check",
+        FakeStorage::default().with_file(remote_path(&path), vec![7; 1000]),
+        FakeMedia::ready(),
+    );
+    let (mut theme, _) = video_theme();
+    let asset = AssetRef(format!("assets/{name}"));
+    theme.background = Background::Video {
+        asset: asset.clone(),
+        poster: None,
+        framing: None,
+    };
+    f.backend.studio().start(
+        theme.clone(),
+        BTreeMap::from([(asset, vec![7; 1000])]),
+        None,
+    );
+    let found = f.backend.check_theme_video(KEY, TIME).unwrap().unwrap();
+    assert!(found.present);
+    assert!(found.local);
+    assert_eq!(found.path, path);
+    f.backend.studio().start(theme, BTreeMap::new(), None);
+    let device_only = f.backend.check_theme_video(KEY, TIME).unwrap().unwrap();
+    assert!(device_only.present);
+    assert!(!device_only.local);
+    assert_eq!(device_only.path, path);
+    assert_eq!(f.backend.sample().live, None);
+    assert!(f.writes().is_empty());
+    assert!(
+        std::fs::read_dir(f.root.join("scratch"))
+            .unwrap()
+            .next()
+            .is_none(),
+        "probe files are removed"
+    );
+}
+
+#[test]
+fn imported_missing_video_can_be_prepared_offline_or_requests_a_local_source() {
+    let f = fixture("import-missing-video");
+    let (theme, assets) = video_theme();
+    f.backend.studio().start(theme.clone(), assets, None);
+    let found = f.backend.check_theme_video(KEY, TIME).unwrap().unwrap();
+    assert!(!found.present);
+    assert!(found.local);
+    let PrepareDto::Ready(ready) = f.backend.prepare_theme_video(KEY, TIME).unwrap() else {
+        panic!("ready")
+    };
+    assert!(f.writes().is_empty());
+    let pending_source = f.root.join("scratch/intro.mp4");
+    assert!(pending_source.is_file());
+    f.backend.check_theme_video(KEY, TIME).unwrap();
+    assert!(
+        pending_source.is_file(),
+        "a new presence check must preserve the pending upload source"
+    );
+    assert_eq!(f.backend.sample().live, None);
+    let _ = ready;
+    f.backend.studio().start(theme, BTreeMap::new(), None);
+    let found = f.backend.check_theme_video(KEY, TIME).unwrap().unwrap();
+    assert!(!found.present);
+    assert!(!found.local);
+    assert_eq!(
+        f.backend.prepare_theme_video(KEY, TIME).unwrap_err().code(),
+        "videoNotInTheme"
+    );
 }

@@ -525,6 +525,7 @@ function tauriBridge(invoke, tauri = {}) {
     locateFfmpeg: () => invoke('locate_ffmpeg'),
     pickMedia: () => invoke('pick_media'),
     prepareUpload: (screen, source, medium) => invoke('prepare_upload', { screen, source, medium }),
+    checkThemeVideo: (screen) => invoke('check_theme_video', { screen }),
     prepareThemeVideo: (screen) => invoke('prepare_theme_video', { screen }),
     runUpload: (ticket, overwrite) => invoke('run_upload', { ticket, overwrite }),
     cancelJob: () => invoke('cancel_job'),
