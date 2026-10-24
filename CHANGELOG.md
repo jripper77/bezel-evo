@@ -5,7 +5,9 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
-## [Unreleased]
+## [0.2.6] - 2026-10-25
+
+0.2.1 through 0.2.6 are local builds and have not been published as GitHub releases.
 
 ### Studio
 - Optional on-demand PresentMon console capture adds frame intervals, FPS lows,
@@ -13,6 +15,9 @@ All notable changes to Bezel Evo are documented here. The format follows
   the FPS fallback. Sensor labels and availability messages use all three UI
   languages. Original contribution by [DarkK3y-v2](https://github.com/DarkK3y-v2)
   in [PR #2](https://github.com/jripper77/bezel-evo/pull/2).
+- FPS values do not add a DLSS or Frame Generation label: this integration does
+  not reliably identify the generating technology or separate native and
+  generated frames.
 
 ### Fixes
 - FPS capture targets a process and one swap chain, keeps source QPC timestamps,
