@@ -1,5 +1,42 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Consegna locale 0.2.7 completata
+
+Dopo conferma utente di salvataggio/chiusura, retry build-evo.ps1 -Version
+0.2.7 riuscito (1m18s), versione CLI e metadati Studio corretti. Prova sensori
+simulati riuscita. Copiati solo i due eseguibili in dist/bezel, senza cancellare
+dati; hash fonte/copia uguali, registrati in installed-hashes-0.2.7.json.
+Release locale d29541b; avviato Studio elevato da dist/bezel PID 9252,
+Light PID 12028. Nuova prova reale Alt-Tab/ritorno al gioco da confermare:
+nessuna dichiarazione di risoluzione hardware basata sui soli test.
+Nessun push, merge sul ramo principale, commento all'autore o pubblicazione.
+Il seguito conserva il tentativo bloccato precedente per tracciabilità.
+
+## Correzione ritorno da Alt-Tab: 0.2.7 in preparazione
+
+L'utente conferma lettura intermittente passando a Studio/chat, sensore già
+nel tema, e mancato ritorno tornando al gioco. Verificati entrambi i processi
+0.2.6 elevati: non è una mancanza di privilegi in questa prova. Osservato
+PresentMon figlio del runtime; questo non prova da solo letture corrette.
+
+Commit 0aca0452: il ritorno a un candidato in primo piano supera solo l'attesa
+per inattività e riarma il watchdog del raccoglitore mantenuto; errori di avvio
+e permessi mantengono il backoff. Il vecchio FPS non viene riutilizzato.
+Riprodotta regressione disattivando temporaneamente il nuovo aggancio:
+test fallisce senza, passa con la correzione. Tutti i 96 test sensori passano,
+5 hardware ignorati; clippy all-targets -D warnings e fmt verdi.
+Aggiornate guide, changelog e bozza risposta all'autore; note draft 0.2.7
+in dist del repository principale.
+
+Build-evo.ps1 -Version 0.2.7 tentata ma bloccata da accesso negato al file
+target/release/bezel.exe: utente ha riaperto Studio PID 536 e Light PID 50660
+da target/release durante la compilazione. Chiesto salvataggio e chiusura
+tramite conferma asincrona, senza terminare applicazioni. VERSION della
+worktree già 0.2.7: ritentare con -Version 0.2.7, non incrementare ancora.
+dist/bezel resta alla 0.2.6; nessuna consegna 0.2.7 e nessun push.
+La prova reale del ritorno al gioco rimane necessaria: il test copre due
+percorsi difettosi, senza dimostrare che esauriscano il caso hardware.
+
 ## Aggiornamento: consegna locale 0.2.6
 
 Su richiesta dell'utente preparati risposta all'autore (bozza inglese in
