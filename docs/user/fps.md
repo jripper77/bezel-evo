@@ -51,7 +51,7 @@ a kill-on-close Windows job before capture startup completes.
 | `gpu.frametime` | Mean frame interval over the latest measured second, in milliseconds |
 | `gpu.fps_low_1p` | Reciprocal of the mean of the slowest 1% of frame intervals in up to 30 seconds |
 | `gpu.fps_low_01p` | The same calculation for the slowest 0.1% |
-| `gpu.fps_min` / `gpu.fps_max` | Slowest / fastest individual frame in that history, expressed as FPS |
+| `gpu.fps_min` / `gpu.fps_max` | Lowest / highest one-second mean FPS in up to 30 seconds of source history |
 | `gpu.game` | Executable name of the measured process |
 | `gpu.fps.source` | PresentMon or RTSS |
 | `gpu.limiter` | Conservative CPU / GPU / frame-cap estimate; unavailable when evidence is ambiguous |
@@ -60,6 +60,12 @@ The console delivers frames in batches. The averaging window ends at the latest
 received source frame, rather than the time Bezel reads its output. A reading
 expires when that source frame is more than three seconds old, even if buffered
 output has just arrived. The value is not an instantaneous display refresh count.
+
+Min/max use complete one-second source windows with at least two frames. They
+remain unavailable until there is a full window, and partial windows are excluded.
+They do not take the reciprocal of the fastest individual frame: a 0.2 ms
+present interval would misleadingly look like 5,000 FPS. Lows below remain
+frame-interval statistics and describe a different aspect of frame pacing.
 
 Lows need enough frames: at least 100 for 1% and 1000 for 0.1% inside the
 history window. Until then, Studio says it is collecting data. A very low

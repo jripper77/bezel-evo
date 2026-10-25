@@ -941,10 +941,9 @@ fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<Frame
     let mean_slowest_01p = slowest_point_one.iter().sum::<f64>() / slowest_point_one.len() as f64;
     let fps_low_01p = 1000.0 / mean_slowest_01p;
 
-    // The fastest and slowest single frame of the window, as FPS. The
-    // vec is sorted slowest-first after the reverse above.
-    let fps_min = 1000.0 / game_frames_30s[0];
-    let fps_max = 1000.0 / game_frames_30s[game_frames_30s.len() - 1];
+    // Min/max describe sustained one-second averages, not reciprocals of a
+    // single very short present (which can misleadingly read as thousands).
+    let range = second_average_range(frames, pid, chain, latest);
 
     // The limiter: which side waits for the other, judged on medians.
     let mut cpu_waits = Vec::new();
@@ -991,8 +990,8 @@ fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<Frame
         frametime: Some(frametime),
         fps_low_1p: (game_frames_30s.len() >= 100).then_some(fps_low_1p),
         fps_low_01p: (game_frames_30s.len() >= 1000).then_some(fps_low_01p),
-        fps_min: Some(fps_min),
-        fps_max: Some(fps_max),
+        fps_min: range.map(|(minimum, _)| minimum),
+        fps_max: range.map(|(_, maximum)| maximum),
         source: Some("PresentMon".to_string()),
         game: Some(game),
         limiter,
@@ -1000,6 +999,45 @@ fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<Frame
 }
 
 /// The middle value, safe for even and odd lengths; empty is 0.
+fn second_average_range(
+    frames: &VecDeque<FrameData>,
+    pid: u32,
+    chain: u64,
+    latest: Instant,
+) -> Option<(f64, f64)> {
+    let mut seconds = [(0.0, 0usize); 30];
+    let mut oldest = latest;
+    for frame in frames.iter().filter(|frame| {
+        frame.process_id == pid && frame.swap_chain == chain && frame.timestamp <= latest
+    }) {
+        let age = latest.duration_since(frame.timestamp);
+        if age > Duration::from_secs(30) {
+            continue;
+        }
+        oldest = oldest.min(frame.timestamp);
+        if let Some((sum, count)) = seconds.get_mut(age.as_secs() as usize) {
+            *sum += frame.frametime_ms;
+            *count += 1;
+        }
+    }
+    seconds
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, (sum, count))| {
+            let start = latest.checked_sub(Duration::from_secs(index as u64 + 1))?;
+            if oldest <= start && count >= 2 {
+                Some(1000.0 * count as f64 / sum)
+            } else {
+                None
+            }
+        })
+        .fold(None, |range, fps| {
+            Some(range.map_or((fps, fps), |(low, high): (f64, f64)| {
+                (low.min(fps), high.max(fps))
+            }))
+        })
+}
+
 fn median(values: &mut [f64]) -> f64 {
     if values.is_empty() {
         return 0.0;
@@ -1417,11 +1455,35 @@ mod tests {
     }
 
     #[test]
+    fn fps_extremes_use_complete_second_averages_instead_of_single_present_spikes() {
+        let latest = Instant::now();
+        let mut frames: VecDeque<_> = (0..=300)
+            .map(|i| frame(latest - Duration::from_millis(i * 10), 42, 1, 10.0))
+            .collect();
+        // Two neighbouring presents keep the one-second rate at 100 FPS,
+        // but the shortest alone would claim 5,000 FPS.
+        frames[150].frametime_ms = 0.2;
+        frames[151].frametime_ms = 19.8;
+        frames.push_back(frame(latest, 99, 1, 0.01));
+        let observed = metrics(&frames, 42, latest).unwrap();
+        assert_eq!(
+            (observed.fps_min, observed.fps_max),
+            (Some(100.0), Some(100.0))
+        );
+        let warmup = VecDeque::from([
+            frame(latest, 42, 1, 0.2),
+            frame(latest - Duration::from_millis(100), 42, 1, 0.2),
+        ]);
+        let observed = metrics(&warmup, 42, latest).unwrap();
+        assert_eq!((observed.fps_min, observed.fps_max), (None, None));
+    }
+
+    #[test]
     fn other_processes_and_secondary_swap_chains_cannot_inflate_the_game_fps() {
         let now = Instant::now();
         let mut frames = VecDeque::new();
-        for _ in 0..20 {
-            frames.push_back(frame(now, 42, 1, 20.0));
+        for i in 0..=50 {
+            frames.push_back(frame(now - Duration::from_millis(i * 20), 42, 1, 20.0));
         }
         for _ in 0..10 {
             frames.push_back(frame(now, 42, 2, 1.0));
@@ -1452,7 +1514,7 @@ mod tests {
         let m = metrics(&frames, 42, now).unwrap();
         assert!((m.fps_low_1p.unwrap() - 1000.0 / 19.0).abs() < 0.0001);
         assert_eq!(m.fps_low_01p, Some(10.0));
-        assert_eq!((m.fps_min, m.fps_max), (Some(10.0), Some(100.0)));
+        assert_eq!((m.fps_min, m.fps_max), (Some(100.0), Some(100.0)));
     }
 
     #[test]
@@ -1636,11 +1698,9 @@ mod tests {
             pid: 42,
             name: "game.exe".into(),
         });
-        source
-            .lines
-            .lock()
-            .unwrap()
-            .extend(vec![frame(now, 42, 1, 10.0); 1000]);
+        source.lines.lock().unwrap().extend(
+            (0..1000).map(|i| frame(now - Duration::from_millis((999 - i) * 10), 42, 1, 10.0)),
+        );
         source.overflowed.store(true, Ordering::Relaxed);
         let m = source.read_target(None, now).unwrap();
         assert_eq!(m.fps, 100.0);

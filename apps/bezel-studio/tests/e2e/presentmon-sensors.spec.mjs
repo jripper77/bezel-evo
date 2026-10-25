@@ -5,11 +5,13 @@ async function fpsFixture(page, permissions = false) {
     { key: 'gpu.fps', category: 'gpu', label: 'Game FPS', quantity: 'number', source: 'Intel PresentMon (on demand)' },
     { key: 'gpu.fps_low_1p', category: 'gpu', label: 'Game 1% low', quantity: 'number', source: 'Intel PresentMon (on demand)' },
     { key: 'gpu.frametime', category: 'gpu', label: 'Frame time', quantity: 'number', source: 'Intel PresentMon (on demand)' },
+    { key: 'gpu.fps_max', category: 'gpu', label: 'Game maximum FPS', quantity: 'number', source: 'Intel PresentMon (on demand)' },
   ];
   const readings = {
     'gpu.fps': permissions ? { display: '—', unavailable: 'fps.permissions:access denied' } : { value: 160, display: '160' },
     'gpu.fps_low_1p': { display: '—', unavailable: 'fps.statistics:needs more frames' },
     'gpu.frametime': { value: 6.25, display: '6.25' },
+    'gpu.fps_max': { value: 165, display: '165' },
   };
   await page.route('**/demo-backend.js', async route => {
     const response = await route.fetch();
@@ -48,6 +50,18 @@ test('FPS permission failures keep their localized action and the diagnostic det
   await expect(fps).toHaveAttribute('data-state', 'unavailable');
   await expect(fps).toHaveAttribute('title', new RegExp('Performance Log Users'));
   await expect(fps).toHaveAttribute('title', /access denied/);
+});
+
+test('FPS maximum identifies its one-second averaging interval', async ({ page, t }) => {
+  await fpsFixture(page);
+  await add(page, t, 'value');
+  await page.locator('#inspector').getByRole('combobox', { name: t('inspector.sensor'), exact: true }).click();
+  const popup = page.getByRole('dialog', { name: t('inspector.sensor'), exact: true });
+  await popup.getByRole('searchbox').fill('gpu.fps_max');
+  const option = popup.getByRole('option');
+  await expect(option).toContainText(t('sensor.gpu.fps_max'));
+  await expect(option).toContainText('(1 s)');
+  await expect(option).toContainText('165');
 });
 
 test.describe('Italian FPS sensor messages', () => {

@@ -102,14 +102,14 @@ impl Provider for Fps {
             describe(
                 keys::GPU_FPS_MIN,
                 Category::Gpu,
-                "Game minimum FPS",
+                "Game minimum FPS (1 s)",
                 Quantity::Number,
                 source.clone(),
             ),
             describe(
                 keys::GPU_FPS_MAX,
                 Category::Gpu,
-                "Game maximum FPS",
+                "Game maximum FPS (1 s)",
                 Quantity::Number,
                 source.clone(),
             ),

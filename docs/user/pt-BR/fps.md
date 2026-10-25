@@ -48,7 +48,7 @@ fechar antes de concluir a inicialização da captura.
 | `gpu.frametime` | Intervalo médio entre quadros no último segundo medido, em ms |
 | `gpu.fps_low_1p` | Inverso da média dos 1% de intervalos mais lentos em até 30 segundos |
 | `gpu.fps_low_01p` | O mesmo cálculo para 0,1% |
-| `gpu.fps_min` / `gpu.fps_max` | Quadro individual mais lento / rápido, expresso em FPS |
+| `gpu.fps_min` / `gpu.fps_max` | Menor / maior média de FPS por segundo em até 30 segundos de histórico |
 | `gpu.game` | Nome do executável medido |
 | `gpu.fps.source` | PresentMon ou RTSS |
 | `gpu.limiter` | Estimativa conservadora CPU / GPU / limite de FPS; indisponível se ambígua |
@@ -57,6 +57,12 @@ O console entrega quadros em lotes. A janela termina no quadro mais recente
 recebido, usando seu tempo de origem, e não o momento da leitura pelo Bezel.
 A leitura expira quando esse quadro tem mais de três segundos, mesmo se a
 saída acabou de chegar. O valor não é uma contagem instantânea do monitor.
+
+Mínimo e máximo usam janelas completas de um segundo com pelo menos dois
+quadros. Ficam indisponíveis até existir uma janela completa; janelas parciais
+são excluídas. Não usam o inverso do quadro individual mais rápido: um intervalo
+de 0,2 ms pareceria 5.000 FPS. Os lows abaixo continuam sendo estatísticas dos
+intervalos entre quadros, que descrevem outro aspecto do ritmo de apresentação.
 
 Os lows precisam de 100 quadros para 1% e 1000 para 0,1% dentro da janela.
 Antes disso, o Studio informa que está coletando dados. Uma taxa muito baixa
