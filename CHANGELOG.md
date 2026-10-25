@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.8] - 2026-10-25
+
+0.2.1 through 0.2.8 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- PresentMon FPS and frame-time averages use the latest measured second, with
+  source freshness checked separately. Console delivery batches delayed by more
+  than one second no longer cause gaps in otherwise active game readings.
+  Values expire when the latest source frame is more than three seconds old;
+  draining buffered output never makes old frames fresh.
+
 ## [0.2.7] - 2026-10-25
 
 0.2.1 through 0.2.7 are local builds and have not been published as GitHub releases.
