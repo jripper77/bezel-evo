@@ -5,6 +5,18 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.9] - 2026-10-25
+
+0.2.1 through 0.2.9 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- The on-screen diagnostic readings now reach the physical display through
+  Light's shared runtime. Changes to the corner and visibility apply during
+  Live output, including static themes; disabling the overlay restores the
+  clean frame. Diagnostic markings do not enter the theme or editor canvas.
+- Light restores the saved diagnostic overlay when it starts. Measurements
+  use completed screen transfers and the sensor sampler's elapsed time.
+
 ## [0.2.8] - 2026-10-25
 
 0.2.1 through 0.2.8 are local builds and have not been published as GitHub releases.
