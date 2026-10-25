@@ -90,8 +90,10 @@ Studio has been redesigned from the ground up, in dark and light.
   a shared background under all of them, **one transition** for the whole Card
   (fade, slide or flip) and **timed triggers** ("every 30 s, the next face")
   next to the app and media triggers.
-- **Game frame metrics on demand.** Optional PresentMon console capture with
+- **Game frame metrics on demand.** Optional PresentMon service capture with
   RTSS fallback for FPS, plus frame intervals, lows and source information.
+  Enable game FPS once in Setup; Studio and Light then run without administrator
+  privileges or changes to your Windows account groups. See [Game FPS](docs/user/fps.md).
   [Setup and metric definitions](docs/user/fps.md).
 - **Values that glide.** Rings, bars, needles and numbers move smoothly to each
   new reading instead of jumping, with smooth easing or inertia that preserves

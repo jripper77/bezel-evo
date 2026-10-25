@@ -1,4 +1,4 @@
-param([string]$Version, [switch]$SkipBuild, [string]$LibreDirectory)
+param([string]$Version, [switch]$SkipBuild, [string]$LibreDirectory, [string]$PresentMonMsiPath)
 $ErrorActionPreference = 'Stop'
 $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 Push-Location $repository
@@ -44,7 +44,7 @@ try {
     }
     Add-Payload $cli 'bezel.exe'
     Add-Payload (Join-Path $repository 'target\release\bezel-studio.exe') 'bezel-studio.exe'
-    foreach ($name in @('start-light.ps1','start-light.cmd','open-studio.ps1','open-studio.cmd','installer-maintenance.ps1','setup-evo-sensors.cmd')) {
+    foreach ($name in @('start-light.ps1','start-light.cmd','open-studio.ps1','open-studio.cmd','installer-maintenance.ps1','setup-evo-sensors.cmd','setup-game-fps.ps1','setup-game-fps.cmd')) {
         Add-Payload (Join-Path $PSScriptRoot $name) $name
     }
     Add-Payload (Join-Path $repository 'LICENSE') 'LICENSE'
@@ -54,6 +54,12 @@ try {
     Add-Payload (Join-Path $repository 'apps\bezel-studio\src\assets\fonts\ibm-plex\LICENSE') 'LICENSE-IBM-Plex-OFL.txt'
     Add-Payload (Join-Path $repository 'packaging\windows\LICENSE-Tauri-template.txt') 'LICENSE-Tauri-template.txt'
     Add-Payload (Join-Path $repository 'packaging\windows\README.md') 'README.md'
+    $fps = Join-Path $repository 'target\scratch\game-fps-package\payload'
+    & (Join-Path $PSScriptRoot 'prepare-game-fps.ps1') -OutputDirectory $fps -MsiPath $PresentMonMsiPath
+    if ($LASTEXITCODE -ne 0) { throw 'Game FPS component preparation failed.' }
+    foreach ($name in @('PresentMonService.exe','PresentMonAPI2.dll','ddETWExternal.xml','LICENSE-PresentMon.txt','THIRD-PARTY-PresentMon.txt')) {
+        Add-Payload (Join-Path $fps $name) (Join-Path 'fps' $name)
+    }
     foreach ($root in @(@('themes', (Join-Path $repository 'themes')), @('sensors', $sensors))) {
         foreach ($file in Get-ChildItem -LiteralPath $root[1] -File -Recurse) {
             $relative = $file.FullName.Substring($root[1].Length).TrimStart('\')
@@ -81,7 +87,7 @@ try {
                 webviewInstallMode = @{ type = 'downloadBootstrapper'; silent = $true }
                 nsis = @{
                     installMode = 'currentUser'
-                    languages = @('English','Italian')
+                    languages = @('English','Italian','PortugueseBR')
                     displayLanguageSelector = $true
                     startMenuFolder = 'Bezel Evo'
                     template = (Join-Path $repository 'packaging\windows\installer.nsi').Replace('\','/')

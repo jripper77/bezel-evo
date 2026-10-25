@@ -4,14 +4,19 @@ Download the Setup executable for a normal installation, or extract the
 portable ZIP into a writable folder. Start `bezel-studio.exe`, choose a display
 and save a theme. Studio and Light run as your normal Windows user.
 
-The Setup offers optional **Light at Windows sign-in** and **hardware sensors**.
-Only sensor-task configuration asks for administrator approval. Use the same
-Windows account for that approval. No vendor startup tasks or external Libre
-installations are removed. If another Bezel installation owns `Bezel-Sensors`,
-its task is left unchanged; migrate/remove that installation before configuring
-this reader. Sensor setup registers the reader; check actual sensor availability
-in Studio. Hardware support and existing hardware-access drivers determine which
-values are available; the installer does not install hardware drivers.
+Setup offers optional **Light at Windows sign-in**, **hardware sensors**, and
+**game FPS support**. Configuring sensors or the FPS collector asks for
+administrator approval; Studio and Light remain normal user applications.
+Game FPS installs the verified Intel PresentMon 2.6.0 service/API, without its
+GUI or changes to account groups. Retry with **Setup game FPS** in the Start menu
+or `setup-game-fps.cmd` for portable installations. The separately registered
+FPS component remains available to other clients when Bezel is uninstalled;
+remove its own Windows Apps entry separately after closing those clients.
+An existing compatible Intel service is reused; conflicting services are preserved.
+
+Sensor configuration preserves vendor tasks and other Libre installations. If
+another Bezel installation owns `Bezel-Sensors`, its task is left unchanged.
+The installer does not install hardware drivers.
 
 For the portable version, run `setup-evo-sensors.cmd` once to configure the
 reader. Double-click `start-light.cmd` for Light after saving a theme and choosing
@@ -48,13 +53,15 @@ The embedded LibreHardwareMonitorLib 0.9.6 and dependencies retain their license
 under `sensors/`. Tabler and Material Design Icons retain MIT and Apache notices.
 IBM Plex: SIL OFL 1.1 (`LICENSE-IBM-Plex-OFL.txt`).
 The installer template is adapted from Tauri CLI 2.12.1 under MIT; its license is
-included. No personal logs, hardware aliases or development backups are shipped.
+included. PresentMon MIT and dependency notices are included under `fps/`.
+No personal logs, hardware aliases or development backups are shipped.
 
 ## Maintainer build
 
 Run `scripts/windows/package-evo.ps1` from a shell with Rust 1.98, the MSVC build
 tools, Node/npm and the Windows Framework C# compiler. It builds both binaries,
 downloads a SHA-256-pinned LibreHardwareMonitor release, rebuilds the helper,
+prepares the pinned and signature-verified Intel PresentMon service payload,
 and uses the pinned Tauri CLI 2.12.1 to produce NSIS and ZIP packages under `dist/`.
 Use `-Version X.Y.Z` to choose a version or retry; `-SkipBuild` bundles already-built
 binaries matching `VERSION`. The adapted template retains Tauri's WebView2 and

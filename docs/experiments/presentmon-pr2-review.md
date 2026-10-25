@@ -3,11 +3,11 @@
 Prepared for review before posting. This is a local integration branch, not a
 published release or a merge into the main branch.
 
-Production deployment is still under review: the console choice below concerns
-the local capture implementation. The intended user experience keeps Studio
-and Light unelevated, with a separately authorized collector component set up
-during installation. The local administrator/group workaround is not a completed
-distribution design, and no service/helper migration has been implemented yet.
+The accepted deployment design now uses the separately installed PresentMon
+service by default, keeping Studio and Light unelevated. An explicit console
+path remains an advanced override. The service adapter and optional installer
+component are implemented locally; no published release or real-game acceptance
+of this service build has occurred yet.
 
 ---
 
@@ -15,13 +15,20 @@ Thanks for the proposal and the original implementation! We have prepared a
 local integration branch while preserving your commits and authorship. We also
 added explicit credit linking your profile and PR #2 in the README and changelog.
 
-We compared the official PresentMon 2.6.0 console with its service/API, first
-using a controlled graphics workload, then Windrose with Frame Generation on
-and off. We decided to keep your console-based approach, with RTSS as the FPS
-fallback. The collector's working set was about 16–17 MiB for the console versus
-109 MiB for the service in these short game runs. This is not a game-overhead
-benchmark, a long-term leak test, or a proof that the API cannot offer benefits
-in other configurations.
+We compared the official PresentMon 2.6.0 console with its service/API using
+a controlled workload and Windrose with Frame Generation on and off. The console
+was lighter (about 16–17 MiB versus 109 MiB service working set in the short runs),
+so we initially used it locally. For distribution, we subsequently chose the
+service API: one-time authorization belongs to the collector, while the editor
+and runtime remain normal applications. This is a deployment tradeoff, not an
+overhead benchmark or a claim that the service is lighter.
+
+The adapter consumes individual frame events instead of polling a cached FPS
+number. Two normal-user controlled 60/30/60 FPS trials decoded over 550 frames
+each, followed the rate changes and expired readings after the workload ended.
+The account was not elevated and was not in Performance Log Users. Initial
+attempts produced no events until the owned service was restarted; that evidence
+is retained. A real-game check of the new service build remains necessary.
 
 The integration changes are:
 
@@ -62,9 +69,8 @@ We are keeping the main FPS reading as a numeric measurement. We are **not**
 adding an automatic “DLSS” label or a claimed native/generated split. In the
 Windrose runs, the API's application/displayed/presented measurements did not
 establish that split, even though the readings changed with the FG settings.
-We will not infer native FPS by dividing by a presumed multiplier. The API
-remains a possible later addition if it provides verified extra metrics worth
-the deployment and resource cost.
+We will not infer native FPS by dividing by a presumed multiplier. The service API is used for deployment and frame events; this does not establish
+a verified native/generated split.
 
 A follow-up console capture explicitly enabled `--track_frame_type` with FG
 enabled in Windrose. It returned 3,081 target rows, all labelled `Application`;

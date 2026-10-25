@@ -2,46 +2,50 @@
 
 [Português (Brasil)](pt-BR/fps.md)
 
-On Windows, Bezel can read Intel PresentMon's console application, with
-RivaTuner Statistics Server (RTSS) as the fallback for `gpu.fps`. Neither
-reader makes Bezel inject code into a game. Drag the sensors onto a theme
-like any other readings.
+On Windows, Bezel reads Intel PresentMon's separately installed service, with
+RivaTuner Statistics Server (RTSS) as the FPS fallback. Bezel does not inject
+code into a game. Drag the sensors onto a theme like any other readings.
 
-## PresentMon setup
+## Enable game FPS
 
-1. Download the tested [PresentMon 2.6.0 console application](https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0).
-   Use the console executable, not Intel's graphical capture application.
-2. Set `presentmonPath` in Studio's `settings.json` or pass
-   `--presentmon-path` to the CLI. Alternatively, put the console executable
-   in `tools\` or `sensors\` beside Bezel. Discovery also checks Intel's
-   `PresentMon\PresentMonConsoleApplication\` installation folder, then
-   the older `PresentMon\` layout. It never searches `PATH`.
-   `PresentMon.exe` and versioned console names such as
-   `PresentMon-2.6.0-x64.exe` are accepted; numbered versions sort numerically.
-3. ETW capture needs administrator rights or membership in Windows'
-   **Performance Log Users** group. Group changes can require signing out
-   and back in. Bezel does not grant these rights or elevate itself.
-4. Request an FPS sensor and bring the game to the foreground. Automatic
-   discovery chooses that process ID, filtering common shell, browser and
-   launcher programs. It is a foreground graphics-app heuristic, not a
-   complete database of games.
+1. Select **Enable game FPS** in Windows Setup, or run **Setup game FPS** from
+   the Bezel Evo Start menu. Portable users run `setup-game-fps.cmd`.
+2. Approve the administrator prompt once to install the optional, signed Intel
+   collector. Studio and Light continue to run as your normal Windows user.
+   Your account groups are unchanged; signing out is unnecessary.
+3. Add an FPS sensor and bring the game to the foreground. The foreground
+   candidate process is selected, excluding common shell/browser/launcher apps.
+   This is a graphics-app heuristic, not a complete database of games.
 
-PresentMon starts only on demand, with its console hidden. Bezel targets the
-chosen PID and measures one swap chain within it, selected by recent frame
-count. Another foreground candidate can replace the target. Stored samples
-keep PresentMon's QPC time, so delayed pipe output cannot refresh old frames.
+Setup includes the verified PresentMon 2.6.0 service and API; the Intel GUI is
+not installed. An existing compatible, signed Intel service is reused without
+overwriting its files. Incompatible existing services are preserved and setup
+reports the conflict. A failed or declined setup leaves FPS unavailable (or
+uses RTSS when available); retry through **Setup game FPS**.
 
-Stopping all FPS requests closes the child. Without frames, a probe stops
-after 10 seconds; after it has measured frames, it tolerates a pause of up to
-60 seconds. Failures use RTSS when available and retry PresentMon with bounded
-backoff. Missing tools retry at most once per minute. Idle probes also wait up
-to a minute, but bringing a game back to the foreground bypasses that idle wait.
-A retained collector gets a new startup grace period after a foreground return;
-old readings stay unavailable until fresh frames arrive. Foreground changes do
-not bypass retry delays caused by capture failures or permission errors.
-Only one Bezel instance owns its fixed capture session at a time; another
-uses the fallback instead of stealing it. The capture child is assigned to
-a kill-on-close Windows job before capture startup completes.
+Bezel reads frame events on a background worker and requests tracking only
+while FPS sensors are needed. It measures one swap chain of the chosen PID.
+Stopping FPS requests closes that client's tracking session; it does not stop
+the shared Windows service or another application's sessions. Missing frames
+expire after three seconds. Idle tracking pauses after 10 seconds initially,
+or 60 seconds after receiving frames. Returning to a foreground game bypasses
+idle delays; connection failures keep bounded retry delays.
+
+The optional component has its own **Bezel Evo - Game FPS support (Intel
+PresentMon)** entry in Windows Apps. It stays installed when Bezel is removed
+so other PresentMon clients are not disrupted. Close its clients before removing
+it. Removal only deletes the service owned by this component and known files;
+modified or unknown files and licence/maintenance files are retained.
+
+### Advanced: legacy console override
+
+An explicit `presentmonPath` in Studio's `settings.json`, or CLI
+`--presentmon-path`, selects the older console backend instead of the service.
+This override still requires ETW rights (administrator or Performance Log Users).
+Clear it to use the normal service setup. Bezel does not automatically elevate
+the editor or change Windows groups. The console runs hidden on demand, with
+bounded queues and retries; only one Bezel instance owns its fixed capture
+session. Neither backend searches `PATH` for a DLL or injects a game hook.
 
 ## Available sensors
 
@@ -56,7 +60,7 @@ a kill-on-close Windows job before capture startup completes.
 | `gpu.fps.source` | PresentMon or RTSS |
 | `gpu.limiter` | Conservative CPU / GPU / frame-cap estimate; unavailable when evidence is ambiguous |
 
-The console delivers frames in batches. The averaging window ends at the latest
+The collector delivers frames in batches. The averaging window ends at the latest
 received source frame, rather than the time Bezel reads its output. A reading
 expires when that source frame is more than three seconds old, even if buffered
 output has just arrived. The value is not an instantaneous display refresh count.
