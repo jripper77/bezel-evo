@@ -54,3 +54,12 @@ crediti: ridurre esplorazioni ripetute, nessun agente parallelo. Prossima prova
 utile: confronto controllato dopo riavvio Windows per separare stato ETW
 della sessione da incompatibilita persistente. Riavvio non eseguito: preservare
 documenti ed esecuzioni utente. Problema FPS NON risolto.
+
+## 26 ottobre 2026 - riscontro utente dopo riavvio
+
+L'utente conferma: Windows riavviato, DRG Survivor riaperto, lettura FPS ora
+funzionante sulla 0.2.11. Registrata accettazione del contatore nel gioco dopo
+riavvio; nessuna nuova acquisizione o modifica eseguita. Il riavvio ha preceduto
+il recupero, ma non isola la causa del precedente blocco ETW e non dimostra
+ancora la stabilita dopo ulteriori pause/cambi gioco. Evitare altre prove
+ripetitive senza un nuovo malfunzionamento o una richiesta esplicita.
