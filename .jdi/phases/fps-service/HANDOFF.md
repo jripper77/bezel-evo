@@ -32,3 +32,25 @@ before-0.2.11. Aggiunti script setup e payload fps senza ripristinare template
 rimossi. Studio PID42968 avviato NORMALE, token non elevato verificato.
 Log installed-hashes-0.2.11.json e launched-0.2.11.json. Servizio attivo.
 Prossimo: accettazione Windrose sul display hardware, non ancora eseguita.
+
+## Regressione DRG Survivor, diagnosi ancora aperta
+
+Il gioco iniziale PID372 era terminato prima della ripresa utente. La prima
+misura dopo conferma puntava quindi a un PID non valido: non usarla come prova.
+Rilevato il nuovo PID39932, API diretta:0frame con150/150 campioni in primo
+piano (15s), prova valida. Anche console ufficiale Intel elevata non ha creato
+righe CSV:105119 eventi ETW persi con tracking completo;8623 con tracking
+CPU essenziale;8610 ripetendo CPU essenziale con servizio temporaneamente
+fermato e riavviato in finally. Non dimostra un semplice difetto permessi
+del client. Non attribuire ancora la causa definitiva a Windows o al driver.
+Ulteriori prove workload precedente fallite, log service-proof-normal-41500,
+39376,6796; servizio accetta tracking ma non consegna frame. I due successi
+precedenti non costituiscono validazione sufficiente del gioco reale.
+
+Logging diagnostico Intel rimosso e servizio ripristinato. Nessuna modifica
+agli eseguibili e nessuna nuova versione. Studio chiuso dall'utente; Light
+15156 ancora in uso. Non terminare gioco o Light. Utente lamenta consumo
+crediti: ridurre esplorazioni ripetute, nessun agente parallelo. Prossima prova
+utile: confronto controllato dopo riavvio Windows per separare stato ETW
+della sessione da incompatibilita persistente. Riavvio non eseguito: preservare
+documenti ed esecuzioni utente. Problema FPS NON risolto.
