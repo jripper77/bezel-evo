@@ -44,14 +44,19 @@ fechar antes de concluir a inicialização da captura.
 
 | Chave | Significado |
 |---|---|
-| `gpu.fps` | FPS médio no último segundo, usando intervalos de presents quando disponíveis |
-| `gpu.frametime` | Intervalo médio entre quadros no último segundo, em ms |
+| `gpu.fps` | FPS médio no último segundo medido, usando intervalos de presents quando disponíveis |
+| `gpu.frametime` | Intervalo médio entre quadros no último segundo medido, em ms |
 | `gpu.fps_low_1p` | Inverso da média dos 1% de intervalos mais lentos em até 30 segundos |
 | `gpu.fps_low_01p` | O mesmo cálculo para 0,1% |
 | `gpu.fps_min` / `gpu.fps_max` | Quadro individual mais lento / rápido, expresso em FPS |
 | `gpu.game` | Nome do executável medido |
 | `gpu.fps.source` | PresentMon ou RTSS |
 | `gpu.limiter` | Estimativa conservadora CPU / GPU / limite de FPS; indisponível se ambígua |
+
+O console entrega quadros em lotes. A janela termina no quadro mais recente
+recebido, usando seu tempo de origem, e não o momento da leitura pelo Bezel.
+A leitura expira quando esse quadro tem mais de três segundos, mesmo se a
+saída acabou de chegar. O valor não é uma contagem instantânea do monitor.
 
 Os lows precisam de 100 quadros para 1% e 1000 para 0,1% dentro da janela.
 Antes disso, o Studio informa que está coletando dados. Uma taxa muito baixa

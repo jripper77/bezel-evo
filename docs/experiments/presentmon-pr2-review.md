@@ -25,6 +25,10 @@ The integration changes are:
   than mixing frames from different applications or chains.
 - Preserve source QPC timestamps and expire stale readings. Buffered output
   must not make old frames look fresh after an Alt-Tab or pause.
+- Separate source freshness from the averaging window. Windrose console traces
+  delivered some frames 1–1.5 seconds late, so a window anchored to the polling
+  clock incorrectly rejected active data. Average the latest measured second,
+  expiring readings once the source frame is more than three seconds old.
 - Hide the collector console, bound incoming queues and frame history, isolate
   reader state between captures, and join the readers during shutdown.
 - Retain the fixed ETW session name, with a global ownership guard so concurrent

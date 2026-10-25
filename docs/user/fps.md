@@ -47,14 +47,19 @@ a kill-on-close Windows job before capture startup completes.
 
 | Key | Meaning |
 |---|---|
-| `gpu.fps` | Average FPS over the last second, using present intervals when available |
-| `gpu.frametime` | Mean frame interval over the last second, in milliseconds |
+| `gpu.fps` | Average FPS over the latest measured second, using present intervals when available |
+| `gpu.frametime` | Mean frame interval over the latest measured second, in milliseconds |
 | `gpu.fps_low_1p` | Reciprocal of the mean of the slowest 1% of frame intervals in up to 30 seconds |
 | `gpu.fps_low_01p` | The same calculation for the slowest 0.1% |
 | `gpu.fps_min` / `gpu.fps_max` | Slowest / fastest individual frame in that history, expressed as FPS |
 | `gpu.game` | Executable name of the measured process |
 | `gpu.fps.source` | PresentMon or RTSS |
 | `gpu.limiter` | Conservative CPU / GPU / frame-cap estimate; unavailable when evidence is ambiguous |
+
+The console delivers frames in batches. The averaging window ends at the latest
+received source frame, rather than the time Bezel reads its output. A reading
+expires when that source frame is more than three seconds old, even if buffered
+output has just arrived. The value is not an instantaneous display refresh count.
 
 Lows need enough frames: at least 100 for 1% and 1000 for 0.1% inside the
 history window. Until then, Studio says it is collecting data. A very low

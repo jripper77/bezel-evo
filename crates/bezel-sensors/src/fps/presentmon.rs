@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 
 #[cfg(windows)]
 use super::rtss::Rtss;
-use super::{FrameMetrics, FrameRateSource};
+use super::{FrameMetrics, FrameRateSource, MAX_AGE};
 #[cfg(windows)]
 use std::path::Path;
 
@@ -712,7 +712,7 @@ impl PresentMon {
             && self.target.as_ref().map(|target| target.pid) == pid
             && self
                 .last_frame_time
-                .is_none_or(|last| now.saturating_duration_since(last) > Duration::from_secs(1))
+                .is_none_or(|last| now.saturating_duration_since(last) > MAX_AGE)
         {
             self.last_frame_time = None;
             self.started_at = now;
@@ -861,14 +861,24 @@ impl FrameRateSource for PresentMon {
 }
 
 fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<FrameMetrics, String> {
-    let one_sec_ago = now.checked_sub(Duration::from_secs(1));
-    let thirty_sec_ago = now.checked_sub(Duration::from_secs(30));
+    // ETW/console delivery is batched: a valid batch can arrive more than a
+    // second after its source frames. Keep the averaging window on source time,
+    // and enforce freshness separately, never resetting age when a pipe drains.
+    let latest = frames
+        .iter()
+        .filter(|frame| frame.process_id == pid && frame.timestamp <= now)
+        .map(|frame| frame.timestamp)
+        .max()
+        .filter(|latest| now.duration_since(*latest) <= MAX_AGE)
+        .ok_or_else(|| "fps.stale:No recent game frames".to_string())?;
+    let one_sec_ago = latest.checked_sub(Duration::from_secs(1));
+    let thirty_sec_ago = latest.checked_sub(Duration::from_secs(30));
 
     let recent_frames: Vec<_> = frames
         .iter()
         .filter(|f| {
             one_sec_ago.is_none_or(|start| f.timestamp >= start)
-                && f.timestamp <= now
+                && f.timestamp <= latest
                 && f.process_id == pid
         })
         .cloned()
@@ -908,7 +918,7 @@ fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<Frame
         .iter()
         .filter(|f| {
             thirty_sec_ago.is_none_or(|start| f.timestamp >= start)
-                && f.timestamp <= now
+                && f.timestamp <= latest
                 && f.process_id == pid
                 && f.swap_chain == chain
         })
@@ -1320,6 +1330,38 @@ mod tests {
     }
 
     #[test]
+    fn delayed_batches_keep_a_source_aligned_window_but_expire_without_new_frames() {
+        let now = Instant::now();
+        let latest = now - Duration::from_millis(1500);
+        let mut frames = VecDeque::from([
+            frame(latest - Duration::from_millis(900), 42, 1, 20.0),
+            frame(latest - Duration::from_millis(500), 42, 1, 20.0),
+            frame(latest, 42, 1, 20.0),
+            // Another process and future timestamps must not refresh this source.
+            frame(now, 99, 1, 1.0),
+            frame(now + Duration::from_secs(60), 42, 1, 1.0),
+        ]);
+        assert_eq!(metrics(&frames, 42, now).unwrap().fps, 50.0);
+        // Re-polling the same batch does not change its source time or window.
+        assert_eq!(
+            metrics(&frames, 42, now + Duration::from_secs(1))
+                .unwrap()
+                .fps,
+            50.0
+        );
+        frames.pop_back();
+        assert!(metrics(&frames, 42, latest + MAX_AGE + Duration::from_millis(1)).is_err());
+        frames.push_back(frame(now + Duration::from_secs(2), 42, 1, 10.0));
+        frames.push_back(frame(now + Duration::from_secs(2), 42, 1, 10.0));
+        assert_eq!(
+            metrics(&frames, 42, now + Duration::from_secs(2))
+                .unwrap()
+                .fps,
+            100.0
+        );
+    }
+
+    #[test]
     fn source_qpc_keeps_buffered_frames_old_instead_of_refreshing_them_on_drain() {
         let now = Instant::now();
         let parser = PresentMonParser::new(
@@ -1515,7 +1557,7 @@ mod tests {
         assert_eq!(resumed.fps, 100.0);
         // An unchanged foreground must not keep resetting the timeout.
         source
-            .read_target(Some(game), now + Duration::from_secs(2))
+            .read_target(Some(game), now + MAX_AGE + Duration::from_secs(1))
             .unwrap_err();
         assert_eq!(source.last_frame_time, Some(now));
     }
