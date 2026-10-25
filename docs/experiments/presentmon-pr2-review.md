@@ -55,6 +55,19 @@ We will not infer native FPS by dividing by a presumed multiplier. The API
 remains a possible later addition if it provides verified extra metrics worth
 the deployment and resource cost.
 
+A follow-up console capture explicitly enabled `--track_frame_type` with FG
+enabled in Windrose. It returned 3,081 target rows, all labelled `Application`;
+the qualified foreground FPS median was about 212. Only 33/80 focus samples
+were in-game, so this is a limited instrumentation check, not a continuous
+20-second foreground stability test. It does not give us a trustworthy DLSS
+label, and it does not establish that DLSS detection is impossible by another
+method. We have kept the experimental tracking flag out of production.
+
+The final configuration review also found and fixed a missing propagation:
+changing the configured PresentMon path must rebuild the sensor source,
+whereas changing diagnostics or audio consent must not. Oversized path values
+are rejected before reaching the adapter.
+
 Tests and clippy pass for the five changed Rust crates; the affected UI checks
 include 55 unit tests and 28 distinct browser cases. The earlier hardware runs
 tested standalone acquisition probes, so they do not validate every lifecycle
