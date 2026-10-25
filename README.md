@@ -90,6 +90,11 @@ Studio has been redesigned from the ground up, in dark and light.
   a shared background under all of them, **one transition** for the whole Card
   (fade, slide or flip) and **timed triggers** ("every 30 s, the next face")
   next to the app and media triggers.
+- **Game frame metrics on demand.** Optional PresentMon service capture with
+  RTSS fallback for FPS, plus frame intervals, lows and source information.
+  Enable game FPS once in Setup; Studio and Light then run without administrator
+  privileges or changes to your Windows account groups. See [Game FPS](docs/user/fps.md).
+  [Setup and metric definitions](docs/user/fps.md).
 - **Values that glide.** Rings, bars, needles and numbers move smoothly to each
   new reading instead of jumping, with smooth easing or inertia that preserves
   movement when the target changes, without flooding the screen with frames.
@@ -230,6 +235,12 @@ Bezel Evo is free and open source. If it is useful to you, you can support its d
 <a href="https://ko-fi.com/jripper"><img src="https://img.shields.io/badge/Ko--fi-support%20Bezel%20Evo-FF9248?logo=kofi&amp;logoColor=white" alt="Support Bezel Evo on Ko-fi"></a>
 
 ## Credits & licence
+
+Thanks to [DarkK3y-v2](https://github.com/DarkK3y-v2) for proposing and implementing
+the original PresentMon FPS integration in [PR #2](https://github.com/jripper77/bezel-evo/pull/2),
+including the additional frame metrics. The integration retains the contributor's
+commits; subsequent capture, recovery and Studio changes are documented in the
+[changelog](CHANGELOG.md).
 
 © 2026 [jripper77](https://github.com/jripper77). Bezel Evo is a **fork of [slipalison/bezel](https://github.com/slipalison/bezel)**, created by [Alison Amorim (@slipalison)](https://github.com/slipalison); original authorship, research and copyright notices are preserved (see [NOTICE](NOTICE)).
 

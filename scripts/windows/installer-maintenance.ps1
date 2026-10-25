@@ -127,7 +127,7 @@ try {
             }
             $menu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Bezel Evo'
             $shell = New-Object -ComObject WScript.Shell
-            foreach ($name in @('Bezel Evo Light.lnk','Setup sensors.lnk')) {
+            foreach ($name in @('Bezel Evo Light.lnk','Setup sensors.lnk','Setup game FPS.lnk')) {
                 $path = Join-Path $menu $name
                 if (Test-Path -LiteralPath $path) {
                     $shortcut = $shell.CreateShortcut($path)

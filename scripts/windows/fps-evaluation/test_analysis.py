@@ -4,6 +4,14 @@ from analyze import console_rows, console_fps, distribution, foreground_interval
 
 
 class AnalysisTests(unittest.TestCase):
+    def test_frame_types_remain_unknown_without_instrumentation_and_ignore_other_pids(self):
+        for suffix, expected in [("", {"<not-reported>": 1}), (",FrameType", {"NotSet": 1})]:
+            rows = ["Application,ProcessID,SwapChainAddress,TimeInSeconds,MsBetweenPresents" + suffix,
+                    "game.exe,123,0x1,0.1,16.6" + (",NotSet" if suffix else ""),
+                    "other.exe,456,0x2,0.2,2" + (",NVIDIA_DLSS" if suffix else "")]
+            result = summarize({"mode": "console", "pid": 123, "samples": [{"csv": row} for row in rows], "resources": []})
+            self.assertEqual(result["frame_types"], expected)
+
     def test_source_time_defines_windows_even_for_a_burst_in_the_pipe(self):
         frames = [{"CPUStartQPCTimeInMs": str(i * 1000 / 60), "MsBetweenPresents": str(1000 / 60),
                    "SwapChainAddress": "0x1"} for i in range(121)]

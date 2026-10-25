@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { canonicalLabelKey, LOCALES, placeholders, translator } from '../../src/i18n/index.js';
-import { errorText, sensorLabel, warningText } from '../../src/messages.js';
+import { errorText, sensorLabel, warningText, fpsReadings } from '../../src/messages.js';
 import { refusalText } from '../../src/ui/storage.js';
 import {
   ENTRY_STATES, FINDING_CODES, HALT_CODES, PLAN_REFUSALS, SKIP_CODES, STAGES, TRANSFERS, WARNING_CODES, haltText, planRefusalText,
@@ -103,7 +103,7 @@ test('well-known sensors are named in the chosen language, others as the machine
 test('every sensor named by the UI is a key of the core catalog', () => {
   const core = readFileSync(new URL('../../../../crates/bezel-core/src/domain/sensor.rs', import.meta.url), 'utf8');
   const block = core.slice(core.indexOf('pub mod keys'), core.indexOf('pub const IMPORTED'));
-  const keys = new Set([...block.matchAll(/pub const [A-Z0-9_]+: &str = "([a-z0-9.]+)";/g)].map((m) => m[1]));
+  const keys = new Set([...block.matchAll(/pub const [A-Z0-9_]+: &str = "([a-z0-9_.]+)";/g)].map((m) => m[1]));
   assert.ok(keys.size > 40);
   const named = Object.keys(LOCALES.en).filter((k) => k.startsWith('sensor.')).map((k) => k.slice('sensor.'.length));
   assert.deepEqual(named.filter((k) => !keys.has(k)), []);
@@ -150,5 +150,27 @@ test('every storage manager code has its sentence in each language and the UI kn
       const text = haltText(t, locale, why, errorText);
       assert.ok(plain(text) && text !== unknown, `${locale}: ${halt}: ${text}`);
     }
+  }
+});
+
+
+test('FPS reasons and limiter values translate in every locale without mutating samples', () => {
+  const readings = {
+    'gpu.fps_low_1p': { display: '\u2014', unavailable: 'fps.statistics:needs more frames' },
+    'gpu.fps': { display: '\u2014', unavailable: 'fps.permissions:access denied' },
+    'gpu.game': { display: '\u2014', unavailable: 'fps.setup:component missing' },
+    'gpu.limiter': { display: 'cap', text: 'cap' },
+    'cpu.usage': { value: 25, display: '25%' },
+  };
+  for (const locale of Object.keys(LOCALES)) {
+    const t = translator(locale);
+    const translated = fpsReadings(t, readings);
+    assert.equal(translated['gpu.fps_low_1p'].unavailable, t('fps.reason.statistics'));
+    assert.equal(translated['gpu.fps'].unavailable, t('fps.reason.permissions', { detail: 'access denied' }));
+    assert.equal(translated['gpu.game'].unavailable, t('fps.reason.setup', { detail: 'component missing' }));
+    assert.equal(translated['gpu.limiter'].display, t('fps.limit.cap'));
+    assert.equal(translated['cpu.usage'], readings['cpu.usage']);
+    assert.equal(readings['gpu.limiter'].display, 'cap');
+    assert.equal(fpsReadings(t, { 'gpu.fps': { unavailable: 'future.failure' } })['gpu.fps'].unavailable, 'future.failure');
   }
 });

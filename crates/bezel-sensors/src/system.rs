@@ -1,6 +1,7 @@
 //! [`SystemSensors`]: the machine's real sensors behind the port, and the
 //! [`SensorOptions`] of the sources that take settings.
 
+use std::path::PathBuf;
 use std::time::Instant;
 
 use bezel_core::Result;
@@ -17,6 +18,9 @@ pub struct SensorOptions {
     /// Host `net.ping` measures the round trip to, only while a shown
     /// value uses it ([`SensorSource::want`]).
     pub ping_host: String,
+    /// Path of Intel PresentMon's console executable read for `gpu.fps` on
+    /// Windows; `None` searches the usual places.
+    pub presentmon_path: Option<PathBuf>,
 }
 
 impl SensorOptions {
@@ -28,6 +32,7 @@ impl Default for SensorOptions {
     fn default() -> Self {
         Self {
             ping_host: Self::DEFAULT_PING_HOST.to_string(),
+            presentmon_path: None,
         }
     }
 }

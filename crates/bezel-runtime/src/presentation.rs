@@ -38,6 +38,7 @@ struct State {
     error: bool,
     completion: Option<TransferStats>,
     completed: u64,
+    deliveries: VecDeque<(Instant, Option<TransferStats>, f64)>,
     sizes: BTreeMap<RemotePath, Option<Result<Option<u64>>>>,
     info: Option<Result<StorageInfo>>,
     info_pending: bool,
@@ -56,6 +57,7 @@ pub(crate) struct Link {
     pub pending: bool,
 }
 pub(crate) struct Update {
+    pub deliveries: Vec<(Instant, Option<TransferStats>, f64)>,
     pub opened: Option<(Screen, Link)>,
     pub error: bool,
     pub completed: u64,
@@ -81,6 +83,7 @@ impl Presenter {
                 error: false,
                 completion: None,
                 completed: 0,
+                deliveries: VecDeque::new(),
                 sizes: BTreeMap::new(),
                 info: None,
                 info_pending: false,
@@ -237,7 +240,8 @@ impl Presenter {
                                     if let Some(frame) = frame {
                                         let start = Instant::now();
                                         link.present(frame.as_ref())?;
-                                        let stats = link.last_transfer().unwrap_or(TransferStats {
+                                        let transfer = link.last_transfer();
+                                        let stats = transfer.unwrap_or(TransferStats {
                                             kind: "unknown",
                                             ..TransferStats::default()
                                         });
@@ -258,6 +262,14 @@ impl Presenter {
                                             .unwrap_or_else(std::sync::PoisonError::into_inner);
                                         state.completion = Some(stats);
                                         state.completed += 1;
+                                        if state.deliveries.len() == 20 {
+                                            state.deliveries.pop_front();
+                                        }
+                                        state.deliveries.push_back((
+                                            Instant::now(),
+                                            transfer,
+                                            start.elapsed().as_secs_f64() * 1000.0,
+                                        ));
                                     }
                                 }
                             }
@@ -319,6 +331,7 @@ impl Presenter {
             )
         });
         Update {
+            deliveries: state.deliveries.drain(..).collect(),
             opened,
             error: std::mem::take(&mut state.error),
             completed: std::mem::take(&mut state.completed),

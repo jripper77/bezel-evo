@@ -8,9 +8,12 @@ use serde_json::{Value, json};
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Options {
+    #[serde(default)]
+    pub debug_overlay: Option<crate::performance::Corner>,
     pub ping_host: String,
     #[serde(default)]
     pub audio_capture: bool,
+    pub presentmon_path: Option<String>,
     pub ffmpeg: Option<String>,
 }
 

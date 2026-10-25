@@ -1,0 +1,3 @@
+Application,ProcessID,SwapChainAddress,Runtime,SyncInterval,PresentFlags,Dropped,TimeInSeconds,MsBetweenPresents,MsBetweenDisplayChange,MsInPresentAPI,MsUntilRenderComplete,MsUntilDisplayed
+game.exe,1234,0x0000021A5F3E8000,D3D11,1,0,0,0.000000,33.333000,33.333000,0.100000,15.000000,16.000000
+game.exe,1234,0x0000021A5F3E8000,D3D11,1,0,0,0.033333,33.333000,33.333000,0.100000,15.000000,16.000000

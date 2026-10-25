@@ -172,3 +172,17 @@ own logs ([sensor reader guide](../../apps/bezel-sensors-helper/README.md)).
 Include the version (shown in Studio's header and by `bezel --version`), the
 output of `bezel -v devices`, and the [logs](#logs) of the moment it failed.
 Remove serial numbers and personal paths before posting.
+
+## On-screen diagnostic readings
+
+In Studio preferences, enable Debug and **Show readings on screen**, then choose
+a corner. Turn Live on for the connected display: the overlay is drawn on the
+physical display's outgoing frames, including when Light handles the output.
+It refreshes on static themes too, adding some USB traffic. Turning the option
+off removes it from the next outgoing frame.
+
+These readings describe Bezel's delivery FPS, render and transfer times, and
+sensor sampling time. They do not measure the panel's refresh rate or the
+game's FPS. For game FPS, add a [game frame sensor](fps.md) to the theme.
+The diagnostics are transient; they are not saved into the theme or painted
+onto the editor canvas.

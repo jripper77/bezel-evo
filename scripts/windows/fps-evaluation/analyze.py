@@ -7,7 +7,7 @@ import math
 import os
 from pathlib import Path
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 
 def number(text):
@@ -136,6 +136,9 @@ def summarize(result):
     if result["mode"] == "console":
         rows = console_rows(result["samples"])
         target = [row for row in rows if number(row.get("ProcessID")) == result["pid"]]
+        # Preserve the observed labels. An absent/unspecified type is not proof
+        # that FG is off, and GPU vendor must never be used to invent DLSS.
+        summary["frame_types"] = dict(Counter(row.get("FrameType", "<not-reported>") for row in target))
         summary["frames"] = len(target)
         times = [source_seconds(row) for row in target]
         times = [value for value in times if value is not None]

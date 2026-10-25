@@ -33,7 +33,7 @@ import { activeProfile } from './screen-status.js';
 import { selectionStatus } from './status-selection.js';
 import { widgetOf } from './editor/widgets.js';
 import { openMenuAt } from './ui/menu.js';
-import { errorText, sensorLabel } from './messages.js';
+import { errorText, sensorLabel, fpsReadings } from './messages.js';
 import { backgroundFileDraft, backgroundOf, droppable, fileNameOf, videoFacts } from './editor/background.js';
 import { framingOf, framingPercents } from './editor/video-framing.js';
 import { deviceLabel, liveScreenIn } from './live-screen.js';
@@ -661,7 +661,8 @@ async function sampleLoop() {
   const screen = state.screen;
   const generation = documentGeneration;
   try {
-    const s = await bridge.sample();
+    const raw = await bridge.sample();
+    const s = { ...raw, readings: fpsReadings(t, raw.readings) };
     // Libre can finish opening hardware after Studio's initial catalog. A
     // reading the catalog still lacks after it was asked again (a sensor the
     // backend reads but does not list) is not asked for at every sample: each

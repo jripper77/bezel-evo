@@ -264,6 +264,9 @@ def run_once(args, mode, output):
             command = [str(args.console), "--process_id", str(pid),
                 "--session_name", session_name, "--output_stdout", "--no_console_stats",
                 "--qpc_time_ms", "--timed", str(int(args.seconds)), "--terminate_after_timed"]
+            if args.track_frame_type:
+                command.append("--track_frame_type")
+            result["track_frame_type"] = args.track_frame_type
             capture = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=err,
                 text=True, creationflags=subprocess.CREATE_NO_WINDOW)
             # Timestamp at the reader, not when the UI later drains a queue.
@@ -375,6 +378,8 @@ def main():
     parser.add_argument("--seconds", type=float, default=30)
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--modes", default="baseline,console,api")
+    parser.add_argument("--track-frame-type", action="store_true",
+                        help="Enable console frame-type instrumentation for a bounded diagnostic run")
     args = parser.parse_args()
     if not 5 <= args.seconds <= 600 or not 1 <= args.repetitions <= 10:
         parser.error("Use 5..600 seconds and 1..10 repetitions")

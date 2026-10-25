@@ -113,6 +113,7 @@ test('the popover names the reading program, never the raw sensor path', async (
   const { sourceProgram, hardwareRows } = await import('../../src/libre-status.js');
   assert.equal(sourceProgram('LibreHardwareMonitor Voltage /lpc/nct6687dr/0/voltage/11'), 'LibreHardwareMonitor');
   assert.equal(sourceProgram('sysinfo'), 'sysinfo');
+  assert.equal(sourceProgram('Intel PresentMon (on demand)'), 'PresentMon');
   assert.equal(sourceProgram('none'), null);
   assert.equal(sourceProgram(''), null);
   const catalog = [

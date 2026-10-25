@@ -62,6 +62,15 @@ inspect the run's evidence before removing anything.
 
 ## Analysis and limits
 
+For a short, console-only frame-type investigation, add `--track-frame-type`
+to `evaluate.py --modes console --seconds 20`. This records the observed
+`FrameType` labels in `summary.json`; it does not infer DLSS from the GPU
+vendor, a loaded DLL, or an FPS multiplier. Unknown or application-only labels
+cannot establish that frame generation is off. This flag stays out of the
+production collector. PresentMon 2.6.0 has a reported stale-tracking issue with
+frame/app timing instrumentation ([upstream #695](https://github.com/GameTechDev/PresentMon/issues/695));
+keep such diagnostic runs bounded and retain their raw evidence.
+
 Run `python analyze.py <run-directory>` for `summary.json` and
 `python -m unittest discover -s scripts/windows/fps-evaluation -p test_analysis.py`
 from the repository for attribution/window tests.

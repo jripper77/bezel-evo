@@ -16,6 +16,7 @@ in [Cargo.toml](Cargo.toml). Component licences remain in force.
 | IBM Plex Sans / Mono (Studio's interface font) | SIL OFL 1.1 | [Licence](apps/bezel-studio/src/assets/fonts/ibm-plex/LICENSE), [sources and SHA-256 checksums](apps/bezel-studio/src/assets/fonts/ibm-plex/README.md) |
 | Inter, JetBrains Mono, Doto, Doto Rounded, IBM Plex Mono, Fraunces, Instrument Sans, Space Grotesk, Bricolage Grotesque (theme fonts, embedded unmodified in `bezel.exe` and `bezel-studio.exe`, and shipped in `themes/fonts`) | SIL OFL 1.1 | [Inter licence](themes/fonts/Inter-OFL.txt), [JetBrains Mono licence](themes/fonts/JetBrainsMono-OFL.txt), [Doto licence](themes/fonts/Doto-OFL.txt), [IBM Plex Mono licence](themes/fonts/IBMPlexMono-OFL.txt), [Fraunces licence](themes/fonts/Fraunces-OFL.txt), [Instrument Sans licence](themes/fonts/InstrumentSans-OFL.txt), [Space Grotesk licence](themes/fonts/SpaceGrotesk-OFL.txt), [Bricolage Grotesque licence](themes/fonts/BricolageGrotesque-OFL.txt) |
 | Tauri Windows installer template | MIT | [Packaging notes](packaging/windows/README.md); the licence is included in Windows packages |
+| Intel PresentMon 2.6.0 service and API | MIT and dependency notices | [Upstream source](https://github.com/GameTechDev/PresentMon/tree/v2.6.0), [licence](packaging/windows/PresentMon-LICENSE.txt); Windows packages include the original dependency notices under `fps/` |
 
 The OFL lets these fonts be bundled and embedded with software; they are not
 sold on their own, and their licence files ship with the Windows packages. Fonts

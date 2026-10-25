@@ -185,3 +185,15 @@ inglês).
 Inclua a versão (mostrada no cabeçalho do Studio e pelo `bezel --version`), a
 saída de `bezel -v devices` e os [logs](#logs) do momento em que falhou. Tire
 números de série e caminhos pessoais antes de publicar.
+## Leituras de diagnóstico na tela
+
+Nas preferências do Studio, ative Debug e **Mostrar leituras na tela**, depois
+escolha um canto. Ative a transmissão ao vivo para a tela conectada: as leituras
+são desenhadas nos quadros enviados ao dispositivo, também quando o Light faz
+o envio. Temas estáticos também atualizam a sobreposição, aumentando um pouco
+o tráfego USB. Desativar a opção remove as leituras no próximo quadro enviado.
+
+Os números descrevem o FPS de envio do Bezel, os tempos de renderização e
+transferência e o tempo de amostragem dos sensores. Não medem a frequência do
+painel nem o FPS do jogo. Para o jogo, adicione um [sensor de FPS](fps.md).
+O diagnóstico é temporário: não é salvo no tema nem desenhado no canvas do editor.

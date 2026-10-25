@@ -544,6 +544,10 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
                             Ok((
                                 sensors(bezel_sensors::SensorOptions {
                                     ping_host: options.ping_host.clone(),
+                                    presentmon_path: options
+                                        .presentmon_path
+                                        .as_ref()
+                                        .map(PathBuf::from),
                                 }),
                                 Box::new(FfmpegTranscoder::new(
                                     options.ffmpeg.as_ref().map(PathBuf::from),

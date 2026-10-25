@@ -5,6 +5,90 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.11] - 2026-10-25
+
+0.2.1 through 0.2.11 are local builds and have not been published as GitHub releases.
+
+### Windows
+- Optional game FPS support now installs Intel's signed PresentMon 2.6.0 service
+  separately. Studio and Light can read it as normal users, without changing
+  account groups or requiring a Windows sign-out. Setup offers an optional FPS
+  checkbox and a Start menu repair entry; portable packages include the setup script.
+- Existing compatible Intel services are reused and conflicting installations
+  are preserved. The FPS component has its own Windows Apps removal entry.
+
+### Sensors
+- The default FPS reader consumes service frame events on a background worker,
+  preserving source timestamps, stale expiry, one-second min/max and RTSS fallback.
+  An explicitly configured console executable remains an advanced override.
+
+## [0.2.10] - 2026-10-25
+
+0.2.1 through 0.2.10 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- Game minimum/maximum FPS now use complete one-second averages in the recent
+  history, with '(1 s)' labels. A very short individual present interval no
+  longer appears as a sustained peak of several thousand FPS. Lows retain their
+  separate frame-interval definition.
+- Changing the configured PresentMon executable now updates the running sensor
+  source. Diagnostic overlay changes continue to leave the FPS collector intact.
+  Oversized collector paths are rejected before source configuration.
+
+## [0.2.9] - 2026-10-25
+
+0.2.1 through 0.2.9 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- The on-screen diagnostic readings now reach the physical display through
+  Light's shared runtime. Changes to the corner and visibility apply during
+  Live output, including static themes; disabling the overlay restores the
+  clean frame. Diagnostic markings do not enter the theme or editor canvas.
+- Light restores the saved diagnostic overlay when it starts. Measurements
+  use completed screen transfers and the sensor sampler's elapsed time.
+
+## [0.2.8] - 2026-10-25
+
+0.2.1 through 0.2.8 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- PresentMon FPS and frame-time averages use the latest measured second, with
+  source freshness checked separately. Console delivery batches delayed by more
+  than one second no longer cause gaps in otherwise active game readings.
+  Values expire when the latest source frame is more than three seconds old;
+  draining buffered output never makes old frames fresh.
+
+## [0.2.7] - 2026-10-25
+
+0.2.1 through 0.2.7 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- Returning to a game after an idle capture stop retries PresentMon immediately
+  instead of waiting for the idle retry timer. A retained collector gets a new
+  startup grace period to receive fresh frames after a background pause.
+  Permission errors and collector failures still keep their bounded retry delay;
+  old FPS values remain unavailable until new frames arrive.
+
+## [0.2.6] - 2026-10-25
+
+0.2.1 through 0.2.6 are local builds and have not been published as GitHub releases.
+
+### Studio
+- Optional on-demand PresentMon console capture adds frame intervals, FPS lows,
+  min/max, game name, source and a conservative limiter estimate. RTSS remains
+  the FPS fallback. Sensor labels and availability messages use all three UI
+  languages. Original contribution by [DarkK3y-v2](https://github.com/DarkK3y-v2)
+  in [PR #2](https://github.com/jripper77/bezel-evo/pull/2).
+- FPS values do not add a DLSS or Frame Generation label: this integration does
+  not reliably identify the generating technology or separate native and
+  generated frames.
+
+### Fixes
+- FPS capture targets a process and one swap chain, keeps source QPC timestamps,
+  expires stale readings, hides its console and recovers through RTSS after a
+  failed child process. Concurrent Bezel instances cannot steal each other's
+  capture session.
+
 ## [0.2.5] - 2026-10-24
 
 0.2.1 through 0.2.4 were local builds; these entries cover them.

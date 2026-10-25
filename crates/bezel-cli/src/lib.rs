@@ -171,6 +171,9 @@ pub struct SensorSettings {
     /// [default: 8.8.8.8].
     #[arg(long, value_name = "HOST", value_parser = NonEmptyStringValueParser::new())]
     pub ping_host: Option<String>,
+    /// Path to the PresentMon executable.
+    #[arg(long, value_name = "PATH")]
+    pub presentmon_path: Option<PathBuf>,
 }
 
 /// Subcommands.
@@ -582,11 +585,17 @@ mod tests {
     }
 
     #[test]
-    fn sensors_and_run_take_the_ping_host() {
+    fn sensors_and_run_take_the_ping_host_and_presentmon_path() {
         let wanted = SensorSettings {
             ping_host: Some("1.1.1.1".to_string()),
+            presentmon_path: Some(PathBuf::from("/tools/PresentMon.exe")),
         };
-        let flags = ["--ping-host", "1.1.1.1"];
+        let flags = [
+            "--ping-host",
+            "1.1.1.1",
+            "--presentmon-path",
+            "/tools/PresentMon.exe",
+        ];
         let sensors =
             Cli::try_parse_from(["bezel", "sensors", "--json"].iter().chain(&flags)).unwrap();
         assert_eq!(sensors.command.sensor_settings(), Some(&wanted));

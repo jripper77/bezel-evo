@@ -4,6 +4,8 @@ Var EvoStartupCheckbox
 Var EvoSensorsCheckbox
 Var EvoStartup
 Var EvoSensors
+Var EvoFpsCheckbox
+Var EvoFps
 
 Function EvoOptions
   IfSilent done
@@ -25,6 +27,8 @@ Function EvoOptions
   ${NSD_CreateCheckbox} 0 76u 100% 30u "$(EvoSensorsText)"
   Pop $EvoSensorsCheckbox
   ${NSD_Check} $EvoSensorsCheckbox
+  ${NSD_CreateCheckbox} 0 110u 100% 30u "$(EvoFpsText)"
+  Pop $EvoFpsCheckbox
   nsDialogs::Show
   done:
 FunctionEnd
@@ -32,6 +36,7 @@ FunctionEnd
 Function EvoOptionsLeave
   ${NSD_GetState} $EvoStartupCheckbox $EvoStartup
   ${NSD_GetState} $EvoSensorsCheckbox $EvoSensors
+  ${NSD_GetState} $EvoFpsCheckbox $EvoFps
 FunctionEnd
 
 !macro EvoCheckDirectory Directory
@@ -71,6 +76,7 @@ FunctionEnd
 !macro NSIS_HOOK_POSTINSTALL
   SetOutPath "$INSTDIR"
   CreateDirectory "$SMPROGRAMS\Bezel Evo"
+  CreateShortCut "$SMPROGRAMS\Bezel Evo\Setup game FPS.lnk" "$INSTDIR\setup-game-fps.cmd" "" "$INSTDIR\bezel-studio.exe"
   CreateShortCut "$SMPROGRAMS\Bezel Evo\Bezel Evo Light.lnk" "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$INSTDIR\start-light.ps1"' "$INSTDIR\bezel-studio.exe"
   CreateShortCut "$SMPROGRAMS\Bezel Evo\Setup sensors.lnk" "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$INSTDIR\installer-maintenance.ps1" -Mode Sensors -AppDirectory "$INSTDIR"' "$INSTDIR\bezel-studio.exe"
   ${IfNot} ${Silent}
@@ -80,6 +86,14 @@ FunctionEnd
     Pop $R1
     ${If} $R0 != 0
       MessageBox MB_OK|MB_ICONEXCLAMATION "$R1" /SD IDOK
+    ${EndIf}
+    ${If} $EvoFps == ${BST_CHECKED}
+      nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\setup-game-fps.ps1" -Mode Install'
+      Pop $R0
+      Pop $R1
+      ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONEXCLAMATION "$(EvoFpsFailed)$\r$\n$R1"
+      ${EndIf}
     ${EndIf}
     ${If} $EvoSensors == ${BST_CHECKED}
       nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\installer-maintenance.ps1" -Mode Sensors -AppDirectory "$INSTDIR"'

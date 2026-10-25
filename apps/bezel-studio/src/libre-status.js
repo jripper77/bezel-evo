@@ -73,6 +73,7 @@ export function sourceProgram(source) {
   // Unsupported metrics carry only the target key: that is not a program.
   while (/^gpu\.\d+\.[\w.]+\s+\(.+\)$/.test(value)) value = value.slice(value.indexOf('(') + 1, -1).trim();
   if (/^gpu\.\d+\./.test(value)) return null;
+  if (/^Intel PresentMon\b/.test(value)) return 'PresentMon';
   const word = value.split(/\s+/)[0] ?? '';
   return word && word !== 'none' ? word : null;
 }

@@ -141,6 +141,22 @@ pub mod keys {
     pub const GPU_NAME: &str = "gpu.name";
     /// Frame rate of the game running now, frames per second.
     pub const GPU_FPS: &str = "gpu.fps";
+    /// Game frame time, ms.
+    pub const GPU_FRAMETIME: &str = "gpu.frametime";
+    /// Game 1% low FPS.
+    pub const GPU_FPS_LOW_1P: &str = "gpu.fps_low_1p";
+    /// Game 0.1% low FPS.
+    pub const GPU_FPS_LOW_01P: &str = "gpu.fps_low_01p";
+    /// Game minimum FPS over the last 30 s.
+    pub const GPU_FPS_MIN: &str = "gpu.fps_min";
+    /// Game maximum FPS over the last 30 s.
+    pub const GPU_FPS_MAX: &str = "gpu.fps_max";
+    /// Which software measures the game FPS right now.
+    pub const GPU_FPS_SOURCE: &str = "gpu.fps.source";
+    /// Game name.
+    pub const GPU_GAME: &str = "gpu.game";
+    /// Frame rate limiter source.
+    pub const GPU_LIMITER: &str = "gpu.limiter";
     /// RAM in use, bytes.
     pub const MEMORY_USED: &str = "memory.used";
     /// Total RAM, bytes.
@@ -215,7 +231,7 @@ pub mod keys {
     /// turing-smart-screen-python bind to that Bezel's own themes did not
     /// use before. Every source lists them, so an imported theme finds each
     /// one measured, or unavailable with the reason.
-    pub const IMPORTED: [&str; 14] = [
+    pub const IMPORTED: [&str; 22] = [
         CPU_FAN,
         FAN_PUMP,
         FAN_CASE_1,
@@ -223,6 +239,14 @@ pub mod keys {
         CPU_VOLTAGE,
         GPU_VOLTAGE,
         GPU_FPS,
+        GPU_FRAMETIME,
+        GPU_FPS_LOW_1P,
+        GPU_FPS_LOW_01P,
+        GPU_FPS_MIN,
+        GPU_FPS_MAX,
+        GPU_FPS_SOURCE,
+        GPU_GAME,
+        GPU_LIMITER,
         NET_PING,
         NET_DOWN_TOTAL,
         NET_UP_TOTAL,
@@ -358,7 +382,7 @@ pub fn quantity_of(key: &SensorKey) -> Quantity {
 /// What the well-known keys measure, for those whose name alone would
 /// mislead (`gpu.fan` is a duty in percent, `fan.pump` a speed) or say
 /// nothing (`cpu.name`).
-const WELL_KNOWN: [(&str, Quantity); 32] = [
+const WELL_KNOWN: [(&str, Quantity); 35] = [
     (keys::CPU_USAGE, Quantity::Percent),
     (keys::GPU_USAGE, Quantity::Percent),
     (keys::GPU_FAN, Quantity::Percent),
@@ -378,6 +402,9 @@ const WELL_KNOWN: [(&str, Quantity); 32] = [
     (keys::GPU_FAN_RPM, Quantity::Rpm),
     (keys::CPU_LOAD_1, Quantity::Number),
     (keys::GPU_FPS, Quantity::Number),
+    (keys::GPU_FPS_SOURCE, Quantity::Text),
+    (keys::GPU_GAME, Quantity::Text),
+    (keys::GPU_LIMITER, Quantity::Text),
     (keys::NET_PING, Quantity::Number),
     (keys::MEMORY_USED, Quantity::Bytes),
     (keys::MEMORY_TOTAL, Quantity::Bytes),
