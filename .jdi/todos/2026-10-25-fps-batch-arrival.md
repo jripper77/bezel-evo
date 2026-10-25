@@ -1,5 +1,13 @@
 # FPS intermittenti: consegna a blocchi PresentMon
 
+## Consegna locale
+
+Utente conferma chiusura di Light e Studio. Verificata assenza dei processi,
+copiati i due binari 0.2.8 in dist/bezel con hash fonte/copia uguali; evidenza
+installed-hashes-0.2.8.json. Studio elevato avviato dalla cartella canonica,
+PID 11936. Restano prova Windrose e ritorno da Alt-Tab. Nessun push o invio
+all'autore. Le sezioni seguenti conservano la diagnosi e gli stati precedenti.
+
 ## Segnalazione e causa riprodotta
 
 Utente: con 0.2.7 il valore non arriva sempre. La correzione Alt-Tab da sola

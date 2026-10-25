@@ -1,5 +1,16 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Consegna locale 0.2.8 completata
+
+Dopo conferma utente di chiusura Light/Studio, verificata assenza di processi
+prima della copia. Aggiornati solo i due eseguibili in dist/bezel, preservando
+dati e strumenti. CLI e metadati Studio 0.2.8; hash fonte/copia uguali, registrati
+in target/logs/fps-integration/installed-hashes-0.2.8.json della worktree.
+Studio avviato elevato dalla cartella canonica, PID 11936. Prova Windrose e
+ritorno da Alt-Tab ancora da confermare: non dichiarare il difetto hardware
+risolto in base al solo replay. Main sorgenti invariato; nessun push, invio
+all'autore o pubblicazione. Il seguito conserva gli stati precedenti.
+
 ## 0.2.8 pronta: media e freschezza separate
 
 Segnalazione utente: anche 0.2.7 intermittente. Dati reali dei probe precedenti
