@@ -12,6 +12,7 @@ use std::{
 };
 #[derive(Clone)]
 pub(crate) struct Reading {
+    pub millis: f64,
     pub at: Duration,
     pub scheduled_at: Duration,
     pub sequence: u64,
@@ -44,6 +45,7 @@ impl Sampler {
         let shared = Arc::new(Shared {
             state: Mutex::new(State {
                 latest: Arc::new(Reading {
+                    millis: 0.0,
                     at: Duration::ZERO,
                     scheduled_at: Duration::ZERO,
                     sequence: 0,
@@ -121,6 +123,7 @@ impl Sampler {
                                 .lock()
                                 .unwrap_or_else(std::sync::PoisonError::into_inner);
                             state.latest = Arc::new(Reading {
+                                millis: at.elapsed().as_secs_f64() * 1000.0,
                                 at: at.duration_since(origin),
                                 scheduled_at: scheduled,
                                 sequence,
@@ -182,6 +185,7 @@ impl Sampler {
             shared: Arc::new(Shared {
                 state: Mutex::new(State {
                     latest: Arc::new(Reading {
+                        millis: 0.0,
                         at: Duration::ZERO,
                         scheduled_at: Duration::ZERO,
                         sequence: 0,
@@ -206,6 +210,7 @@ impl Sampler {
             source.want(&state.wanted);
             let snapshot = source.sample().unwrap();
             state.latest = Arc::new(Reading {
+                millis: 0.0,
                 at,
                 scheduled_at: at,
                 sequence: state.latest.sequence + 1,

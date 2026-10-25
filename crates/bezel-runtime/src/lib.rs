@@ -4,6 +4,7 @@
 pub mod element_preview;
 mod images;
 pub mod inspector_trial;
+pub mod performance;
 mod presentation;
 pub mod profiles;
 mod sampling;
@@ -77,6 +78,9 @@ fn invalid(message: &str) -> BezelError {
     BezelError::InvalidInput(message.into())
 }
 struct Scene {
+    performance: performance::Performance,
+    last_render_millis: f64,
+    overlay_at: Duration,
     id: u64,
     runtime: ThemeRuntime,
     saved: Document,
@@ -159,6 +163,7 @@ type Handoff = (
 
 /// Persistent service. Scene lifetimes do not depend on an editor connection.
 pub struct Engine {
+    debug_overlay: Option<performance::Corner>,
     targets: Arc<targets::Targets>,
     profiles: Option<profiles::Service>,
     theme_trial: Option<(Duration, profiles::PreviewStatus)>,
@@ -212,6 +217,7 @@ impl Engine {
         let sensors = sampling::Sampler::new(sensors, origin, wake.clone())?;
         let catalog = sensors.latest().catalog.clone();
         Ok(Self {
+            debug_overlay: None,
             targets,
             profiles: None,
             theme_trial: None,
@@ -308,8 +314,23 @@ impl Engine {
             }
         }
         self.set_audio_enabled(options.audio_capture);
+        self.diagnostic_overlay(options.debug_overlay);
         self.options = Some(options);
         Ok(())
+    }
+
+    /// Transient diagnostics belong only to physical output, never to themes.
+    pub fn diagnostic_overlay(&mut self, corner: Option<performance::Corner>) {
+        if self.debug_overlay == corner {
+            return;
+        }
+        self.debug_overlay = corner;
+        for scene in self.scenes.values_mut() {
+            scene.dirty = true;
+            scene.queued_sequence = None;
+            scene.overlay_at = Duration::ZERO;
+        }
+        self.wake.notify();
     }
     /// Register/update a draft, or commit the document only after Studio saved it.
     /// Revisions are scoped to the connected editor and reset on disconnect.
@@ -367,6 +388,9 @@ impl Engine {
             self.scenes.insert(
                 key.into(),
                 Scene {
+                    performance: performance::Performance::default(),
+                    last_render_millis: 0.0,
+                    overlay_at: Duration::ZERO,
                     id: self.next_id,
                     runtime,
                     saved: document,
@@ -819,6 +843,28 @@ impl Engine {
             if let Some(presenter) = &scene.presenter {
                 let update = presenter.poll();
                 scene.frames += update.completed;
+                if self.debug_overlay.is_some() {
+                    for (at, transfer, present_ms) in update.deliveries {
+                        let gap = scene.performance.count(true, transfer, at);
+                        scene.performance.completed(
+                            performance::Timings {
+                                render_ms: scene.last_render_millis,
+                                render_reused: false,
+                                render_stats: Default::default(),
+                                present_ms,
+                                handoff_ms: 0.0,
+                                sensors_ms: reading.millis,
+                                refresh_ms: scene.runtime.refresh().as_secs_f64() * 1000.0,
+                                animating: false,
+                            },
+                            transfer,
+                            key,
+                            true,
+                            gap,
+                            at,
+                        );
+                    }
+                }
                 if update.error {
                     scene.error = Some("screen I/O failed".into());
                     scene.link = None;
@@ -940,6 +986,9 @@ impl Engine {
                     }
                 }
                 let mut due = scene.runtime.next_due();
+                if self.debug_overlay.is_some() && scene.live {
+                    due = due.min(scene.overlay_at + Duration::from_millis(250));
+                }
                 if scene.profile_animation.is_some() {
                     due = due.min(scene.rendered_at + COVER_FRAME);
                 }
@@ -1036,6 +1085,7 @@ impl Engine {
                     scene.profile_animation = None;
                 }
                 let render_millis = render_started.elapsed().as_secs_f64() * 1000.0;
+                scene.last_render_millis = render_millis;
                 let frame_changed = scene
                     .frame
                     .as_ref()
@@ -1049,7 +1099,10 @@ impl Engine {
                     .as_ref()
                     .ok_or_else(|| invalid("missing rendered frame"))?
                     .clone();
-                if (scene.queued_sequence != Some(scene.sequence)
+                let overlay_due = self.debug_overlay.is_some()
+                    && now >= scene.overlay_at + Duration::from_millis(250);
+                if (overlay_due
+                    || scene.queued_sequence != Some(scene.sequence)
                     || !requests
                         .iter()
                         .any(|r| r.key.starts_with(&format!("{}/", scene.id))))
@@ -1058,7 +1111,15 @@ impl Engine {
                     && scene.link.is_some()
                     && let Some(presenter) = &scene.presenter
                 {
-                    presenter.frame(frame.clone());
+                    let outgoing = if let Some(corner) = self.debug_overlay {
+                        let mut output = frame.as_ref().clone();
+                        scene.performance.paint(&mut output, corner);
+                        scene.overlay_at = now;
+                        Arc::new(output)
+                    } else {
+                        frame.clone()
+                    };
+                    presenter.frame(outgoing);
                     scene.queued_sequence = Some(scene.sequence);
                 }
                 // An identical frame never reached the screen: it must not restart the
@@ -1068,6 +1129,10 @@ impl Engine {
                 }
                 scene.dirty = !playback_ready;
                 let mut delay = scene.runtime.next_due().saturating_sub(now);
+                if self.debug_overlay.is_some() && scene.live {
+                    delay = delay
+                        .min((scene.overlay_at + Duration::from_millis(250)).saturating_sub(now));
+                }
                 if scene.profile_animation.is_some() {
                     delay = delay.min(COVER_FRAME);
                 }

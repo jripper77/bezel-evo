@@ -557,6 +557,15 @@ fn make_engine(
             .then(|| std::fs::read(path).ok())
             .flatten()
             .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
+        engine.diagnostic_overlay(
+            settings
+                .as_ref()
+                .filter(|s| {
+                    s["debug"].as_bool() == Some(true)
+                        && s["debugShowReadings"].as_bool() == Some(true)
+                })
+                .map(|s| serde_json::from_value(s["debugCorner"].clone()).unwrap_or_default()),
+        );
         engine.audio_consent(
             settings.is_none_or(|settings| settings["audioCapture"].as_bool() != Some(false)),
         );

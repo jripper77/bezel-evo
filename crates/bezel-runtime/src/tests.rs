@@ -712,6 +712,71 @@ fn send(
     Ok((response(&meta)?, pixels))
 }
 #[test]
+fn diagnostic_overlay_reaches_physical_output_without_changing_the_canvas_or_theme() {
+    let mut f = fixture();
+    let saved = doc();
+    f.engine.document(&f.key, 0, saved.clone(), true).unwrap();
+    f.engine.live(&f.key, true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    let ink = Rgba::opaque(5, 9, 15);
+    for (i, (corner, x, y)) in [
+        (performance::Corner::TopLeft, 0, 0),
+        (performance::Corner::TopRight, 1440, 0),
+        (performance::Corner::BottomLeft, 0, 454),
+        (performance::Corner::BottomRight, 1440, 454),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        send(
+            &mut f.engine,
+            "__options__",
+            RuntimeOp::Options {
+                options: wire::Options {
+                    debug_overlay: Some(corner),
+                    audio_capture: false,
+                    ping_host: "127.0.0.1".into(),
+                    presentmon_path: None,
+                    ffmpeg: None,
+                },
+            },
+            &[],
+        )
+        .unwrap();
+        advance(
+            &mut f.engine,
+            Duration::from_millis((i as u64 + 1) * 100),
+            time(),
+        )
+        .unwrap();
+        // The overlay grows after delivery timings arrive: inspect the extreme
+        // bottom pixel as well as the upper anchor, independently of its height.
+        let y = if y == 454 { 479 } else { y };
+        assert_eq!(
+            f.physical.log().frames.last().unwrap().pixel(x, y),
+            Some(ink)
+        );
+        assert_eq!(
+            f.engine.scenes[&f.key].frame.as_ref().unwrap().pixel(x, y),
+            Some(Rgba::BLACK)
+        );
+        assert_eq!(f.engine.scenes[&f.key].runtime.theme(), &saved.theme);
+    }
+    let before = f.physical.log().frames.len();
+    advance(&mut f.engine, Duration::from_millis(700), time()).unwrap();
+    assert!(
+        f.physical.log().frames.len() > before,
+        "static scenes must refresh diagnostic readings"
+    );
+    f.engine.diagnostic_overlay(None);
+    advance(&mut f.engine, Duration::from_millis(800), time()).unwrap();
+    assert_eq!(
+        f.physical.log().frames.last().unwrap().pixel(1440, 479),
+        Some(Rgba::BLACK)
+    );
+}
+
+#[test]
 fn editor_attach_detach_keeps_graph_clock_link_and_earth_playing() {
     let mut f = fixture();
     let saved = doc();
@@ -1284,6 +1349,7 @@ fn sensor_options_status_and_catalog_use_engine_sources_without_losing_histories
     f.engine.document("editor", 0, doc(), true).unwrap();
     advance(&mut f.engine, Duration::ZERO, time()).unwrap();
     let options = wire::Options {
+        debug_overlay: None,
         audio_capture: false,
         ping_host: "127.0.0.1".into(),
         presentmon_path: None,
@@ -1803,6 +1869,7 @@ fn silent_spectrum_does_not_resend_identical_frames_on_sensor_ticks() {
 fn rejected_options_do_not_grant_capture_permission() {
     let mut f = fixture();
     let invalid = wire::Options {
+        debug_overlay: None,
         audio_capture: true,
         ping_host: "x".repeat(254),
         presentmon_path: None,

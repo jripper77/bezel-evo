@@ -284,6 +284,8 @@ impl Backend {
             let settings = self.settings.load();
             let options = settings.sensor_options();
             engine.options(bezel_runtime::wire::Options {
+                debug_overlay: (settings.debug && settings.debug_show_readings)
+                    .then_some(settings.debug_corner),
                 audio_capture: settings.audio_capture.0,
                 ping_host: options.ping_host,
                 presentmon_path: settings.presentmon_path,
@@ -526,6 +528,7 @@ impl Backend {
             s.debug_show_readings = show_readings;
             s.debug_corner = corner;
         });
+        self.sync_engine_options().map_err(std::io::Error::other)?;
         Ok(())
     }
 
@@ -537,6 +540,7 @@ impl Backend {
             settings.debug_show_readings,
             settings.debug_corner,
         );
+        let _ = self.sync_engine_options();
     }
 
     pub fn preferences(&self) -> PreferencesDto {
