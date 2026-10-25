@@ -3,6 +3,12 @@
 Prepared for review before posting. This is a local integration branch, not a
 published release or a merge into the main branch.
 
+Production deployment is still under review: the console choice below concerns
+the local capture implementation. The intended user experience keeps Studio
+and Light unelevated, with a separately authorized collector component set up
+during installation. The local administrator/group workaround is not a completed
+distribution design, and no service/helper migration has been implemented yet.
+
 ---
 
 Thanks for the proposal and the original implementation! We have prepared a
