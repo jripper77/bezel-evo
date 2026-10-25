@@ -1,5 +1,22 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## 0.2.8 pronta: media e freschezza separate
+
+Segnalazione utente: anche 0.2.7 intermittente. Dati reali dei probe precedenti
+mostrano consegna console ritardata p95 1,26/1,33 s, oltre il secondo usato
+dal vecchio filtro. Replay ai poll foreground dopo avvio: vecchio calcolo
+25/88 e 21/75 indisponibili, nuovo 0 negli stessi punti. È replay dei probe,
+non validazione hardware dell'eseguibile integrato.
+Fix 5914d0bb: media nell'ultimo secondo sorgente, con scadenza separata a tre
+secondi dall'ultimo frame; altri PID e timestamp futuri non rinfrescano il dato.
+Regressione rossa prima e verde dopo, 97 test sensors passati, 5 hardware
+ignorati, clippy/fmt verdi. Guide, risposta autore e note release aggiornate.
+Build 0.2.8 riuscita 1m55s, CLI/metadati e sensori simulati verificati;
+commit versione 6df1559. Chiesta chiusura Light 0.2.7 PID 12028 prima della
+copia: conferma pendente. Nessuna consegna 0.2.8 ancora, né push/pubblicazione.
+Dettagli: .jdi/todos/2026-10-25-fps-batch-arrival.md; evidenze batch-* e
+build-hashes-0.2.8.json in target/logs/fps-integration della worktree.
+
 ## Consegna locale 0.2.7 completata
 
 Dopo conferma utente di salvataggio/chiusura, retry build-evo.ps1 -Version
