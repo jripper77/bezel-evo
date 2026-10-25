@@ -1,5 +1,14 @@
 # Sovrimpressione diagnostica assente sul pannello
 
+## Consegna 0.2.9
+
+Dopo conferma utente di salvataggio/chiusura, verificati zero processi Bezel,
+hash della build contro il record precedente, poi copiati solo i due eseguibili
+in dist/bezel. Versione CLI 0.2.9 e hash fonte/copia uguali, registrati in
+installed-hashes-0.2.9.json. Studio elevato avviato dalla cartella canonica,
+PID 17520. Restano conferma visiva sul pannello con Live attivo e verifica
+utente del cambio angolo/disattivazione. Nessun push o pubblicazione.
+
 ## Causa
 
 L'utente attiva 'Mostra le letture sullo schermo' e sceglie un angolo, ma il

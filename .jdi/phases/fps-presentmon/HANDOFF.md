@@ -1,5 +1,15 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Consegna locale 0.2.9 completata
+
+Utente conferma salvataggio e chiusura; verificata assenza processi, copiati
+solo CLI/Studio in dist/bezel dopo controllo hash della build. Versione CLI
+0.2.9, hash copie uguali ai sorgenti, record installed-hashes-0.2.9.json.
+Studio elevato avviato da dist/bezel PID 17520. Necessaria conferma visiva
+della diagnostica sul pannello con Live attivo: non dichiarare la prova reale
+completata. Main sorgenti e ultima release pubblicata 0.2.0 invariati;
+nessun push/commento autore/pubblicazione. Seguono stati precedenti.
+
 ## Diagnostica display: 0.2.9 pronta
 
 Utente segnala preferenza 'Mostra le letture sullo schermo' senza effetto.
