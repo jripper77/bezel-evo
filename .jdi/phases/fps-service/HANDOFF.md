@@ -11,7 +11,8 @@ Dettaglio completo: [.jdi/todos/2026-10-25-fps-service.md](../../todos/2026-10-2
 - Default servizio, console solo con path esplicito; RTSS fallback. FrameQuery
   registrata prima di StartTracking, QPC originale. Nessuna RPC/drop sotto mutex.
 - 103 test sensori, clippy, 46 UI e 16 browser verdi. Build 0.2.11 riuscita;
-  installer/ZIP locali prodotti, ultima rigenerazione in corso session54681.
+  installer/ZIP locali finali prodotti; 170 file manifest verificati, hash
+  pacchetti copiati in main dist. Eseguibili ancora NON sostituiti.
 - Setup opzionale en/it/ptBR e portable, manutenzione copiata nel componente.
   Logging temporaneo rimosso dal registro. Nessun gruppo o startup cambiato.
 - 14 template locali rimossi come richiesto, tenuti Pixel V2.1 e Midnight PoC.
