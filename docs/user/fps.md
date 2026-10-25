@@ -34,7 +34,11 @@ keep PresentMon's QPC time, so delayed pipe output cannot refresh old frames.
 Stopping all FPS requests closes the child. Without frames, a probe stops
 after 10 seconds; after it has measured frames, it tolerates a pause of up to
 60 seconds. Failures use RTSS when available and retry PresentMon with bounded
-backoff. Missing tools and idle probes retry at most once per minute.
+backoff. Missing tools retry at most once per minute. Idle probes also wait up
+to a minute, but bringing a game back to the foreground bypasses that idle wait.
+A retained collector gets a new startup grace period after a foreground return;
+old readings stay unavailable until fresh frames arrive. Foreground changes do
+not bypass retry delays caused by capture failures or permission errors.
 Only one Bezel instance owns its fixed capture session at a time; another
 uses the fallback instead of stealing it. The capture child is assigned to
 a kill-on-close Windows job before capture startup completes.

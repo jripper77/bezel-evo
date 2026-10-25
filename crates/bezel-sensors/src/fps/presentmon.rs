@@ -322,6 +322,8 @@ pub(crate) struct PresentMon {
     is_wanted: bool,
     state: State,
     backoff_duration: Duration,
+    foreground_pid: Option<u32>,
+    idle_retry: bool,
     lines: Arc<Mutex<VecDeque<FrameData>>>,
     errors: Arc<Mutex<VecDeque<String>>>,
     running: Arc<AtomicBool>,
@@ -351,6 +353,8 @@ impl PresentMon {
             is_wanted: false,
             state: State::Stopped,
             backoff_duration: BACKOFF_INITIAL,
+            foreground_pid: None,
+            idle_retry: false,
             lines: Arc::new(Mutex::new(VecDeque::new())),
             errors: Arc::new(Mutex::new(VecDeque::new())),
             running: Arc::new(AtomicBool::new(true)),
@@ -665,6 +669,7 @@ impl PresentMon {
 
     fn fail(&mut self, reason: String, now: Instant, slow_retry: bool) {
         self.stop();
+        self.idle_retry = false;
         self.failure = Some(reason);
         self.fallback_to_rtss = true;
         self.rtss_fallback.get_or_insert_with(|| Box::new(Rtss));
@@ -688,6 +693,32 @@ impl PresentMon {
             .map_err(|rtss| format!("{why}; RTSS fallback: {rtss}"))
     }
 
+    /// A foreground return is new activity, not another idle timer tick.
+    /// Only idle backoff may be bypassed; capture failures keep their backoff.
+    fn observe_foreground(&mut self, foreground: Option<&Target>, now: Instant) {
+        let pid = foreground.map(|target| target.pid);
+        let returned = pid.is_some() && pid != self.foreground_pid;
+        self.foreground_pid = pid;
+        if !returned {
+            return;
+        }
+        if self.idle_retry && matches!(self.state, State::BackingOff(_)) {
+            self.state = State::Stopped;
+            self.idle_retry = false;
+        }
+        // A retained collector needs time to receive the first new frame after
+        // a pause. Its old source timestamp must not immediately stop it again.
+        if matches!(self.state, State::Running)
+            && self.target.as_ref().map(|target| target.pid) == pid
+            && self
+                .last_frame_time
+                .is_none_or(|last| now.saturating_duration_since(last) > Duration::from_secs(1))
+        {
+            self.last_frame_time = None;
+            self.started_at = now;
+        }
+    }
+
     fn read_target(
         &mut self,
         foreground: Option<Target>,
@@ -697,6 +728,8 @@ impl PresentMon {
             self.stop();
             return Err("PresentMon not wanted by any theme".to_string());
         }
+
+        self.observe_foreground(foreground.as_ref(), now);
 
         if matches!(self.state, State::Running)
             && let (Some(current), Some(next)) = (&self.target, &foreground)
@@ -758,6 +791,7 @@ impl PresentMon {
                 now,
                 true,
             );
+            self.idle_retry = true;
             return self.fallback();
         }
 
@@ -814,6 +848,8 @@ impl FrameRateSource for PresentMon {
         self.failure = None;
         self.fallback_to_rtss = false;
         self.backoff_duration = BACKOFF_INITIAL;
+        self.foreground_pid = None;
+        self.idle_retry = false;
     }
 
     fn read(&mut self) -> Result<FrameMetrics, String> {
@@ -1424,6 +1460,75 @@ mod tests {
                 limiter: None,
             })
         }
+    }
+
+    #[test]
+    fn returning_to_the_game_bypasses_idle_backoff_but_not_capture_errors() {
+        let now = Instant::now();
+        let game = Target {
+            pid: 42,
+            name: "game.exe".into(),
+        };
+        let deadline = now + BACKOFF_MAX;
+        let mut source = PresentMon::new(None);
+        source.state = State::BackingOff(deadline);
+        source.idle_retry = true;
+        source.foreground_pid = Some(42);
+        source.observe_foreground(Some(&game), now);
+        assert!(matches!(source.state, State::BackingOff(at) if at == deadline));
+        source.observe_foreground(None, now);
+        source.observe_foreground(Some(&game), now);
+        assert!(matches!(source.state, State::Stopped));
+        assert!(!source.idle_retry);
+
+        source.fail("access denied".into(), now, true);
+        source.observe_foreground(None, now);
+        source.observe_foreground(Some(&game), now);
+        assert!(matches!(source.state, State::BackingOff(at) if at == deadline));
+    }
+
+    #[test]
+    fn a_retained_collector_resumes_after_a_long_background_pause() {
+        let now = Instant::now();
+        let game = Target {
+            pid: 42,
+            name: "game.exe".into(),
+        };
+        let mut source = PresentMon::new(None);
+        source.is_wanted = true;
+        source.state = State::Running;
+        source.target = Some(game.clone());
+        source.started_at = now - Duration::from_secs(90);
+        source.last_frame_time = Some(now - Duration::from_secs(70));
+        // Returning before the next sampler tick must re-arm the watchdog,
+        // while the old frames remain unavailable rather than held as FPS.
+        assert!(source.read_target(Some(game.clone()), now).is_err());
+        assert!(matches!(source.state, State::Running));
+        assert_eq!(source.started_at, now);
+        assert!(source.last_frame_time.is_none());
+        source
+            .lines
+            .lock()
+            .unwrap()
+            .extend(vec![frame(now, 42, 1, 10.0); 3]);
+        let resumed = source.read_target(Some(game.clone()), now).unwrap();
+        assert_eq!(resumed.fps, 100.0);
+        // An unchanged foreground must not keep resetting the timeout.
+        source
+            .read_target(Some(game), now + Duration::from_secs(2))
+            .unwrap_err();
+        assert_eq!(source.last_frame_time, Some(now));
+    }
+
+    #[test]
+    fn disabling_capture_forgets_foreground_and_idle_retry() {
+        let mut source = PresentMon::new(None);
+        source.is_wanted = true;
+        source.foreground_pid = Some(42);
+        source.idle_retry = true;
+        source.want(false);
+        assert_eq!(source.foreground_pid, None);
+        assert!(!source.idle_retry);
     }
 
     #[test]

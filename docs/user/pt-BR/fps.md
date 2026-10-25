@@ -31,7 +31,11 @@ QPC original: uma fila atrasada não transforma dados antigos em dados recentes.
 Parar todas as solicitações FPS encerra o filho. Sem quadros, uma tentativa
 para após 10 segundos; depois de medir, tolera até 60 segundos de pausa.
 Falhas usam RTSS quando disponível e repetem PresentMon com espera limitada.
-Ferramenta ausente e tentativa ociosa repetem no máximo uma vez por minuto.
+Ferramenta ausente repete no máximo uma vez por minuto. Tentativas ociosas
+também esperam até um minuto, mas voltar ao jogo em primeiro plano elimina
+essa espera ociosa. Uma captura mantida recebe um novo prazo inicial para
+receber quadros; leituras antigas continuam indisponíveis até chegarem quadros
+novos. Mudar o primeiro plano não elimina a espera por falhas ou permissões.
 Uma instância do Bezel possui a sessão por vez; as outras usam a alternativa
 em vez de tomar a captura. O filho entra em um job Windows que o encerra ao
 fechar antes de concluir a inicialização da captura.

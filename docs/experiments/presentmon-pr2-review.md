@@ -33,6 +33,9 @@ The integration changes are:
 - Fall back to RTSS when a collector exits after spawning, as well as when
   startup fails. Bound retries/backoff and stop capture when no FPS sensors
   are requested.
+- Resume promptly after Alt-Tab: returning to a foreground game bypasses idle
+  retry delays and re-arms a retained collector's first-frame watchdog, while
+  actual capture failures and permission errors retain their retry backoff.
 - Define lows explicitly, require 100/1000 samples for 1%/0.1%, and temporarily
   withhold history statistics after overflow. Keep the CPU/GPU/cap estimate
   unavailable when the evidence is ambiguous.
