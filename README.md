@@ -24,41 +24,30 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.0
+## What's new in 0.2.12
 
-The biggest update since the fork: Studio rebuilt around how you actually edit.
-The first published release since 0.1.63; the [changelog](CHANGELOG.md) has
-every step.
+The first published release since 0.2.0; local builds 0.2.1 through 0.2.11 are
+included. See the [changelog](CHANGELOG.md) for the complete history.
 
-- **A new inspector.** Every object's controls sit in sections you open and
-  close (Layout, Data, Shape, Text, Color, Behavior), each with a summary when
-  closed, and Studio remembers which you keep open for each kind of object.
-  Compact, consistent controls for alignment, colour, corners and motion.
-- **Edit on the canvas.** Handles for what an object draws: a ring's start and
-  end, a needle's arc and zones, a graph's scale, a clock's hands, an image's
-  anchor, a Card's faces. Each shows its value while you drag, lights up its
-  field and takes the arrow keys. A floating bar above the selection holds the
-  linked sensor, ▶ Try, Duplicate and the object menu.
-- **See every state before it happens.** ▶ Try plays one object with trial
-  values; **Trial values** sweeps the whole theme from empty to full. Nothing
-  is saved and the screen keeps showing the real sensors.
-- **Richer widgets.** Analog clocks with dial, ticks, numbers and three hands;
-  needle gauges with zones, numbers, a centre value and a peak marker; values
-  and texts split into parts with their own style, fixed-width digits, Count
-  and Roll transitions, scrolling or shrinking long text; animated weather
-  icons; GIFs that play once or loop at your speed; pictures inside shapes;
-  two-series graphs.
-- **Four new themes for 1920×480 screens**: Pixel, Nebula, Paper and Now
-  Playing, with Fraunces, Instrument Sans, Space Grotesk and Bricolage
-  Grotesque now included.
-- **A theme gallery** with real previews, the sensors each theme reads, where
-  it is used, a 30-second try on the live screen and export to `.bezeltheme`.
-- **Smarter profiles.** New rules for a sensor above or below a value, times
-  and days, idle and PC locked, combined with *any* or *all*; a Profiles
-  dialog that shows the profile active now and why.
-- **Status at a glance.** The status bar says what is selected or what a drag
-  does, with chips for the sensors, Bezel itself and the screen (live state,
-  frames, theme and active profile).
+- **Vendor theme import.** Open `.turtheme` files with available fonts and
+  corrected sensor bindings. A new theme starts with a clean canvas and Live
+  off, with a visible highlight on the sending control.
+- **Videos checked against the display.** Reuse compatible clips already in
+  storage. When an imported clip is missing, Studio offers to copy its local
+  source or lets you choose a file. Missing video does not block the whole theme.
+- **Game FPS and frame pacing.** Average FPS, frame time, 1%/0.1% lows, one-second
+  min/max, game and source information. Enable the optional FPS collector once
+  in Setup; Studio and Light run as normal Windows applications. RTSS remains
+  the main FPS fallback. See [Game FPS](docs/user/fps.md), including recovery
+  guidance and the limits of DLSS/Frame Generation identification.
+- **Physical-display diagnostics.** Optional delivery FPS, render/transfer time
+  and sensor timing reach the hardware display, including static themes. These
+  readings are separate from game FPS and never become part of the saved theme.
+- **Quieter status and framing controls.** Stable Bezel timing/memory updates
+  and video framing selections consistent with the rest of the inspector.
+
+The FPS integration builds on [DarkK3y-v2's contribution in PR #2](https://github.com/jripper77/bezel-evo/pull/2);
+original commits and authorship are preserved.
 
 ## A new Studio
 

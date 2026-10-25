@@ -47,6 +47,19 @@ the editor or change Windows groups. The console runs hidden on demand, with
 bounded queues and retries; only one Bezel instance owns its fixed capture
 session. Neither backend searches `PATH` for a DLL or injects a game hook.
 
+## If the game counter stays unavailable
+
+Check that FPS support is installed, an FPS sensor is used by the theme, and
+the game is rendering in the foreground. A paused or minimized game can stop
+producing frames. Retry **Setup game FPS** if the service is missing or stopped.
+
+If acquisition remains unavailable even in standalone PresentMon, save your
+work and try restarting Windows before reinstalling Bezel or changing account
+permissions. In a local DRG Survivor test, both readers stopped producing frames
+and standalone capture reported lost ETW events; the user confirmed recovery
+after a Windows restart. This is a recovery observation, not an isolated cause
+or a guarantee that every capture failure has the same solution.
+
 ## Available sensors
 
 | Key | Meaning |

@@ -1,13 +1,13 @@
 # PR #2: draft response to DarkK3y-v2
 
-Prepared for review before posting. This is a local integration branch, not a
-published release or a merge into the main branch.
+Prepared for review before posting. The integration is included in the 0.2.12
+release preparation; this document has not been sent to the contributor.
 
 The accepted deployment design now uses the separately installed PresentMon
 service by default, keeping Studio and Light unelevated. An explicit console
 path remains an advanced override. The service adapter and optional installer
-component are implemented locally; no published release or real-game acceptance
-of this service build has occurred yet.
+component are implemented. The user confirmed DRG Survivor reads FPS on the
+service build after restarting Windows; see the qualified validation record below.
 
 ---
 
@@ -28,7 +28,10 @@ number. Two normal-user controlled 60/30/60 FPS trials decoded over 550 frames
 each, followed the rate changes and expired readings after the workload ended.
 The account was not elevated and was not in Performance Log Users. Initial
 attempts produced no events until the owned service was restarted; that evidence
-is retained. A real-game check of the new service build remains necessary.
+is retained. The user later confirmed DRG Survivor reads FPS after a Windows restart.
+Before that restart, an in-foreground API probe returned no frames and standalone
+PresentMon also lost ETW events. We have not isolated the cause or established
+extended stability across games.
 
 The integration changes are:
 
@@ -93,12 +96,13 @@ the user has now confirmed that Bezel's game-FPS widget on the
 hardware display was continuous and close to Steam during the short FG-on trial
 of local build 0.2.9. This is a useful acceptance check, not an extended benchmark.
 Real RTSS fallback, extended idle/leak behaviour, other games and
-FG configurations remain to be validated. The full pre-push suite is still
-required before publication.
+FG configurations remain to be validated. Full publication checks are recorded
+in the release hand-off; targeted results above describe the earlier integration.
 
 The original hardware-validation record remains attributed to your contribution;
 we are tracking the rewritten adapter's validation separately. Generic CLI
 diagnostics also need a presentation review before release.
 
-We wanted to share the changes and the decision with you before merging into
-the base branch, as agreed. Feedback on these choices would be welcome.
+We preserved your commits, credited the proposal in the README and changelog,
+and integrated the final changes for 0.2.12. Feedback on the deployment and
+statistics choices would be welcome.

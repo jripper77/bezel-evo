@@ -40,6 +40,20 @@ seleciona o console antigo em vez do serviço. Essa opção ainda exige direitos
 ETW (administrador ou Performance Log Users). Remova a opção para usar o serviço.
 O Bezel não eleva o editor automaticamente nem altera grupos do Windows.
 
+## Se o contador continuar indisponível
+
+Verifique se o suporte FPS está instalado, se o tema usa um sensor FPS e se o
+jogo está renderizando em primeiro plano. Jogos pausados ou minimizados podem
+parar de produzir quadros. Use **Setup game FPS** se o serviço estiver ausente
+ou parado.
+
+Se o PresentMon independente também não receber quadros, salve o trabalho e
+tente reiniciar o Windows antes de reinstalar o Bezel ou alterar permissões.
+Em um teste local de DRG Survivor, ambos os leitores falharam e a captura
+independente informou perda de eventos ETW. O usuário confirmou a recuperação
+após reiniciar o Windows. Isso não identifica a causa nem garante a mesma
+solução para todas as falhas.
+
 ## Sensores
 
 | Chave | Significado |
