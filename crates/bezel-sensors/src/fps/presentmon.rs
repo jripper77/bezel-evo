@@ -106,7 +106,7 @@ impl Drop for CaptureLease {
 }
 
 #[allow(unsafe_code, reason = "Read the Windows QPC clock used by PresentMon")]
-fn capture_clock() -> Result<CaptureClock, String> {
+pub(super) fn capture_clock() -> Result<CaptureClock, String> {
     use windows_sys::Win32::System::Performance::{
         QueryPerformanceCounter, QueryPerformanceFrequency,
     };
@@ -126,13 +126,13 @@ fn capture_clock() -> Result<CaptureClock, String> {
 }
 
 #[derive(Clone, Copy)]
-struct CaptureClock {
+pub(super) struct CaptureClock {
     qpc_ms: f64,
     at: Instant,
 }
 
 impl CaptureClock {
-    fn frame_time(self, qpc_ms: f64) -> Option<Instant> {
+    pub(super) fn frame_time(self, qpc_ms: f64) -> Option<Instant> {
         let delta = qpc_ms - self.qpc_ms;
         let span = Duration::try_from_secs_f64(delta.abs() / 1000.0).ok()?;
         if delta >= 0.0 {
@@ -144,9 +144,9 @@ impl CaptureClock {
 }
 
 #[derive(Clone, Debug)]
-struct Target {
-    pid: u32,
-    name: String,
+pub(super) struct Target {
+    pub pid: u32,
+    pub name: String,
 }
 
 /// One parsed CSV row: a frame one process presented.
@@ -446,7 +446,7 @@ impl PresentMon {
     /// True when the foreground process looks like a game: not a browser,
     /// compositor, overlay, or Bezel itself. The cheap gate that keeps
     /// PresentMon from ever running while the machine is idle.
-    fn foreground_target() -> Option<Target> {
+    pub(super) fn foreground_target() -> Option<Target> {
         let target = foreground_target()?;
         let name = &target.name;
         if IGNORED_PROCESSES
@@ -860,7 +860,11 @@ impl FrameRateSource for PresentMon {
     }
 }
 
-fn metrics(frames: &VecDeque<FrameData>, pid: u32, now: Instant) -> Result<FrameMetrics, String> {
+pub(super) fn metrics(
+    frames: &VecDeque<FrameData>,
+    pid: u32,
+    now: Instant,
+) -> Result<FrameMetrics, String> {
     // ETW/console delivery is batched: a valid batch can arrive more than a
     // second after its source frames. Keep the averaging window on source time,
     // and enforce freshness separately, never resetting age when a pipe drains.

@@ -644,6 +644,7 @@ export default {
   "fps.reason.estimate": "Not enough evidence to estimate the frame-rate limit.",
   "fps.reason.permissions": "PresentMon needs ETW capture permission: administrator rights or Performance Log Users membership. RTSS fallback is unavailable. {detail}",
   "fps.reason.unavailable": "PresentMon and RTSS cannot provide this reading. {detail}",
+  "fps.reason.setup": "Game FPS support is unavailable. Install or repair the optional FPS component. {detail}",
   "fps.limit.cpu": "CPU",
   "fps.limit.gpu": "GPU",
   "fps.limit.cap": "Frame cap",

@@ -644,6 +644,7 @@ export default {
   "fps.reason.estimate": "Dados insuficientes para estimar o limite de FPS.",
   "fps.reason.permissions": "PresentMon requer permiss\u00e3o de captura ETW: direitos de administrador ou participa\u00e7\u00e3o em Performance Log Users. Alternativa RTSS indispon\u00edvel. {detail}",
   "fps.reason.unavailable": "PresentMon e RTSS n\u00e3o podem fornecer esta leitura. {detail}",
+  "fps.reason.setup": "Suporte a FPS de jogos indispon\u00edvel. Instale ou repare o componente opcional de FPS. {detail}",
   "fps.limit.cpu": "CPU",
   "fps.limit.gpu": "GPU",
   "fps.limit.cap": "Limite de FPS",

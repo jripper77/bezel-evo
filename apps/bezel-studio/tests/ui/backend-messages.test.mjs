@@ -158,6 +158,7 @@ test('FPS reasons and limiter values translate in every locale without mutating 
   const readings = {
     'gpu.fps_low_1p': { display: '\u2014', unavailable: 'fps.statistics:needs more frames' },
     'gpu.fps': { display: '\u2014', unavailable: 'fps.permissions:access denied' },
+    'gpu.game': { display: '\u2014', unavailable: 'fps.setup:component missing' },
     'gpu.limiter': { display: 'cap', text: 'cap' },
     'cpu.usage': { value: 25, display: '25%' },
   };
@@ -166,6 +167,7 @@ test('FPS reasons and limiter values translate in every locale without mutating 
     const translated = fpsReadings(t, readings);
     assert.equal(translated['gpu.fps_low_1p'].unavailable, t('fps.reason.statistics'));
     assert.equal(translated['gpu.fps'].unavailable, t('fps.reason.permissions', { detail: 'access denied' }));
+    assert.equal(translated['gpu.game'].unavailable, t('fps.reason.setup', { detail: 'component missing' }));
     assert.equal(translated['gpu.limiter'].display, t('fps.limit.cap'));
     assert.equal(translated['cpu.usage'], readings['cpu.usage']);
     assert.equal(readings['gpu.limiter'].display, 'cap');

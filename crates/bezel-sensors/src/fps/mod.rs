@@ -1,11 +1,15 @@
 //! `gpu.fps` and related frame metrics: the frame rate of the game being
 //! played, read from what already measures it. Bezel never hooks or
-//! injects into a game: on Windows it prefers Intel PresentMon (started
-//! on demand), falling back to RivaTuner Statistics Server.
+//! injects into a game: on Windows it reads Intel PresentMon's separately
+//! installed service on demand, falling back to RivaTuner Statistics Server.
 
 #[cfg(windows)]
 pub(crate) mod presentmon;
 pub(crate) mod rtss;
+#[cfg(windows)]
+mod service;
+#[cfg(windows)]
+mod service_api;
 
 use crate::SensorOptions;
 use crate::provider::{Provider, describe, put};
@@ -14,6 +18,8 @@ use std::time::{Duration, Instant};
 
 /// Validated on real hardware 2026-10-18: acceptance tests E1-E9 passed
 /// (AMD Ryzen 9 9950X3D, RTX 4090, PresentMon from Program Files).
+/// Service API frame-event path additionally checked 2026-10-25 with a controlled
+/// 60/30/60 FPS workload and an unelevated client; game acceptance is separate.
 pub(crate) const HARDWARE_VALIDATED: bool = true;
 
 /// Readings older than this are stale: the game is paused, minimized or
@@ -281,7 +287,11 @@ impl Provider for Fps {
 /// internally when it cannot start.
 #[cfg(windows)]
 pub(crate) fn provider(options: &SensorOptions) -> Fps {
-    Fps::new(presentmon::PresentMon::new(options.presentmon_path.clone()))
+    if options.presentmon_path.is_some() {
+        Fps::new(presentmon::PresentMon::new(options.presentmon_path.clone()))
+    } else {
+        Fps::new(service::Service::new())
+    }
 }
 
 /// This platform's `gpu.fps` provider: none is read here.
