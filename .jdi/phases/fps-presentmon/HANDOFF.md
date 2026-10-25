@@ -1,5 +1,22 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Diagnostica display: 0.2.9 pronta
+
+Utente segnala preferenza 'Mostra le letture sullo schermo' senza effetto.
+Causa: painter/preferenza ancora nel percorso legacy Studio, assenti nel
+runtime condiviso Light. Fix 09805cf1 trasferisce il painter, sincronizza
+opzione runtime e ripristino Light, usa completamenti I/O limitati a 20 e
+tempo sampler; dipinge solo copia inviata al pannello, aggiorna temi statici
+e forza il ripristino frame pulito quando disattivata. Nessun dato nel tema
+o nel canvas. È diagnostica delle consegne Bezel, non FPS gioco.
+Regressione su FakeConnector rossa senza painter e verde con fix; runtime
+finale 77 test passati/1 ignorato, test CLI/Studio e clippy dei tre crate verdi;
+4 e2e debug verdi. Guide en/pt-BR e changelog aggiornati. Build 0.2.9 riuscita
+1m52s, CLI/metadati e sensori simulati verificati; versione 5861d77. In attesa
+chiusura confermata Studio 38836/Light 10848 per copia in dist/bezel; installata
+ancora 0.2.8. Prova hardware pending, nessun push o invio autore.
+Dettagli .jdi/todos/2026-10-25-diagnostic-overlay-runtime.md, log overlay-*.
+
 ## Consegna locale 0.2.8 completata
 
 Dopo conferma utente di chiusura Light/Studio, verificata assenza di processi
