@@ -1,5 +1,24 @@
 # Integrazione FPS PresentMon — stato locale, 25 ottobre 2026
 
+## Chiusura FPS 0.2.10 pronta, conferme pendenti
+
+Utente conferma widget gioco continuo e vicino a Steam con Windrose FG attiva
+su 0.2.9. Probe esplicito FrameType: 3081 righe tutte Application, mediana
+foreground qualificata 211,98 FPS, focus solo 33/80 campioni: niente etichetta
+DLSS affidabile da questa sorgente, niente prova lunga dichiarata. Nuovo bug
+utente max circa4500 riprodotto: intervallo0,2095ms ->4773FPS istantanei.
+35cd45c5 cambia min/max in medie complete1s, etichette tradotte; replay stesse
+righe massimo212,92FPS, senza limite artificiale. Lows invariati. 9173c42
+corregge propagazione percorso PresentMon; 925b81b probeFrameType opt-in.
+98 test sensori/77 runtime,46 UI,16 e2e,8 Python e clippy/fmt mirati verdi.
+Ultima build 0.2.10 riuscita2m24s, versioneCLI/metadati/sensori simulati e hash
+verificati, f5b1482. Ancora non consegnata: installata0.2.9, attesa conferma
+salvataggio/chiusura Studio/Light. Seconda domanda facoltativa pendente:
+permesso Performance Log Users al solo account, avvio/collegamento canonici
+con backup, oppure mantenere amministratore. Nessuna modifica account o
+startup senza risposta esplicita. Dettagli .jdi/todos/2026-10-25-fps-final.md.
+Bozza risposta autore e note release aggiornate; nessun invio/push/merge base.
+
 ## Consegna locale 0.2.9 completata
 
 Utente conferma salvataggio e chiusura; verificata assenza processi, copiati
