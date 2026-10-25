@@ -1,5 +1,35 @@
 # FPS intermittenti: consegna a blocchi PresentMon
 
+## Ripresa: avvio da cartella errata e richiesta DLSS
+
+Nuova segnalazione: conta FPS non parte. Processi osservati Light 13372 e
+Studio 11364 erano entrambi 0.2.8 da target/release, non elevati. Verificata
+assenza PresentMon in tools/sensors di quella cartella e nelle directory Intel
+di discovery, mentre dist/bezel/tools contiene la copia verificata. Binari
+CLI target/dist con hash uguali: non occorre un'altra build per questo avvio.
+Letta voce HKCU Run 'Bezel Evo' ancora verso target/release/bezel-studio.exe
+--hidden; esiste anche BezelEvoLight verso l'installazione in LocalAppData.
+Nessuna voce di avvio o scorciatoia modificata, nessun permesso permanente.
+
+Dopo nuova conferma utente di salvataggio/chiusura, riaperto Studio da
+dist/bezel: PID 38836 e runtime 10848, percorsi canonici e token elevati
+verificati direttamente. Titolo Bezel Evo 0.2.8, rispondente. Monitor osserva
+PresentMon 17988 figlio di 10848; all'ultimo punto PID 29164, quindi non
+dichiarare stabilità della cattura o lettura FPS verificata. Evidenze
+relaunch-0.2.8-processes.json e relaunch-0.2.8-collectors.json nei log del task.
+
+Utente mostra Steam con '214 DLSS' e chiede la stessa indicazione. Verificata
+FAQ ufficiale Steam: etichetta DLSS/FSR/FG associata al framerate comprensivo
+dei generati, con FPS del gioco separabili. PresentMon Console documenta
+--track_frame_type come beta e dipendente da strumentazione gioco/driver;
+SDK estratto 2.6.0 espone Application/Repeated/Intel XeFG/AMD AFMF, senza
+enum DLSS. Non inferire che il solo SDK permetta o impedisca in assoluto la
+funzione; manca una prova mirata della sorgente con i dati necessari attivi.
+Nessun suffisso DLSS implementato o promessa di rilevamento universale.
+
+Fonti: https://help.steampowered.com/en/faqs/view/3462-CD4C-36BD-5767 e
+https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md.
+
 ## Consegna locale
 
 Utente conferma chiusura di Light e Studio. Verificata assenza dei processi,
