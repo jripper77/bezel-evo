@@ -5,6 +5,34 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.12] - 2026-10-26
+
+0.2.1 through 0.2.11 were local builds; this release includes their changes.
+
+### Studio
+- Import vendor `.turtheme` files with available fonts, corrected sensor mappings
+  and weather settings. Opening a theme starts a clean document with Live off.
+- Check display storage for imported background videos, reuse compatible copies,
+  and offer transfer or file selection when a clip is missing.
+- Improve video framing controls, the Live-off highlight and status-chip stability.
+
+### Sensors
+- Add on-demand PresentMon game frame metrics with RTSS FPS fallback. Optional
+  Windows setup keeps Studio and Light unelevated; portable setup is included.
+- Preserve source timestamps and stale expiry, recover after foreground changes,
+  and calculate minimum/maximum FPS from complete one-second averages.
+- Credit [DarkK3y-v2](https://github.com/DarkK3y-v2) for the original implementation
+  in [PR #2](https://github.com/jripper77/bezel-evo/pull/2).
+
+### Fixes and limitations
+- Diagnostic overlay settings now reach the physical display, including static
+  themes, and remain separate from game FPS and saved theme content.
+- A local ETW acquisition failure also affected standalone PresentMon; the user
+  confirmed DRG Survivor FPS recovered after restarting Windows. The cause is
+  not isolated. See the FPS guide if both collectors stop producing data.
+- Automatic DLSS identification and a native/generated frame split are not
+  provided because the tested data did not reliably establish them.
+
 ## [0.2.11] - 2026-10-25
 
 0.2.1 through 0.2.11 are local builds and have not been published as GitHub releases.
