@@ -5,6 +5,19 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.10] - 2026-10-25
+
+0.2.1 through 0.2.10 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- Game minimum/maximum FPS now use complete one-second averages in the recent
+  history, with '(1 s)' labels. A very short individual present interval no
+  longer appears as a sustained peak of several thousand FPS. Lows retain their
+  separate frame-interval definition.
+- Changing the configured PresentMon executable now updates the running sensor
+  source. Diagnostic overlay changes continue to leave the FPS collector intact.
+  Oversized collector paths are rejected before source configuration.
+
 ## [0.2.9] - 2026-10-25
 
 0.2.1 through 0.2.9 are local builds and have not been published as GitHub releases.

@@ -43,6 +43,11 @@ The integration changes are:
 - Define lows explicitly, require 100/1000 samples for 1%/0.1%, and temporarily
   withhold history statistics after overflow. Keep the CPU/GPU/cap estimate
   unavailable when the evidence is ambiguous.
+- Following the local hardware trial, define minimum/maximum FPS as extrema of
+  complete one-second averages in up to 30 seconds of source history. Raw
+  single-present reciprocals produced values around 4,773 FPS from a 0.2095 ms
+  interval, which was misleading for the named FPS sensors. The UI labels now
+  identify the one-second interval; lows keep their frame-interval definition.
 - Add translated sensor labels and availability reasons in English, Portuguese
   and Italian; identify PresentMon correctly in the sensor picker. Restore the
   unrelated Support section removed from the README.
@@ -71,8 +76,11 @@ are rejected before reaching the adapter.
 Tests and clippy pass for the five changed Rust crates; the affected UI checks
 include 55 unit tests and 28 distinct browser cases. The earlier hardware runs
 tested standalone acquisition probes, so they do not validate every lifecycle
-change in this integrated adapter. Next is a local Windows executable trial
-with Windrose. Real RTSS fallback, extended idle/leak behaviour, other games and
+change in this integrated adapter. In the local Windows trial with Windrose,
+the user has now confirmed that Bezel's game-FPS widget on the
+hardware display was continuous and close to Steam during the short FG-on trial
+of local build 0.2.9. This is a useful acceptance check, not an extended benchmark.
+Real RTSS fallback, extended idle/leak behaviour, other games and
 FG configurations remain to be validated. The full pre-push suite is still
 required before publication.
 
