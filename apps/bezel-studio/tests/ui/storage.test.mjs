@@ -180,16 +180,16 @@ test('demo playback, boot media and what live mode allows', async () => {
   await assert.rejects(turzx.setBootMedia(screen.key, logo, true), (e) => e.code === 'unsupported');
 });
 
-test('a live theme video missing from the screen is sent on request', async () => {
+test('a missing theme video can be prepared offline and sent on request', async () => {
   const demo = createDemoBackend('video', instant);
   assert.equal((await demo.session()).theme.background.type, 'video');
   assert.equal((await demo.sample()).video, null, 'not live');
-  await assert.rejects(demo.prepareThemeVideo(KEY), (e) => e.code === 'noVideo');
-  await demo.setLive(true, KEY);
-  assert.deepEqual((await demo.sample()).video, { state: 'missing', path: 'sd/video/nebula_90.mp4' });
   const ready = await demo.prepareThemeVideo(KEY);
   assert.equal(ready.source, 'nebula.mp4');
   assert.equal(ready.convert.quarterTurns, 1);
+  assert.equal((await demo.sample()).video, null, 'preparing the transfer keeps Live off');
+  await demo.setLive(true, KEY);
+  assert.deepEqual((await demo.sample()).video, { state: 'missing', path: 'sd/video/nebula_90.mp4' });
   assert.equal((await demo.runUpload(ready.ticket, false)).status, 'done');
   assert.deepEqual((await demo.sample()).video, { state: 'onDevice', path: 'sd/video/nebula_90.mp4' });
   await assert.rejects(demo.prepareThemeVideo(KEY), (e) => e.code === 'noVideo');
