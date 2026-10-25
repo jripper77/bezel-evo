@@ -5,6 +5,23 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.11] - 2026-10-25
+
+0.2.1 through 0.2.11 are local builds and have not been published as GitHub releases.
+
+### Windows
+- Optional game FPS support now installs Intel's signed PresentMon 2.6.0 service
+  separately. Studio and Light can read it as normal users, without changing
+  account groups or requiring a Windows sign-out. Setup offers an optional FPS
+  checkbox and a Start menu repair entry; portable packages include the setup script.
+- Existing compatible Intel services are reused and conflicting installations
+  are preserved. The FPS component has its own Windows Apps removal entry.
+
+### Sensors
+- The default FPS reader consumes service frame events on a background worker,
+  preserving source timestamps, stale expiry, one-second min/max and RTSS fallback.
+  An explicitly configured console executable remains an advanced override.
+
 ## [0.2.10] - 2026-10-25
 
 0.2.1 through 0.2.10 are local builds and have not been published as GitHub releases.
