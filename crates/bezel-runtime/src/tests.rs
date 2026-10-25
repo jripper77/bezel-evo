@@ -1394,6 +1394,25 @@ fn sensor_options_status_and_catalog_use_engine_sources_without_losing_histories
     assert!(!wire::catalog(&status).is_empty());
     assert!(!wire::snapshot(&status).is_empty());
     assert_eq!(f.seen.lock().unwrap().last().unwrap().history.len(), 2);
+    let mut capture = options.clone();
+    capture.debug_overlay = Some(performance::Corner::TopRight);
+    f.engine.options(capture.clone()).unwrap();
+    assert_eq!(
+        configured.load(Ordering::SeqCst),
+        1,
+        "overlay must not replace sensors"
+    );
+    capture.presentmon_path = Some("C:\\tools\\PresentMon.exe".into());
+    f.engine.options(capture.clone()).unwrap();
+    assert_eq!(
+        configured.load(Ordering::SeqCst),
+        2,
+        "a changed capture path must reach the sensor factory"
+    );
+    f.engine.options(capture.clone()).unwrap();
+    assert_eq!(configured.load(Ordering::SeqCst), 2);
+    capture.presentmon_path = Some("x".repeat(32769));
+    assert!(f.engine.options(capture).is_err());
     let mut bad = options;
     bad.ping_host = "x".repeat(254);
     assert!(

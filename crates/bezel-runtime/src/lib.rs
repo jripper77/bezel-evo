@@ -295,15 +295,21 @@ impl Engine {
         if self.options.as_ref() == Some(&options) {
             return Ok(());
         }
-        if options.ping_host.len() > 253 || options.ffmpeg.as_ref().is_some_and(|p| p.len() > 32768)
+        if options.ping_host.len() > 253
+            || options.ffmpeg.as_ref().is_some_and(|p| p.len() > 32768)
+            || options
+                .presentmon_path
+                .as_ref()
+                .is_some_and(|p| p.len() > 32768)
         {
             return Err(invalid("option bounds"));
         }
         // Audio consent alone never restarts the sensor reader.
-        let sources_changed = self
-            .options
-            .as_ref()
-            .is_none_or(|old| old.ping_host != options.ping_host || old.ffmpeg != options.ffmpeg);
+        let sources_changed = self.options.as_ref().is_none_or(|old| {
+            old.ping_host != options.ping_host
+                || old.ffmpeg != options.ffmpeg
+                || old.presentmon_path != options.presentmon_path
+        });
         if sources_changed && let Some(configure) = &self.configure {
             let (sensors, media) = configure(&options)?;
             self.sensors.replace(sensors);
