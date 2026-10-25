@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.7] - 2026-10-25
+
+0.2.1 through 0.2.7 are local builds and have not been published as GitHub releases.
+
+### Fixes
+- Returning to a game after an idle capture stop retries PresentMon immediately
+  instead of waiting for the idle retry timer. A retained collector gets a new
+  startup grace period to receive fresh frames after a background pause.
+  Permission errors and collector failures still keep their bounded retry delay;
+  old FPS values remain unavailable until new frames arrive.
+
 ## [0.2.6] - 2026-10-25
 
 0.2.1 through 0.2.6 are local builds and have not been published as GitHub releases.
