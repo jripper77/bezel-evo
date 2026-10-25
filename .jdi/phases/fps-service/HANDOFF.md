@@ -22,3 +22,13 @@ Dettaglio completo: [.jdi/todos/2026-10-25-fps-service.md](../../todos/2026-10-2
   Studio0.2.11 NORMALE senza VerbRunAs e provare Windrose.
 - Documenti README/guide/crediti/bozza autore allineati al servizio. Nessun invio,
   push, merge sul ramo base o pubblicazione autorizzati.
+
+## Consegna completata
+
+Utente conferma salvataggio e chiusura di entrambi. Copiati CLI/Studio0.2.11
+in main dist/bezel e verificati hash rispetto a ready-0.2.11.json. CLI --version
+0.2.11; metadati Studio0.2.11. Backup0.2.10 in target/logs/fps-integration/
+before-0.2.11. Aggiunti script setup e payload fps senza ripristinare template
+rimossi. Studio PID42968 avviato NORMALE, token non elevato verificato.
+Log installed-hashes-0.2.11.json e launched-0.2.11.json. Servizio attivo.
+Prossimo: accettazione Windrose sul display hardware, non ancora eseguita.
