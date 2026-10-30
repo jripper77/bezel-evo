@@ -5,6 +5,13 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Studio
+- **Start with the computer** now turns Bezel Light's sign-in start on and off,
+  the same entry as the Setup option. Studio no longer starts itself at sign-in
+  beside Light; an older Studio entry switches to Light when Studio opens.
+
 ## [0.2.12] - 2026-10-26
 
 0.2.1 through 0.2.11 were local builds; this release includes their changes.

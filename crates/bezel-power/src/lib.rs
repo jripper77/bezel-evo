@@ -8,6 +8,8 @@ pub mod eyedropper;
 
 pub mod handoff;
 
+pub mod login;
+
 mod session;
 
 pub use session::session_ending;

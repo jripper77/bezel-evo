@@ -200,7 +200,8 @@ pub fn on_quit(unsaved: bool) -> OnQuit {
     if unsaved { OnQuit::Ask } else { OnQuit::Exit }
 }
 
-/// Argument of the start at login: open in the tray, without the window.
+/// Argument of Studio's former start at login: open in the tray, without the
+/// window. Light starts at login now ([`bezel_power::login`]).
 pub const HIDDEN_ARG: &str = "--hidden";
 
 /// What the terminal says when the app did not start: which part failed,
@@ -266,11 +267,6 @@ pub fn run() -> Result<(), tauri::Error> {
         .plugin(
             tauri_plugin_opener::Builder::new()
                 .open_js_links_on_click(false)
-                .build(),
-        )
-        .plugin(
-            tauri_plugin_autostart::Builder::new()
-                .args([HIDDEN_ARG])
                 .build(),
         )
         .setup(move |app| setup(app, start))
@@ -500,6 +496,10 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
             )?;
             adapters.connector = Arc::new(client.clone());
             app.manage(client);
+            // Studio's former start at login raced Light's for the screens.
+            let login = bezel_power::login::LightLogin::beside(&executable);
+            let _ = login.migrate();
+            app.manage(login);
         }
         adapters
     };

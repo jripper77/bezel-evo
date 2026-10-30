@@ -22,7 +22,6 @@ use bezel_themes::dto::ThemeDto;
 use bezel_themes::native::EXTENSION;
 use tauri::ipc::{Request, Response};
 use tauri::{AppHandle, Manager as _, Runtime, State, WebviewWindow};
-use tauri_plugin_autostart::ManagerExt as _;
 use tauri_plugin_dialog::DialogExt as _;
 use tauri_plugin_opener::OpenerExt as _;
 
@@ -688,22 +687,22 @@ pub fn quit_app<R: Runtime>(app: AppHandle<R>) -> UiResult<()> {
     crate::exit_bezel(&app).map_err(UiError::system)
 }
 
-/// Whether Bezel starts at login.
+/// Whether Light starts at login (the installer's option too). A simulated
+/// Studio has no Light: never.
 #[tauri::command]
 pub fn get_autostart<R: Runtime>(app: AppHandle<R>) -> UiResult<bool> {
-    app.autolaunch().is_enabled().map_err(UiError::system)
+    app.try_state::<bezel_power::login::LightLogin>()
+        .map_or(Ok(false), |login| login.is_enabled())
+        .map_err(UiError::system)
 }
 
-/// Starts Bezel at login (in the tray, showing the last theme live) or not.
+/// Starts Light at login (in the tray, showing the last theme live) or not.
 #[tauri::command]
 pub fn set_autostart<R: Runtime>(app: AppHandle<R>, on: bool) -> UiResult<()> {
-    let manager = app.autolaunch();
-    if on {
-        manager.enable()
-    } else {
-        manager.disable()
-    }
-    .map_err(UiError::system)
+    let login = app
+        .try_state::<bezel_power::login::LightLogin>()
+        .ok_or_else(|| UiError::system("no Light in a simulated Studio"))?;
+    login.set(on).map_err(UiError::system)
 }
 
 // --------------------------------------------------------- preferences --

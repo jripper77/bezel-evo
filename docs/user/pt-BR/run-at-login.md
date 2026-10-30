@@ -15,8 +15,10 @@ Com o ZIP portátil, dê dois cliques em `start-light.cmd` para iniciar o Light;
 [guia de empacotamento para Windows](../../../packaging/windows/README.md) (em
 inglês) tem o comando que o põe na inicialização.
 
-**Tela → Ajustes → Iniciar com o computador**, no Studio, é outra opção: ela
-inicia o próprio Studio na bandeja. Escolha uma das duas.
+**Tela → Ajustes → Iniciar com o computador**, no Studio, é a mesma opção:
+ligá-la ou desligá-la ali faz o mesmo que a caixa do Setup. O próprio Studio
+não inicia ao entrar; uma entrada antiga do Studio que fazia isso passa para o
+Light na próxima vez que o Studio abrir.
 
 ## O Studio e o Light juntos
 

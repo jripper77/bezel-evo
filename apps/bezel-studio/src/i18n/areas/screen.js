@@ -22,7 +22,7 @@ export default {
 
     'screenPanel.protocol': 'protocol {name}',
     'screenPanel.autostart': 'Start with the computer',
-    'screenPanel.autostartHint': 'In the tray, with the last theme already live.',
+    'screenPanel.autostartHint': 'Starts Bezel Light in the tray, with the last saved theme live.',
     'screenPanel.standby.keep': 'The screen keeps showing its last image.',
     'screenPanel.standby.off': 'Bezel turns it off when the system shuts down.',
     'screenPanel.standby.video': 'A video stored on the screen, in a loop.',
@@ -56,7 +56,7 @@ export default {
 
     'screenPanel.protocol': 'protocolo {name}',
     'screenPanel.autostart': 'Iniciar com o computador',
-    'screenPanel.autostartHint': 'Na bandeja, com o último tema já ao vivo.',
+    'screenPanel.autostartHint': 'Inicia o Bezel Light na bandeja, com o último tema salvo ao vivo.',
     'screenPanel.standby.keep': 'A tela continua mostrando a última imagem.',
     'screenPanel.standby.off': 'O Bezel a desliga quando o sistema é desligado.',
     'screenPanel.standby.video': 'Um vídeo salvo na tela, em loop.',
@@ -90,7 +90,7 @@ export default {
 
     'screenPanel.protocol': 'protocollo {name}',
     'screenPanel.autostart': 'Avvia con il computer',
-    'screenPanel.autostartHint': 'Nella tray, con l\'ultimo tema già in diretta.',
+    'screenPanel.autostartHint': 'Avvia Bezel Light nella tray, con l\'ultimo tema salvato in diretta.',
     'screenPanel.standby.keep': 'Lo schermo continua a mostrare l\'ultima immagine.',
     'screenPanel.standby.off': 'Bezel lo spegne alla chiusura del sistema.',
     'screenPanel.standby.video': 'Un video salvato sullo schermo, in loop.',
