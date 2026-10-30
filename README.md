@@ -183,6 +183,7 @@ option Setup offers, so either place turns it on or off.
   PC shuts down.
 - **Start from a theme.** Use bundled layouts, import vendor and
   turing-smart-screen-python themes, or save your own as a `.bezeltheme` file.
+  Your own themes are protected from deletion until you allow it.
 
 ## Download & install
 
