@@ -425,6 +425,9 @@ pub struct ThemeEntryDto {
     pub orientation: &'static str,
     /// Ships with the app.
     pub bundled: bool,
+    /// One of the user's themes that cannot be deleted until the user takes
+    /// its protection off ([`crate::settings::Settings::unprotected_themes`]).
+    pub protected: bool,
     /// Ids of the catalog models whose panel it fits (the core's rule): the
     /// screens the Themes tab lists it for.
     pub models: Vec<&'static str>,
@@ -457,6 +460,7 @@ impl From<&ThemeEntry> for ThemeEntryDto {
             },
             orientation: orientation_slug(e.theme.orientation),
             bundled: e.bundled,
+            protected: !e.bundled,
             diagonal_hundredths: made_for(&models),
             models: models.iter().map(|m| m.id.0).collect(),
             revision: format!("{:016x}", e.revision),

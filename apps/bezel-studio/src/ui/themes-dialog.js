@@ -44,6 +44,16 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     await facts();
   }
   const used = entry => themeUses(entry, overview);
+  /** Taking the protection off is a choice of its own; putting it back is not asked. */
+  async function protect(entry, on) {
+    if (!on) {
+      const answer = await askChoice(t, { title: t('themesPanel.unprotectTitle', { name: entry.name }), body: t('themesPanel.unprotectBody'), actions: [{ id: 'unprotect', label: t('themesPanel.unprotect'), kind: 'danger' }] });
+      if (answer !== 'unprotect') return;
+    }
+    await bridge.protectTheme(entry.location, on);
+    await refresh();
+    if (selected?.location === entry.location) selected = { ...selected, protected: on };
+  }
   async function remove(entry) {
     const answer = await askChoice(t, { title: t('themesPanel.deleteTitle', { name: entry.name }), body: t('themesPanel.deleteBody'), actions: [{ id: 'delete', label: t('storage.deleteAction'), kind: 'danger' }] });
     if (answer !== 'delete') return;
@@ -59,8 +69,9 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
       { label: t('themesPanel.openEditor'), run: () => { dialog.close(); openTheme(entry); } },
       { label: t('common.duplicate'), run: () => void run(() => duplicateTheme(entry)) },
       { label: t('themesPanel.export'), run: () => void run(() => exportTheme(entry)) },
-      { label: t('storage.deleteAction'), disabled: entry.bundled || !overview || used(entry).length > 0, run: () => void run(() => remove(entry)) },
-    ] });
+      !entry.bundled && { label: t(entry.protected ? 'themesPanel.unprotect' : 'themesPanel.protect'), run: () => void run(() => protect(entry, !entry.protected)) },
+      { label: t('storage.deleteAction'), disabled: entry.bundled || entry.protected || !overview || used(entry).length > 0, run: () => void run(() => remove(entry)) },
+    ].filter(Boolean) });
   }
   function tools(entry) {
     const more = iconButton(t('themesPanel.more', { name: entry.name }), ICONS.more, () => menu(entry, more));
@@ -78,7 +89,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     const action = (text, fn, attrs = {}) => el('button', { type: 'button', class: 'text-button', text, disabled: busy, onclick: () => void run(fn), ...attrs });
     const more = iconButton(t('themesPanel.more', { name: entry.name }), ICONS.more, () => menu(entry, more), { class: 'quiet' });
     detail.replaceChildren(...[
-      el('div', { class: 'gallery-object-head' }, [preview, el('div', {}, [el('div', { class: 'notice-head' }, [el('h3', { text: entry.name }), iconButton(t('themesPanel.try', { name: entry.name }), ICONS.play, () => void run(() => tryTheme(entry)), { class: 'quiet', disabled: busy }), more]), el('p', { class: 'hint', text: t('themesPanel.objects', { count: entry.objects ?? 0, width: entry.canvas.width, height: entry.canvas.height }) }), uses.some(use => use.kind === 'screen') && pill(t('themesPanel.onScreen'), { dot: true, tone: 'ok' })])]),
+      el('div', { class: 'gallery-object-head' }, [preview, el('div', {}, [el('div', { class: 'notice-head' }, [el('h3', { text: entry.name }), iconButton(t('themesPanel.try', { name: entry.name }), ICONS.play, () => void run(() => tryTheme(entry)), { class: 'quiet', disabled: busy }), more]), el('p', { class: 'hint', text: t('themesPanel.objects', { count: entry.objects ?? 0, width: entry.canvas.width, height: entry.canvas.height }) }), uses.some(use => use.kind === 'screen') && pill(t('themesPanel.onScreen'), { dot: true, tone: 'ok' }), entry.protected && pill(t('themesPanel.protected'), { attrs: { title: t('themesPanel.protectedHint') } })])]),
       section('sensors', t('themesPanel.sensors'), 'data', [
       el('ul', { class: 'gallery-sensors' }, (entry.sensors ?? []).map(key => {
         const sensor = sensors.find(s => s.key === key), reading = readings()[key];
@@ -95,7 +106,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
         iconChoice(t('themesPanel.details'), null, [
           ['duplicate', t('common.duplicate'), 'copy', { disabled: busy }],
           ['export', t('themesPanel.export'), 'download', { disabled: busy, text: t('themesPanel.exportShort') }],
-          ['delete', t('storage.deleteAction'), 'trash', { disabled: busy || entry.bundled || !overview || uses.length > 0, description: entry.bundled ? t('themes.bundled') : uses.length ? t('themesPanel.removeUses') : undefined }],
+          ['delete', t('storage.deleteAction'), 'trash', { disabled: busy || entry.bundled || entry.protected || !overview || uses.length > 0, description: entry.bundled ? t('themes.bundled') : entry.protected ? t('themesPanel.protectedHint') : uses.length ? t('themesPanel.removeUses') : undefined }],
         ], key => void run(() => key === 'duplicate' ? duplicateTheme(entry) : key === 'export' ? exportTheme(entry) : remove(entry)), { actions: true, bare: true, wide: true }),
       ]),
     ].filter(Boolean));

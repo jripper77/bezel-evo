@@ -315,6 +315,7 @@ export default {
   "documentChanged.title": "Salvare come nuovo file?",
   "documentChanged.body": "«{name}» non corrisponde più al file aperto. Per non perdere niente, salvalo come nuovo file.",
   "documentChanged.saveAs": "Salva come…",
+  "error.themeProtected": "Il tema è protetto: scegli Consenti eliminazione nel suo menu per eliminarlo.",
   "error.notPicked": "Bezel salva solo dove hai scelto, e {location} non è stato scelto.",
   "error.refused": "Lo schermo ha rifiutato il file: {detail}",
   "error.screenNotFound": "Schermo non trovato: {screen}. Controlla il cavo USB.",

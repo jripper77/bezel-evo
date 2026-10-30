@@ -96,6 +96,9 @@
       "screen",
       "theme"
     ],
+    "themeProtected": [
+      "location"
+    ],
     "timeout": [
       "detail"
     ],

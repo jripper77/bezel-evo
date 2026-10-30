@@ -86,6 +86,17 @@ pub struct Backend {
     pub thumbnails: Thumbnails,
 }
 
+/// A library entry as the UI lists it: one of the user's themes is
+/// protected unless the user took its protection off.
+fn listed(
+    entry: &crate::library::ThemeEntry,
+    unprotected: &std::collections::BTreeSet<String>,
+) -> ThemeEntryDto {
+    let mut dto = ThemeEntryDto::from(entry);
+    dto.protected = !entry.bundled && !unprotected.contains(&entry.location.0);
+    dto
+}
+
 /// The editing session behind its lock, and the signal that the live
 /// screen's link came back from showing a frame: the screen's I/O happens
 /// outside the lock, so previews render while the screen works.
@@ -1359,11 +1370,29 @@ impl Backend {
 
     /// The library's themes.
     pub fn themes(&self) -> Vec<ThemeEntryDto> {
+        let unprotected = self.settings.load().unprotected_themes;
         self.library
             .list()
             .iter()
-            .map(ThemeEntryDto::from)
+            .map(|entry| listed(entry, &unprotected))
             .collect()
+    }
+
+    /// Takes the protection of one of the user's themes off (it may then be
+    /// deleted) or puts it back. `notInLibrary` for any other theme.
+    pub fn protect_theme(&self, location: &str, protected: bool) -> UiResult<()> {
+        let source = ThemeLocation(location.into());
+        if !self.library.is_user(&source) || self.library.entry(&source).is_none() {
+            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
+        }
+        self.settings.update(|s| {
+            if protected {
+                s.unprotected_themes.remove(location);
+            } else {
+                s.unprotected_themes.insert(location.into());
+            }
+        });
+        Ok(())
     }
 
     /// Copies the library theme at `location` into the user's folder as a
@@ -1384,9 +1413,10 @@ impl Backend {
         theme.name = name.to_string();
         let copy = self.library.new_location(name);
         self.store.save(&copy, &theme, &assets)?;
+        let unprotected = self.settings.load().unprotected_themes;
         self.library
             .entry(&copy)
-            .map(|entry| ThemeEntryDto::from(&entry))
+            .map(|entry| listed(&entry, &unprotected))
             .ok_or_else(|| UiError::new(ErrorCode::ThemeFile).arg("detail", copy.0))
     }
 
@@ -1424,6 +1454,9 @@ impl Backend {
         if !self.library.is_user(&source) || self.library.entry(&source).is_none() {
             return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
         }
+        if !self.settings.load().unprotected_themes.contains(location) {
+            return Err(UiError::new(ErrorCode::ThemeProtected).arg("location", location));
+        }
         let path = std::fs::canonicalize(location).map_err(UiError::system)?;
         let root = std::fs::canonicalize(self.library.user_dir()).map_err(UiError::system)?;
         if path == root || !path.starts_with(&root) {
@@ -1453,6 +1486,10 @@ impl Backend {
         } else {
             std::fs::remove_file(path).map_err(UiError::system)?;
         }
+        // A theme saved there again later starts protected.
+        self.settings.update(|s| {
+            s.unprotected_themes.remove(location);
+        });
         self.thumbnails.forget(&source);
         Ok(())
     }
@@ -3105,6 +3142,23 @@ mod tests {
                 .delete_theme(&f.backend.library.user_dir().display().to_string())
                 .is_err()
         );
+        // A user theme starts protected: only taking that off lets it go.
+        let error = f.backend.delete_theme(&location.0).unwrap_err();
+        assert_eq!(error.code(), "themeProtected", "{error}");
+        let protected = |b: &Backend| {
+            b.themes()
+                .into_iter()
+                .find(|e| e.location == location.0)
+                .map(|e| e.protected)
+        };
+        assert_eq!(protected(&f.backend), Some(true));
+        f.backend.protect_theme(&location.0, false).unwrap();
+        assert_eq!(protected(&f.backend), Some(false));
+        assert!(
+            f.backend
+                .protect_theme(&outside.display().to_string(), false)
+                .is_err()
+        );
         f.backend.open(&location.0).unwrap();
         assert!(
             f.backend.delete_theme(&location.0).is_err(),
@@ -3122,6 +3176,14 @@ mod tests {
         f.backend.delete_theme(&location.0).unwrap();
         assert!(!Path::new(&location.0).exists());
         assert!(Path::new(&another.0).exists());
+        assert!(
+            !f.backend
+                .settings
+                .load()
+                .unprotected_themes
+                .contains(&location.0),
+            "a theme saved there again starts protected"
+        );
     }
 
     #[test]

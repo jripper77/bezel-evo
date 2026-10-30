@@ -315,6 +315,7 @@ export default {
   'documentChanged.title': 'Save as a new file?',
   'documentChanged.body': '“{name}” no longer matches the open file. To keep both, save it as a new file.',
   'documentChanged.saveAs': 'Save as…',
+  'error.themeProtected': 'This theme is protected: choose Allow deletion in its menu to delete it.',
   'error.notPicked': 'Bezel only saves where you chose, and {location} was not chosen.',
   'error.refused': 'The screen refused the file: {detail}',
   'error.screenNotFound': 'Screen not found: {screen}. Check the USB cable.',

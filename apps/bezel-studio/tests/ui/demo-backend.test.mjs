@@ -910,7 +910,13 @@ test('gallery deletion protects bundled, open and profile themes', async () => {
   await demo.saveProfiles({profiles:[{id:'use',name:'Use',themes:{COM1:copy.location},rules:[]}],automatic:true});
   await assert.rejects(demo.deleteTheme(copy.location));
   await demo.saveProfiles({profiles:[],automatic:true});
+  // A user theme starts protected: only taking that off lets it go.
+  assert.equal(copy.protected, true);
+  await assert.rejects(demo.deleteTheme(copy.location), e => e.code === 'themeProtected');
+  await demo.protectTheme(copy.location, false);
+  assert.equal((await demo.listThemes()).find(e => e.location === copy.location).protected, false);
   await demo.deleteTheme(copy.location); assert.ok(!(await demo.listThemes()).some(e=>e.location===copy.location));
+  await assert.rejects(demo.protectTheme(base.location, false), e => e.code === 'notInLibrary');
   await assert.rejects(demo.deleteTheme('outside'));
 });
 

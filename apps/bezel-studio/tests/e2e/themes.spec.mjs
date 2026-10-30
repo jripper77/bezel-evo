@@ -227,3 +227,26 @@ test('export selects the saved gallery theme without opening it in the editor', 
   await expect(dialog).toBeVisible(); await expect(page.locator('#theme-name')).toHaveValue(before);
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+test('a user theme is protected until its protection is taken off, then it can be deleted', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await openThemes(page, t);
+  await page.locator('#theme-gallery').click();
+  const dialog = page.locator('.themes-dialog');
+  const more = (name) => dialog.locator('#theme-grid').getByRole('button', { name: t('themesPanel.more', { name }), exact: true });
+  await dialog.locator('.theme-item').first().hover(); await more('Demo').click();
+  await dialog.getByRole('menu').getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
+  const copy = dialog.locator('.theme-card').filter({ hasText: t('layers.copyOf', { name: 'Demo' }) }).first();
+  await expect(copy).toBeVisible();
+  await copy.click();
+  const detail = dialog.locator('.themes-gallery-detail');
+  const remove = detail.getByRole('button', { name: t('storage.deleteAction'), exact: true });
+  await expect(detail).toContainText(t('themesPanel.protected'));
+  await expect(remove).toBeDisabled();
+  await detail.getByRole('button', { name: t('themesPanel.more', { name: t('layers.copyOf', { name: 'Demo' }) }), exact: true }).click();
+  await page.getByRole('menuitem', { name: t('themesPanel.unprotect'), exact: true }).click();
+  await page.locator('dialog[open]').last().getByRole('button', { name: t('themesPanel.unprotect'), exact: true }).click();
+  await expect(detail).not.toContainText(t('themesPanel.protected'));
+  await expect(remove).toBeEnabled();
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

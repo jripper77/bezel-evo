@@ -479,6 +479,16 @@ pub async fn delete_theme(state: State<'_, Shared>, location: String) -> UiResul
     blocking(&state, move |b| b.delete_theme(&location)).await
 }
 
+/// Takes a user theme's protection off (it may be deleted) or puts it back.
+#[tauri::command]
+pub async fn protect_theme(
+    state: State<'_, Shared>,
+    location: String,
+    protected: bool,
+) -> UiResult<()> {
+    blocking(&state, move |b| b.protect_theme(&location, protected)).await
+}
+
 /// The thumbnail of a library theme as a PNG `data:` URL, drawn off the
 /// session's lock when it is not kept yet; `None` when the theme cannot be
 /// drawn (the gallery shows its placeholder).

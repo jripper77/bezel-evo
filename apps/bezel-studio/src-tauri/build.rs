@@ -29,6 +29,7 @@ const COMMANDS: &[&str] = &[
     "list_themes",
     "duplicate_theme",
     "delete_theme",
+    "protect_theme",
     "export_theme",
     "open_theme",
     "new_theme",

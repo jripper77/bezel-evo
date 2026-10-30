@@ -495,6 +495,8 @@ function tauriBridge(invoke, tauri = {}) {
      */
     duplicateTheme: (location, name) => invoke('duplicate_theme', { location, name }),
     deleteTheme: (location) => invoke('delete_theme', { location }),
+    /** Takes a user theme's protection off (`false`: it may be deleted) or puts it back. */
+    protectTheme: (location, on) => invoke('protect_theme', { location, protected: on }),
     exportTheme: (location) => invoke('export_theme', { location }),
     openTheme: (location) => invoke('open_theme', { location }),
     newTheme: (screen, name, orientation) => invoke('new_theme', { screen, name, orientation }),

@@ -51,6 +51,10 @@ pub struct Settings {
     /// The orientation of the themes the Themes tab lists ([`THEME_AXES`]);
     /// without one, both.
     pub themes_axis: Option<String>,
+    /// The user's themes that may be deleted. Every other one of the user's
+    /// folder is protected: one never listed here, new or old, cannot be
+    /// deleted until the user takes its protection off.
+    pub unprotected_themes: std::collections::BTreeSet<String>,
 }
 
 /// A choice that starts on: absent from the file, it reads as `true`.
