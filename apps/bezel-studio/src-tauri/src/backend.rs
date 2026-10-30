@@ -1693,6 +1693,25 @@ impl Backend {
         }
     }
 
+    /// Keeps the media of copied elements for a paste on any screen.
+    pub fn copy_media(&self, assets: Vec<String>) {
+        let assets: Vec<_> = assets
+            .into_iter()
+            .map(bezel_core::domain::theme::AssetRef)
+            .collect();
+        self.studio().copy_media(&assets);
+    }
+
+    /// Adds the copied media to this screen's document: copied reference to
+    /// the reference here.
+    pub fn paste_media(&self) -> std::collections::BTreeMap<String, String> {
+        self.studio()
+            .paste_media()
+            .into_iter()
+            .map(|(copied, here)| (copied.0, here.0))
+            .collect()
+    }
+
     /// Removes unused media, preserving bytes required by editor Undo.
     pub fn remove_asset(&self, asset: &str, theme: &ThemeDto) -> UiResult<bool> {
         let theme = theme_of(theme)?;

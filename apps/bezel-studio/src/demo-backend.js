@@ -1657,6 +1657,9 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       posters.set(ref, `data:image/svg+xml,${encodeURIComponent(svg)}`);
       return Promise.resolve({ ref });
     },
+    // The demo's media are shared by every screen: nothing to carry.
+    copyMedia: () => Promise.resolve(),
+    pasteMedia: () => Promise.resolve({}),
     removeAsset: (asset, current) => {
       theme = structuredClone(current);
       if (JSON.stringify(current).includes(JSON.stringify(asset))) return Promise.resolve(false);

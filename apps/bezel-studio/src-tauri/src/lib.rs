@@ -334,6 +334,8 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::add_icon,
             commands::add_media,
             commands::list_assets,
+            commands::copy_media,
+            commands::paste_media,
             commands::remove_asset,
             commands::video_preview,
             commands::font_catalog,

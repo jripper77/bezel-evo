@@ -90,13 +90,14 @@ export const commands = {
     return commands.paste(theme, { elements: theme.elements.filter((e) => withChildren(theme, ids).includes(e.id)), offset, names });
   },
 
-  paste(theme, { elements, offset = 16, names = ENGLISH }) {
+  paste(theme, { elements, offset = 16, fit = false, names = ENGLISH }) {
     let next = theme;
     const created = [];
     const mapping = new Map(elements.map((e, index) => [e.id, nextId(theme) + index]));
+    const shift = fit ? fitShift(theme.canvas, elements, offset) : { x: offset, y: offset };
     for (const e of elements) {
       const id = nextId(next);
-      const copy = { ...clone(e), id, name: uniqueName(next, names.copy(e.name)), locked: false, frame: { ...e.frame, x: e.frame.x + offset, y: e.frame.y + offset } };
+      const copy = { ...clone(e), id, name: uniqueName(next, names.copy(e.name)), locked: false, frame: { ...e.frame, x: e.frame.x + shift.x, y: e.frame.y + shift.y } };
       if (copy.groupParent != null) copy.groupParent = mapping.get(copy.groupParent) ?? null;
       if (copy.cardMember) copy.cardMember = mapping.has(copy.cardMember.parent) ? { ...copy.cardMember, parent: mapping.get(copy.cardMember.parent) } : null;
       next = { ...next, elements: [...next.elements, copy] };
@@ -397,19 +398,59 @@ const ENGLISH = Object.freeze({
   copy: (name) => `${name} copy`,
 });
 
+/**
+ * How far pasted elements move: by `offset`, then back inside the canvas
+ * when their box would leave it (copied from a larger screen), the top-left
+ * corner first when the box is larger than the canvas.
+ */
+function fitShift(canvas, elements, offset) {
+  const left = Math.min(...elements.map(e => e.frame.x)) + offset, top = Math.min(...elements.map(e => e.frame.y)) + offset;
+  const right = Math.max(...elements.map(e => e.frame.x + e.frame.width)) + offset, bottom = Math.max(...elements.map(e => e.frame.y + e.frame.height)) + offset;
+  const back = (start, end, size) => Math.max(-start, Math.min(0, size - end));
+  return { x: offset + back(left, right, canvas.width), y: offset + back(top, bottom, canvas.height) };
+}
+
+/** The media files (`asset` references) the elements use. */
+export function assetRefs(elements) {
+  const refs = new Set();
+  const walk = (value) => {
+    if (!value || typeof value !== 'object') return;
+    for (const [key, v] of Object.entries(value)) {
+      if (key === 'asset' && typeof v === 'string' && v) refs.add(v);
+      else walk(v);
+    }
+  };
+  walk(elements);
+  return [...refs];
+}
+
+/** The elements with their media references renamed by `renamed` (old to new). */
+export function renameAssets(elements, renamed) {
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, key === 'asset' && typeof v === 'string' ? renamed[v] ?? v : walk(v)]));
+  };
+  return walk(elements);
+}
+
 // ---------------------------------------------------------------- store ----
 
 /**
  * Creates a store around a theme.
  * @param {object} theme theme.json object
- * @param {{names?: {widget: (w: string) => string, copy: (name: string) => string}}} [options]
- *   how new elements and copies are named (English by default)
+ * @param {{names?: {widget: (w: string) => string, copy: (name: string) => string},
+ *   media?: {copy: (assets: string[]) => void, paste: () => Promise<Record<string, string>>}}} [options]
+ *   how new elements and copies are named (English by default); `media`
+ *   carries the copied elements' files to the document they are pasted in
+ *   (then `paste` resolves once pasted)
  */
-export function createStore(theme, { names = ENGLISH } = {}) {
+export function createStore(theme, { names = ENGLISH, media = null } = {}) {
   let state = { theme: clone(normalizeCardTheme(theme)), selection: [] };
   let past = [];
   let future = [];
   let gesture = null;
+  // The clipboard outlives the document: copied on one screen, pasted on another.
   let clipboard = [];
   let pasteCount = 0;
   // Themes are immutable, so "dirty" is "not the theme last saved or loaded":
@@ -429,9 +470,9 @@ export function createStore(theme, { names = ENGLISH } = {}) {
 
   return {
     getState: () => state,
-    capture: () => ({ state, past, future, saved, clipboard, pasteCount }),
+    capture: () => ({ state, past, future, saved }),
     restore(document) {
-      ({ state, past, future, saved, clipboard, pasteCount } = document);
+      ({ state, past, future, saved } = document);
       gesture = null;
       emit('load');
     },
@@ -498,20 +539,24 @@ export function createStore(theme, { names = ENGLISH } = {}) {
       if (!selected.length) return;
       clipboard = clone(selected);
       pasteCount = 0;
+      media?.copy(assetRefs(clipboard));
       emit('copy');
     },
     cutSelection() {
       const ids=selectionRoots(state.theme,state.selection).filter(e=>!owners(state.theme,e).some(p=>p.locked)).map(e=>e.id);
       if (!ids.length) return state;
       const included=new Set(withChildren(state.theme,ids));
-      clipboard=clone(state.theme.elements.filter(e=>included.has(e.id)));pasteCount=-1;
+      clipboard=clone(state.theme.elements.filter(e=>included.has(e.id)));pasteCount=-1;media?.copy(assetRefs(clipboard));
       return this.dispatch('remove',{ids});
     },
     canPaste: () => clipboard.length > 0,
     paste() {
       if (!clipboard.length) return state;
       pasteCount += 1;
-      return this.dispatch('paste', { elements: clipboard, offset: 16 * pasteCount });
+      const offset = 16 * pasteCount;
+      if (!media) return this.dispatch('paste', { elements: clipboard, offset, fit: true });
+      const elements = clipboard;
+      return media.paste().then(renamed => this.dispatch('paste', { elements: renameAssets(elements, renamed), offset, fit: true }));
     },
 
     canUndo: () => past.length > 0,
@@ -539,8 +584,6 @@ export function createStore(theme, { names = ENGLISH } = {}) {
       past = [];
       future = [];
       saved = state.theme;
-      clipboard = [];
-      pasteCount = 0;
       emit('load');
       return state;
     },

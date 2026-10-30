@@ -499,6 +499,10 @@ function tauriBridge(invoke, tauri = {}) {
     // A dropped file's path, or `null` to ask with the native dialog.
     addMedia: (path = null) => invoke('add_media', { path }),
     assets: () => invoke('list_assets'),
+    /** Keeps the copied elements' media for a paste on any screen. */
+    copyMedia: (assets) => invoke('copy_media', { assets }),
+    /** Adds the copied media to this screen's document: `{copied: here}` references. */
+    pasteMedia: () => invoke('paste_media'),
     removeAsset: (asset, theme) => invoke('remove_asset', { asset, theme }),
     /**
      * The renderer's font families (D-2026-10-16-studio-redesign-fidelity-28):

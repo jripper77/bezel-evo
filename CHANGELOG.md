@@ -11,6 +11,8 @@ All notable changes to Bezel Evo are documented here. The format follows
 - **Start with the computer** now turns Bezel Light's sign-in start on and off,
   the same entry as the Setup option. Studio no longer starts itself at sign-in
   beside Light; an older Studio entry switches to Light when Studio opens.
+- Copy and paste objects between screens and opened themes: their images and
+  fonts come along, and a paste stays inside a smaller screen's canvas.
 
 ## [0.2.12] - 2026-10-26
 

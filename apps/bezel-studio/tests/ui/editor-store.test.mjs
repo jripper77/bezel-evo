@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { commands, createStore, HISTORY_LIMIT, layerLabel, merge, selectedElements } from '../../src/editor/store.js';
+import { assetRefs, commands, createStore, HISTORY_LIMIT, layerLabel, merge, renameAssets, selectedElements } from '../../src/editor/store.js';
 import { DEMO_THEME } from '../../src/demo-theme.js';
 
 const frame = (s, id) => s.getState().theme.elements.find((e) => e.id === id).frame;
@@ -271,9 +271,48 @@ test('clipboard snapshots multiple objects, preserves appearance and groups past
   assert.equal(selectedElements(s.getState())[0].frame.x, originals[0].frame.x + 32);
   assert.equal(new Set(s.getState().theme.elements.map(e => e.name)).size, s.getState().theme.elements.length);
   s.load(DEMO_THEME);
-  assert.equal(s.canPaste(), false);
+  assert.equal(s.canPaste(), true, 'the clipboard outlives the document');
+});
+
+test('clipboard is shared by screen documents and pastes inside the target canvas', () => {
+  const s = createStore(DEMO_THEME);
+  const wide = s.getState().theme.elements.find(e => e.id === 1);
+  s.select([1]);
+  s.copySelection();
+  const first = s.capture();
+  s.load({ ...structuredClone(DEMO_THEME), canvas: { width: 100, height: 100 }, elements: [] });
   s.paste();
-  assert.equal(s.isDirty(), false);
+  const [pasted] = selectedElements(s.getState());
+  assert.deepEqual(pasted.kind, wide.kind);
+  assert.ok(pasted.frame.x >= 0 && pasted.frame.y >= 0);
+  assert.ok(pasted.frame.x + pasted.frame.width <= 100 || pasted.frame.x === 0);
+  assert.ok(pasted.frame.y + pasted.frame.height <= 100 || pasted.frame.y === 0);
+  s.select([]);
+  s.copySelection();
+  s.restore(first);
+  assert.equal(s.canPaste(), true, 'restoring a screen keeps the current clipboard');
+});
+
+test('clipboard carries media references through the media hooks', async () => {
+  const theme = structuredClone(DEMO_THEME);
+  theme.elements[0].kind = { type: 'image', asset: 'assets/logo.png', fit: 'contain' };
+  const copied = [];
+  const s = createStore(theme, { media: { copy: (assets) => copied.push(assets), paste: async () => ({ 'assets/logo.png': 'assets/logo-2.png' }) } });
+  s.select([1]);
+  s.copySelection();
+  assert.deepEqual(copied, [['assets/logo.png']]);
+  await s.paste();
+  assert.equal(selectedElements(s.getState())[0].kind.asset, 'assets/logo-2.png');
+  assert.equal(s.getState().theme.elements[0].kind.asset, 'assets/logo.png');
+});
+
+test('asset references are found and renamed at any depth', () => {
+  const elements = [{ kind: { type: 'text', style: { font: { family: 'X', asset: 'assets/a.ttf' }, parts: { styles: { unit: { asset: 'assets/b.ttf' } } } } } }, { kind: { type: 'image', asset: '' } }];
+  assert.deepEqual(assetRefs(elements).sort(), ['assets/a.ttf', 'assets/b.ttf']);
+  const renamed = renameAssets(elements, { 'assets/b.ttf': 'assets/b-2.ttf' });
+  assert.equal(renamed[0].kind.style.parts.styles.unit.asset, 'assets/b-2.ttf');
+  assert.equal(renamed[0].kind.style.font.asset, 'assets/a.ttf');
+  assert.equal(elements[0].kind.style.parts.styles.unit.asset, 'assets/b.ttf');
 });
 
 test('clipboard keeps SVG asset and clock options after the source is removed', () => {

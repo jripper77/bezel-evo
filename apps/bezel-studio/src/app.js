@@ -124,7 +124,16 @@ document.title = t('app.title',{version:appVersion});
 // default for bar-shaped screens.
 // New elements and copies are named in the UI's language.
 const names = { face: (number) => t('card.faceName', { number }), widget: (widget) => t(`widget.${widget}`), copy: (name) => t('layers.copyOf', { name }) };
-const store = createStore(session?.theme ?? { schema: 1, name: t('themes.untitled'), canvas: { width: 1920, height: 480 }, orientation: 'landscape', refreshSeconds: 1, background: { type: 'color', color: '#0c0e16ff' }, elements: [] }, { names });
+// Copied elements can be pasted on another screen: their media go with them.
+let copiedMedia = Promise.resolve();
+const media = {
+  copy: (assets) => { copiedMedia = copiedMedia.then(() => bridge.copyMedia(assets)).catch(fail); },
+  paste: () => copiedMedia.then(() => bridge.pasteMedia()).then((renamed) => {
+    if (Object.keys(renamed).length) void refreshAssets();
+    return renamed;
+  }, (e) => { fail(e); return {}; }),
+};
+const store = createStore(session?.theme ?? { schema: 1, name: t('themes.untitled'), canvas: { width: 1920, height: 480 }, orientation: 'landscape', refreshSeconds: 1, background: { type: 'color', color: '#0c0e16ff' }, elements: [] }, { names, media });
 state.location = session?.location ?? null;
 state.screen = session?.screen ?? null;
 const screenDocuments = new Map();

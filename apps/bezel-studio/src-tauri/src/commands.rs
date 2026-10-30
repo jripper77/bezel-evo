@@ -577,6 +577,25 @@ pub async fn list_assets(state: State<'_, Shared>) -> UiResult<Vec<AssetDto>> {
     blocking(&state, |b| Ok(b.assets())).await
 }
 
+/// Keeps the media of copied elements, for a paste on any screen.
+#[tauri::command]
+pub async fn copy_media(state: State<'_, Shared>, assets: Vec<String>) -> UiResult<()> {
+    blocking(&state, move |b| {
+        b.copy_media(assets);
+        Ok(())
+    })
+    .await
+}
+
+/// Adds the copied media to this screen's document: copied reference to the
+/// reference here.
+#[tauri::command]
+pub async fn paste_media(
+    state: State<'_, Shared>,
+) -> UiResult<std::collections::BTreeMap<String, String>> {
+    blocking(&state, |b| Ok(b.paste_media())).await
+}
+
 /// Removes unused media from this document, keeping bytes needed by Undo.
 #[tauri::command]
 pub async fn remove_asset(

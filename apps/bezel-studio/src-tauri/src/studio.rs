@@ -602,6 +602,9 @@ pub struct Studio {
     videos: BTreeMap<AssetRef, AddedVideo>,
     /// Removed from the media list; bytes remain available to editor Undo.
     removed_assets: BTreeSet<AssetRef>,
+    /// The media the copied elements use. Not swapped with the screen's
+    /// document: the clipboard is the same for every screen.
+    copied_media: Vec<(AssetRef, Vec<u8>)>,
     /// The theme's video background on this computer (`None`: the theme
     /// has none).
     video: Option<ThemeVideo>,
@@ -902,6 +905,7 @@ impl Studio {
             host: None,
             videos: BTreeMap::new(),
             removed_assets: BTreeSet::new(),
+            copied_media: Vec::new(),
             video: None,
             posters,
             serials: 0,
@@ -1196,6 +1200,31 @@ impl Studio {
         };
         self.runtime.add_asset(asset.clone(), bytes);
         asset
+    }
+
+    /// Keeps the bytes of the media copied elements use, so pasting them in
+    /// another screen's document brings the files along. References this
+    /// document holds no bytes for (bundled icons) are left out.
+    pub fn copy_media(&mut self, assets: &[AssetRef]) {
+        let held = self.runtime.assets();
+        self.copied_media = assets
+            .iter()
+            .filter_map(|asset| held.get(asset).map(|bytes| (asset.clone(), bytes.clone())))
+            .collect();
+    }
+
+    /// Adds the copied media to this document: each copied reference with
+    /// the one it has here (the same when the bytes are already here).
+    pub fn paste_media(&mut self) -> Vec<(AssetRef, AssetRef)> {
+        let copied = self.copied_media.clone();
+        copied
+            .into_iter()
+            .map(|(asset, bytes)| {
+                let name = asset.0.rsplit('/').next().unwrap_or_default().to_owned();
+                let here = self.add_asset(&name, bytes);
+                (asset, here)
+            })
+            .collect()
     }
 
     /// Adds a video (or an animated GIF) for a background, named after
@@ -3157,6 +3186,25 @@ mod tests {
             s.asset_visible(&first),
             "opening a document resets removals"
         );
+    }
+
+    #[test]
+    fn copied_media_is_pasted_into_another_display_document() {
+        let mut s = studio();
+        s.select_screen("one", theme_88());
+        s.add_asset("taken.png", vec![9]);
+        let logo = s.add_asset("logo.png", vec![1, 2, 3]);
+        let bundled = AssetRef("assets/tabler/fan.svg".into());
+        s.copy_media(&[logo.clone(), bundled]);
+        s.select_screen("two", theme_88());
+        s.add_asset("logo.png", vec![7]);
+        let pasted = s.paste_media();
+        assert_eq!(pasted.len(), 1, "bytes not held here are not copied");
+        assert_eq!(pasted[0].0, logo);
+        assert_eq!(pasted[0].1.0, "assets/logo-2.png");
+        assert_eq!(s.assets()[&pasted[0].1], vec![1, 2, 3]);
+        s.select_screen("one", theme_88());
+        assert_eq!(s.paste_media(), vec![(logo.clone(), logo)]);
     }
 
     #[test]
