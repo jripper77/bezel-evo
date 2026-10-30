@@ -163,7 +163,9 @@ So opening and closing Studio is seamless: **no redraw, graphs keep their
 history, a video keeps playing, the picture stays fluid.** Close Studio without
 saving and the screen goes back to the saved theme, still without starting
 over. Studio talks to Light over a local channel that only your Windows user
-can open; if Light cannot run, Studio drives the screens itself.
+can open; if Light cannot run, Studio drives the screens itself. **Start with
+the computer**, in Studio's screen panel, starts Light at sign-in: the same
+option Setup offers, so either place turns it on or off.
 
 ## And everything else
 
@@ -174,7 +176,8 @@ can open; if Light cannot run, Studio drives the screens itself.
   with their own time window, offline icons, images, animated GIFs and video
   backgrounds.
 - **Run multiple screens.** Give each display its own theme and orientation;
-  Light drives them together with one sensor reader.
+  Light drives them together with one sensor reader. Copy objects on one screen
+  and paste them on another: their images and fonts come along.
 - **Manage the screen's storage.** Send, move, rename and clean up the pictures
   and videos stored on screens that keep them, and choose what they show when the
   PC shuts down.
