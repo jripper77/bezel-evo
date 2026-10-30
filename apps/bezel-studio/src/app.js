@@ -1392,7 +1392,7 @@ for (const [id, target] of [['stage', 'canvas'], ['panel-media', 'media']]) {
 async function save(saveAs = false, copyName = null) {
   try {
     const theme = store.getState().theme;
-    const saved = await bridge.saveTheme(copyName ? { ...theme, name: copyName } : theme, saveAs);
+    const saved = await bridge.saveTheme(copyName ? { ...theme, name: copyName } : theme, saveAs, state.location);
     if (!saved) return false;
     if (copyName) store.dispatch('setTheme', { patch: { name: copyName } });
     state.location = saved.location;
@@ -1402,6 +1402,14 @@ async function save(saveAs = false, copyName = null) {
     refreshThemes();
     return true;
   } catch (e) {
+    // The session's document is another file: never write over it, offer a new file.
+    if (e?.code === 'documentChanged' && !saveAs) {
+      const answer = await askChoice(t, {
+        title: t('documentChanged.title'), body: t('documentChanged.body', { name: store.getState().theme.name }),
+        actions: [{ id: 'saveAs', label: t('documentChanged.saveAs'), kind: 'primary' }], initial: 'saveAs',
+      });
+      return answer === 'saveAs' ? save(true, copyName) : false;
+    }
     fail(e);
     return false;
   }

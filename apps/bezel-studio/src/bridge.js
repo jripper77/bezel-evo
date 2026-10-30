@@ -470,7 +470,12 @@ function tauriBridge(invoke, tauri = {}) {
     setBrightness: (screen, percent) => invoke('set_brightness', { screen, percent }),
     release: (screen) => invoke('release_screen', { screen }),
     restartScreen: (screen) => invoke('restart_screen', { screen }),
-    saveTheme: (theme, saveAs) => invoke('save_theme', { theme, saveAs }),
+    /**
+     * Saves `theme`; `shown` is the file the editor shows it as opened from
+     * (null: never saved). A plain Save into another document's file is
+     * refused (`documentChanged`); Save As writes where the user chooses.
+     */
+    saveTheme: (theme, saveAs, shown = null) => invoke('save_theme', { theme, saveAs, shown }),
     /**
      * The theme library: `list_themes`. Each entry is `{name, location,
      * canvas, orientation, bundled, models, diagonalHundredths, revision,

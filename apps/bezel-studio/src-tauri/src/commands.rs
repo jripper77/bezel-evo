@@ -387,6 +387,7 @@ pub async fn save_theme<R: Runtime>(
     state: State<'_, Shared>,
     theme: ThemeDto,
     save_as: bool,
+    shown: Option<String>,
 ) -> UiResult<Option<SavedDto>> {
     let target = if save_as {
         let chosen = app
@@ -409,7 +410,11 @@ pub async fn save_theme<R: Runtime>(
     } else {
         None
     };
-    blocking(&state, move |b| b.save(&theme, target).map(Some)).await
+    blocking(&state, move |b| {
+        b.save_shown(&theme, target, Some(shown.as_deref()))
+            .map(Some)
+    })
+    .await
 }
 
 /// The theme library.

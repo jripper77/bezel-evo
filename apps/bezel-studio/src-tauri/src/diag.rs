@@ -95,6 +95,9 @@ pub enum DiagCode {
     ThemeSkipped,
     /// The last theme did not open again.
     LastThemeNotReopened,
+    /// Light did not take a document just opened or saved; it gets it at
+    /// the next sync.
+    DocumentNotSynced,
     /// No blank theme could be made to start with.
     NoStartingTheme,
     /// A bundled theme made for the screen did not open.
@@ -161,7 +164,7 @@ pub enum DiagCode {
 
 impl DiagCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 50] = [
+    pub const ALL: [Self; 51] = [
         Self::Panicked,
         Self::NotStarted,
         Self::PluginNotStarted,
@@ -184,6 +187,7 @@ impl DiagCode {
         Self::SettingsNotSaved,
         Self::ThemeSkipped,
         Self::LastThemeNotReopened,
+        Self::DocumentNotSynced,
         Self::NoStartingTheme,
         Self::BundledThemeNotOpened,
         Self::NoThumbnail,
@@ -248,6 +252,7 @@ impl DiagCode {
 
             Self::ThemeSkipped => "a theme that cannot be read was skipped",
             Self::LastThemeNotReopened => "last theme not reopened",
+            Self::DocumentNotSynced => "document not synced with Light yet",
             Self::NoStartingTheme => "no starting theme",
             Self::BundledThemeNotOpened => "bundled theme not opened",
             Self::NoThumbnail => "no thumbnail",

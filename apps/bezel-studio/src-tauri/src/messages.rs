@@ -71,6 +71,8 @@ error_codes! {
     VideoNotInTheme = "videoNotInTheme" => "{asset} is not in the theme",
     NotInLibrary = "notInLibrary" => "{location} is not in the theme library; import it instead",
     NotPicked = "notPicked" => "{location} was not picked to save to",
+    DocumentChanged = "documentChanged"
+        => "the editor shows another theme than the document of {location}; save it as a new file",
     FileTooLarge = "fileTooLarge" => "{file} is {size} MiB; the limit is {limit} MiB",
     FileError = "fileError" => "{file}: {reason}",
     NotAnImage = "notAnImage" => "{file} is not an image",

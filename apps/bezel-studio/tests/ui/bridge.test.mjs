@@ -164,7 +164,7 @@ test('tauri mode maps every call to its command', async () => {
   assert.equal(bridge.fileSource({ name: 'x.png' }), null, 'dropped files come with paths from Tauri');
   assert.deepEqual(calls[6][1], { on: true, screen: 'k' });
   assert.deepEqual(calls[7][1], { screen: 'k', percent: 40 });
-  assert.deepEqual(calls[9][1], { theme, saveAs: true });
+  assert.deepEqual(calls[9][1], { theme, saveAs: true, shown: null });
   assert.deepEqual(calls[12][1], { screen: 'k', name: 'Novo', orientation: 'landscape' });
 });
 

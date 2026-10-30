@@ -1482,8 +1482,19 @@ impl Backend {
         self.pause_live_for_open()?;
         self.studio().start(theme, assets, Some(location.clone()));
         self.remember_document(&location);
-        self.sync_engine(true)?;
+        self.sync_engine_after_document_change();
         Ok(ThemeDto::from(self.studio().theme()))
+    }
+
+    /// Tells Light about a document that already changed (opened or saved).
+    /// Failing here must not say the open or the save failed: the editor
+    /// would keep the previous theme while the session points at the new
+    /// file, and its next Save would write that theme over the file. Light
+    /// gets the document again at the next sync.
+    fn sync_engine_after_document_change(&self) {
+        if self.sync_engine(true).is_err() {
+            diag::report(DiagCode::DocumentNotSynced);
+        }
     }
 
     /// Opens the theme at `location`, which the app chose itself.
@@ -1493,7 +1504,7 @@ impl Backend {
         let theme = ThemeDto::from(studio.theme());
         drop(studio);
         self.remember_document(&location);
-        self.sync_engine(true)?;
+        self.sync_engine_after_document_change();
         Ok(theme)
     }
 
@@ -1502,12 +1513,33 @@ impl Backend {
     /// opened from when the library allows it (otherwise, and for a bundled
     /// theme, a copy in the user folder).
     pub fn save(&self, theme: &ThemeDto, target: Option<ThemeLocation>) -> UiResult<SavedDto> {
+        self.save_shown(theme, target, None)
+    }
+
+    /// [`Self::save`] of the theme the editor shows as opened from `shown`
+    /// (`Some(None)`: a theme never saved). A plain Save whose session
+    /// document is another file is refused: the editor and the session
+    /// disagree on the document, and writing would replace a theme the user
+    /// is not looking at. Save As (`target`) writes where the user chose.
+    pub fn save_shown(
+        &self,
+        theme: &ThemeDto,
+        target: Option<ThemeLocation>,
+        shown: Option<Option<&str>>,
+    ) -> UiResult<SavedDto> {
         let theme = theme_of(theme)?;
         if let Some(target) = target.as_ref().filter(|t| !self.library.allows(t)) {
             return Err(UiError::new(ErrorCode::NotPicked).arg("location", &target.0));
         }
         let poster = self.retake_poster(&theme);
         let mut studio = self.studio();
+        if target.is_none()
+            && let Some(shown) = shown
+            && studio.location().map(|l| l.0.as_str()) != shown
+        {
+            return Err(UiError::new(ErrorCode::DocumentChanged)
+                .arg("location", studio.location().map_or("", |l| l.0.as_str())));
+        }
         let location =
             target.unwrap_or_else(|| self.library.save_location(studio.location(), &theme.name));
         studio.set_theme(theme);
@@ -1519,7 +1551,7 @@ impl Backend {
         // Its gallery card shows it as saved.
         self.thumbnails.forget(&location);
         self.remember_document(&location);
-        self.sync_engine(true)?;
+        self.sync_engine_after_document_change();
         Ok(SavedDto {
             location: location.0,
         })
@@ -4072,6 +4104,45 @@ mod tests {
         f.backend.restore_live(TIME);
         assert_eq!(f.backend.session().theme.name, "Mine");
         assert_eq!(f.backend.sample().live.as_deref(), Some(KEY));
+    }
+
+    #[test]
+    fn save_never_writes_over_a_document_the_editor_does_not_show() {
+        let f = fixture("shown");
+        let mut kept = theme_of(&f.backend.session().theme).unwrap();
+        kept.name = "Pixel V2.1".into();
+        let mine = f
+            .backend
+            .save(&ThemeDto::from(&kept), None)
+            .unwrap()
+            .location;
+        // The editor still shows another theme while the session opened Mine
+        // (an open the UI saw fail): Save is refused and Mine stays.
+        f.backend.open(&mine).unwrap();
+        let mut other = kept.clone();
+        other.name = "Pixel".into();
+        let error = f
+            .backend
+            .save_shown(&ThemeDto::from(&other), None, Some(None))
+            .unwrap_err();
+        assert_eq!(error.code(), "documentChanged", "{error}");
+        let (on_disk, _) = FsThemeStore.load(&ThemeLocation(mine.clone())).unwrap();
+        assert_eq!(on_disk.name, "Pixel V2.1");
+        let error = f
+            .backend
+            .save_shown(
+                &ThemeDto::from(&other),
+                None,
+                Some(Some("elsewhere.bezeltheme")),
+            )
+            .unwrap_err();
+        assert_eq!(error.code(), "documentChanged", "{error}");
+        // The editor showing Mine saves it in place.
+        let saved = f
+            .backend
+            .save_shown(&ThemeDto::from(&kept), None, Some(Some(mine.as_str())))
+            .unwrap();
+        assert_eq!(saved.location, mine);
     }
 
     #[test]

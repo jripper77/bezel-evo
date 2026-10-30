@@ -11,6 +11,9 @@
       "folder",
       "reason"
     ],
+    "documentChanged": [
+      "location"
+    ],
     "fileError": [
       "file",
       "reason"
