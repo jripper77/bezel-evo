@@ -22,3 +22,9 @@ Non plugin esterni: le fonti restano compilate in Light.
   nel catalogo e diventano disponibili agli altri.
 - Lato Rust lo stesso principio: `ElementKind` (bezel-core `domain/theme.rs`) e `bezel-render/src/renderer.rs`
   (118 KB) come moduli per widget con un registro.
+
+## Esempio di sensore nuovo: consumo degli LLM
+
+- Niente login al sito (cookie di sessione = credenziali, fragile, probabile violazione dei termini).
+- Senza login: Claude Code salva i token di ogni messaggio in `%USERPROFILE%\.claude\projects\*.jsonl` (finestra di 5 ore e settimana, come *ccusage*); dà i token usati, non il residuo esatto del piano. Codex CLI: verificare se i file locali riportano la percentuale di limite usata.
+- API a pagamento: endpoint ufficiali di consumo/costi con chiave di amministrazione, custodita nel Gestore credenziali di Windows; lettura periodica in rete come il meteo.
