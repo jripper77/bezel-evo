@@ -7,6 +7,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Studio
+- Deleting a theme asks for one plain confirmation, and works even when the
+  theme is in use: the protection from deletion is gone. Screens and profiles
+  that used it forget it, and the Bezel Evo logo takes its place on the
+  screen and in the editor.
+
+### Fixes
+- A rev C 8.8" listed by either of its two ports is one screen with one
+  document and one remembered theme. Before, its second port kept a second
+  document of the same file, so one of them could save over the other.
+
 ## [0.2.15] - 2026-10-30
 
 ### Studio
