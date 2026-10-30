@@ -902,21 +902,15 @@ test('theme trials last thirty seconds and preserve editor documents and saved p
   await assert.rejects(demo.tryThemes(themes, 'unknown'));
 });
 
-test('gallery deletion protects bundled, open and profile themes', async () => {
+test('gallery deletion keeps bundled themes and deletes a user theme even in a profile', async () => {
   const demo = createDemoBackend('turing88', fixed), entries = await demo.listThemes();
   const base = entries.find(e => e.bundled);
   await assert.rejects(demo.deleteTheme(base.location));
   const copy = await demo.duplicateTheme(base.location, 'Delete me');
   await demo.saveProfiles({profiles:[{id:'use',name:'Use',themes:{COM1:copy.location},rules:[]}],automatic:true});
-  await assert.rejects(demo.deleteTheme(copy.location));
-  await demo.saveProfiles({profiles:[],automatic:true});
-  // A user theme starts protected: only taking that off lets it go.
-  assert.equal(copy.protected, true);
-  await assert.rejects(demo.deleteTheme(copy.location), e => e.code === 'themeProtected');
-  await demo.protectTheme(copy.location, false);
-  assert.equal((await demo.listThemes()).find(e => e.location === copy.location).protected, false);
-  await demo.deleteTheme(copy.location); assert.ok(!(await demo.listThemes()).some(e=>e.location===copy.location));
-  await assert.rejects(demo.protectTheme(base.location, false), e => e.code === 'notInLibrary');
+  await demo.deleteTheme(copy.location);
+  assert.ok(!(await demo.listThemes()).some(e=>e.location===copy.location));
+  assert.deepEqual((await demo.profiles()).config.profiles[0].themes, {}, 'the profile forgets it');
   await assert.rejects(demo.deleteTheme('outside'));
 });
 

@@ -709,6 +709,19 @@ pub struct AddedVideo {
 impl Studio {
     /// Switch the editor document without stopping any live screen.
     pub fn select_screen(&mut self, key: &str, blank: Theme) -> bool {
+        self.select_screen_answering(key, blank, |_| false)
+    }
+
+    /// [`Self::select_screen`] of a screen that also answers to the keys
+    /// `same` accepts (a rev C screen's other port): one document for the
+    /// screen whichever port names it, so the same file is never open in
+    /// two documents. The screen being edited stays selected under its key.
+    pub fn select_screen_answering(
+        &mut self,
+        key: &str,
+        blank: Theme,
+        same: impl Fn(&str) -> bool,
+    ) -> bool {
         if self.selected_screen.as_deref() == Some(key) {
             return false;
         }
@@ -716,27 +729,38 @@ impl Studio {
             self.selected_screen = Some(key.into());
             return false;
         };
-        let existed = self.documents.contains_key(key);
-        let mut next = self.documents.remove(key).unwrap_or_else(|| {
-            let mut studio = Self::from_shared(
-                self.shared_sensors.clone(),
-                self.shared_renderer.clone(),
-                self.language,
-                blank,
-            );
-            studio.catalog = self.catalog.clone();
-            studio.serial_counter = Arc::clone(&self.serial_counter);
-            studio.runtime.use_catalog(&studio.catalog);
-            if let Some(host) = &self.host {
-                studio.host = Some(HostDecoding {
-                    media: Arc::clone(&host.media),
-                    dir: host
-                        .dir
-                        .join(format!("screen-{}", key.replace(['/', '\\', ':'], "_"))),
-                });
-            }
-            studio
-        });
+        if same(&previous) {
+            return false;
+        }
+        let parked = self
+            .documents
+            .keys()
+            .find(|k| k.as_str() == key)
+            .or_else(|| self.documents.keys().find(|k| same(k)))
+            .cloned();
+        let existed = parked.is_some();
+        let mut next = parked
+            .and_then(|k| self.documents.remove(&k))
+            .unwrap_or_else(|| {
+                let mut studio = Self::from_shared(
+                    self.shared_sensors.clone(),
+                    self.shared_renderer.clone(),
+                    self.language,
+                    blank,
+                );
+                studio.catalog = self.catalog.clone();
+                studio.serial_counter = Arc::clone(&self.serial_counter);
+                studio.runtime.use_catalog(&studio.catalog);
+                if let Some(host) = &self.host {
+                    studio.host = Some(HostDecoding {
+                        media: Arc::clone(&host.media),
+                        dir: host
+                            .dir
+                            .join(format!("screen-{}", key.replace(['/', '\\', ':'], "_"))),
+                    });
+                }
+                studio
+            });
         std::mem::swap(&mut self.sensors, &mut next.sensors);
         std::mem::swap(&mut self.runtime, &mut next.runtime);
         std::mem::swap(&mut self.renderer, &mut next.renderer);
@@ -1041,6 +1065,36 @@ impl Studio {
     /// Where the theme was loaded from or saved to.
     pub fn location(&self) -> Option<&ThemeLocation> {
         self.location.as_ref()
+    }
+
+    /// Replaces every document opened from `location` (the edited one and
+    /// the other screens') with `replacement` of it, unsaved: the file is
+    /// gone. The screens whose document changed, `None` for the edited one
+    /// without a screen.
+    pub fn forget_location(
+        &mut self,
+        location: &ThemeLocation,
+        replacement: impl Fn(&Theme) -> (Theme, BTreeMap<AssetRef, Vec<u8>>),
+    ) -> Vec<Option<String>> {
+        let mut replaced = Vec::new();
+        if self.location.as_ref() == Some(location) {
+            let (theme, assets) = replacement(self.theme());
+            self.start(theme, assets, None);
+            replaced.push(self.selected_screen.clone());
+        }
+        for (key, studio) in &mut self.documents {
+            if studio.location.as_ref() == Some(location) {
+                let (theme, assets) = replacement(studio.theme());
+                studio.start(theme, assets, None);
+                replaced.push(Some(key.clone()));
+            }
+        }
+        replaced
+    }
+
+    /// The document of screen `key` while another one is edited.
+    pub fn parked(&self, key: &str) -> Option<&Studio> {
+        self.documents.get(key)
     }
 
     /// Names and saved locations of every display document, without selecting it.

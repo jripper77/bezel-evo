@@ -1227,10 +1227,10 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     { location: 'demo://Demo', theme: structuredClone(DEMO_THEME), bundled: true, revision: 1, modifiedMs: changedAgo(0) },
     ...DEMO_LIBRARY.map((entry, i) => ({ location: `demo://${entry.theme.name}`, theme: structuredClone(entry.theme), bundled: entry.bundled, drawable: entry.drawable !== false, revision: 1, modifiedMs: changedAgo(i + 1) })),
   ];
-  // The user themes whose protection was taken off: every other one is protected.
-  const unprotected = new Set();
+  /** The library theme the editor opened last (the demo's session keeps its own theme). */
+  let opened = null;
   /** A library theme as `listThemes` lists it. */
-  const listed = (s) => ({ protected: !s.bundled && !unprotected.has(s.location),
+  const listed = (s) => ({
     sensors: themeSensorKeys(s.theme), objects: s.theme.elements.length,
     name: s.theme.name, location: s.location, canvas: { ...s.theme.canvas }, orientation: s.theme.orientation, bundled: s.bundled, ...demoFits(s.theme), revision: String(s.revision), modifiedMs: s.modifiedMs,
   });
@@ -1605,18 +1605,11 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     deleteTheme: async location => {
       const index = saved.findIndex(s => s.location === location);
       if (index < 0 || saved[index].bundled) throw Object.assign(new Error('not in user library'), { code: 'notInLibrary', args: { location } });
-      if (!unprotected.has(location)) throw Object.assign(new Error(`${location} is protected`), { code: 'themeProtected', args: { location } });
-      const used = theme.name === saved[index].theme.name || [...screenDocuments.values()].some(doc => doc.theme.name === saved[index].theme.name)
-        || profileConfig.profiles.some(p => Object.values(p.themes).includes(location))
-        || Object.values(themeTrial?.themes ?? {}).includes(location);
-      if (used) throw Object.assign(new Error('theme still in use'), { code: 'invalidInput', args: { detail: 'theme still in use' } });
+      // Like the backend: deleted even in use; profiles forget it and the editor shows the logo.
+      const name = saved[index].theme.name;
+      for (const profile of profileConfig.profiles) for (const [key, value] of Object.entries(profile.themes)) if (value === location) delete profile.themes[key];
+      if (opened === location || theme.name === name) { theme = { ...structuredClone(theme), name: 'Bezel Evo', elements: [] }; opened = null; }
       saved.splice(index, 1);
-      unprotected.delete(location);
-    },
-    protectTheme: async (location, on) => {
-      const found = saved.find(s => s.location === location);
-      if (!found || found.bundled) throw Object.assign(new Error('not in user library'), { code: 'notInLibrary', args: { location } });
-      if (on) unprotected.delete(location); else unprotected.add(location);
     },
     /** Copies a library theme as a new user theme named `name`, like `duplicate_theme`. */
     duplicateTheme: (location, name) => {
@@ -1641,6 +1634,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const found = saved.find((s) => s.location === location);
       if (found) {
         live = null;
+        opened = location;
         return Promise.resolve(structuredClone(found.theme));
       }
       return Promise.reject(Object.assign(new Error(`${location} is not in the theme library; import it instead`), { code: 'notInLibrary', args: { location } }));

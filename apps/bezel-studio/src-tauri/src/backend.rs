@@ -86,17 +86,6 @@ pub struct Backend {
     pub thumbnails: Thumbnails,
 }
 
-/// A library entry as the UI lists it: one of the user's themes is
-/// protected unless the user took its protection off.
-fn listed(
-    entry: &crate::library::ThemeEntry,
-    unprotected: &std::collections::BTreeSet<String>,
-) -> ThemeEntryDto {
-    let mut dto = ThemeEntryDto::from(entry);
-    dto.protected = !entry.bundled && !unprotected.contains(&entry.location.0);
-    dto
-}
-
 /// The editing session behind its lock, and the signal that the live
 /// screen's link came back from showing a frame: the screen's I/O happens
 /// outside the lock, so previews render while the screen works.
@@ -1105,13 +1094,37 @@ impl Backend {
             .first()
             .copied()
             .ok_or_else(|| UiError::new(ErrorCode::NoModel))?;
+        // A rev C screen is listed by its display's port or its MCU's: one
+        // document and one remembered theme for it, under the key it is
+        // edited by (the one asked for when it is not edited yet).
+        let target = self
+            .studio()
+            .selected_screen()
+            .filter(|k| *k == key || screen.answers_to(k))
+            .map_or_else(|| key.to_owned(), str::to_owned);
+        self.settings.update(|s| {
+            for map in [&mut s.screen_themes, &mut s.screen_orientations] {
+                let aliases: Vec<String> = map
+                    .keys()
+                    .filter(|k| **k != target && screen.answers_to(k))
+                    .cloned()
+                    .collect();
+                for alias in aliases {
+                    if let Some(value) = map.remove(&alias) {
+                        map.entry(target.clone()).or_insert(value);
+                    }
+                }
+            }
+        });
         let settings = self.settings.load();
         let orientation = settings
-            .orientation_for(key)
+            .orientation_for(&target)
             .unwrap_or_else(|| default_orientation(model));
         let blank = Theme::blank(self.texts().untitled, model.panel, orientation);
-        let fresh = self.studio().select_screen(key, blank);
-        if fresh && let Some(path) = settings.screen_themes.get(key) {
+        let fresh = self
+            .studio()
+            .select_screen_answering(&target, blank, |k| screen.answers_to(k));
+        if fresh && let Some(path) = settings.screen_themes.get(&target) {
             let location = ThemeLocation(path.clone());
             self.library.grant(&location);
             if self.open_at(location).is_err() {
@@ -1122,8 +1135,8 @@ impl Backend {
         if let Some(location) = location {
             self.remember_document(&location);
         }
-        self.settings
-            .update(|s| s.selected_screen = Some(key.into()));
+        let selected = self.studio().selected_screen().map(str::to_owned);
+        self.settings.update(|s| s.selected_screen = selected);
         Ok(self.session())
     }
 
@@ -1370,29 +1383,11 @@ impl Backend {
 
     /// The library's themes.
     pub fn themes(&self) -> Vec<ThemeEntryDto> {
-        let unprotected = self.settings.load().unprotected_themes;
         self.library
             .list()
             .iter()
-            .map(|entry| listed(entry, &unprotected))
+            .map(ThemeEntryDto::from)
             .collect()
-    }
-
-    /// Takes the protection of one of the user's themes off (it may then be
-    /// deleted) or puts it back. `notInLibrary` for any other theme.
-    pub fn protect_theme(&self, location: &str, protected: bool) -> UiResult<()> {
-        let source = ThemeLocation(location.into());
-        if !self.library.is_user(&source) || self.library.entry(&source).is_none() {
-            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
-        }
-        self.settings.update(|s| {
-            if protected {
-                s.unprotected_themes.remove(location);
-            } else {
-                s.unprotected_themes.insert(location.into());
-            }
-        });
-        Ok(())
     }
 
     /// Copies the library theme at `location` into the user's folder as a
@@ -1413,10 +1408,9 @@ impl Backend {
         theme.name = name.to_string();
         let copy = self.library.new_location(name);
         self.store.save(&copy, &theme, &assets)?;
-        let unprotected = self.settings.load().unprotected_themes;
         self.library
             .entry(&copy)
-            .map(|entry| listed(&entry, &unprotected))
+            .map(|entry| ThemeEntryDto::from(&entry))
             .ok_or_else(|| UiError::new(ErrorCode::ThemeFile).arg("detail", copy.0))
     }
 
@@ -1448,50 +1442,74 @@ impl Backend {
         Ok(target.0.clone())
     }
 
-    /// Removes an unused personal theme, after resolving it strictly inside the user library.
+    /// Deletes one of the user's themes, resolved strictly inside the user
+    /// library, even while it is in use: the profiles and screens that used
+    /// it lose it, and every document opened from it (on a screen or in the
+    /// editor) shows the Bezel Evo logo instead, unsaved.
     pub fn delete_theme(&self, location: &str) -> UiResult<()> {
         let source = ThemeLocation(location.into());
         if !self.library.is_user(&source) || self.library.entry(&source).is_none() {
             return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
-        }
-        if !self.settings.load().unprotected_themes.contains(location) {
-            return Err(UiError::new(ErrorCode::ThemeProtected).arg("location", location));
         }
         let path = std::fs::canonicalize(location).map_err(UiError::system)?;
         let root = std::fs::canonicalize(self.library.user_dir()).map_err(UiError::system)?;
         if path == root || !path.starts_with(&root) {
             return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location));
         }
-        let overview = self.profiles()?;
-        let used = overview
-            .config
-            .profiles
-            .iter()
-            .any(|p| p.themes.values().any(|v| v == location))
-            || overview
-                .displays
-                .iter()
-                .any(|d| d.theme.as_deref() == Some(location))
-            || overview
-                .status
-                .as_ref()
-                .and_then(|s| s.preview.as_ref())
-                .is_some_and(|p| p.themes.values().any(|v| v == location))
-            || self.studio().location() == Some(&source);
-        if used {
-            return Err(UiError::new(ErrorCode::InvalidInput).arg("detail", "theme still in use"));
+        let profiles = bezel_runtime::profiles::ProfileFile::beside(self.settings.path());
+        let mut config = profiles.overview()?.config;
+        let mut changed = false;
+        for profile in &mut config.profiles {
+            let before = profile.themes.len();
+            profile.themes.retain(|_, theme| theme != location);
+            changed |= profile.themes.len() != before;
+        }
+        if changed {
+            profiles.save(&config)?;
         }
         if path.is_dir() {
             std::fs::remove_dir_all(path).map_err(UiError::system)?;
         } else {
             std::fs::remove_file(path).map_err(UiError::system)?;
         }
-        // A theme saved there again later starts protected.
         self.settings.update(|s| {
-            s.unprotected_themes.remove(location);
+            s.screen_themes.retain(|_, theme| theme != location);
+            if s.last_theme.as_deref() == Some(location) {
+                s.last_theme = None;
+            }
         });
         self.thumbnails.forget(&source);
+        let replaced = self.studio().forget_location(&source, logo_theme);
+        for key in replaced {
+            self.sync_screen(key.as_deref());
+        }
         Ok(())
+    }
+
+    /// Tells Light about the document of screen `key` (the edited one when
+    /// it is selected or `None`); a failure is reported, Light gets it again
+    /// at the next sync.
+    fn sync_screen(&self, key: Option<&str>) {
+        let selected = self.studio().selected_screen().map(str::to_owned);
+        let synced = match (key, &self.engine) {
+            (Some(key), Some(engine)) if Some(key) != selected.as_deref() => {
+                let studio = self.studio();
+                let Some(parked) = studio.parked(key) else {
+                    return;
+                };
+                let revision = parked.document_revision();
+                let document = bezel_runtime::Document {
+                    theme: parked.theme().clone(),
+                    assets: parked.assets().clone(),
+                };
+                drop(studio);
+                engine.sync(key, revision, document, true).map(|_| ())
+            }
+            _ => self.sync_engine(true).map(|_| ()),
+        };
+        if synced.is_err() {
+            diag::report(DiagCode::DocumentNotSynced);
+        }
     }
 
     /// The thumbnail of a library theme as a PNG `data:` URL, drawn at
@@ -2016,6 +2034,58 @@ fn key_of(screen: &Screen, asked: &str) -> String {
     screen
         .address()
         .map_or_else(|| asked.to_string(), |a| a.0.clone())
+}
+
+/// The Bezel Evo logo's mark, as the app's icon draws it.
+const LOGO_SVG: &[u8] = include_bytes!("../../src/icon.svg");
+
+/// What a screen shows in place of `deleted`, a theme that is gone: the
+/// Bezel Evo logo at the center of a canvas the same size and way up.
+fn logo_theme(
+    deleted: &Theme,
+) -> (
+    Theme,
+    std::collections::BTreeMap<bezel_core::domain::theme::AssetRef, Vec<u8>>,
+) {
+    use bezel_core::domain::frame::Rgba;
+    use bezel_core::domain::theme::{AssetRef, BoxF, Element, ElementKind, Fit};
+    let mut theme = Theme::blank("Bezel Evo", deleted.canvas, deleted.orientation);
+    theme.background = Background::Color(Rgba::opaque(0x18, 0x1b, 0x1f));
+    let (width, height) = (theme.canvas.width as f32, theme.canvas.height as f32);
+    let side = (width.min(height) * 0.6).round();
+    let asset = AssetRef("assets/bezel-evo-logo.svg".into());
+    theme.elements.push(Element {
+        color_by_value: None,
+        visualization: None,
+        value_transition: None,
+        sensor_motion: None,
+        card: None,
+        rotation: 0.0,
+        is_group: false,
+        group_parent: None,
+        card_member: None,
+        id: ElementId(1),
+        name: "Bezel Evo".into(),
+        frame: BoxF::new(
+            ((width - side) / 2.0).round(),
+            ((height - side) / 2.0).round(),
+            side,
+            side,
+        ),
+        opacity: 1.0,
+        visible: true,
+        locked: false,
+        kind: ElementKind::Image {
+            radius: 0.,
+            corners: None,
+            fade: None,
+            asset: asset.clone(),
+            fit: Fit::Contain,
+            anchor: Default::default(),
+            playback: Default::default(),
+        },
+    });
+    (theme, [(asset, LOGO_SVG.to_vec())].into())
 }
 
 /// Model a new theme is sized for when no screen is connected.
@@ -3101,7 +3171,7 @@ mod tests {
     }
 
     #[test]
-    fn gallery_delete_only_removes_unused_personal_themes_and_metadata_is_real() {
+    fn gallery_deletes_personal_themes_in_use_and_metadata_is_real() {
         let f = fixture("gallery-delete");
         let location = f.backend.library.new_location("Personal");
         let theme = f.backend.studio().theme().clone();
@@ -3142,50 +3212,34 @@ mod tests {
                 .delete_theme(&f.backend.library.user_dir().display().to_string())
                 .is_err()
         );
-        // A user theme starts protected: only taking that off lets it go.
-        let error = f.backend.delete_theme(&location.0).unwrap_err();
-        assert_eq!(error.code(), "themeProtected", "{error}");
-        let protected = |b: &Backend| {
-            b.themes()
-                .into_iter()
-                .find(|e| e.location == location.0)
-                .map(|e| e.protected)
-        };
-        assert_eq!(protected(&f.backend), Some(true));
-        f.backend.protect_theme(&location.0, false).unwrap();
-        assert_eq!(protected(&f.backend), Some(false));
-        assert!(
-            f.backend
-                .protect_theme(&outside.display().to_string(), false)
-                .is_err()
-        );
+        // In use in the editor and on a screen, it goes all the same: the
+        // screen forgets it and the editor shows the logo in its place.
         f.backend.open(&location.0).unwrap();
-        assert!(
-            f.backend.delete_theme(&location.0).is_err(),
-            "the open document is protected"
-        );
-        f.backend
-            .studio()
-            .set_theme(Theme::blank("Unsaved", theme.canvas, theme.orientation));
-        // Opening another saved document changes its location; set_theme alone deliberately does not.
-        let another = f.backend.library.new_location("Another");
-        FsThemeStore
-            .save(&another, &theme, &Default::default())
-            .unwrap();
-        f.backend.open(&another.0).unwrap();
+        f.backend.settings.update(|s| {
+            s.screen_themes.insert("COM9".into(), location.0.clone());
+            s.screen_themes.insert("COM7".into(), "elsewhere".into());
+        });
         f.backend.delete_theme(&location.0).unwrap();
         assert!(!Path::new(&location.0).exists());
-        assert!(Path::new(&another.0).exists());
+        let settings = f.backend.settings.load();
+        assert_eq!(
+            settings.screen_themes.values().collect::<Vec<_>>(),
+            ["elsewhere"]
+        );
+        assert_ne!(settings.last_theme.as_deref(), Some(location.0.as_str()));
+        let session = f.backend.session();
+        assert_eq!(session.location, None, "the logo is not saved anywhere");
+        assert_eq!(session.theme.name, "Bezel Evo");
+        assert_eq!(
+            (session.theme.canvas.width, session.theme.canvas.height),
+            (theme.canvas.width, theme.canvas.height)
+        );
+        assert_eq!(f.backend.studio().assets().len(), 1, "the logo's mark");
         assert!(
-            !f.backend
-                .settings
-                .load()
-                .unprotected_themes
-                .contains(&location.0),
-            "a theme saved there again starts protected"
+            f.backend.themes().iter().all(|e| e.location != location.0),
+            "no longer listed"
         );
     }
-
     #[test]
     fn exporting_the_selected_saved_theme_keeps_all_assets_and_the_open_document() {
         use bezel_core::domain::theme::{AssetRef, Fit};
@@ -4101,6 +4155,37 @@ mod tests {
         f.backend.select_screen(MCU).unwrap();
         f.backend.select_screen(KEY).unwrap();
         assert_eq!(f.backend.session().theme.name, "Unsaved card edit");
+    }
+
+    #[test]
+    fn both_ports_of_a_screen_share_one_document_and_one_remembered_theme() {
+        let f = fixture("two-ports-one-document");
+        let location = f.backend.library.new_location("Mine");
+        let mut theme = f.backend.studio().theme().clone();
+        theme.name = "Mine".into();
+        FsThemeStore
+            .save(&location, &theme, &Default::default())
+            .unwrap();
+        // What an older version remembered under each port.
+        f.backend.settings.update(|s| {
+            s.screen_themes.insert(MCU.into(), location.0.clone());
+            s.screen_themes.insert(KEY.into(), "elsewhere".into());
+        });
+        f.backend.select_screen("other").ok();
+        f.backend.select_screen(KEY).unwrap();
+        let mut edited = f.backend.studio().theme().clone();
+        edited.name = "Unsaved".into();
+        f.backend.studio().set_theme(edited);
+        let session = f.backend.select_screen(MCU).unwrap();
+        assert_eq!(
+            session.screen.as_deref(),
+            Some(KEY),
+            "still the same screen"
+        );
+        assert_eq!(session.theme.name, "Unsaved", "the same document");
+        let remembered = f.backend.settings.load().screen_themes;
+        assert_eq!(remembered.len(), 1, "{remembered:?}");
+        assert!(remembered.contains_key(KEY));
     }
 
     #[test]

@@ -228,7 +228,7 @@ test('export selects the saved gallery theme without opening it in the editor', 
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 
-test('the hover trash deletes a protected theme on "delete anyway" and explains why one in use cannot go', async ({ page, t }) => {
+test('the hover trash deletes after one confirmation, even the theme open in the editor, which leaves the logo', async ({ page, t }) => {
   const errors = watchErrors(page);
   await openThemes(page, t);
   await page.locator('#theme-gallery').click();
@@ -239,18 +239,20 @@ test('the hover trash deletes a protected theme on "delete anyway" and explains 
     await item('Demo').getByRole('button', { name: t('themesPanel.more', { name: 'Demo' }), exact: true }).click();
     await page.getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
   };
+  const remove = async (name) => {
+    await item(name).hover();
+    await item(name).getByRole('button', { name: t('themesPanel.delete', { name }), exact: true }).click();
+    const confirm = page.locator('dialog[open]').last();
+    await confirm.getByRole('button', { name: t('storage.deleteAction'), exact: true }).click();
+    return confirm;
+  };
   const copyName = t('layers.copyOf', { name: 'Demo' });
   await duplicate();
-  const copy = item(copyName);
-  await expect(copy).toBeVisible();
+  await expect(item(copyName)).toBeVisible();
   await expect(item('Demo').getByRole('button', { name: t('themesPanel.delete', { name: 'Demo' }), exact: true })).toHaveCount(0);
-  await copy.hover();
-  await copy.getByRole('button', { name: t('themesPanel.delete', { name: copyName }), exact: true }).click();
-  const confirm = page.locator('dialog[open]').last();
-  await expect(confirm).toContainText(t('themesPanel.deleteProtectedBody'));
-  await confirm.getByRole('button', { name: t('themesPanel.deleteAnyway'), exact: true }).click();
+  await remove(copyName);
   await expect(item(copyName)).toHaveCount(0);
-  // The theme open in the editor stays: its trash says so instead of deleting.
+  // Open in the editor, it goes all the same: the confirmation says where it is used.
   await duplicate();
   await item(copyName).hover();
   await item(copyName).getByRole('button', { name: t('themesPanel.more', { name: copyName }), exact: true }).click();
@@ -258,11 +260,11 @@ test('the hover trash deletes a protected theme on "delete anyway" and explains 
   await expect(page.locator('#theme-name')).toHaveValue(copyName);
   await page.locator('#theme-gallery').click();
   await item(copyName).hover();
-  const trash = item(copyName).getByRole('button', { name: t('themesPanel.delete', { name: copyName }), exact: true });
-  await expect(trash).toHaveAttribute('aria-disabled', 'true');
-  expect(await trash.getAttribute('title')).toContain(t('themesPanel.use.editor'));
-  await trash.click({ force: true });
-  await expect(item(copyName)).toBeVisible();
-  await expect(dialog.locator('.themes-gallery-message')).toContainText(t('themesPanel.use.editor'));
+  await item(copyName).getByRole('button', { name: t('themesPanel.delete', { name: copyName }), exact: true }).click();
+  const confirm = page.locator('dialog[open]').last();
+  await expect(confirm).toContainText(t('themesPanel.use.editor'));
+  await confirm.getByRole('button', { name: t('storage.deleteAction'), exact: true }).click();
+  await expect(item(copyName)).toHaveCount(0);
+  await expect(page.locator('#theme-name')).toHaveValue('Bezel Evo');
   await expectAccessible(page); expect(errors).toEqual([]);
 });

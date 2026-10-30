@@ -221,8 +221,9 @@ const library = createLibrary({
   themeFilter: prefs?.themeFilter ?? null,
   actions: {
     openTheme: (location) => openTheme(location),
-    // The file the editor shows: the gallery cannot delete it.
+    // The file the editor shows: the gallery says so before deleting it.
     editingLocation: () => state.location,
+    themeDeleted: (location) => themeDeleted(location),
     newTheme: (axis) => newTheme(axis),
     refreshThemes: () => refreshThemes(),
     importTheme: () => importTheme(),
@@ -933,6 +934,8 @@ async function switchScreen(key) {
     await Promise.all([previewWork, autoWork, liveWork]);
     await bridge.pushTheme(store.getState().theme);
     const opened = await bridge.selectScreen(key);
+    // The other port of the screen being edited: the same screen, the same document.
+    if (previous && opened.screen === previous) return;
     screenDocuments.set(previous, { editor: store.capture(), location: state.location });
     state.screen = key;
     selected = true;
@@ -1115,6 +1118,28 @@ async function openTheme(location) {
       await refreshAssets();
       canvasView.fit();
       toast(t('toast.opened', { name: theme.name }));
+    });
+  } catch (e) {
+    fail(e);
+  }
+}
+
+/**
+ * After the gallery deleted `location`: the backend put the Bezel Evo logo,
+ * unsaved, in every document opened from it, so the editor takes it and
+ * the other screens' kept copies are dropped (switching reads the logo).
+ */
+async function themeDeleted(location) {
+  for (const [key, document] of screenDocuments) if (document.location === location) screenDocuments.delete(key);
+  if (state.location !== location) return;
+  try {
+    await changeDocument(async () => {
+      const session = await bridge.session();
+      state.location = session.location;
+      state.savedAt = null;
+      store.load(session.theme);
+      await refreshAssets();
+      canvasView.fit();
     });
   } catch (e) {
     fail(e);
