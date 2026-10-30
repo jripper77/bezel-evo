@@ -275,18 +275,23 @@ test('clipboard snapshots multiple objects, preserves appearance and groups past
 });
 
 test('clipboard is shared by screen documents and pastes inside the target canvas', () => {
-  const s = createStore(DEMO_THEME);
-  const wide = s.getState().theme.elements.find(e => e.id === 1);
+  const theme = structuredClone(DEMO_THEME);
+  theme.elements[0].frame = { x: 300, y: 1500, width: 60, height: 40 };
+  theme.elements[1].frame = { x: -20, y: 50, width: 60, height: 40 };
+  const s = createStore(theme);
   s.select([1]);
   s.copySelection();
   const first = s.capture();
   s.load({ ...structuredClone(DEMO_THEME), canvas: { width: 100, height: 100 }, elements: [] });
   s.paste();
   const [pasted] = selectedElements(s.getState());
-  assert.deepEqual(pasted.kind, wide.kind);
-  assert.ok(pasted.frame.x >= 0 && pasted.frame.y >= 0);
-  assert.ok(pasted.frame.x + pasted.frame.width <= 100 || pasted.frame.x === 0);
-  assert.ok(pasted.frame.y + pasted.frame.height <= 100 || pasted.frame.y === 0);
+  assert.deepEqual(pasted.kind, theme.elements[0].kind);
+  assert.deepEqual(pasted.frame, { x: 40, y: 60, width: 60, height: 40 }, 'a paste outside a smaller canvas comes inside');
+  const edge = createStore({ ...structuredClone(theme), canvas: { width: 100, height: 100 } });
+  edge.select([2]);
+  edge.copySelection();
+  edge.paste();
+  assert.deepEqual(selectedElements(edge.getState())[0].frame, { x: -4, y: 66, width: 60, height: 40 }, 'a box across an edge keeps its place');
   s.select([]);
   s.copySelection();
   s.restore(first);

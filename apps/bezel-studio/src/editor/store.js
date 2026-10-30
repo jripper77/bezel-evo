@@ -400,12 +400,15 @@ const ENGLISH = Object.freeze({
 
 /**
  * How far pasted elements move: by `offset`, then back inside the canvas
- * when their box would leave it (copied from a larger screen), the top-left
- * corner first when the box is larger than the canvas.
+ * when their box would miss it entirely (copied from a larger screen), the
+ * top-left corner first when the box is larger than the canvas. A box that
+ * still overlaps the canvas keeps its place: bleeding past an edge is a
+ * choice.
  */
 function fitShift(canvas, elements, offset) {
   const left = Math.min(...elements.map(e => e.frame.x)) + offset, top = Math.min(...elements.map(e => e.frame.y)) + offset;
   const right = Math.max(...elements.map(e => e.frame.x + e.frame.width)) + offset, bottom = Math.max(...elements.map(e => e.frame.y + e.frame.height)) + offset;
+  if (left < canvas.width && top < canvas.height && right > 0 && bottom > 0) return { x: offset, y: offset };
   const back = (start, end, size) => Math.max(-start, Math.min(0, size - end));
   return { x: offset + back(left, right, canvas.width), y: offset + back(top, bottom, canvas.height) };
 }
