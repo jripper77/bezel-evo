@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Studio
+- The image field of pictures, shapes and needles offers **From the computer…**:
+  the file joins the theme's media and is used at once, without a trip to the
+  Media tab. The Media tab still says which objects use each file.
+
+### Fixes
+- In the inspector, a colour next to a number (an outline's width and colour,
+  in shapes and cards) lines up with it again.
+
 ## [0.2.13] - 2026-10-30
 
 ### Studio
