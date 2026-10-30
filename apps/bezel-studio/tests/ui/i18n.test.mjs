@@ -319,6 +319,8 @@ const CAPITALISED_PHRASE = /\p{Lu}\p{Ll}*\s+[\p{L}\0]/u;
 const SENTENCE_END = /\p{L}[.!?…]$/u;
 /** The start of a translation key built in code (`'error.' + code`): it ends in "." but is no sentence. */
 const KEY_PREFIX = /^[a-z][\w.]*\.$/;
+/** One token that starts with a dot, like a pixel sprite's row (`.kHYk.`): no sentence starts so. */
+const DOTTED_TOKEN = /^\.\S*$/;
 /** A lowercase word as it stands in a sentence, maybe before a comma, ";" or ":". */
 const LOWERCASE_WORD = /^\p{Ll}+[,;:]?$/u;
 
@@ -326,7 +328,7 @@ const LOWERCASE_WORD = /^\p{Ll}+[,;:]?$/u;
 function readsLikeProse(text) {
   const trimmed = text.trim();
   if (CAPITALISED_PHRASE.test(trimmed)) return true;
-  if (SENTENCE_END.test(trimmed) && !KEY_PREFIX.test(trimmed)) return true;
+  if (SENTENCE_END.test(trimmed) && !KEY_PREFIX.test(trimmed) && !DOTTED_TOKEN.test(trimmed)) return true;
   const plain = trimmed.split(/\s+/).map((word) => LOWERCASE_WORD.test(word));
   return plain.some((word, i) => word && plain[i + 1] && plain[i + 2]);
 }
@@ -348,6 +350,8 @@ const NOT_PROSE = new Set([
   'bridge.js: invalid render time',
   // Default theme content, editable by the user rather than UI chrome.
   'editor/widgets.js: No media session',
+  // The last row of the pixel raindrop: a drop's colour and a transparent cell.
+  'weather-pixel.js: N.',
 ]);
 
 test('the prose scan finds sentences whatever function receives them', () => {
