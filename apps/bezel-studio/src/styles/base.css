@@ -183,6 +183,8 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .font-picker { display: grid; gap: 8px; }
 .font-picker > .field, .color-field { margin: 0; }
 .font-picker > .field > label, .color-field > label { font-size: 0.85rem; color: var(--muted); }
+/* Beside a field that keeps its bottom margin, a colour lines up with its box. */
+.fld-grid:has(> .field:not(.color-field)) > .color-field { margin-bottom: 8px; }
 .font-button, .color-button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); color: var(--text); text-align: left; cursor: pointer; }
 .font-button:hover, .color-button:hover { border-color: var(--faint); }
 .font-button[aria-expanded="true"], .color-button[aria-expanded="true"] { border-color: var(--accent); }
