@@ -7,6 +7,8 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.15] - 2026-10-30
+
 ### Studio
 - The gallery's theme cards show a trash on hover. A protected theme is deleted
   after **Delete anyway**; a theme in use (open in the editor, on a screen or
