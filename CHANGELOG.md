@@ -5,13 +5,12 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
-## [Unreleased]
+## [0.2.14] - 2026-10-30
 
 ### Studio
 - The image field of pictures, shapes and needles offers **From the computer…**:
   the file joins the theme's media and is used at once, without a trip to the
   Media tab. The Media tab still says which objects use each file.
-
 - Your themes are protected from deletion: the gallery deletes one only after
   you choose **Allow deletion** in its menu and confirm. Protection can be put
   back at any time.
