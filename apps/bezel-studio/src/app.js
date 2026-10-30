@@ -221,6 +221,8 @@ const library = createLibrary({
   themeFilter: prefs?.themeFilter ?? null,
   actions: {
     openTheme: (location) => openTheme(location),
+    // The file the editor shows: the gallery cannot delete it.
+    editingLocation: () => state.location,
     newTheme: (axis) => newTheme(axis),
     refreshThemes: () => refreshThemes(),
     importTheme: () => importTheme(),

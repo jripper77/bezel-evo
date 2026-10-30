@@ -9,7 +9,7 @@ import { catalogKeys, missingSensors, themeUses } from '../gallery-model.js';
 import { themePreview } from '../theme-previews.js';
 import { errorText, sensorLabel } from '../messages.js';
 
-export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge, catalog = () => null, readings = () => ({}), screen = () => null, refresh, onFacts = () => {}, onSensors = () => {} }) {
+export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge, catalog = () => null, readings = () => ({}), screen = () => null, editing = () => null, refresh, onFacts = () => {}, onSensors = () => {} }) {
   const memory = createSectionMemory({ key: 'bezel.gallerySections', ids: ['sensors', 'uses'], open: ['sensors', 'uses'] });
   const section = (id, title, name, children) => {
     const control = accordionSection({ id, title, icon: name, expanded: memory.isOpen('gallery', id), onToggle: options => { memory.toggle('gallery', id, options); control.setExpanded(memory.isOpen('gallery', id)); }, render: body => body.append(...children.filter(Boolean)) });
@@ -43,7 +43,14 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     message.textContent = count ? t('themesPanel.trialStarted') : t('profileRules.ui.noLiveScreen');
     await facts();
   }
-  const used = entry => themeUses(entry, overview);
+  // Where a theme is in use, the editor's open document included: the backend refuses to delete it.
+  const used = entry => [...(editing() === entry.location ? [{ kind: 'editor', name: '' }] : []), ...themeUses(entry, overview)];
+  /** Why the user's theme cannot be deleted now, in words; null when it can. */
+  function deleteBlocked(entry) {
+    if (!overview) return t('themesPanel.usesUnknown');
+    const uses = used(entry);
+    return uses.length ? t('themesPanel.removeFirst', { uses: uses.map(use => t(`themesPanel.use.${use.kind}`, { name: use.name })).join(' · ') }) : null;
+  }
   /** Taking the protection off is a choice of its own; putting it back is not asked. */
   async function protect(entry, on) {
     if (!on) {
@@ -55,9 +62,18 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     if (selected?.location === entry.location) selected = { ...selected, protected: on };
   }
   async function remove(entry) {
-    const answer = await askChoice(t, { title: t('themesPanel.deleteTitle', { name: entry.name }), body: t('themesPanel.deleteBody'), actions: [{ id: 'delete', label: t('storage.deleteAction'), kind: 'danger' }] });
+    const blocked = deleteBlocked(entry);
+    if (blocked) { message.textContent = blocked; return; }
+    // A protected theme is deleted only on an explicit "delete anyway".
+    const answer = await askChoice(t, entry.protected
+      ? { title: t('themesPanel.deleteTitle', { name: entry.name }), body: t('themesPanel.deleteProtectedBody'), actions: [{ id: 'delete', label: t('themesPanel.deleteAnyway'), kind: 'danger' }] }
+      : { title: t('themesPanel.deleteTitle', { name: entry.name }), body: t('themesPanel.deleteBody'), actions: [{ id: 'delete', label: t('storage.deleteAction'), kind: 'danger' }] });
     if (answer !== 'delete') return;
-    await bridge.deleteTheme(entry.location); await refresh(); await facts();
+    if (entry.protected) await bridge.protectTheme(entry.location, false);
+    try { await bridge.deleteTheme(entry.location); }
+    catch (error) { if (entry.protected) await bridge.protectTheme(entry.location, true); throw error; }
+    if (selected?.location === entry.location) selected = null;
+    await refresh(); await facts();
   }
   async function exportTheme(entry) {
     message.textContent = '';
@@ -70,12 +86,15 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
       { label: t('common.duplicate'), run: () => void run(() => duplicateTheme(entry)) },
       { label: t('themesPanel.export'), run: () => void run(() => exportTheme(entry)) },
       !entry.bundled && { label: t(entry.protected ? 'themesPanel.unprotect' : 'themesPanel.protect'), run: () => void run(() => protect(entry, !entry.protected)) },
-      { label: t('storage.deleteAction'), disabled: entry.bundled || entry.protected || !overview || used(entry).length > 0, run: () => void run(() => remove(entry)) },
+      !entry.bundled && { label: t('storage.deleteAction'), disabled: Boolean(deleteBlocked(entry)), run: () => void run(() => remove(entry)) },
     ].filter(Boolean) });
   }
   function tools(entry) {
     const more = iconButton(t('themesPanel.more', { name: entry.name }), ICONS.more, () => menu(entry, more));
-    return el('span', { class: 'theme-tools' }, [iconButton(t('themesPanel.try', { name: entry.name }), ICONS.play, () => void run(() => tryTheme(entry))), more]);
+    // The trash says why when the theme cannot go: a click then explains instead of deleting.
+    const blocked = entry.bundled ? null : deleteBlocked(entry);
+    const trash = !entry.bundled && iconButton(t('themesPanel.delete', { name: entry.name }), ICONS.trash, () => void run(() => remove(entry)), { class: 'theme-delete', 'aria-disabled': String(Boolean(blocked)), title: blocked ?? t('themesPanel.delete', { name: entry.name }) });
+    return el('span', { class: 'theme-tools' }, [iconButton(t('themesPanel.try', { name: entry.name }), ICONS.play, () => void run(() => tryTheme(entry))), trash, more].filter(Boolean));
   }
   function paint() {
     closeButton.title = t('dialog.close'); closeButton.setAttribute('aria-label', t('dialog.close'));
@@ -106,7 +125,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
         iconChoice(t('themesPanel.details'), null, [
           ['duplicate', t('common.duplicate'), 'copy', { disabled: busy }],
           ['export', t('themesPanel.export'), 'download', { disabled: busy, text: t('themesPanel.exportShort') }],
-          ['delete', t('storage.deleteAction'), 'trash', { disabled: busy || entry.bundled || entry.protected || !overview || uses.length > 0, description: entry.bundled ? t('themes.bundled') : entry.protected ? t('themesPanel.protectedHint') : uses.length ? t('themesPanel.removeUses') : undefined }],
+          ['delete', t('storage.deleteAction'), 'trash', { disabled: busy || entry.bundled || Boolean(deleteBlocked(entry)), description: entry.bundled ? t('themes.bundled') : deleteBlocked(entry) ?? (entry.protected ? t('themesPanel.protectedHint') : undefined) }],
         ], key => void run(() => key === 'duplicate' ? duplicateTheme(entry) : key === 'export' ? exportTheme(entry) : remove(entry)), { actions: true, bare: true, wide: true }),
       ]),
     ].filter(Boolean));

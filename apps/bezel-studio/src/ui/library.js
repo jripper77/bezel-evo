@@ -115,7 +115,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
   }
 
   const duplicateTheme = (entry) => actions.duplicateTheme?.(entry.location, t('layers.copyOf', { name: entry.name }));
-  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme, bridge, catalog: () => catalogReady ? catalog : null, readings: () => readings, screen: screenInUse, refresh: () => actions.refreshThemes(), onFacts: () => renderThemes(themes), onSensors: reportShown });
+  const gallery = createThemesDialog({ root: $('panel-themes'), t, openTheme: (entry) => actions.openTheme(entry.location), duplicateTheme, bridge, catalog: () => catalogReady ? catalog : null, readings: () => readings, screen: screenInUse, editing: () => actions.editingLocation?.() ?? null, refresh: () => actions.refreshThemes(), onFacts: () => renderThemes(themes), onSensors: reportShown });
   $('theme-gallery')?.addEventListener('click', () => gallery.show());
 
   // ---------------------------------------------------------------- tabs --

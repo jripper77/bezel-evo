@@ -350,6 +350,7 @@ button.layer-group-title { cursor: pointer; }
 .theme-tools { position: absolute; display: flex; top: 12px; left: 12px; gap: 4px; opacity: 0; }
 .theme-item:is(:hover, :focus-within) .theme-tools { opacity: 1; }
 .theme-tools .icon-button { background: var(--screen-chip); color: var(--screen-chip-ink); }
+.theme-tools .icon-button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 @media (max-width: 850px) { .themes-gallery-split { grid-template-columns: minmax(0, 1fr) 260px; } .themes-dialog .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .themes-gallery-split { grid-template-columns: 1fr; overflow-y: auto; } .themes-gallery-body, .themes-gallery-detail { overflow: visible; } }
 

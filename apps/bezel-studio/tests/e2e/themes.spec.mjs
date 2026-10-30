@@ -228,25 +228,41 @@ test('export selects the saved gallery theme without opening it in the editor', 
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 
-test('a user theme is protected until its protection is taken off, then it can be deleted', async ({ page, t }) => {
+test('the hover trash deletes a protected theme on "delete anyway" and explains why one in use cannot go', async ({ page, t }) => {
   const errors = watchErrors(page);
   await openThemes(page, t);
   await page.locator('#theme-gallery').click();
   const dialog = page.locator('.themes-dialog');
-  const more = (name) => dialog.locator('#theme-grid').getByRole('button', { name: t('themesPanel.more', { name }), exact: true });
-  await dialog.locator('.theme-item').first().hover(); await more('Demo').click();
-  await dialog.getByRole('menu').getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
-  const copy = dialog.locator('.theme-card').filter({ hasText: t('layers.copyOf', { name: 'Demo' }) }).first();
+  const item = (name) => dialog.locator('.theme-item').filter({ has: page.locator('.theme-card strong').getByText(name, { exact: true }) }).first();
+  const duplicate = async () => {
+    await item('Demo').hover();
+    await item('Demo').getByRole('button', { name: t('themesPanel.more', { name: 'Demo' }), exact: true }).click();
+    await page.getByRole('menuitem', { name: t('common.duplicate'), exact: true }).click();
+  };
+  const copyName = t('layers.copyOf', { name: 'Demo' });
+  await duplicate();
+  const copy = item(copyName);
   await expect(copy).toBeVisible();
-  await copy.click();
-  const detail = dialog.locator('.themes-gallery-detail');
-  const remove = detail.getByRole('button', { name: t('storage.deleteAction'), exact: true });
-  await expect(detail).toContainText(t('themesPanel.protected'));
-  await expect(remove).toBeDisabled();
-  await detail.getByRole('button', { name: t('themesPanel.more', { name: t('layers.copyOf', { name: 'Demo' }) }), exact: true }).click();
-  await page.getByRole('menuitem', { name: t('themesPanel.unprotect'), exact: true }).click();
-  await page.locator('dialog[open]').last().getByRole('button', { name: t('themesPanel.unprotect'), exact: true }).click();
-  await expect(detail).not.toContainText(t('themesPanel.protected'));
-  await expect(remove).toBeEnabled();
+  await expect(item('Demo').getByRole('button', { name: t('themesPanel.delete', { name: 'Demo' }), exact: true })).toHaveCount(0);
+  await copy.hover();
+  await copy.getByRole('button', { name: t('themesPanel.delete', { name: copyName }), exact: true }).click();
+  const confirm = page.locator('dialog[open]').last();
+  await expect(confirm).toContainText(t('themesPanel.deleteProtectedBody'));
+  await confirm.getByRole('button', { name: t('themesPanel.deleteAnyway'), exact: true }).click();
+  await expect(item(copyName)).toHaveCount(0);
+  // The theme open in the editor stays: its trash says so instead of deleting.
+  await duplicate();
+  await item(copyName).hover();
+  await item(copyName).getByRole('button', { name: t('themesPanel.more', { name: copyName }), exact: true }).click();
+  await page.getByRole('menuitem', { name: t('themesPanel.openEditor'), exact: true }).click();
+  await expect(page.locator('#theme-name')).toHaveValue(copyName);
+  await page.locator('#theme-gallery').click();
+  await item(copyName).hover();
+  const trash = item(copyName).getByRole('button', { name: t('themesPanel.delete', { name: copyName }), exact: true });
+  await expect(trash).toHaveAttribute('aria-disabled', 'true');
+  expect(await trash.getAttribute('title')).toContain(t('themesPanel.use.editor'));
+  await trash.click({ force: true });
+  await expect(item(copyName)).toBeVisible();
+  await expect(dialog.locator('.themes-gallery-message')).toContainText(t('themesPanel.use.editor'));
   await expectAccessible(page); expect(errors).toEqual([]);
 });
