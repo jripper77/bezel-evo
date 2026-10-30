@@ -5,6 +5,13 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Studio
+- The gallery's theme cards show a trash on hover. A protected theme is deleted
+  after **Delete anyway**; a theme in use (open in the editor, on a screen or
+  in a profile) keeps its trash dimmed and says where it is used.
+
 ## [0.2.14] - 2026-10-30
 
 ### Studio
