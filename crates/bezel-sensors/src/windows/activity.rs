@@ -174,6 +174,13 @@ impl Provider for Activity {
                 .is_some_and(|at| now.saturating_duration_since(at) < Duration::from_secs(4))
         {
             out.media.clone_from(&cache.snapshot.media);
+            // Between two polls a playing track moves on with the clock.
+            let since = now
+                .checked_duration_since(cache.at.unwrap_or(now))
+                .map_or(0., |d| d.as_secs_f64());
+            for media in out.media.iter_mut().filter(|m| m.playing) {
+                media.position = advanced(media.position, media.duration, true, since, 1.);
+            }
             out.media_available = cache.snapshot.media_available;
             out.applications.clone_from(&cache.snapshot.applications);
             out.foreground.clone_from(&cache.snapshot.foreground);
@@ -257,7 +264,9 @@ fn sessions(
         }
         let session = sessions.GetAt(i)?;
         let source = session.SourceAppUserModelId()?.to_string();
-        let playing = session.GetPlaybackInfo()?.PlaybackStatus()? == Status::Playing;
+        let info = session.GetPlaybackInfo()?;
+        let playing = info.PlaybackStatus()? == Status::Playing;
+        let rate = info.PlaybackRate().and_then(|r| r.Value()).unwrap_or(1.);
         let timeline = session.GetTimelineProperties()?;
         let properties = match wait(session.TryGetMediaPropertiesAsync()?, deadline) {
             Ok(p) => p,
@@ -316,13 +325,18 @@ fn sessions(
             })
             .clone();
         let start = timeline.StartTime()?.Duration as f64 / 10_000_000.;
+        let position = (timeline.Position()?.Duration as f64 / 10_000_000. - start).max(0.);
+        let duration = (timeline.EndTime()?.Duration as f64 / 10_000_000. - start).max(0.);
+        // Apps report the position now and then (on a seek, every few
+        // seconds): it has moved on since, as long as the track plays.
+        let since = seconds_since(timeline.LastUpdatedTime()?.UniversalTime);
         out.push(MediaSession {
             source,
             title,
             artist,
             playing,
-            position: (timeline.Position()?.Duration as f64 / 10_000_000. - start).max(0.),
-            duration: (timeline.EndTime()?.Duration as f64 / 10_000_000. - start).max(0.),
+            position: advanced(position, duration, playing, since, rate),
+            duration,
             cover,
         });
     }
@@ -330,9 +344,73 @@ fn sessions(
     Ok(out)
 }
 
+/// The longest a reported position is carried forward: older reports are
+/// not trusted to still describe the track.
+const LONGEST_ADVANCE: f64 = 6. * 3600.;
+
+/// `position` moved on by `seconds` at `rate` while `playing`, never past a
+/// known `duration`; as it is when anything is unknown or out of range.
+fn advanced(position: f64, duration: f64, playing: bool, seconds: f64, rate: f64) -> f64 {
+    if !playing || !(0. ..=LONGEST_ADVANCE).contains(&seconds) || !rate.is_finite() || rate <= 0. {
+        return position;
+    }
+    let moved = position + seconds * rate;
+    if duration > 0. {
+        moved.min(duration)
+    } else {
+        moved
+    }
+}
+
+/// Seconds from a Windows UTC time (100 ns ticks since 1601) to now; NaN
+/// for an unset time.
+fn seconds_since(universal: i64) -> f64 {
+    const UNIX_FROM_1601: f64 = 11_644_473_600.;
+    let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) else {
+        return f64::NAN;
+    };
+    if universal <= 0 {
+        return f64::NAN;
+    }
+    now.as_secs_f64() + UNIX_FROM_1601 - universal as f64 / 10_000_000.
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_playing_position_moves_on_from_its_last_report() {
+        assert_eq!(advanced(30., 200., true, 4.5, 1.), 34.5);
+        assert_eq!(advanced(30., 200., true, 2., 1.5), 33.);
+        assert_eq!(advanced(30., 200., false, 4.5, 1.), 30., "paused");
+        assert_eq!(
+            advanced(198., 200., true, 10., 1.),
+            200.,
+            "never past the end"
+        );
+        assert_eq!(advanced(30., 0., true, 5., 1.), 35., "unknown length");
+        for (seconds, rate) in [
+            (f64::NAN, 1.),
+            (-1., 1.),
+            (LONGEST_ADVANCE + 1., 1.),
+            (3., 0.),
+            (3., f64::NAN),
+        ] {
+            assert_eq!(
+                advanced(30., 200., true, seconds, rate),
+                30.,
+                "{seconds} {rate}"
+            );
+        }
+        assert!(seconds_since(0).is_nan());
+        let ticks = |unix: f64| ((unix + 11_644_473_600.) * 10_000_000.) as i64;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64();
+        assert!((seconds_since(ticks(now - 3.)) - 3.).abs() < 0.5);
+    }
     #[test]
     #[ignore = "reads the real Windows desktop context on request"]
     fn actual_windows_context_sample_is_nonblocking_and_demand_driven() {
