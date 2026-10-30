@@ -2519,6 +2519,7 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                         bezel_core::domain::weather::IconStyle::Filled => "filled",
                         bezel_core::domain::weather::IconStyle::Colored => "colored",
                         bezel_core::domain::weather::IconStyle::Dimensional => "dimensional",
+                        bezel_core::domain::weather::IconStyle::Pixel => "pixel",
                     }
                     .into(),
                     icon_gap: w.icon_gap,
@@ -2794,6 +2795,7 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                             "filled" => bezel_core::domain::weather::IconStyle::Filled,
                             "colored" => bezel_core::domain::weather::IconStyle::Colored,
                             "dimensional" => bezel_core::domain::weather::IconStyle::Dimensional,
+                            "pixel" => bezel_core::domain::weather::IconStyle::Pixel,
                             _ => return err("invalid weather icon style"),
                         },
                         icon_gap: *icon_gap,

@@ -84,7 +84,7 @@ test('demo pixels match corner clipping, isolated cover fades and monochrome ico
     const widget = (name, frame) => ({ ...createWidget(name, base.canvas), id: 1, name, frame, opacity: 1, visible: true });
     const scene = e => ({ ...base, canvas: { width: e.frame.width, height: e.frame.height }, background: { type: 'color', color: '#000000ff' }, elements: [e] });
     const weather = widget('weather', { x: 0, y: 0, width: 160, height: 40 }); weather.kind.style.size = 8; weather.kind.content.iconSize = 32; weather.kind.content.iconGap = 2;
-    const icons = ['outline', 'filled', 'colored', 'dimensional'].map(style => {
+    const icons = ['outline', 'filled', 'colored', 'dimensional', 'pixel'].map(style => {
       weather.kind.content.iconStyle = style; weather.kind.content.iconColor = null;
       const plain = renderApprox(scene(weather), 0, null, new Map(), 1, false).rgba;
       weather.kind.content.iconColor = '#ff0000ff'; const tinted = renderApprox(scene(weather), 0, null, new Map(), 1, false).rgba;
@@ -106,7 +106,7 @@ test('demo pixels match corner clipping, isolated cover fades and monochrome ico
     });
     return { icons, pngCorner:image[3], pngSquare:image[9*4+3], gifCorner:[...first.slice(0,4)], gifMoves:first[(5*10+5)*4] !== second[(5*10+5)*4] || first[(5*10+5)*4+1] !== second[(5*10+5)*4+1], covers };
   });
-  expect(result.icons).toEqual([{changed:true,textSame:true},{changed:true,textSame:true},{changed:false,textSame:true},{changed:false,textSame:true}]);
+  expect(result.icons).toEqual([{changed:true,textSame:true},{changed:true,textSame:true},{changed:false,textSame:true},{changed:false,textSame:true},{changed:false,textSame:true}]);
   expect(result.pngCorner).toBe(0); expect(result.pngSquare).toBe(255); expect(result.gifCorner).toEqual([0,0,0,255]); expect(result.gifMoves).toBe(true);
   expect(result.covers[0].left).toBe(255); expect(result.covers[1].left).toBeGreaterThan(result.covers[1].right); expect(result.covers[2].center).toBeGreaterThan(result.covers[2].edge);
   expect(result.covers.every(cover => JSON.stringify(cover.outside) === JSON.stringify([0,255,0,255]))).toBe(true);

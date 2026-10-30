@@ -187,6 +187,10 @@ pub(crate) fn draw(
     style: IconStyle,
     pose: &IconPose,
 ) {
+    if style == IconStyle::Pixel {
+        crate::weather_pixel::draw(layer, area, code, pose);
+        return;
+    }
     let colored = matches!(style, IconStyle::Colored | IconStyle::Dimensional);
     let depth = style == IconStyle::Dimensional;
     let f = family(code);

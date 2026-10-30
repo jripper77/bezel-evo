@@ -17,6 +17,7 @@ import { weatherFamily, weatherText } from './weather-format.js';
 import { HAND_LENGTHS, analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { canvasFont as fontOf, blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
+import { drawPixelWeather } from './weather-pixel.js';
 import { REST, amplitudeOf, iconPose, iconStep } from './weather-motion.js';
 import { demoPeak, faint, fitGauge, gradientAt, lookOf, needleColor, numberShares, scaleNumber, share, tickShares } from './needle-look.js';
 import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
@@ -180,6 +181,7 @@ function drawIconComponent(ctx, component, style, colour) {
  * `pose`, and the 3D shadow, halo and flash.
  */
 export function drawWeatherIcon(ctx, style, colour, x, y, side, code, pose = REST) {
+  if (style === 'pixel') { drawPixelWeather(ctx, x, y, side, code, pose); return; }
   const colored = ['colored', 'dimensional'].includes(style);
   ctx.save();
   ctx.translate(x, y);

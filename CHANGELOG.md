@@ -12,6 +12,9 @@ All notable changes to Bezel Evo are documented here. The format follows
   theme is in use: the protection from deletion is gone. Screens and profiles
   that used it forget it, and the Bezel Evo logo takes its place on the
   screen and in the editor.
+- Weather icons have a **Pixel art** style, made for pixel themes: drawn on
+  a 16×16 grid with crisp pixels. Moving, they step a pixel at a time and the
+  sun's rays twinkle.
 
 ### Fixes
 - A rev C 8.8" listed by either of its two ports is one screen with one

@@ -1139,6 +1139,7 @@ export default {
   "trigger.add": "Adicionar gatilho",
   "weather.colored": "Colorido",
   "weather.dimensional": "Estilo 3D",
+  "weather.pixel": "Pixel art",
   "sleep.help": "Ap\u00f3s desligar o PC, telas compat\u00edveis desligam em 1\u201310 minutos. Padr\u00e3o: 5 minutos. N\u00e3o desliga uma tela com Live ativo.",
   "sleep.configure": "Configurar timer\u2026",
   "library.design": "Design",

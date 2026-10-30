@@ -34,7 +34,7 @@ export function panels(ctx) {
       nodes.push(fieldGrid([iconChoice(t('insp.weather.units'), c.fahrenheit ? 'f' : 'c', [['c', '\u00b0C'], ['f', '\u00b0F']], value => update(e.id, { kind: { content: { fahrenheit: value === 'f' } } }), { wide: true }), language]));
       weatherAppearance.push(switchRow(t('weather.icon'), c.showIcon !== false, (showIcon) => update(e.id, { kind: { content: { showIcon } } }), { iconName: 'weather', leading: true }));
       if (c.showIcon !== false) {
-        const styles = [['outline', t('icons.outline')], ['filled', t('icons.filled')], ['colored', t('weather.colored')], ['dimensional', t('weather.dimensional')]];
+        const styles = [['outline', t('icons.outline')], ['filled', t('icons.filled')], ['colored', t('weather.colored')], ['dimensional', t('weather.dimensional')], ['pixel', t('weather.pixel')]];
         const tiles = styles.map(([value, text]) => ({ text, preview: iconPreview(value), pressed: (c.iconStyle ?? 'outline') === value, onClick: () => update(e.id, { kind: { content: { iconStyle: value } } }) }));
         weatherAppearance.push(section('weather-style', t('weather.iconStyle'), [ctx.optionTiles(t('weather.iconStyle'), tiles)], { caption: true }));
         weatherAppearance.push(fieldGrid([

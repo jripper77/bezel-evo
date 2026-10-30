@@ -72,6 +72,7 @@ mod tests {
 }
 
 mod weather;
+mod weather_pixel;
 
 #[cfg(test)]
 mod rotation_tests;

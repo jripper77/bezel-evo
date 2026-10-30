@@ -1139,6 +1139,7 @@ export default {
   "trigger.add": "Add trigger",
   "weather.colored": "Colored",
   "weather.dimensional": "3D style",
+  "weather.pixel": "Pixel art",
   "sleep.help": "After PC shutdown, supported screens turn off after 1\u201310 minutes. Default: 5 minutes. This firmware timer does not turn off an active Live screen.",
   "sleep.configure": "Configure timer\u2026",
   "library.design": "Design",

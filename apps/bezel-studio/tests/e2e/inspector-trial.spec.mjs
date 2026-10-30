@@ -65,7 +65,7 @@ test('every inspector trial renders, and weather visits distinct native shapes i
     }
     const data = createWidget('weather', base.canvas);
     const weather = { ...data, id: 901, name: 'weather', frame: { x: 0, y: 0, width: data.width, height: data.height } };
-    for (const style of ['outline','filled','colored','dimensional']) {
+    for (const style of ['outline','filled','colored','dimensional','pixel']) {
       weather.kind.content.iconStyle = style;
       const signatures = [];
       for (let i = 0; i < 8; i++) {

@@ -16,6 +16,8 @@ pub enum IconStyle {
     Colored,
     /// Shaded vectors with depth.
     Dimensional,
+    /// Pixel-art sprites drawn on whole pixels.
+    Pixel,
 }
 
 /// A portable weather object. Coordinates are selected by city search.

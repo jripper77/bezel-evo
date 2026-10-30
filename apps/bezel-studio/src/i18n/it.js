@@ -1139,6 +1139,7 @@ export default {
   "trigger.add": "Aggiungi trigger",
   "weather.colored": "A colori",
   "weather.dimensional": "Stile 3D",
+  "weather.pixel": "Pixel art",
   "sleep.help": "Dopo lo spegnimento del PC, gli schermi compatibili si spengono dopo 1–10 minuti. Predefinito: 5 minuti. Questo timer del firmware non spegne uno schermo in diretta.",
   "sleep.configure": "Configura il timer…",
   "library.design": "Design",
