@@ -60,7 +60,6 @@ pub(crate) struct Update {
     pub deliveries: Vec<(Instant, Option<TransferStats>, f64)>,
     pub opened: Option<(Screen, Link)>,
     pub error: bool,
-    pub completed: u64,
 }
 impl Presenter {
     pub fn start(
@@ -330,12 +329,13 @@ impl Presenter {
                 },
             )
         });
-        Update {
+        let update = Update {
             deliveries: state.deliveries.drain(..).collect(),
             opened,
             error: std::mem::take(&mut state.error),
-            completed: std::mem::take(&mut state.completed),
-        }
+        };
+        state.completed = 0;
+        update
     }
     pub fn idle(&self) -> bool {
         let state = self

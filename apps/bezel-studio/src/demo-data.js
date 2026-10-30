@@ -447,7 +447,7 @@ export const DEMO_LIVE_FPS = 30;
 export const DEMO_KLIPY_KEY = 'demo-demo-demo-a1b2';
 
 /**
- * @type {Record<string, {screens?: object[], desktopMode?: object[], error?: string, storage?: object, ffmpeg?: boolean, card?: boolean, internalTotal?: number, theme?: object, denied?: boolean, hung?: boolean, flaky?: boolean, klipy?: {key: string|null, rateLimited?: boolean}, standby?: {choice: string, sleepMinutes: number|null, file: string|null}}>}
+ * @type {Record<string, {screens?: object[], desktopMode?: object[], error?: string, storage?: object, ffmpeg?: boolean, card?: boolean, internalTotal?: number, theme?: object, denied?: boolean, hung?: boolean, flaky?: boolean, off?: boolean, klipy?: {key: string|null, rateLimited?: boolean}, standby?: {choice: string, sleepMinutes: number|null, file: string|null}}>}
  */
 export const SCENARIOS = Object.freeze({
   turing88: { screens: [turing88] },
@@ -481,6 +481,8 @@ export const SCENARIOS = Object.freeze({
   dragonNoFfmpeg: { screens: [turing88], theme: DEMO_DRAGON_THEME, storage: DRAGON_STORAGE, ffmpeg: false },
   // A live screen that drops once and is connected again by itself (T-7.11).
   flaky: { screens: [turing88], flaky: true },
+  // A live screen turned off: it stays live while Light retries its link, with no frames.
+  off: { screens: [turing88], off: true },
   desktop: { screens: [turing88], desktopMode: [desktopPanel] },
   // The 8.8" put live and named by its MCU port, not its listed key, like
   // 0.1.0-dev.287 (D-2026-10-01-live-screen-controls-1): the UI keeps the

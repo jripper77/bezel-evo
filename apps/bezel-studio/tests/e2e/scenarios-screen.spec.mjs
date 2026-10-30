@@ -192,3 +192,18 @@ test('a live screen that drops is connected again by itself', async ({ page, t }
   await expect(page.getByRole('switch')).toBeChecked();
   expect(errors).toEqual([]);
 });
+
+test('a live screen turned off says so instead of 0 fps', async ({ page, t }) => {
+  // Light keeps a screen that stopped answering live and retries its link:
+  // the chip turns yellow and says why, with no frame rate.
+  const errors = watchErrors(page);
+  await page.goto('/index.html?demo=off');
+  await expect(page.locator('#theme-name')).toHaveValue('Demo');
+  await page.getByRole('switch').click({ force: true });
+  const chip = page.locator('#status-screen-toggle');
+  await expect(chip).toHaveAttribute('data-tone', 'warn');
+  await expect(chip).not.toContainText('fps');
+  await expect(page.locator('#status-device')).toContainText(t('status.liveNoAnswer', { message: '' }).split('(')[0].trim());
+  await expect(page.getByRole('switch')).toBeChecked();
+  await expectAccessible(page); expect(errors).toEqual([]);
+});

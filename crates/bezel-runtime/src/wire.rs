@@ -474,7 +474,7 @@ fn dispatch_inner(
                 }
             }
             Ok((
-                json!({"sampleAtMs":engine.sensors.latest().at.as_millis() as u64,"catalog":catalog,"readings":readings,"fps":scene.map(|s|s.frames as f64/engine.origin.elapsed().as_secs_f64().max(0.001)),"error":scene.and_then(|s|s.error.clone()),"video":video,"activity":activity}),
+                json!({"sampleAtMs":engine.sensors.latest().at.as_millis() as u64,"catalog":catalog,"readings":readings,"fps":scene.and_then(|s|s.performance.fps_at(std::time::Instant::now())),"error":scene.and_then(|s|s.error.clone()),"video":video,"activity":activity}),
                 Vec::new(),
             ))
         }

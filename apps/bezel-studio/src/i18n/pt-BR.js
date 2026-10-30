@@ -750,6 +750,7 @@ export default {
   'status.devicesError': 'Erro ao listar telas: {message}',
   'status.live': 'ao vivo',
   'status.liveVideoMissing': 'ao vivo · vídeo de fundo fora da tela',
+  'status.liveNoAnswer': 'ao vivo · a tela não responde ({message})',
   'status.renderError': 'Erro de render: {message}',
   'status.saved': 'Tudo salvo',
   'status.libreRestarted': 'Leitor Libre reiniciado. Aguardando novas leituras…',

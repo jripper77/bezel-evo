@@ -750,6 +750,7 @@ export default {
   'status.devicesError': 'Could not list screens: {message}',
   'status.live': 'live',
   'status.liveVideoMissing': 'live · background video not on the screen',
+  'status.liveNoAnswer': 'live · the screen does not answer ({message})',
   'status.renderError': 'Render error: {message}',
   'status.saved': 'All saved',
   'status.libreRestarted': 'Libre reader restarted. Waiting for fresh readings…',

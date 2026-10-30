@@ -99,7 +99,6 @@ struct Scene {
     video_started: Duration,
     video_dirty: bool,
     rendered_at: Duration,
-    frames: u64,
     error: Option<String>,
     cards: bool,
     profile_restore: Option<Document>,
@@ -415,7 +414,6 @@ impl Engine {
                     video_started: Duration::ZERO,
                     video_dirty: true,
                     rendered_at: Duration::ZERO,
-                    frames: 0,
                     error: None,
                     cards: true,
                     profile_restore: None,
@@ -848,7 +846,6 @@ impl Engine {
             }
             if let Some(presenter) = &scene.presenter {
                 let update = presenter.poll();
-                scene.frames += update.completed;
                 if self.debug_overlay.is_some() {
                     for (at, transfer, present_ms) in update.deliveries {
                         let gap = scene.performance.count(true, transfer, at);

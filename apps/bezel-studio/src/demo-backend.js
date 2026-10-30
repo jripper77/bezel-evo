@@ -1465,7 +1465,9 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
         screenState.away -= 1;
         reconnecting = { attempt: 1, attempts: 3 };
       }
-      const liveFps = live && !reconnecting ? DEMO_LIVE_FPS : null;
+      // A screen turned off while live: Light keeps it live and says why no frame arrives.
+      if (live && chosen.off) liveError = { code: 'transport', args: { detail: 'screen I/O failed' }, message: 'transport error: screen I/O failed' };
+      const liveFps = live && !reconnecting && !chosen.off ? DEMO_LIVE_FPS : null;
       return Promise.resolve({ sampleMillis: 3, readings, live: live || null, liveError, video: videoOfTheme(), reconnecting, liveFps, activity: structuredClone(DEMO_ACTIVITY) });
     },
     session: () => Promise.resolve({ version: 'demo', screen: selectedScreen, theme: structuredClone(theme), location: chosen.theme ? null : saved[0].location, minRefreshSeconds: DEMO_MIN_REFRESH }),

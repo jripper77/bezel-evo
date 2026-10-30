@@ -95,6 +95,9 @@ const state = {
   savedAt: null,
   // Frames a second the live screen shows (the sample's `liveFps`).
   liveFps: null,
+  // Why the live screen gets no frames while it stays live (Light retries its
+  // link: a screen turned off or unplugged), else null.
+  liveFault: null,
 };
 
 function toast(message) {
@@ -688,6 +691,11 @@ async function sampleLoop() {
       state.liveFps = s.liveFps ?? null;
       renderScreenPill();
     }
+    const fault = s.live && s.liveError ? s.liveError : null;
+    if (JSON.stringify(fault) !== JSON.stringify(state.liveFault)) {
+      state.liveFault = fault;
+      renderScreenSelect();
+    }
     if (!switchingScreen && screen === state.screen && generation === documentGeneration) syncLive(s);
     lastSample = s;
     sensorStatus.update({ health: libreStatus(state.catalog, s.readings), sampleMillis: s.sampleMillis, sampledAt: Date.now(), readings: s.readings, catalog: state.catalog, error: null });
@@ -730,6 +738,7 @@ function renderScreenSelect() {
   if (state.screenError) device = t('status.devicesError', { message: errorText(t, state.screenError) });
   else if (state.restarting) device = t('restart.running');
   else if (state.reconnecting) device = t('restart.reconnecting', state.reconnecting);
+  else if (current && state.live && state.liveFault) device = t('status.liveNoAnswer', { message: errorText(t, state.liveFault) });
   else if (current && state.live && state.liveVideo?.state === 'missing') device = t('status.liveVideoMissing');
   else if (current) device = state.live ? t('status.live') : t(`screen.state.${current.state}`);
   screenDevice = device;
@@ -785,7 +794,7 @@ function renderScreenPill() {
   const current = currentScreen();
   const model = current?.models?.length === 1 ? current.models[0] : null;
   const { theme } = store.getState();
-  const problem = Boolean(state.screenError || state.restarting || state.reconnecting || (state.live && state.liveVideo?.state === 'missing'));
+  const problem = Boolean(state.screenError || state.restarting || state.reconnecting || (state.live && (state.liveFault || state.liveVideo?.state === 'missing')));
   screenChip.update(current ? {
     name: model?.name ?? deviceLabel(current, t),
     port: current.key,

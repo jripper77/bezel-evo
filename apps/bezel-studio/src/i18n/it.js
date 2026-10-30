@@ -750,6 +750,7 @@ export default {
   "status.devicesError": "Impossibile elencare gli schermi: {message}",
   "status.live": "in diretta",
   "status.liveVideoMissing": "in diretta · video di sfondo non presente sullo schermo",
+  "status.liveNoAnswer": "in diretta · lo schermo non risponde ({message})",
   "status.renderError": "Errore di render: {message}",
   "status.saved": "Tutto salvato",
   "status.libreRestarted": "Lettore Libre riavviato. In attesa di nuove letture…",
