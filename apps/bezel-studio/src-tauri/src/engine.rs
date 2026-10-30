@@ -487,6 +487,17 @@ mod tests {
     }
 
     #[test]
+    fn a_render_time_crosses_the_json_channel_unchanged() {
+        // Light measures it, the frame's trailer carries it: a parse off by
+        // one unit in the last place made the two differ now and then.
+        for millis in [1.9419000000000002_f64, 0.1 + 0.2, 7.070_800_000_000_001] {
+            let text = serde_json::json!({ "renderMillis": millis }).to_string();
+            let back: serde_json::Value = serde_json::from_str(&text).unwrap();
+            assert_eq!(back["renderMillis"].as_f64(), Some(millis), "{text}");
+        }
+    }
+
+    #[test]
     fn remote_canvas_is_binary_scaled_and_unchanged_until_document_edit() {
         let (bridge, connection, built) = setup();
         bridge.sync("editor", (1, 1), document(), true).unwrap();
