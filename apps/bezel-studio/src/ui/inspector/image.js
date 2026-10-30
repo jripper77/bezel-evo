@@ -18,9 +18,7 @@ export function panels(ctx) {
     const options = assets.filter((a) => a.kind === 'image').map((a) => [a.ref, a.ref.split('/').pop()]);
     if (k.asset && !options.some(([r]) => r === k.asset)) options.push([k.asset, k.asset]);
     const data = [section('content', t('inspector.content'), [
-      options.length
-        ? assetField(t('common.image'), k.asset, [['', t('inspector.noImage')], ...options], v => set({ asset: v }), assets)
-        : el('p', { class: 'hint', text: t('inspector.addMediaFirst') }),
+      assetField(t('common.image'), k.asset, [['', t('inspector.noImage')], ...options], v => set({ asset: v }), assets),
     ])];
     const look = [section('appearance', t('inspector.fit'), [
       optionTiles(t('inspector.fit'), ['contain', 'cover', 'fill', ...(k.fit === 'none' ? ['none'] : [])].map(value => ({ text: t(`fit.${value}`), art: ({ contain: ART.repeatContain, cover: ART.repeatCover, fill: ART.repeatStretch, none: ART.repeatCenter })[value], pressed: k.fit === value, onClick: () => set({ fit: value }) }))),

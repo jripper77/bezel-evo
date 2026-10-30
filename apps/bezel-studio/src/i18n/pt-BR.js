@@ -459,7 +459,6 @@ export default {
   'importWarning.videoWithoutName': 'O vídeo de fundo não tem nome de arquivo; só a imagem de capa foi importada.',
   'importWarning.weatherNotSupported': 'STATS.{name}: clima ainda não é suportado.',
   'importWarning.weekdayFormat': 'O formato de dia da semana {format} aparece como nome abreviado do dia.',
-  'inspector.addMediaFirst': 'Adicione imagens na aba Mídia.',
   'inspector.align': 'Alinhamento',
   'inspector.alignCenter': 'Centro',
   'inspector.alignTools': 'Alinhar',

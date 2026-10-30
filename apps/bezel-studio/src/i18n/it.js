@@ -459,7 +459,6 @@ export default {
   "importWarning.videoWithoutName": "Il video di sfondo non ha un nome di file; è stata importata solo la copertina.",
   "importWarning.weatherNotSupported": "STATS.{name}: il meteo non è ancora supportato.",
   "importWarning.weekdayFormat": "Il formato del giorno della settimana {format} è mostrato come nome breve.",
-  "inspector.addMediaFirst": "Aggiungi immagini nella scheda Media.",
   "inspector.align": "Allineamento",
   "inspector.alignCenter": "Centro",
   "inspector.alignTools": "Allinea",

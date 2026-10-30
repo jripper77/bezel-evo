@@ -15,13 +15,11 @@ export function panels(ctx) {
     const set = (patch) => update(e.id, { kind: { image: patch } });
     const options = assets.filter((a) => a.kind === 'image').map((a) => [a.ref, a.ref.split('/').pop()]);
     if (image?.asset && !options.some(([r]) => r === image.asset)) options.push([image.asset, image.asset]);
-    const pick = options.length
-      ? assetField(t('common.image'), image?.asset ?? '', [['', t('inspector.noImage')], ...options], (asset) => {
-        if (!asset) set(null);
-        else if (image) set({ asset });
-        else set({ asset, repeat: 'cover', scale: 1, offsetX: 0, offsetY: 0, opacity: 1 });
-      }, assets)
-      : el('p', { class: 'hint', text: t('inspector.addMediaFirst') });
+    const pick = assetField(t('common.image'), image?.asset ?? '', [['', t('inspector.noImage')], ...options], (asset) => {
+      if (!asset) set(null);
+      else if (image) set({ asset });
+      else set({ asset, repeat: 'cover', scale: 1, offsetX: 0, offsetY: 0, opacity: 1 });
+    }, assets);
     if (!image) return section('picture', t('common.image'), [pick], { heading: false });
     const repeat = IMAGE_REPEATS.includes(image.repeat) ? image.repeat : 'cover';
     const art = (value) => ART[`repeat${value[0].toUpperCase()}${value.slice(1)}`];

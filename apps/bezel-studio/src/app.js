@@ -361,6 +361,7 @@ const inspector = createInspector({
   // The last sample read, and an element of the edited theme rendered alone (D-8).
   host: {
     fitContent,
+    addImage: () => addImage(),
     saveTheme: save,
     drawThemePreview: thumbnail => {
       const source = $('preview');
@@ -1183,12 +1184,15 @@ async function offerImportedVideo() {
   await storage.offerThemeVideo(openStorage);
 }
 
+/** Picks a picture for the theme: its reference, or null when none was added. */
 async function addImage() {
   try {
     const added = await bridge.addImage();
     if (added) await refreshAssets();
+    return added?.ref ?? null;
   } catch (e) {
     fail(e);
+    return null;
   }
 }
 

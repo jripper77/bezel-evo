@@ -459,7 +459,6 @@ export default {
   'importWarning.videoWithoutName': 'The background video has no file name; only its poster was imported.',
   'importWarning.weatherNotSupported': 'STATS.{name}: weather is not supported yet.',
   'importWarning.weekdayFormat': 'The weekday format {format} is shown as a short day name.',
-  'inspector.addMediaFirst': 'Add images in the Media tab.',
   'inspector.align': 'Alignment',
   'inspector.alignCenter': 'Center',
   'inspector.alignTools': 'Align',
