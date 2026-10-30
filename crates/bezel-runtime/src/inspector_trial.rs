@@ -395,6 +395,8 @@ mod tests {
             icon_size: None,
             icon_motion: Default::default(),
             icon_speed: 1.0,
+            label: None,
+            layout: bezel_core::domain::weather::WEATHER_LAYOUT,
         };
         let [temperature, code] = w.keys();
         let theme = text(TextContent::Weather(w));
@@ -611,6 +613,8 @@ mod tests {
             icon_size: None,
             icon_motion: Default::default(),
             icon_speed: 1.0,
+            label: None,
+            layout: bezel_core::domain::weather::WEATHER_LAYOUT,
         };
         let [temperature, code] = w.keys();
         let weather = text(TextContent::Weather(w));

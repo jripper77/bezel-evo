@@ -15,6 +15,10 @@ All notable changes to Bezel Evo are documented here. The format follows
 - Weather icons have a **Pixel art** style, made for pixel themes: drawn on
   a 16×16 grid with crisp pixels. Moving, they step a pixel at a time and the
   sun's rays twinkle.
+- The weather's city, temperature and condition can each be hidden, moved
+  or joined to the line above, and each takes its own font, size, weight and
+  colour, like the parts of a value. A name of your own can stand in place
+  of the city's.
 
 ### Fixes
 - A rev C 8.8" listed by either of its two ports is one screen with one

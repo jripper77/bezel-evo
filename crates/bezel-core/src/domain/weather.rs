@@ -48,7 +48,68 @@ pub struct Weather {
     pub icon_motion: IconMotion,
     /// Speed of the icon's movement, [`ICON_SPEED`].
     pub icon_speed: f32,
+    /// Text shown in place of the city's name; none shows the name.
+    pub label: Option<String>,
+    /// The city, the temperature and the condition in the order they are
+    /// written, each shown or not, on a line of its own or after the one
+    /// before.
+    pub layout: [WeatherLine; 3],
 }
+
+/// One of the three things a weather text says.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum WeatherField {
+    /// The city's name, or the label in its place.
+    City,
+    /// The temperature with its unit.
+    Temperature,
+    /// The condition, in words.
+    Condition,
+}
+
+/// Where one field of a weather text goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WeatherLine {
+    /// What it says.
+    pub field: WeatherField,
+    /// Whether it is written.
+    pub shown: bool,
+    /// Written after the field before it, a space apart, instead of on a
+    /// new line.
+    pub inline: bool,
+}
+
+impl WeatherLine {
+    const fn own(field: WeatherField) -> Self {
+        Self {
+            field,
+            shown: true,
+            inline: false,
+        }
+    }
+}
+
+/// City, temperature and condition, one per line: the text as it always was.
+pub const WEATHER_LAYOUT: [WeatherLine; 3] = [
+    WeatherLine::own(WeatherField::City),
+    WeatherLine::own(WeatherField::Temperature),
+    WeatherLine::own(WeatherField::Condition),
+];
+
+/// Whether `layout` names each field once.
+pub fn valid_layout(layout: &[WeatherLine]) -> bool {
+    let mut fields: Vec<_> = layout.iter().map(|l| l.field).collect();
+    fields.sort();
+    fields
+        == [
+            WeatherField::City,
+            WeatherField::Temperature,
+            WeatherField::Condition,
+        ]
+}
+
+/// Longest label, in characters.
+pub const LABEL_CHARS: usize = 160;
 
 /// How a weather icon moves.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -304,28 +365,60 @@ impl Weather {
     }
     /// City, temperature and conditions; missing data is explicit.
     pub fn text(&self, snapshot: &Snapshot, system: Language) -> String {
+        self.segments(snapshot, system)
+            .into_iter()
+            .map(|(_, text)| text)
+            .collect()
+    }
+
+    /// The text in segments, in order: each shown field with its words, and
+    /// what stands between two of them (`None`: a new line or a space).
+    /// Without data the words for it take the place of the first shown of
+    /// temperature and condition, and the other is left out.
+    pub fn segments(
+        &self,
+        snapshot: &Snapshot,
+        system: Language,
+    ) -> Vec<(Option<WeatherField>, String)> {
         let [temperature, code] = self.keys();
         let language = self.language.unwrap_or(system);
-        let (Reading::Value(t), Reading::Value(c)) =
-            (snapshot.get(&temperature), snapshot.get(&code))
-        else {
-            let unavailable = match language {
-                Language::Italian => "Meteo non disponibile",
-                Language::PortugueseBr => "Clima indisponível",
-                Language::English => "Weather unavailable",
+        let reading = match (snapshot.get(&temperature), snapshot.get(&code)) {
+            (Reading::Value(t), Reading::Value(c)) => Some((t, c)),
+            _ => None,
+        };
+        let mut unavailable = reading.is_none();
+        let mut out = Vec::new();
+        for line in self.layout.iter().filter(|l| l.shown) {
+            let words = match (line.field, reading) {
+                (WeatherField::City, _) => self.label.clone().unwrap_or_else(|| self.city.clone()),
+                (_, None) if unavailable => {
+                    unavailable = false;
+                    match language {
+                        Language::Italian => "Meteo non disponibile",
+                        Language::PortugueseBr => "Clima indisponível",
+                        Language::English => "Weather unavailable",
+                    }
+                    .to_string()
+                }
+                (_, None) => continue,
+                (WeatherField::Temperature, Some((t, _))) => {
+                    let (value, unit) = if self.fahrenheit {
+                        (t * 1.8 + 32.0, "F")
+                    } else {
+                        (t, "C")
+                    };
+                    format!("{value:.0}\u{00b0}{unit}")
+                }
+                (WeatherField::Condition, Some((_, c))) => {
+                    condition(c as u16, language).to_string()
+                }
             };
-            return format!("{}\n{unavailable}", self.city);
-        };
-        let (value, unit) = if self.fahrenheit {
-            (t * 1.8 + 32.0, "F")
-        } else {
-            (t, "C")
-        };
-        format!(
-            "{}\n{value:.0}\u{00b0}{unit}\n{}",
-            self.city,
-            condition(c as u16, language)
-        )
+            if !out.is_empty() {
+                out.push((None, if line.inline { " " } else { "\n" }.to_string()));
+            }
+            out.push((Some(line.field), words));
+        }
+        out
     }
 }
 
@@ -407,6 +500,8 @@ mod tests {
             icon_size: None,
             icon_motion: IconMotion::Still,
             icon_speed: 1.0,
+            label: None,
+            layout: WEATHER_LAYOUT,
         };
         let mut snapshot = Snapshot::default();
         assert!(
@@ -420,6 +515,67 @@ mod tests {
             w.text(&snapshot, Language::English),
             "Roma\n68\u{00b0}F\nNuvoloso"
         );
+    }
+
+    #[test]
+    fn layout_orders_hides_and_joins_the_fields() {
+        let mut w = Weather {
+            icon_color: None,
+            city: "Roma".into(),
+            latitude: 41.9,
+            longitude: 12.5,
+            language: Some(Language::Italian),
+            fahrenheit: false,
+            show_icon: true,
+            icon_style: Default::default(),
+            icon_gap: None,
+            icon_size: None,
+            icon_motion: IconMotion::Still,
+            icon_speed: 1.0,
+            label: Some("Casa".into()),
+            layout: [
+                WeatherLine::own(WeatherField::Temperature),
+                WeatherLine {
+                    inline: true,
+                    ..WeatherLine::own(WeatherField::Condition)
+                },
+                WeatherLine::own(WeatherField::City),
+            ],
+        };
+        let mut snapshot = Snapshot::default();
+        assert_eq!(
+            w.text(&snapshot, Language::English),
+            "Meteo non disponibile\nCasa",
+            "the words for no data stand once, where the temperature was"
+        );
+        let [t, c] = w.keys();
+        snapshot.insert(t, Reading::Value(20.4));
+        snapshot.insert(c, Reading::Value(0.0));
+        assert_eq!(
+            w.segments(&snapshot, Language::English),
+            [
+                (Some(WeatherField::Temperature), "20\u{00b0}C".to_string()),
+                (None, " ".to_string()),
+                (Some(WeatherField::Condition), "Sereno".to_string()),
+                (None, "\n".to_string()),
+                (Some(WeatherField::City), "Casa".to_string()),
+            ]
+        );
+        w.layout[0].shown = false;
+        assert_eq!(
+            w.text(&snapshot, Language::English),
+            "Sereno\nCasa",
+            "a first field written inline has nothing to follow"
+        );
+        w.layout.iter_mut().for_each(|l| l.shown = false);
+        assert_eq!(w.text(&snapshot, Language::English), "");
+        assert!(valid_layout(&WEATHER_LAYOUT));
+        assert!(!valid_layout(&[
+            WEATHER_LAYOUT[0],
+            WEATHER_LAYOUT[0],
+            WEATHER_LAYOUT[2]
+        ]));
+        assert!(!valid_layout(&WEATHER_LAYOUT[..2]));
     }
 
     fn close(a: IconPose, b: IconPose) -> bool {

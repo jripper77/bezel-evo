@@ -67,3 +67,36 @@ test('weather search works by keyboard and compact controls fit a 320 px inspect
   expect(await root.evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+test('weather lines take a name, an order, hidden and joined lines, and a style each', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await page.goto('/index.html?demo=turing88');
+  await page.getByRole('button', { name: t('library.addWidget', { name: t('widget.weather') }), exact: true }).click();
+  const detail = page.locator('#inspector');
+  const part = (key) => t(`insp.weatherPart.${key}`);
+  const order = () => detail.locator('.weather-line').evaluateAll(rows => rows.map(row => row.dataset.field));
+  await openSection(page, 'data');
+  const label = detail.getByRole('textbox', { name: t('insp.weather.label'), exact: true });
+  await expect(label).toHaveAttribute('placeholder', 'Roma');
+  await label.fill('Casa'); await label.press('Tab');
+  await detail.getByRole('button', { name: t('insp.weather.moveUp', { part: part('condition') }), exact: true }).click();
+  await expect.poll(order).toEqual(['city', 'condition', 'temperature']);
+  await detail.getByRole('button', { name: t('insp.weather.hide', { part: part('city') }), exact: true }).click();
+  const shown = detail.getByRole('button', { name: t('insp.weather.show', { part: part('city') }), exact: true });
+  await expect(shown).toHaveAttribute('aria-pressed', 'false');
+  const joined = detail.getByRole('button', { name: t('insp.weather.inline', { part: part('temperature') }), exact: true });
+  await joined.click(); await expect(joined).toHaveAttribute('aria-pressed', 'true');
+  await expect(detail.getByRole('button', { name: t('insp.weather.inline', { part: part('city') }), exact: true })).toBeDisabled();
+  await page.locator('#undo').click(); await expect(joined).toHaveAttribute('aria-pressed', 'false');
+  await expect(label).toHaveValue('Casa');
+  await openSection(page, 'text');
+  await detail.getByRole('group', { name: t('insp.weather.parts'), exact: true }).getByRole('button', { name: part('temperature'), exact: true }).click();
+  const size = detail.getByRole('spinbutton', { name: t('insp.partSize'), exact: true });
+  await size.fill('150'); await size.press('Tab'); await expect(size).toHaveValue('150');
+  await copyAndPaste(page);
+  await openSection(page, 'data');
+  await expect.poll(order).toEqual(['city', 'condition', 'temperature']);
+  await expect(label).toHaveValue('Casa');
+  await expectAccessible(page);
+  expect(errors).toEqual([]);
+});

@@ -14,6 +14,7 @@ import { sections as weatherPanels } from './inspector/weather.js';
 import { sections as valuePanels } from './inspector/value.js';
 import { pickPart } from './inspector/text.js';
 import { partPieces } from '../editor/handles.js';
+import { weatherKeys } from '../weather-format.js';
 import { sections as ringPanels } from './inspector/ring.js';
 import { sections as barPanels } from './inspector/bar.js';
 import { sections as needlePanels } from './inspector/needle.js';
@@ -154,6 +155,12 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   /** The last reading of `key`, from the app's last sample (null: none yet). */
   const readingOf = (key) => host.lastSample()?.readings?.[key] ?? null;
   const shownValue = (key) => readingOf(key)?.display ?? '…';
+  // The weather a weather element shows now; the demo's until both readings arrive.
+  const weatherNow = (element) => {
+    if (element.kind?.content?.type !== 'weather') return undefined;
+    const [temperature, code] = weatherKeys(element.kind.content).map(key => readingOf(key)?.value);
+    return Number.isFinite(temperature) && Number.isFinite(code) ? { temperature, code } : undefined;
+  };
 
   // What the form was last drawn with: a video background is drawn again
   // when the screen, live mode, its video or ffmpeg change.
@@ -724,7 +731,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     /** The parts of a value or a digital clock as they read now (null: none). */
     partPieces(element) {
       const key = boundKey(element);
-      return partPieces(element, { reading: key ? readingOf(key) : null, quantity: key ? sensors.catalog().find(sensor => sensor.key === key)?.quantity ?? null : null });
+      return partPieces(element, { reading: key ? readingOf(key) : null, quantity: key ? sensors.catalog().find(sensor => sensor.key === key)?.quantity ?? null : null, weather: weatherNow(element) });
     },
     /** A click on a part on the canvas picks it in the parts row and shows that row. */
     pickPart(element, scope, part) {

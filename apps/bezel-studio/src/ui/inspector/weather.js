@@ -2,9 +2,11 @@ import { describeSections } from './sections.js';
 // Existing weather controls, isolated from inspector navigation.
 import { el } from '../dom.js';
 import { ICONS } from '../icons.js';
-import { fieldAction, fieldGrid, iconButton, listCard, searchField, numberField, iconChoice, propertySection as section, selectField, toggleField as switchRow } from '../fields.js';
+import { fieldAction, fieldGrid, iconButton, listCard, searchField, numberField, iconChoice, propertySection as section, selectField, textField, toggleField as switchRow } from '../fields.js';
 import { textStyleFields } from './text.js';
 import { drawWeatherIcon } from '../../demo-render.js';
+import { WEATHER_PARTS } from '../../text-layout.js';
+import { layoutPatch, moveLine, weatherLayout } from '../../weather-format.js';
 
 export function panels(ctx) {
   const { t, update, root, searchCities } = ctx;
@@ -30,6 +32,7 @@ export function panels(ctx) {
       const cityField = searchField(t('weather.city'), value => { query = value; }, { value: query });
       cityField.querySelector('input').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); if (!search.disabled) search.click(); } });
       nodes.push(fieldAction(el('div', { class: 'field' }, [el('span', { class: 'field-label', text: t('weather.location', { city: c.city }) }), cityField]), search), results);
+      nodes.push(textField(t('insp.weather.label'), c.label ?? '', label => update(e.id, { kind: { content: { label: label.trim() || null } } }), { placeholder: c.city }));
       const language = selectField(t('weather.language'), c.language ?? '', [['', t('clock.system')], ['it', t('language.it')], ['en', t('language.en')], ['pt-BR', t('language.pt-BR')]], (language) => update(e.id, { kind: { content: { language: language || null } } }));
       nodes.push(fieldGrid([iconChoice(t('insp.weather.units'), c.fahrenheit ? 'f' : 'c', [['c', '\u00b0C'], ['f', '\u00b0F']], value => update(e.id, { kind: { content: { fahrenheit: value === 'f' } } }), { wide: true }), language]));
       weatherAppearance.push(switchRow(t('weather.icon'), c.showIcon !== false, (showIcon) => update(e.id, { kind: { content: { showIcon } } }), { iconName: 'weather', leading: true }));
@@ -48,11 +51,22 @@ export function panels(ctx) {
   }
   const e = ctx.element, c = e.kind.content, { nodes, weatherAppearance } = fields(e);
   const set = content => update(e.id, { kind: { content } });
-  const font = section('font', t('inspector.font'), textStyleFields(ctx, e, { parts: false }));
+  const font = section('font', t('inspector.font'), textStyleFields(ctx, e, { parts: true, scope: 'weather', partIds: WEATHER_PARTS, partsLabel: t('insp.weather.parts'), partLabel: part => t(`insp.weatherPart.${part}`) }));
+  const lines = weatherLayout(c), setLines = next => set({ layout: layoutPatch(next) });
+  const lineRows = el('ol', { class: 'swatch-rows weather-lines' }, lines.map((line, i) => {
+    const name = t(`insp.weatherPart.${line.field}`), change = patch => setLines(lines.map((other, j) => (j === i ? { ...other, ...patch } : other)));
+    return el('li', { class: `swatch-row weather-line${line.hidden ? ' hidden-line' : ''}`, dataset: { field: line.field } }, [
+      iconButton(t(line.hidden ? 'insp.weather.show' : 'insp.weather.hide', { part: name }), line.hidden ? ICONS.eyeOff : ICONS.eye, () => change({ hidden: !line.hidden }), { size: 16, 'aria-pressed': String(!line.hidden) }),
+      el('span', { class: 'weather-line-name', text: name }),
+      iconButton(t('insp.weather.inline', { part: name }), ICONS.link, () => change({ inline: !line.inline }), { size: 16, 'aria-pressed': String(Boolean(line.inline)), disabled: i === 0 }),
+      iconButton(t('insp.weather.moveUp', { part: name }), ICONS.up, () => setLines(moveLine(lines, i, i - 1)), { size: 16, disabled: i === 0 }),
+      iconButton(t('insp.weather.moveDown', { part: name }), ICONS.down, () => setLines(moveLine(lines, i, i + 1)), { size: 16, disabled: i === lines.length - 1 }),
+    ]);
+  }));
   const textPaint = font.querySelector(':scope > .property-section-body > .color-field');
   const colors = [textPaint];
   if (c.showIcon !== false && ['outline', 'filled'].includes(c.iconStyle ?? 'outline')) colors.push(ctx.colorField(t('insp.weather.iconColor'), c.iconColor ?? e.kind.style.paint, iconColor => set({ iconColor })), c.iconColor != null && el('button', { type: 'button', class: 'text-button', text: t('insp.weather.inheritColor'), onclick: () => set({ iconColor: null }) }));
-  return { data: [section('content', t('inspector.content'), nodes, { heading: false })], look: [section('appearance', t('inspector.appearance'), weatherAppearance, { heading: false }), font, section('color', t('inspector.color'), colors)], behavior: c.showIcon === false ? [] : [section('weather-motion', t('insp.weather.motion'), [
+  return { data: [section('content', t('inspector.content'), nodes, { heading: false }), section('weather-lines', t('insp.weather.lines'), [lineRows, el('p', { class: 'hint', text: t('insp.weather.linesHint') })])], look: [section('appearance', t('inspector.appearance'), weatherAppearance, { heading: false }), font, section('color', t('inspector.color'), colors)], behavior: c.showIcon === false ? [] : [section('weather-motion', t('insp.weather.motion'), [
     iconChoice(t('insp.weather.motion'), c.iconMotion ?? 'still', ['still', 'gentle', 'lively'].map(value => [value, t(`insp.weather.motion.${value}`), `weather-${value}`]), iconMotion => set({ iconMotion: iconMotion === 'still' ? null : iconMotion }), { wide: true }),
     c.iconMotion && c.iconMotion !== 'still' && iconChoice(t('insp.playback.speed'), String(c.iconSpeed ?? 1), [...new Set([0.5, 1, 2, c.iconSpeed ?? 1])].sort((a,b) => a-b).map(value => [String(value), `${value}×`]), value => set({ iconSpeed: Number(value) === 1 ? null : Number(value) }), { wide: true }),
     el('p', { class: 'hint', text: t('insp.weather.motionHint') }),

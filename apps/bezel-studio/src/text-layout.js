@@ -24,6 +24,8 @@ export const OVERFLOWS = Object.freeze(['shrink', 'ellipsis', 'scroll']);
 /** Value parts, then clock parts. */
 export const VALUE_PARTS = Object.freeze(['prefix', 'number', 'unit', 'suffix']);
 export const CLOCK_PARTS = Object.freeze(['hours', 'minutes', 'seconds', 'separators']);
+/** Weather parts: what the weather says, each a line or part of one. */
+export const WEATHER_PARTS = Object.freeze(['city', 'temperature', 'condition']);
 
 const isDigit = (ch) => ch >= '0' && ch <= '9' && ch.length === 1;
 const sizeOf = (s) => (Number(s?.size) > 0 ? Number(s.size) : 24);

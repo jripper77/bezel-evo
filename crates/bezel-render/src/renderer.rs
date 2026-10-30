@@ -13,6 +13,7 @@ use bezel_core::domain::theme::{
     AssetRef, Background, Binding, BoxF, Element, ElementId, ElementKind, Fit, ImageRepeat,
     Playback, ShapeImage, TextContent, TextOverflow, TextPart, TextStyle, Theme,
 };
+use bezel_core::domain::weather::WeatherField;
 use bezel_core::ports::{Backdrop, FrameRenderer, RenderContext};
 use bezel_core::{BezelError, Result};
 use image::RgbaImage;
@@ -634,7 +635,20 @@ fn rich_job<'a>(
     let mut blink = None;
     let pieces = match content {
         TextContent::Static(text) if style.overflow.is_some() => vec![Piece::plain(text.clone())],
-        TextContent::Weather(w) => vec![Piece::plain(w.text(context.snapshot, context.language))],
+        TextContent::Weather(w) => w
+            .segments(context.snapshot, context.language)
+            .into_iter()
+            .map(|(field, text)| Piece {
+                part: field.and_then(|field| {
+                    part(match field {
+                        WeatherField::City => TextPart::City,
+                        WeatherField::Temperature => TextPart::Temperature,
+                        WeatherField::Condition => TextPart::Condition,
+                    })
+                }),
+                ..Piece::plain(text)
+            })
+            .collect(),
         TextContent::Sensor {
             key,
             format,
@@ -2441,6 +2455,8 @@ mod tests {
                 icon_size: Some(50.),
                 icon_motion: Default::default(),
                 icon_speed: 1.0,
+                label: None,
+                layout: bezel_core::domain::weather::WEATHER_LAYOUT,
             }),
             TextContent::Player(bezel_core::domain::playback::Player {
                 source: String::new(),

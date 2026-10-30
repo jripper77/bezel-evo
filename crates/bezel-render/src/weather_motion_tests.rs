@@ -24,6 +24,8 @@ fn weather(motion: IconMotion, style: IconStyle) -> Weather {
         icon_size: Some(96.0),
         icon_motion: motion,
         icon_speed: 1.0,
+        label: None,
+        layout: bezel_core::domain::weather::WEATHER_LAYOUT,
     }
 }
 

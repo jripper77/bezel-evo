@@ -13,7 +13,7 @@ import { colorAt } from './value-color.js';
 import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
 import { fadeLine } from './shape-fade.js';
-import { weatherFamily, weatherText } from './weather-format.js';
+import { weatherFamily, weatherSegments, weatherText } from './weather-format.js';
 import { HAND_LENGTHS, analogOf, clockParts, dialDate, dialDue, dialNumerals, formatClock, handAngles } from './clock-format.js';
 import { canvasFont as fontOf, blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
@@ -250,6 +250,9 @@ function textPieces(e, text, t, value, refresh, motion, trial) {
     const d = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
     return clockParts(k.content.pattern, d, k.content.language, k.content.casing)
       .map(({ part, text: body }) => piece(body, part, { hidden: part === 'separators' && separatorsOff(s, ms, motion) }));
+  }
+  if (k.content.type === 'weather') {
+    return weatherSegments(k.content, DEMO_WEATHER.temperature, trial?.weatherCode ?? DEMO_WEATHER.code).map(({ field, text: body }) => piece(body, field));
   }
   return [piece(text)];
 }

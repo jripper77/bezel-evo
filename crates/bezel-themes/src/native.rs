@@ -786,6 +786,8 @@ mod tests {
             icon_size: Some(64.0),
             icon_motion: Default::default(),
             icon_speed: 1.0,
+            label: None,
+            layout: bezel_core::domain::weather::WEATHER_LAYOUT,
         };
         let element = theme
             .elements

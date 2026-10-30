@@ -22,7 +22,9 @@ use bezel_core::domain::transition::{
     MAX_AVERAGE, MAX_TRANSITION_MS, MIN_TRANSITION_MS, TransitionMode, ValueTransition,
 };
 use bezel_core::domain::value_color::{ColorByValue, ColorThreshold};
-use bezel_core::domain::weather::{ICON_SPEED, IconMotion};
+use bezel_core::domain::weather::{
+    ICON_SPEED, IconMotion, LABEL_CHARS, WEATHER_LAYOUT, WeatherField, WeatherLine, valid_layout,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::color::{from_hex, to_hex};
@@ -1339,6 +1341,13 @@ pub enum ContentDto {
         /// Speed of the movement, 0.5..=2 (absent: 1).
         #[serde(default, rename = "iconSpeed", skip_serializing_if = "Option::is_none")]
         icon_speed: Option<f32>,
+        /// Text in place of the city's name.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+        /// City, temperature and condition in their order; absent: one per
+        /// line, in that order.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        layout: Option<Vec<WeatherLineDto>>,
     },
     /// Fixed text.
     Static {
@@ -1603,6 +1612,19 @@ pub struct TextShadowDto {
     pub blur: u8,
 }
 
+/// One field of a weather text in its place.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WeatherLineDto {
+    /// `city`, `temperature` or `condition`.
+    pub field: String,
+    /// Not written.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub hidden: bool,
+    /// After the field before it instead of on a new line.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub inline: bool,
+}
+
 /// The parts of a value or a digital clock with a style of their own;
 /// absent parts follow the text.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -1632,10 +1654,19 @@ pub struct PartsDto {
     /// Clock: separators (with `blink`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub separators: Option<PartDto>,
+    /// Weather: the city.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub city: Option<PartDto>,
+    /// Weather: the temperature.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<PartDto>,
+    /// Weather: the condition.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub condition: Option<PartDto>,
 }
 
 impl PartsDto {
-    fn slots(&self) -> [(TextPart, &Option<PartDto>); 8] {
+    fn slots(&self) -> [(TextPart, &Option<PartDto>); 11] {
         [
             (TextPart::Prefix, &self.prefix),
             (TextPart::Number, &self.number),
@@ -1645,6 +1676,9 @@ impl PartsDto {
             (TextPart::Minutes, &self.minutes),
             (TextPart::Seconds, &self.seconds),
             (TextPart::Separators, &self.separators),
+            (TextPart::City, &self.city),
+            (TextPart::Temperature, &self.temperature),
+            (TextPart::Condition, &self.condition),
         ]
     }
 
@@ -1658,6 +1692,9 @@ impl PartsDto {
             TextPart::Minutes => &mut self.minutes,
             TextPart::Seconds => &mut self.seconds,
             TextPart::Separators => &mut self.separators,
+            TextPart::City => &mut self.city,
+            TextPart::Temperature => &mut self.temperature,
+            TextPart::Condition => &mut self.condition,
         }
     }
 }
@@ -2530,6 +2567,22 @@ fn kind_dto(k: &ElementKind) -> KindDto {
                         IconMotion::Lively => Some("lively".to_string()),
                     },
                     icon_speed: (w.icon_speed != 1.0).then_some(w.icon_speed),
+                    label: w.label.clone(),
+                    layout: (w.layout != WEATHER_LAYOUT).then(|| {
+                        w.layout
+                            .iter()
+                            .map(|l| WeatherLineDto {
+                                field: match l.field {
+                                    WeatherField::City => "city",
+                                    WeatherField::Temperature => "temperature",
+                                    WeatherField::Condition => "condition",
+                                }
+                                .into(),
+                                hidden: !l.shown,
+                                inline: l.inline,
+                            })
+                            .collect()
+                    }),
                 },
                 TextContent::Clock {
                     pattern,
@@ -2767,10 +2820,44 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                     icon_size,
                     icon_motion,
                     icon_speed,
+                    label,
+                    layout,
                 } => {
                     if !bezel_core::domain::weather::valid(city, *latitude, *longitude) {
                         return err("invalid weather location");
                     }
+                    let label = label.as_deref().map(str::trim).filter(|l| !l.is_empty());
+                    if label.is_some_and(|l| l.chars().count() > LABEL_CHARS) {
+                        return err("weather label too long");
+                    }
+                    let layout = match layout {
+                        None => WEATHER_LAYOUT,
+                        Some(lines) => {
+                            let lines = lines
+                                .iter()
+                                .map(|l| {
+                                    Ok(WeatherLine {
+                                        field: match l.field.as_str() {
+                                            "city" => WeatherField::City,
+                                            "temperature" => WeatherField::Temperature,
+                                            "condition" => WeatherField::Condition,
+                                            other => {
+                                                return err(format!(
+                                                    "unknown weather field {other:?}"
+                                                ));
+                                            }
+                                        },
+                                        shown: !l.hidden,
+                                        inline: l.inline,
+                                    })
+                                })
+                                .collect::<R<Vec<_>>>()?;
+                            if !valid_layout(&lines) {
+                                return err("weather layout must name each field once");
+                            }
+                            [lines[0], lines[1], lines[2]]
+                        }
+                    };
                     if icon_gap.is_some_and(|v| !v.is_finite() || !(0.0..=256.0).contains(&v))
                         || icon_size.is_some_and(|v| !v.is_finite() || !(1.0..=512.0).contains(&v))
                     {
@@ -2809,6 +2896,8 @@ fn kind(k: &KindDto) -> R<ElementKind> {
                         icon_speed: icon_speed
                             .filter(|v| v.is_finite())
                             .map_or(1.0, |v| v.clamp(*ICON_SPEED.start(), *ICON_SPEED.end())),
+                        label: label.map(str::to_string),
+                        layout,
                     })
                 }
                 ContentDto::Clock {
@@ -4111,6 +4200,42 @@ mod weather_motion_tests {
         };
         let written = serde_json::to_value(kind_dto(&k)).unwrap()["content"].clone();
         Ok((w.icon_motion, w.icon_speed, written))
+    }
+
+    #[test]
+    fn label_layout_and_weather_parts_round_trip() {
+        let (_, _, written) = weather(serde_json::json!({})).unwrap();
+        assert!(written.get("label").is_none() && written.get("layout").is_none());
+        let layout = serde_json::json!([
+            {"field": "temperature"},
+            {"field": "condition", "inline": true},
+            {"field": "city", "hidden": true}
+        ]);
+        let (_, _, written) =
+            weather(serde_json::json!({"label": "  Casa ", "layout": layout})).unwrap();
+        assert_eq!(written["label"], "Casa");
+        assert_eq!(written["layout"], layout);
+        let (_, _, written) = weather(serde_json::json!({"label": " "})).unwrap();
+        assert!(
+            written.get("label").is_none(),
+            "a blank label shows the city"
+        );
+        for bad in [
+            serde_json::json!({"layout": [{"field": "city"}, {"field": "city"}, {"field": "condition"}]}),
+            serde_json::json!({"layout": [{"field": "city"}, {"field": "temperature"}]}),
+            serde_json::json!({"layout": [{"field": "city"}, {"field": "temperature"}, {"field": "wind"}]}),
+            serde_json::json!({"label": "x".repeat(LABEL_CHARS + 1)}),
+        ] {
+            assert!(weather(bad.clone()).is_err(), "{bad}");
+        }
+        let parts: PartsDto = serde_json::from_value(serde_json::json!({
+            "city": {"weight": 700}, "temperature": {"sizePercent": 150.0},
+            "condition": {"color": "#ff0000ff"}
+        }))
+        .unwrap();
+        let read = super::parts(Some(&parts)).unwrap();
+        assert_eq!(read.style(TextPart::City).unwrap().weight, Some(700));
+        assert_eq!(*parts_dto(&read).unwrap(), parts);
     }
 
     #[test]

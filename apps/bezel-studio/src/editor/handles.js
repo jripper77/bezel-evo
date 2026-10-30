@@ -13,6 +13,8 @@ import { fitText, partStyle } from '../text-layout.js';
 import { formatValue } from '../value-format.js';
 import { applyTextCase } from '../text-case.js';
 import { clockParts } from '../clock-format.js';
+import { weatherSegments } from '../weather-format.js';
+import { DEMO_WEATHER } from '../demo-sensors.js';
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const degrees = (p, center) => Math.atan2(p.x - center.x, center.y - p.y) * 180 / Math.PI;
@@ -213,7 +215,7 @@ export function resetPropertyHandle(element, id) {
  * last reading (its quantity formats it) or the clock at `date`. Null for
  * any other element, which has no parts to pick.
  */
-export function partPieces(element, { reading = null, quantity = null, date = new Date() } = {}) {
+export function partPieces(element, { reading = null, quantity = null, date = new Date(), weather = DEMO_WEATHER } = {}) {
   const k = element.kind, s = k.style;
   if (k.type !== 'text') return null;
   const piece = (text, id) => ({ text: applyTextCase(text, s.casing), part: id && partStyle(s, id), id });
@@ -223,6 +225,9 @@ export function partPieces(element, { reading = null, quantity = null, date = ne
   }
   if (k.content.type === 'clock' && !k.content.analog) {
     return { scope: 'clock', pieces: clockParts(k.content.pattern, date, k.content.language, k.content.casing).map(({ part, text }) => piece(text, part)) };
+  }
+  if (k.content.type === 'weather') {
+    return { scope: 'weather', pieces: weatherSegments(k.content, weather.temperature, weather.code).map(({ field, text }) => piece(text, field)) };
   }
   return null;
 }

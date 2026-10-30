@@ -227,6 +227,9 @@ kbd { padding: 1px 5px; border-radius: 4px; background: var(--border-2); color: 
 .swatch-button[aria-pressed="true"] .swatch { outline: 2px solid var(--accent); outline-offset: 1px; }
 .swatch-rows { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .swatch-row { display: flex; align-items: center; gap: 6px; }
+.weather-line-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weather-line.hidden-line .weather-line-name { color: var(--dim); }
+.weather-line .icon-button[aria-pressed="true"] { color: var(--accent-ink); }
 .swatch-name { flex: 1; min-width: 0; height: 28px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--well); color: var(--text); }
 .field-error { margin: 0; color: var(--danger); font-size: 0.85rem; font-weight: 600; }
 .field-error::before { content: "⚠ "; }

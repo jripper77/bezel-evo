@@ -716,6 +716,8 @@ impl Importer<'_> {
                     icon_size: None,
                     icon_motion: IconMotion::Still,
                     icon_speed: 1.0,
+                    label: None,
+                    layout: bezel_core::domain::weather::WEATHER_LAYOUT,
                 });
                 let chars = sample.chars().count().max(12);
                 (content, "Weather".to_string(), chars)

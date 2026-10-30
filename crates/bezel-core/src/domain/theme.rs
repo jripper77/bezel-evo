@@ -436,6 +436,12 @@ pub enum TextPart {
     Seconds,
     /// Clock: what stands between hours, minutes and seconds.
     Separators,
+    /// Weather: the city, or the label in its place.
+    City,
+    /// Weather: the temperature with its unit.
+    Temperature,
+    /// Weather: the condition.
+    Condition,
 }
 
 /// Where a part sits on the line.

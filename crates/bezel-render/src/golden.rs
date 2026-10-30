@@ -1092,6 +1092,8 @@ fn weather_text_and_vector_icons_render_without_external_assets() {
         icon_size: None,
         icon_motion: Default::default(),
         icon_speed: 1.0,
+        label: None,
+        layout: bezel_core::domain::weather::WEATHER_LAYOUT,
     };
     let [temperature, code] = w.keys();
     let scene = Scene::empty()
@@ -1116,6 +1118,47 @@ fn weather_text_and_vector_icons_render_without_external_assets() {
         &scene,
     );
     assert_eq!(actual, expected);
+    let mut laid = w.clone();
+    laid.label = Some("Casa".into());
+    laid.layout[0].shown = false;
+    laid.layout[2].inline = true;
+    let joined = weather_frame(
+        &mut renderer,
+        "weather_layout",
+        TextContent::Weather(laid.clone()),
+        style.clone(),
+        full,
+        &scene,
+    );
+    let written = weather_frame(
+        &mut renderer,
+        "weather_layout_expected",
+        stat("20\u{00b0}C Nuvoloso"),
+        style.clone(),
+        full,
+        &scene,
+    );
+    assert_eq!(
+        joined, written,
+        "city hidden, condition after the temperature"
+    );
+    let mut parted = style.clone();
+    parted.parts.styles.insert(
+        bezel_core::domain::theme::TextPart::Temperature,
+        bezel_core::domain::theme::PartStyle {
+            color: Some(RED),
+            ..Default::default()
+        },
+    );
+    let red = weather_frame(
+        &mut renderer,
+        "weather_part",
+        TextContent::Weather(laid),
+        parted,
+        full,
+        &scene,
+    );
+    assert_ne!(red, joined, "the temperature takes its own colour");
     w.show_icon = true;
     let cloudy = weather_frame(
         &mut renderer,
@@ -1487,6 +1530,8 @@ fn colored_weather_families_and_depth_have_distinct_vector_pixels() {
             icon_size: Some(80.),
             icon_motion: Default::default(),
             icon_speed: 1.0,
+            label: None,
+            layout: bezel_core::domain::weather::WEATHER_LAYOUT,
         };
         let keys = w.keys();
         let scene = Scene::empty()

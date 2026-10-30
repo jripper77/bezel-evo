@@ -1,11 +1,11 @@
 // Pure edits shared by the inspector and its tests. No document defaults are
 // written merely by opening a panel.
 import { boundKey } from './editor/widgets.js';
-import { VALUE_PARTS, CLOCK_PARTS } from './text-layout.js';
+import { VALUE_PARTS, CLOCK_PARTS, WEATHER_PARTS } from './text-layout.js';
 import { appliedRotation, canRotate } from './editor/rotation.js';
 
 export function partStylePatch(style, part, patch) {
-  if (![...VALUE_PARTS, ...CLOCK_PARTS].includes(part)) return {};
+  if (![...VALUE_PARTS, ...CLOCK_PARTS, ...WEATHER_PARTS].includes(part)) return {};
   return { parts: { [part]: patch === null ? null : { ...style.parts?.[part], ...patch } } };
 }
 
