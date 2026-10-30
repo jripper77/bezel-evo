@@ -12,7 +12,17 @@ All notable changes to Bezel Evo are documented here. The format follows
   the file joins the theme's media and is used at once, without a trip to the
   Media tab. The Media tab still says which objects use each file.
 
+- Your themes are protected from deletion: the gallery deletes one only after
+  you choose **Allow deletion** in its menu and confirm. Protection can be put
+  back at any time.
+
 ### Fixes
+- Save never writes over a theme the editor is not showing. Opening a theme
+  while Light could not take it (a screen turned off) could leave the editor on
+  the previous theme, and the next Save replaced the newly opened file with it;
+  Studio now refuses that Save and offers Save As.
+- A live screen that stops answering turns the status chip yellow and says so,
+  instead of a green "0 fps".
 - In the inspector, a colour next to a number (an outline's width and colour,
   in shapes and cards) lines up with it again.
 
