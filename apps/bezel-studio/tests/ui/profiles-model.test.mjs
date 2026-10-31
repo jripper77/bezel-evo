@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { translator } from '../../src/i18n/index.js';
 import {
-  PROFILE_EFFECTS, directed, firstIncomplete, minuteOf, validProfileRule, modeOf, newProfileRule, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
+  COVER_ACCENT, COVER_PANEL, PROFILE_EFFECTS, directed, firstIncomplete, minuteOf, validProfileRule, modeOf, newProfileRule, orientationOf, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile,
 } from '../../src/profiles-model.js';
 
 const t = translator('it');
@@ -54,6 +55,16 @@ test('icons, orientations and directions follow the profile and the theme', () =
   assert.equal(orientationOf({ canvas: { width: 320, height: 480 } }), 'portrait');
   assert.equal(orientationOf(undefined), 'portrait');
   assert.deepEqual(PROFILE_EFFECTS.filter(directed), ['curtain', 'wipe', 'blinds']);
+});
+
+test('the effects and the cover colours are the backend\'s', () => {
+  const read = (path) => readFileSync(new URL(`../../../../crates/${path}`, import.meta.url), 'utf8');
+  const settings = read('bezel-runtime/src/profiles.rs');
+  const names = [...settings.slice(settings.indexOf('let effect = match self.effect'), settings.indexOf('unknown profile transition effect')).matchAll(/"(\w+)" =>/g)].map(m => m[1]);
+  assert.deepEqual(names, [...PROFILE_EFFECTS]);
+  const cover = read('bezel-core/src/domain/cover.rs');
+  const hex = (name) => '#' + cover.match(new RegExp(`${name}: Rgba = Rgba::opaque\\((0x\\w+), (0x\\w+), (0x\\w+)\\)`)).slice(1).map(v => Number(v).toString(16).padStart(2, '0')).join('');
+  assert.deepEqual([hex('DEFAULT_PANEL'), hex('DEFAULT_ACCENT')], [COVER_PANEL, COVER_ACCENT]);
 });
 
 test('▶ tries the selected profile, or the base themes', () => {

@@ -9,3 +9,8 @@ Da capire prima di progettare:
 - cosa intende per «accattivanti»: effetti nuovi (pixel, dissolvenze a blocchi,
   scorrimenti), durata e curve, o un'anteprima migliore nell'editor delle regole;
 - limiti del pannello: frequenza dei fotogrammi e banda USB durante l'effetto.
+
+Fatto il 31/10/2026: tre coperture nuove (Iride, TV, Pixel) e i colori della
+copertura e della luce scelti dall'utente. Restano idee per dopo: un momento a
+schermo coperto con il nome del profilo o il logo, e un'anteprima animata
+dentro Studio (oggi la prova si vede solo sullo schermo).

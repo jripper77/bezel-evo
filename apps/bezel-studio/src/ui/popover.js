@@ -69,7 +69,8 @@ export function openPopover({ node, anchor, label, onClose = () => {}, refocus =
   });
   closeOpen = close;
   anchor.setAttribute('aria-expanded', 'true');
-  document.body.append(node);
+  // Inside a modal dialog the rest of the page is inert: the panel lives in it.
+  (anchor.closest('dialog[open]') ?? document.body).append(node);
   placeBy(node, anchor);
   resize.observe(node);
   document.addEventListener('pointerdown', outside, true);

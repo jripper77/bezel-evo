@@ -2428,6 +2428,7 @@ mod tests {
             effect: "wipe".into(),
             direction: "up".into(),
             duration_ms: 900,
+            ..TransitionSettings::default()
         };
         // No live screen in the fixture: nothing to cover.
         assert_eq!(

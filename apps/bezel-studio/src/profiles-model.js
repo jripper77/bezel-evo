@@ -4,10 +4,12 @@
 // profiles[].rules[]); only how the dialog presents it lives here.
 
 /** Covers painted over the whole screen (crates/bezel-core/src/domain/cover.rs). */
-export const PROFILE_EFFECTS = Object.freeze(['none', 'curtain', 'wipe', 'blinds', 'mosaic']);
+export const PROFILE_EFFECTS = Object.freeze(['none', 'curtain', 'wipe', 'blinds', 'mosaic', 'iris', 'tv', 'pixels']);
+/** The cover's own colours (crates/bezel-core/src/domain/cover.rs DEFAULT_PANEL, DEFAULT_ACCENT). */
+export const COVER_PANEL = '#120b13', COVER_ACCENT = '#f28c28';
 
-/** The cover effects that move in a direction (the mosaic has none). */
-export const directed = (effect) => effect !== 'none' && effect !== 'mosaic';
+/** The cover effects that move in a direction (the mosaic, iris, television and pixels have none). */
+export const directed = (effect) => ['curtain', 'wipe', 'blinds'].includes(effect);
 
 export const PROFILE_RULE_SOURCES = Object.freeze(['mediaPlaying', 'foreground', 'process', 'sensor', 'time', 'idle', 'locked']);
 /** A fresh rule; changing its source keeps priority and delay in the caller. */

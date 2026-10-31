@@ -23,6 +23,23 @@ pub enum CoverEffect {
     /// Tiles light up in a scattered order until all is covered, then go
     /// out in another order.
     Mosaic,
+    /// A circle closes on the middle behind a ring of light, and opens again.
+    Iris,
+    /// An old television switching off: the picture squeezes into a line of
+    /// light that shrinks to a dot; it switches on the same way back.
+    Tv,
+    /// Small square pixels flash in, scattered, until all is covered.
+    Pixels,
+}
+
+impl CoverEffect {
+    /// Whether it moves in a direction (the others ignore it).
+    pub const fn directed(self) -> bool {
+        matches!(
+            self,
+            CoverEffect::Curtain | CoverEffect::Wipe | CoverEffect::Blinds
+        )
+    }
 }
 
 /// Where the cover moves. Curtain uses the axis only; mosaic ignores it.
@@ -75,6 +92,13 @@ pub const DEFAULT_ACCENT: Rgba = Rgba::opaque(0xf2, 0x8c, 0x28);
 const BLINDS_STAGGER: f32 = 0.7;
 /// Share of the motion over which a mosaic tile grows, lit with the accent.
 const MOSAIC_FRONT: f32 = 0.2;
+/// Mosaic tiles across the short side.
+const MOSAIC_TILES: f32 = 4.0;
+/// Pixels across the short side, and the share of the motion each flashes.
+const PIXEL_TILES: f32 = 16.0;
+const PIXEL_FRONT: f32 = 0.12;
+/// Share of a television's closing spent squeezing the picture into a line.
+const TV_SQUEEZE: f32 = 0.6;
 
 /// Smooth start and end (cubic), for `t` in 0..=1.
 pub fn ease(t: f32) -> f32 {
@@ -104,7 +128,10 @@ impl Cover {
             CoverEffect::Curtain => painter.curtain(self.direction, c),
             CoverEffect::Wipe => painter.wipe(self.direction, stage, c),
             CoverEffect::Blinds => painter.blinds(self.direction, c),
-            CoverEffect::Mosaic => painter.mosaic(stage, c),
+            CoverEffect::Mosaic => painter.mosaic(stage, c, MOSAIC_TILES, MOSAIC_FRONT, true),
+            CoverEffect::Iris => painter.iris(c),
+            CoverEffect::Tv => painter.tv(c),
+            CoverEffect::Pixels => painter.mosaic(stage, c, PIXEL_TILES, PIXEL_FRONT, false),
         }
     }
 }
@@ -291,8 +318,100 @@ impl<'a> Painter<'a> {
         }
     }
 
-    fn mosaic(&mut self, stage: CoverStage, c: f32) {
-        let tile = self.short / 4.0;
+    /// Fills the parts of row `y` between the circles of radius `inner` and
+    /// `outer` around `centre`.
+    fn ring_row(&mut self, y: u32, centre: (f32, f32), inner: f32, outer: f32, color: Rgba) {
+        let (cx, cy) = centre;
+        let dy = y as f32 + 0.5 - cy;
+        if outer <= inner || dy.abs() >= outer {
+            return;
+        }
+        let half = |r: f32| {
+            if dy.abs() < r {
+                (r * r - dy * dy).sqrt()
+            } else {
+                0.0
+            }
+        };
+        let (near, far) = (half(inner), half(outer));
+        if near > 0.0 {
+            self.rect(cx - far, y as f32, far - near, 1.0, color);
+            self.rect(cx + near, y as f32, far - near, 1.0, color);
+        } else {
+            self.rect(cx - far, y as f32, far * 2.0, 1.0, color);
+        }
+    }
+
+    fn iris(&mut self, c: f32) {
+        let centre = (self.width / 2.0, self.height / 2.0);
+        let line = self.edge as f32;
+        let glow = (self.short / 48.0).max(2.0);
+        // The ring and its glow start outside the screen and end in the middle.
+        let reach = (self.width * self.width + self.height * self.height).sqrt() / 2.0;
+        let radius = (reach + line + glow) * (1.0 - c);
+        let far = reach + line + glow + 1.0;
+        let (panel, accent) = (self.panel, self.accent);
+        for y in 0..self.height as u32 {
+            self.ring_row(y, centre, radius + line + glow, far, panel);
+            for (step, amount) in [0.55, 0.3, 0.12].into_iter().enumerate() {
+                let from = radius + line + glow * step as f32 / 3.0;
+                let to = radius + line + glow * (step + 1) as f32 / 3.0;
+                self.ring_row(y, centre, from, to, mix(panel, accent, amount));
+            }
+            self.ring_row(y, centre, radius, radius + line, accent);
+        }
+    }
+
+    fn tv(&mut self, c: f32) {
+        let line = (self.edge * 2) as f32;
+        if c < TV_SQUEEZE {
+            // The picture squeezes: bands close from the top and the bottom.
+            let squeezed = c / TV_SQUEEZE;
+            let open = (self.height - line) * (1.0 - squeezed) + line;
+            let top = (self.height - open) / 2.0;
+            self.glaze(false, top, top + open, 0.35 * squeezed);
+            self.band(false, 0.0, top, self.panel);
+            self.band(false, top + open, self.height, self.panel);
+            self.edge(false, top, Inside::Before);
+            self.edge(false, top + open, Inside::After);
+            return;
+        }
+        // Then all is dark but a line of light shrinking to a dot.
+        let shrunk = (c - TV_SQUEEZE) / (1.0 - TV_SQUEEZE);
+        self.band(false, 0.0, self.height, self.panel);
+        let length = (self.width * (1.0 - shrunk)).max(line);
+        let (x, y) = ((self.width - length) / 2.0, (self.height - line) / 2.0);
+        let glow = (self.short / 48.0).max(2.0);
+        for (step, amount) in [0.12, 0.3, 0.55].into_iter().enumerate() {
+            let grow = glow * (3 - step) as f32 / 3.0;
+            let color = mix(self.panel, self.accent, amount);
+            self.rect(
+                x - grow,
+                y - grow,
+                length + grow * 2.0,
+                line + grow * 2.0,
+                color,
+            );
+        }
+        self.rect(x, y, length, line, self.accent);
+    }
+
+    /// Fills a rectangle in canvas pixels, clipped to the frame.
+    fn rect(&mut self, x: f32, y: f32, width: f32, height: f32, color: Rgba) {
+        let (left, top) = (x.max(0.0).round() as u32, y.max(0.0).round() as u32);
+        let right = (x + width).min(self.width).round().max(0.0) as u32;
+        let bottom = (y + height).min(self.height).round().max(0.0) as u32;
+        if right > left && bottom > top {
+            self.frame
+                .fill_rect(Rect::new(left, top, right - left, bottom - top), color);
+        }
+    }
+
+    /// Tiles (`across` on the short side) cover in a scattered order, each
+    /// over `front` of the motion, lit with the accent meanwhile; they grow
+    /// from their middle when `grow`.
+    fn mosaic(&mut self, stage: CoverStage, c: f32, across: f32, front: f32, grow: bool) {
+        let tile = self.short / across;
         let columns = ((self.width / tile).round() as usize).max(4);
         let rows = ((self.height / tile).round() as usize).max(4);
         let count = columns * rows;
@@ -306,13 +425,17 @@ impl<'a> Painter<'a> {
         for (cell, &order) in rank.iter().enumerate() {
             // Each tile grows from its middle over MOSAIC_FRONT of the motion,
             // lit while it grows; the last one is whole when the cover is.
-            let threshold = order as f32 / count as f32 * (1.0 - MOSAIC_FRONT);
+            let threshold = order as f32 / count as f32 * (1.0 - front);
             if c <= threshold {
                 continue;
             }
-            let grown = ((c - threshold) / MOSAIC_FRONT).min(1.0);
+            let grown = ((c - threshold) / front).min(1.0);
             let color = if grown < 1.0 { self.accent } else { self.panel };
-            let scale = ease(0.5 + grown / 2.0) * 2.0 - 1.0;
+            let scale = if grow {
+                ease(0.5 + grown / 2.0) * 2.0 - 1.0
+            } else {
+                1.0
+            };
             let (column, row) = (cell % columns, cell / columns);
             let x0 = column as f32 * self.width / columns as f32;
             let x1 = (column + 1) as f32 * self.width / columns as f32;
@@ -365,11 +488,14 @@ mod tests {
 
     const SCENE: Rgba = Rgba::opaque(10, 200, 30);
     const SIZES: [(u32, u32); 5] = [(1920, 480), (320, 480), (480, 480), (800, 480), (7, 5)];
-    const EFFECTS: [CoverEffect; 4] = [
+    const EFFECTS: [CoverEffect; 7] = [
         CoverEffect::Curtain,
         CoverEffect::Wipe,
         CoverEffect::Blinds,
         CoverEffect::Mosaic,
+        CoverEffect::Iris,
+        CoverEffect::Tv,
+        CoverEffect::Pixels,
     ];
     const DIRECTIONS: [CoverDirection; 4] = [
         CoverDirection::Left,
@@ -442,7 +568,11 @@ mod tests {
                     for step in [0.2, 0.45, 0.7, 0.95] {
                         let frame = painted(size, &c, CoverStage::Closing, step);
                         let now = covered(&frame);
-                        assert!(now > last, "{effect:?} {direction:?} {w}x{h} at {step}");
+                        // A television is all dark but its line before the end.
+                        assert!(
+                            now > last || now == (w * h) as usize,
+                            "{effect:?} {direction:?} {w}x{h} at {step}"
+                        );
                         last = now;
                         for p in frame.as_rgba().as_chunks::<4>().0 {
                             assert!(p[3] == 0 || p[3] == 255);
@@ -537,6 +667,72 @@ mod tests {
         assert_eq!(half.pixel(x + 1, y + 1).unwrap().a, 0);
         let whole = painted(size, &mosaic, CoverStage::Closing, 0.2);
         assert_eq!(whole.pixel(x + 1, y + 1).map(|p| p.a), Some(255));
+    }
+
+    #[test]
+    fn an_iris_closes_on_the_middle_behind_a_ring_of_light() {
+        let size = Size::new(1920, 480);
+        let iris = cover(CoverEffect::Iris, CoverDirection::Left);
+        let frame = painted(size, &iris, CoverStage::Closing, 0.8);
+        assert_eq!(
+            frame.pixel(0, 0).map(|p| p.a),
+            Some(255),
+            "corners close first"
+        );
+        assert_eq!(
+            frame.pixel(960, 240).map(|p| p.a),
+            Some(0),
+            "the middle last"
+        );
+        let lit = (960..1920)
+            .filter_map(|x| frame.pixel(x, 240))
+            .any(|p| p == DEFAULT_ACCENT);
+        assert!(lit, "a ring of accent around the opening");
+        let start = painted(size, &iris, CoverStage::Closing, 0.005);
+        assert_eq!(covered(&start), 0, "it starts outside the screen");
+    }
+
+    #[test]
+    fn a_tv_squeezes_into_a_line_that_shrinks_to_a_dot() {
+        let size = Size::new(1920, 480);
+        let tv = cover(CoverEffect::Tv, CoverDirection::Left);
+        let squeezing = painted(size, &tv, CoverStage::Closing, 0.3);
+        assert_eq!(squeezing.pixel(960, 5).map(|p| p.a), Some(255));
+        assert_eq!(squeezing.pixel(960, 240).map(|p| p.a), Some(0));
+        let line = painted(size, &tv, CoverStage::Closing, 0.8);
+        assert_eq!(
+            line.pixel(960, 240),
+            Some(DEFAULT_ACCENT),
+            "the line in the middle"
+        );
+        assert_ne!(line.pixel(20, 240), Some(DEFAULT_ACCENT), "already shorter");
+        assert_eq!(covered(&line), 1920 * 480);
+        let dot = painted(size, &tv, CoverStage::Closing, 0.999);
+        let lit = dot
+            .as_rgba()
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|p| p[..3] == [DEFAULT_ACCENT.r, DEFAULT_ACCENT.g, DEFAULT_ACCENT.b])
+            .count();
+        assert!(lit > 0 && lit < 400, "a dot of {lit} pixels");
+    }
+
+    #[test]
+    fn pixels_are_small_whole_squares() {
+        // 1920 x 480: pixels of 30 px, 64 x 16; each one is whole or absent.
+        let frame = painted(
+            Size::new(1920, 480),
+            &cover(CoverEffect::Pixels, CoverDirection::Left),
+            CoverStage::Closing,
+            0.5,
+        );
+        for x in (0..1920).step_by(30) {
+            for y in (0..480).step_by(30) {
+                assert_eq!(frame.pixel(x, y), frame.pixel(x + 29, y + 29));
+            }
+        }
+        assert_eq!(EFFECTS.iter().filter(|e| e.directed()).count(), 3);
     }
 
     #[test]

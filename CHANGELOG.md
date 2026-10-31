@@ -22,6 +22,13 @@ All notable changes to Bezel Evo are documented here. The format follows
 - The audio spectrum has a **Pixel dancer** style: a robot, a kid with
   headphones or a cat dances to the beat of the bass, taking a move on each
   beat and jumping on a stronger one, and stands still when the music stops.
+- Profile transitions have three new covers: **Iris** closes on the middle
+  behind a ring of light, **TV** squeezes the screen into a line that shrinks
+  to a dot like an old television switching off, and **Pixels** fills it
+  with small flashing squares. The cover and its light take colours of your
+  choice.
+- Colour pickers open inside the profiles dialog; before, they opened behind
+  it and could not be used.
 
 ### Fixes
 - A player's time moves every second while a track plays. Apps such as

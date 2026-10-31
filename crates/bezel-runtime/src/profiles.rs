@@ -5,6 +5,7 @@ use bezel_core::{
     domain::{
         clock::LocalTime,
         cover::{self, Cover, CoverDirection, CoverEffect, CoverStage},
+        frame::Rgba,
         playback::{CardTrigger, TriggerSource},
         sensor::{SensorKey, Snapshot, Wanted},
     },
@@ -369,13 +370,19 @@ impl Config {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
 pub struct TransitionSettings {
-    /// none, curtain, wipe, blinds or mosaic.
+    /// none, curtain, wipe, blinds, mosaic, iris, tv or pixels.
     #[serde(deserialize_with = "effect_name")]
     pub effect: String,
     /// Left, right, up or down.
     pub direction: String,
     /// Closing plus opening in milliseconds, 150 to 3000.
     pub duration_ms: u32,
+    /// The panel's colour, `#rrggbb`; absent: the cover's own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub panel: Option<String>,
+    /// The light of the moving edges, `#rrggbb`; absent: the cover's own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accent: Option<String>,
 }
 impl Default for TransitionSettings {
     fn default() -> Self {
@@ -383,6 +390,8 @@ impl Default for TransitionSettings {
             effect: "none".into(),
             direction: "left".into(),
             duration_ms: 1500,
+            panel: None,
+            accent: None,
         }
     }
 }
@@ -410,6 +419,9 @@ impl TransitionSettings {
             "wipe" => Some(CoverEffect::Wipe),
             "blinds" => Some(CoverEffect::Blinds),
             "mosaic" => Some(CoverEffect::Mosaic),
+            "iris" => Some(CoverEffect::Iris),
+            "tv" => Some(CoverEffect::Tv),
+            "pixels" => Some(CoverEffect::Pixels),
             _ => return Err(invalid("unknown profile transition effect")),
         };
         let direction = match self.direction.as_str() {
@@ -424,13 +436,28 @@ impl TransitionSettings {
                 "profile transition duration must be 150 to 3000 ms",
             ));
         }
+        let panel = colour(self.panel.as_deref(), cover::DEFAULT_PANEL)?;
+        let accent = colour(self.accent.as_deref(), cover::DEFAULT_ACCENT)?;
         Ok(effect.map(|effect| Cover {
             effect,
             direction,
-            panel: cover::DEFAULT_PANEL,
-            accent: cover::DEFAULT_ACCENT,
+            panel,
+            accent,
         }))
     }
+}
+
+/// `#rrggbb` as an opaque colour; `fallback` when absent.
+fn colour(hex: Option<&str>, fallback: Rgba) -> Result<Rgba> {
+    let Some(hex) = hex else {
+        return Ok(fallback);
+    };
+    let digits = hex
+        .strip_prefix('#')
+        .filter(|d| d.len() == 6 && d.bytes().all(|b| b.is_ascii_hexdigit()))
+        .ok_or_else(|| invalid("profile transition colour must be #rrggbb"))?;
+    let channel = |i: usize| u8::from_str_radix(&digits[i..i + 2], 16).unwrap_or(0);
+    Ok(Rgba::opaque(channel(0), channel(2), channel(4)))
 }
 
 /// What a screen trying a profile from the profile manager says it shows; no
@@ -1137,6 +1164,34 @@ mod tests {
         config.transition.duration_ms = 3001;
         assert!(config.validate().is_err());
         config.transition.duration_ms = 600;
+        for effect in ["iris", "tv", "pixels"] {
+            config.transition.effect = effect.into();
+            assert!(config.validate().is_ok(), "{effect}");
+        }
+        config.transition.panel = Some("#000000".into());
+        config.transition.accent = Some("#FF9248".into());
+        let cover = config.transition.cover().unwrap().unwrap();
+        assert_eq!(
+            (cover.panel, cover.accent),
+            (Rgba::opaque(0, 0, 0), Rgba::opaque(255, 146, 72))
+        );
+        let saved = serde_json::to_value(&config.transition).unwrap();
+        assert_eq!(
+            (saved["panel"].as_str(), saved["accent"].as_str()),
+            (Some("#000000"), Some("#FF9248"))
+        );
+        for bad in ["000000", "#00000", "#gg0000", "#00000000"] {
+            config.transition.panel = Some(bad.into());
+            assert!(config.validate().is_err(), "{bad}");
+        }
+        config.transition.panel = None;
+        config.transition.accent = None;
+        assert!(
+            serde_json::to_value(&config.transition)
+                .unwrap()
+                .get("panel")
+                .is_none()
+        );
         config.transition.direction = "invalid".into();
         assert!(config.validate().is_err());
         config.transition.direction = "left".into();

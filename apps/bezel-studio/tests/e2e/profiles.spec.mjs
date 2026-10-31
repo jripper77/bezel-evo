@@ -1,4 +1,4 @@
-import { test, expect, watchErrors, expectAccessible, libraryTabKey } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, libraryTabKey, setColor, colorButton } from './helpers.mjs';
 async function openProfiles(page, t) {
   await page.getByRole('tab', { name: t(libraryTabKey('themes')), exact: true }).click();
   await page.locator('#theme-profiles').click();
@@ -158,4 +158,24 @@ test('the thirty-second trial reports the actual active profile independently of
   await expect(badge).toHaveAttribute('data-active','true');
   await page.clock.fastForward(31000); await expect(badge).toHaveAttribute('data-active','false');
   expect(errors).toEqual([]);
+});
+
+test('the iris, television and pixel covers have no direction and take the cover and light colours', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  let dialog = await openProfiles(page, t);
+  const effects = dialog.getByRole('group', { name: t('profiles.transition'), exact: true });
+  for (const effect of ['iris', 'pixels', 'tv']) {
+    await effects.getByRole('button', { name: t(`profiles.effect.${effect}`), exact: true }).click();
+    await expect(dialog.getByRole('button', { name: t('card.direction.up'), exact: true })).toHaveCount(0);
+  }
+  await setColor(page, t, dialog, t('profiles.cover.panel'), '000000');
+  await setColor(page, t, dialog, t('profiles.cover.accent'), 'FF9248');
+  await expect(colorButton(dialog, t('profiles.cover.panel'))).toHaveAttribute('data-color', /^#000000/);
+  await dialog.getByRole('button', { name: t('profiles.preview'), exact: true }).click();
+  const tried = await page.evaluate(() => globalThis.demoTransitionPreviews.at(-1).transition);
+  expect(tried).toMatchObject({ effect: 'tv', panel: '#000000', accent: '#ff9248' });
+  await dialog.getByRole('button', { name: t('dialog.close'), exact: true }).click(); dialog = await openProfiles(page, t);
+  await expect(effects.getByRole('button', { name: t('profiles.effect.tv'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(colorButton(dialog, t('profiles.cover.accent'))).toHaveAttribute('data-color', /^#ff9248/);
+  await expectAccessible(page); expect(errors).toEqual([]);
 });

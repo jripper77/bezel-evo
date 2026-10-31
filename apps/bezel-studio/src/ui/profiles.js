@@ -2,18 +2,18 @@
 import { el, icon } from './dom.js';
 import { ICONS } from './icons.js';
 import { askChoice } from './dialog.js';
-import { accordionSection, chipButton, iconButton, iconChoice, numberField, prefixedField, fieldGrid, previewChoice, sentence, screenThumb } from './fields.js';
+import { accordionSection, chipButton, colorPicker, iconButton, iconChoice, numberField, prefixedField, fieldGrid, previewChoice, sentence, screenThumb } from './fields.js';
 import { openMenuAt } from './menu.js';
 import { createSectionMemory } from '../inspector-sections.js';
 import { createProfilesSave } from '../profiles-save.js';
 import { themePreview } from '../theme-previews.js';
 import { ruleNow } from '../gallery-model.js';
 import { errorText, sensorLabel } from '../messages.js';
-import { PROFILE_EFFECTS, PROFILE_RULE_SOURCES, directed, firstIncomplete, modeOf, newProfileRule, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile } from '../profiles-model.js';
+import { COVER_ACCENT, COVER_PANEL, PROFILE_EFFECTS, PROFILE_RULE_SOURCES, directed, firstIncomplete, modeOf, newProfileRule, profileIcon, profileSummary, ruleSummary, triedThemes, withMode, withoutProfile } from '../profiles-model.js';
 
 const ADD_RULE_SOURCES = ['foreground', 'mediaPlaying', 'time', 'sensor', 'idle', 'locked'];
 const BASE = 'base', SECTIONS = ['themes', 'rules', 'behavior'];
-export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} }) {
+export function createProfilesDialog({ t, bridge, notify, pickers, onStatus = () => {} }) {
   let dialog = null, config, overview, themes = [], devices = [], catalog = [], selected = BASE, saver, timer = null, saveState = 'saved';
   const memory = createSectionMemory({ key: 'bezel.profileSections', ids: SECTIONS, open: SECTIONS });
   const label = source => ['sensor', 'time'].includes(source) ? t(source === 'sensor' ? 'inspector.sensor' : 'widget.clock') : ['idle', 'locked'].includes(source) ? t(`profileRules.ui.${source}`) : t(`profiles.${source}`);
@@ -198,6 +198,7 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
           iconChoice(t('profiles.transition'), config.transition.effect, PROFILE_EFFECTS.map(effect => [effect, t(effect === 'none' ? 'fade.none' : `profiles.effect.${effect}`)]), value => { config.transition.effect = value; changed(true); }, { wide: true }),
           ...(config.transition.effect !== 'none' ? [numberField(t('profiles.durationMs'), config.transition.durationMs, value => { config.transition.durationMs = value; changed(); }, { min: 150, max: 3000, step: 50, unit: 'ms', iconName: 'clock', compact: true, caption: t('card.duration') })] : []),
         ], { tail: config.transition.effect !== 'none', columns: config.transition.effect === 'none' ? 1 : null }),
+        config.transition.effect !== 'none' && fieldGrid(['panel', 'accent'].map(coverColor)),
         directed(config.transition.effect) && iconChoice(t('common.direction'), config.transition.direction, ['up', 'down', 'left', 'right'].map(direction => [direction, t(`card.direction.${direction}`), direction === 'left' ? 'arrowLeft' : direction === 'right' ? 'arrowRight' : direction]), value => { config.transition.direction = value; changed(); }),
         profile && numberField(t('profiles.returnDelay'), profile.rules[0]?.returnSeconds ?? 3, value => { profile.rules.forEach(rule => { rule.returnSeconds = value; }); changed(); }, { min: 0, max: 300, unit: 's', iconName: 'clock', compact: true }),
         !profile && select(t('profiles.fallback'), config.defaultProfile ?? '', choices(), value => { config.defaultProfile = value || null; }, 'pf-fallback'),
@@ -205,6 +206,17 @@ export function createProfilesDialog({ t, bridge, notify, onStatus = () => {} })
         el('p', { class: 'hint', text: t('profiles.editingPause') }),
       ].filter(Boolean))),
     ]);
+  }
+  // A cover colour, opaque; its field is drawn again once one is chosen.
+  function coverColor(part) {
+    const slot = el('div', { class: 'pf-cover-color' });
+    const draw = () => slot.replaceChildren(colorPicker(t(`profiles.cover.${part}`), config.transition[part] ?? (part === 'panel' ? COVER_PANEL : COVER_ACCENT), hex => {
+      config.transition[part] = hex.slice(0, 7).toLowerCase();
+      changed();
+      draw();
+    }, { ...pickers.color(), alpha: false, live: false }));
+    draw();
+    return slot;
   }
   function render() {
     if (!dialog) return;
