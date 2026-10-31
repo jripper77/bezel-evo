@@ -37,6 +37,11 @@ All notable changes to Bezel Evo are documented here. The format follows
   it and could not be used.
 
 ### Fixes
+- Studio stays quick while the screen's theme never stops moving (values
+  that roll or glide, a moving weather icon). The live preview fetched every
+  frame back to back from Light and kept the channel busy, so opening the
+  profiles, saving or closing Studio waited; a slow preview frame now leaves
+  it free for a while.
 - A player's time moves every second while a track plays. Apps such as
   Spotify or a browser tell Windows the position only now and then, and the
   time stood still between two of their reports.

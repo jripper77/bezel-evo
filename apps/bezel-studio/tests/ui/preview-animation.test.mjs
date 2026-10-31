@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PREVIEW_FPS, createPreviewAnimation, nextAnimationDelay } from '../../src/preview-animation.js';
+import { PREVIEW_FPS, REST_SHARE, createPreviewAnimation, nextAnimationDelay } from '../../src/preview-animation.js';
 
 test('a still preview asks for no animation frame', () => {
   assert.equal(nextAnimationDelay({ nextMs: null, elapsed: 10 }), null);
@@ -21,9 +21,13 @@ test('at most 15 preview frames a second, whatever the GIF', () => {
   assert.equal(nextAnimationDelay({ nextMs: 0, elapsed: 0, perSecond: 10 }), 100);
 });
 
-test('a slow render does not add another full render duration of waiting', () => {
-  // A full-screen GIF that takes 150 ms to render and send over the IPC.
-  assert.equal(nextAnimationDelay({ nextMs: 100, elapsed: 150 }), 0);
+test('a slow render leaves the channel to Light free for a while, never a full render more', () => {
+  // A full-screen frame that takes 150 ms to render and send over the channel:
+  // half of that free for the other requests, not another 150 ms.
+  assert.equal(REST_SHARE, 0.5);
+  assert.equal(nextAnimationDelay({ nextMs: 100, elapsed: 150 }), 75);
+  // A render within its frame keeps the pace of its animation.
+  assert.equal(nextAnimationDelay({ nextMs: 50, elapsed: 10, perSecond: 30 }), 40);
 });
 
 /** An animation over a fake timer list. */
@@ -78,5 +82,6 @@ test('a hidden page or reduced motion gets no animation frame', () => {
 
 test('30 fps waits only for the remainder of the interval', () => {
   assert.equal(nextAnimationDelay({ nextMs: 33, elapsed: 25, perSecond: 30 }), 1000 / 30 - 25);
-  assert.equal(nextAnimationDelay({ nextMs: 33, elapsed: 40, perSecond: 30 }), 0);
+  // Slower than its frame: it rests half of its time.
+  assert.equal(nextAnimationDelay({ nextMs: 33, elapsed: 40, perSecond: 30 }), 20);
 });

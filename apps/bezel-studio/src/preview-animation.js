@@ -5,6 +5,13 @@
 
 /** Default preview rate; the app supplies 30 for card transitions. */
 export const PREVIEW_FPS = 15;
+/**
+ * Share of a slow render's time left free after it before the next. Frames come
+ * from Light over the channel every other request uses (profiles, saving,
+ * closing): back to back, a theme that never stops moving kept it busy and
+ * everything else waited.
+ */
+export const REST_SHARE = 0.5;
 
 /**
  * How long to wait, once a preview frame is shown, before rendering the
@@ -19,7 +26,9 @@ export function nextAnimationDelay({ nextMs, elapsed, perSecond = PREVIEW_FPS })
   if (nextMs === null || nextMs === undefined) return null;
   const left = nextMs - elapsed;
   const fastest = 1000 / perSecond - elapsed;
-  return Math.max(0, left, fastest);
+  // A render slower than its frame rests a share of its time before the next.
+  const rest = elapsed > 1000 / perSecond ? elapsed * REST_SHARE : 0;
+  return Math.max(0, left, fastest, rest);
 }
 
 /**
