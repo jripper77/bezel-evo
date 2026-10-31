@@ -71,6 +71,7 @@ mod tests {
     }
 }
 
+mod dancer;
 mod weather;
 mod weather_pixel;
 

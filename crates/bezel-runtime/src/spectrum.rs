@@ -1,6 +1,8 @@
 //! Bounded audio worker: one capture per exact source, latest results only.
 use bezel_core::{
-    domain::spectrum::{AudioBlock, AudioState, Motion, Spectrum, SpectrumFrame},
+    domain::spectrum::{
+        AudioBlock, AudioState, Beat, Motion, Spectrum, SpectrumFrame, SpectrumStyle,
+    },
     ports::{AudioCapture, AudioCaptureFactory},
 };
 use std::{
@@ -399,6 +401,70 @@ struct Envelope {
     levels: Vec<f32>,
     peaks: Vec<f32>,
     held: Vec<f32>,
+    pulse: Pulse,
+}
+/// Highest frequency counted as bass for the beat, Hz.
+const BASS_TOP: f32 = 200.;
+/// How long the bass's average remembers, seconds.
+const BASS_MEMORY: f32 = 0.8;
+/// Shortest time between two beats, seconds (about 220 beats a minute).
+const BEAT_GAP: f32 = 0.27;
+/// How much the bass rises within one update, and over its average, for a beat.
+const BEAT_RISE: f32 = 0.03;
+const BEAT_OVER: f32 = 0.04;
+/// Quietest bass that beats.
+const BEAT_FLOOR: f32 = 0.2;
+/// A beat this many times the usual one is as strong as it gets.
+const BEAT_FULL: f32 = 1.5;
+/// Share of each new beat in the usual one.
+const BEAT_USUAL: f32 = 0.25;
+/// Steps of `Beat::since`, seconds: frames change at most this often for it.
+const BEAT_STEP: f32 = 0.05;
+
+/// Beats in the bass: a sudden rise above its recent average.
+#[derive(Default)]
+struct Pulse {
+    average: f32,
+    previous: f32,
+    /// How far a beat usually rises over the average.
+    usual: f32,
+    last: Option<Beat>,
+}
+impl Pulse {
+    /// The beat after `bands` (the raw levels), `dt` seconds after the last.
+    fn update(&mut self, bands: &[f32], s: &Spectrum, dt: f32) -> Option<Beat> {
+        let edge = |i: u16| s.low * (s.high / s.low).powf(f32::from(i) / f32::from(s.bands));
+        let count = (1..=s.bands)
+            .take_while(|i| edge(*i) <= BASS_TOP)
+            .count()
+            .max(1);
+        let bass = bands.iter().take(count).sum::<f32>() / count as f32;
+        let rise = bass - self.previous;
+        self.previous = bass;
+        if let Some(beat) = &mut self.last {
+            beat.since += dt;
+        }
+        let ready = self.last.is_none_or(|b| b.since >= BEAT_GAP);
+        let over = bass - self.average;
+        if ready && rise > BEAT_RISE && over > BEAT_OVER && bass > BEAT_FLOOR {
+            self.usual = if self.last.is_some() {
+                self.usual + (over - self.usual) * BEAT_USUAL
+            } else {
+                over
+            };
+            self.last = Some(Beat {
+                count: self.last.map_or(0, |b| b.count.wrapping_add(1)),
+                since: 0.,
+                strength: (over / self.usual / BEAT_FULL).clamp(0., 1.),
+            });
+        }
+        self.average += (bass - self.average) * (1. - (-dt / BASS_MEMORY).exp());
+        self.last.map(|b| Beat {
+            since: ((b.since.min(Beat::LONGEST) / BEAT_STEP).floor() * BEAT_STEP)
+                .min(Beat::LONGEST),
+            ..b
+        })
+    }
 }
 impl Envelope {
     fn update(
@@ -413,6 +479,9 @@ impl Envelope {
             self.peaks = self.levels.clone();
             self.held = self.levels.clone();
         }
+        let beat = (s.style == SpectrumStyle::Dancer)
+            .then(|| self.pulse.update(&target, s, dt))
+            .flatten();
         let (attack, fall) = match s.motion {
             Motion::Smooth => (0.12, 0.9),
             Motion::Balanced => (0.035, 0.45),
@@ -458,6 +527,7 @@ impl Envelope {
                 .iter()
                 .map(|v| (v * 512.).round() / 512.)
                 .collect(),
+            beat,
         }
     }
 }
@@ -498,6 +568,70 @@ mod tests {
                 .all(|v| v.is_finite() && (0. ..=1.).contains(v))
         );
     }
+    #[test]
+    fn beats_are_found_in_the_bass_and_a_harder_kick_is_stronger() {
+        let s = Spectrum {
+            style: SpectrumStyle::Dancer,
+            ..Spectrum::default()
+        };
+        let mut e = Envelope::default();
+        let mut beats = vec![];
+        // 120 beats a minute, updates every 50 ms: a kick on every tenth, the
+        // fourth of each bar harder; mids and highs steady throughout.
+        for step in 0..80 {
+            let kick = match (step % 10, (step / 10) % 4) {
+                (0, 3) => 0.95,
+                (0, _) => 0.6,
+                (1, _) => 0.45,
+                _ => 0.3,
+            };
+            let mut bands = vec![0.5; 32];
+            bands[..6].fill(kick);
+            let frame = e.update(bands, &s, 0.05, AudioState::Live);
+            if let Some(beat) = frame.beat.filter(|b| b.since == 0.) {
+                beats.push((step, beat.count, beat.strength));
+            }
+        }
+        assert_eq!(
+            beats.iter().map(|b| b.0).collect::<Vec<_>>(),
+            (0..8).map(|i| i * 10).collect::<Vec<_>>()
+        );
+        assert!(beats.iter().enumerate().all(|(i, b)| b.1 == i as u32));
+        let (soft, hard) = (beats[4].2, beats[3].2);
+        assert!(hard >= 0.8 && soft < 0.8, "soft {soft}, hard {hard}");
+        let mut other = Envelope::default();
+        let plain = other.update(vec![0.9; 32], &Spectrum::default(), 0.05, AudioState::Live);
+        assert_eq!(plain.beat, None, "only a dancer listens for beats");
+    }
+
+    #[test]
+    fn a_steady_or_quiet_bass_does_not_beat_and_an_old_beat_stops_changing() {
+        let s = Spectrum {
+            style: SpectrumStyle::Dancer,
+            ..Spectrum::default()
+        };
+        let mut e = Envelope::default();
+        for _ in 0..40 {
+            assert_eq!(
+                e.update(vec![0.7; 32], &s, 0.05, AudioState::Live)
+                    .beat
+                    .map(|b| b.count),
+                e.pulse.last.map(|b| b.count)
+            );
+        }
+        let steady = e.pulse.last.map_or(0, |b| b.count);
+        assert!(steady <= 1, "one rise from silence at most, not {steady}");
+        let mut quiet = Envelope::default();
+        for step in 0..40 {
+            let mut bands = vec![0.; 32];
+            bands[..6].fill(if step % 10 == 0 { 0.15 } else { 0. });
+            assert_eq!(quiet.update(bands, &s, 0.05, AudioState::Live).beat, None);
+        }
+        let first = e.update(vec![0.7; 32], &s, 0.05, AudioState::Live);
+        let again = e.update(vec![0.7; 32], &s, 0.05, AudioState::Live);
+        assert_eq!(first.beat, again.beat, "past a second the frame stays");
+    }
+
     #[test]
     fn silence_settles_to_exact_zero_and_stops_changes() {
         for motion in [Motion::Smooth, Motion::Balanced, Motion::Snappy] {

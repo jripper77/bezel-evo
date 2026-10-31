@@ -1363,6 +1363,9 @@ impl SkiaRenderer {
                     })
                     .collect();
                 frame.peaks = frame.levels.iter().map(|v| (v + 0.08).min(1.)).collect();
+                frame.beat = Some(bezel_core::domain::spectrum::demo_beat(
+                    context.animation.as_secs_f32(),
+                ));
             }
             crate::spectrum::draw(
                 layer,

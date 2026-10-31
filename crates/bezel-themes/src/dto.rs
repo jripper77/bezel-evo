@@ -1127,9 +1127,15 @@ pub struct SpectrumDto {
     pub gain: f32,
     #[serde(skip_serializing_if = "is_player_audio")]
     pub audio: String,
+    /// `robot`, `headphones` or `cat`, for the `dancer` style.
+    #[serde(skip_serializing_if = "is_robot")]
+    pub dancer: String,
 }
 fn is_player_audio(audio: &str) -> bool {
     audio == "player"
+}
+fn is_robot(dancer: &str) -> bool {
+    dancer == "robot"
 }
 fn is_mirrored(style: &str) -> bool {
     style == "mirrored"
@@ -1159,7 +1165,7 @@ impl Default for SpectrumDto {
 }
 impl From<&bezel_core::domain::spectrum::Spectrum> for SpectrumDto {
     fn from(s: &bezel_core::domain::spectrum::Spectrum) -> Self {
-        use bezel_core::domain::spectrum::{Motion, SpectrumAudio, SpectrumStyle};
+        use bezel_core::domain::spectrum::{Dancer, Motion, SpectrumAudio, SpectrumStyle};
         Self {
             player: s.player.map(|p| p.0),
             bands: s.bands,
@@ -1183,6 +1189,7 @@ impl From<&bezel_core::domain::spectrum::Spectrum> for SpectrumDto {
                 SpectrumStyle::Blocks => "blocks",
                 SpectrumStyle::Line => "line",
                 SpectrumStyle::Radial => "radial",
+                SpectrumStyle::Dancer => "dancer",
             }
             .into(),
             block: s.block,
@@ -1195,12 +1202,20 @@ impl From<&bezel_core::domain::spectrum::Spectrum> for SpectrumDto {
                 SpectrumAudio::System => "system",
             }
             .into(),
+            dancer: match s.dancer {
+                Dancer::Robot => "robot",
+                Dancer::Headphones => "headphones",
+                Dancer::Cat => "cat",
+            }
+            .into(),
         }
     }
 }
 impl SpectrumDto {
     fn domain(&self) -> R<bezel_core::domain::spectrum::Spectrum> {
-        use bezel_core::domain::spectrum::{Motion, Spectrum, SpectrumAudio, SpectrumStyle};
+        use bezel_core::domain::spectrum::{
+            Dancer, Motion, Spectrum, SpectrumAudio, SpectrumStyle,
+        };
         let motion = match self.motion.as_str() {
             "smooth" => Motion::Smooth,
             "balanced" => Motion::Balanced,
@@ -1213,7 +1228,14 @@ impl SpectrumDto {
             "blocks" => SpectrumStyle::Blocks,
             "line" => SpectrumStyle::Line,
             "radial" => SpectrumStyle::Radial,
+            "dancer" => SpectrumStyle::Dancer,
             _ => return err("unknown spectrum style"),
+        };
+        let dancer = match self.dancer.as_str() {
+            "robot" => Dancer::Robot,
+            "headphones" => Dancer::Headphones,
+            "cat" => Dancer::Cat,
+            _ => return err("unknown spectrum dancer"),
         };
         let audio = match self.audio.as_str() {
             "player" => SpectrumAudio::Player,
@@ -1239,6 +1261,7 @@ impl SpectrumDto {
             inner: self.inner,
             gain: self.gain,
             audio,
+            dancer,
         };
         if !s.valid() {
             return err("invalid spectrum bounds");

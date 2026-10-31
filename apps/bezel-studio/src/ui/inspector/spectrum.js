@@ -5,6 +5,7 @@ import { describeSections } from './sections.js';
 // Existing spectrum controls, isolated from inspector navigation.
 import { SPECTRUM_STYLES, followedPlayer, spectrumOf, spectrumPatch } from '../../spectrum.js';
 import { el } from '../dom.js';
+import { DANCERS, drawDancer } from '../../dancer-pixel.js';
 import { numberField, prefixedField, iconChoice, fieldGrid, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
 
 export function panels(ctx) {
@@ -17,9 +18,10 @@ export function panels(ctx) {
     const selected = followedPlayer(theme, c);
     const options = [['', t('spectrum.automatic')], ...players.map(item => [String(item.id), item.name])];
     if (c.player != null && !players.some(p => p.id === c.player)) options.push([String(c.player), t('spectrum.playerMissing')]);
-    const STYLE_LABELS = { mirrored: 'spectrum.mirrored', bars: 'graph.bars', blocks: 'spectrum.blocks', line: 'graph.line', radial: 'fade.radial' };
+    const STYLE_LABELS = { mirrored: 'spectrum.mirrored', bars: 'graph.bars', blocks: 'spectrum.blocks', line: 'graph.line', radial: 'fade.radial', dancer: 'spectrum.dancer' };
     // Fields that do not apply to the chosen style are hidden, never disabled.
-    const line = c.style === 'line';
+    const line = c.style === 'line', dancing = c.style === 'dancer';
+    const dancerPreview = (dancer, pose) => { const canvas = el('canvas', { width: 48, height: 48, 'aria-hidden': 'true' }); drawDancer(canvas.getContext('2d'), { x: 0, y: 0, width: 48, height: 48 }, dancer, pose); return canvas; };
     const baseLabel = { mirrored: 'spectrum.centre', radial: 'spectrum.ring' }[c.style] ?? 'spectrum.baseline';
     return {
       data: [section('spectrum-source', t('spectrum.source'), [
@@ -43,21 +45,23 @@ export function panels(ctx) {
         el('p', { class: 'hint', text: t('spectrum.gainHint') }),
       ], { caption: true })],
       look: [section('spectrum-paint', t('inspector.color'), gaugeFillFields(ctx, e, { path: ['kind', 'style', 'paint'] })), section('spectrum-bars', t('spectrum.style'), [
-        ctx.optionTiles(t('spectrum.style'), SPECTRUM_STYLES.map(value => ({ text: t(STYLE_LABELS[value]), caption: value === 'mirrored' ? t('insp.spectrum.mirrorShort') : value === 'blocks' ? t('insp.spectrum.ledShort') : t(STYLE_LABELS[value]), art: ART[value] ?? (value === 'radial' ? ICONS.ring : ART.bars), pressed: c.style === value, onClick: () => set({ style: value }) }))),
-        !line && fieldGrid([numberField(t('spectrum.thickness'), c.thickness, thickness => set({ thickness }), { min: 1, max: 256, unit: 'px', iconName: 'width', compact: true }),
-        !line && numberField(t('spectrum.gap'), c.gap, gap => set({ gap }), { min: 0, max: 128, unit: 'px', iconName: 'spacing', compact: true })]),
+        ctx.optionTiles(t('spectrum.style'), SPECTRUM_STYLES.map(value => ({ text: t(STYLE_LABELS[value]), caption: value === 'mirrored' ? t('insp.spectrum.mirrorShort') : value === 'blocks' ? t('insp.spectrum.ledShort') : t(STYLE_LABELS[value]), ...(value === 'dancer' ? { preview: dancerPreview(c.dancer, 'armsUp') } : { art: ART[value] ?? (value === 'radial' ? ICONS.ring : ART.bars) }), pressed: c.style === value, onClick: () => set({ style: value }) }))),
+        dancing && ctx.optionTiles(t('spectrum.dancer.who'), DANCERS.map(dancer => ({ text: t(`spectrum.dancer.${dancer}`), preview: dancerPreview(dancer, 'still'), pressed: c.dancer === dancer, onClick: () => set({ dancer }) }))),
+        dancing && el('p', { class: 'hint', text: t('spectrum.dancer.hint') }),
+        !line && !dancing && fieldGrid([numberField(t('spectrum.thickness'), c.thickness, thickness => set({ thickness }), { min: 1, max: 256, unit: 'px', iconName: 'width', compact: true }),
+        numberField(t('spectrum.gap'), c.gap, gap => set({ gap }), { min: 0, max: 128, unit: 'px', iconName: 'spacing', compact: true })]),
         c.style === 'blocks' && numberField(t('spectrum.block'), c.block, block => set({ block }), { min: 1, max: 64, unit: 'px', iconName: 'height' }),
         c.style === 'blocks' && el('p', { class: 'hint', text: t('spectrum.blockColors') }),
         line && numberField(t('spectrum.stroke'), c.stroke, stroke => set({ stroke }), { min: 1, max: 32, unit: 'px', iconName: 'strokeWidth' }),
         line && switchRow(t('spectrum.fill'), c.fill, fill => set({ fill })),
         c.style === 'radial' && numberField(t('spectrum.inner'), c.inner, inner => set({ inner }), { min: 0, max: 90 }),
-        !line && barCorners(e.id, c, set, e.frame),
-        fieldGrid([
+        !line && !dancing && barCorners(e.id, c, set, e.frame),
+        !dancing && fieldGrid([
           c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre }), { iconName: 'spectrum-baseline', leading: true }),
           !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks }), { iconName: 'spectrum-peaks', leading: true }),
         ].filter(Boolean)),
       ], { caption: true })],
-      behavior: [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`), `spectrum-${value}`]), motion => set({ motion }), { wide: true, bare: true })], { caption: true })],
+      behavior: dancing ? [] : [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`), `spectrum-${value}`]), motion => set({ motion }), { wide: true, bare: true })], { caption: true })],
     };
   }
   return spectrumForm(ctx.element, ctx.assets);

@@ -42,6 +42,77 @@ pub enum SpectrumStyle {
     Line,
     /// Bars radiating from a ring around the element's centre.
     Radial,
+    /// A pixel character dancing to the beat of the bass.
+    Dancer,
+}
+/// Who dances in a [`SpectrumStyle::Dancer`] spectrum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Dancer {
+    /// A little robot with a visor and an antenna.
+    #[default]
+    Robot,
+    /// A kid with headphones.
+    Headphones,
+    /// A cat with a swinging tail.
+    Cat,
+}
+/// The poses of a dancer, in the order of its sprites.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DancePose {
+    /// Standing, breathing: no music.
+    Still,
+    /// Knees bent, arms out: between two beats.
+    Down,
+    /// Arms up.
+    ArmsUp,
+    /// A step to the left.
+    StepLeft,
+    /// A step to the right.
+    StepRight,
+    /// In the air: a strong beat.
+    Jump,
+}
+/// The moves a dancer takes in turn, one a beat.
+pub const MOVES: [DancePose; 4] = [
+    DancePose::ArmsUp,
+    DancePose::StepLeft,
+    DancePose::ArmsUp,
+    DancePose::StepRight,
+];
+/// How long a move is held after its beat, seconds.
+pub const BEAT_HELD: f32 = 0.28;
+/// A beat at least this strong jumps.
+pub const JUMP_STRENGTH: f32 = 0.8;
+/// Loudest band below which the music counts as stopped.
+pub const SILENCE: f32 = 0.04;
+/// Beats a minute of the demo.
+pub const DEMO_TEMPO: f32 = 120.;
+/// The beat of the demo at `seconds`: steady, every eighth one strong.
+pub fn demo_beat(seconds: f32) -> Beat {
+    let beats = (seconds.max(0.) * DEMO_TEMPO / 60.).min(u32::MAX as f32);
+    let count = beats as u32;
+    Beat {
+        count,
+        since: beats.fract() * 60. / DEMO_TEMPO,
+        strength: if count % 8 == 7 { 1. } else { 0.6 },
+    }
+}
+/// The pose of a dancer for `frame`: a move just after a beat, a jump after a
+/// strong one, down between beats, still without music.
+pub fn dance_pose(frame: &SpectrumFrame) -> DancePose {
+    let playing = matches!(frame.state, AudioState::Live | AudioState::Demo)
+        && frame.levels.iter().any(|v| *v >= SILENCE);
+    match frame.beat {
+        _ if !playing => DancePose::Still,
+        Some(beat) if beat.since < BEAT_HELD => {
+            if beat.strength >= JUMP_STRENGTH {
+                DancePose::Jump
+            } else {
+                MOVES[beat.count as usize % MOVES.len()]
+            }
+        }
+        _ => DancePose::Down,
+    }
 }
 /// Standalone spectrum following exactly one theme Player.
 #[derive(Debug, Clone, PartialEq)]
@@ -82,6 +153,8 @@ pub struct Spectrum {
     pub gain: f32,
     /// What it listens to.
     pub audio: SpectrumAudio,
+    /// Who dances, for `Dancer`.
+    pub dancer: Dancer,
 }
 impl Default for Spectrum {
     fn default() -> Self {
@@ -104,6 +177,7 @@ impl Default for Spectrum {
             inner: 40.,
             gain: 1.,
             audio: SpectrumAudio::Player,
+            dancer: Dancer::Robot,
         }
     }
 }
@@ -181,6 +255,23 @@ pub struct SpectrumFrame {
     pub levels: Vec<f32>,
     /// Normalized peak caps, 0..=1.
     pub peaks: Vec<f32>,
+    /// The last beat found in the bass; none before the first.
+    pub beat: Option<Beat>,
+}
+/// A beat found in the bass.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Beat {
+    /// Beats found so far (wrapping).
+    pub count: u32,
+    /// Seconds since this one, at most [`Beat::LONGEST`].
+    pub since: f32,
+    /// How strong against the beats before it, 0..=1: about ⅔ for a usual
+    /// one, 1 for one half again as strong.
+    pub strength: f32,
+}
+impl Beat {
+    /// `since` stops counting here: a frame does not change for an old beat.
+    pub const LONGEST: f32 = 1.;
 }
 /// Ephemeral PCM packet; owned and dropped on the analysis thread.
 pub struct AudioBlock {
@@ -258,6 +349,57 @@ mod tests {
         );
         theme.elements.pop();
         assert_eq!(s.session(&theme, &snapshot), Err(AudioState::PlayerMissing));
+    }
+    #[test]
+    fn a_dancer_moves_on_each_beat_jumps_on_a_strong_one_and_rests_in_silence() {
+        let beat = |count, since, strength| SpectrumFrame {
+            state: AudioState::Live,
+            levels: vec![0.5; 8],
+            peaks: vec![],
+            beat: Some(Beat {
+                count,
+                since,
+                strength,
+            }),
+        };
+        assert_eq!(dance_pose(&beat(0, 0.1, 0.5)), DancePose::ArmsUp);
+        assert_eq!(dance_pose(&beat(1, 0.1, 0.5)), DancePose::StepLeft);
+        assert_eq!(dance_pose(&beat(3, 0.1, 0.5)), DancePose::StepRight);
+        assert_eq!(dance_pose(&beat(7, 0.1, 0.9)), DancePose::Jump);
+        assert_eq!(
+            dance_pose(&beat(1, 0.4, 0.9)),
+            DancePose::Down,
+            "between beats"
+        );
+        let mut quiet = beat(1, 0.1, 0.5);
+        quiet.levels = vec![0.01; 8];
+        assert_eq!(dance_pose(&quiet), DancePose::Still);
+        let mut off = beat(1, 0.1, 0.5);
+        off.state = AudioState::Disabled;
+        assert_eq!(dance_pose(&off), DancePose::Still);
+        assert_eq!(
+            dance_pose(&SpectrumFrame {
+                beat: None,
+                ..beat(0, 0., 0.)
+            }),
+            DancePose::Down,
+            "music before the first beat"
+        );
+    }
+    #[test]
+    fn the_demo_beats_twice_a_second_and_jumps_every_eighth() {
+        assert_eq!(
+            demo_beat(0.),
+            Beat {
+                count: 0,
+                since: 0.,
+                strength: 0.6
+            }
+        );
+        let b = demo_beat(1.6);
+        assert_eq!((b.count, (b.since * 100.).round()), (3, 10.));
+        assert_eq!(demo_beat(3.6).strength, 1.);
+        assert_eq!(demo_beat(-1.).count, 0);
     }
     #[test]
     fn imported_settings_are_bounded() {

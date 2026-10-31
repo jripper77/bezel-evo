@@ -14,7 +14,7 @@ test('spectrum follows one Player; demo, presets, gradients and band thresholds 
   const gain=inspector.getByRole('spinbutton',{name:t('spectrum.gain'),exact:true});await expect(gain).toHaveValue('1');
   await gain.fill('0.5');await gain.press('Tab');await expect(gain).toHaveValue('0.5');await expect(inspector.getByText(t('spectrum.gainHint'),{exact:true})).toBeVisible();
   await inspector.getByRole('button',{name:t('spectrum.demo'),exact:true}).click();await expect(inspector.getByText(t('spectrum.demoHint'),{exact:true})).toBeVisible();
-  const canvas=inspector.locator('canvas');const before=await canvas.evaluate(c=>c.toDataURL());await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
+  const canvas=inspector.locator('canvas[role="img"]');const before=await canvas.evaluate(c=>c.toDataURL());await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
   await tab(page,t,'inspector.tab.look');
   await expect(inspector.getByRole('button',{name:t('spectrum.balanced'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(toggleButton(inspector, t('spectrum.peaks'))).toHaveAttribute('aria-pressed', 'true');
@@ -89,5 +89,25 @@ test('each style shows only its own fields, one Undo step per change (D-AS-11)',
   await style.selectOption('radial');await expect(field('spectrum.inner')).toHaveValue('40');await expect(toggle('spectrum.ring')).toBeVisible();
   await style.selectOption('bars');await expect(toggle('spectrum.baseline')).toBeVisible();
   await page.getByRole('button',{name:t('top.undo'),exact:true}).click();await expect(tile('radial')).toHaveAttribute('aria-pressed','true');
+  await expectAccessible(page);expect(errors).toEqual([]);
+});
+
+test('a pixel dancer is a style of its own with three characters and no bar fields',async({page,t})=>{
+  const errors=watchErrors(page), inspector=await setup(page,t);
+  await inspector.getByRole('button',{name:t('spectrum.demo'),exact:true}).click();
+  await tab(page,t,'inspector.tab.look');
+  const styles=inspector.getByRole('group',{name:t('spectrum.style'),exact:true});
+  await styles.getByRole('button',{name:t('spectrum.dancer'),exact:true}).click();
+  await expect(styles.getByRole('button',{name:t('spectrum.dancer'),exact:true})).toHaveAttribute('aria-pressed','true');
+  const who=inspector.getByRole('group',{name:t('spectrum.dancer.who'),exact:true});
+  await expect(who.getByRole('button')).toHaveCount(3);
+  await expect(who.getByRole('button',{name:t('spectrum.dancer.robot'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await who.getByRole('button',{name:t('spectrum.dancer.cat'),exact:true}).click();
+  await expect(who.getByRole('button',{name:t('spectrum.dancer.cat'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(inspector.getByRole('spinbutton',{name:t('spectrum.thickness'),exact:true})).toHaveCount(0);
+  await expect(toggleButton(inspector,t('spectrum.peaks'))).toHaveCount(0);
+  await expect(inspector.locator('[data-inspector-section="behavior"]')).toHaveCount(0);
+  await page.getByRole('button',{name:t('top.undo'),exact:true}).click();
+  await expect(who.getByRole('button',{name:t('spectrum.dancer.robot'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expectAccessible(page);expect(errors).toEqual([]);
 });

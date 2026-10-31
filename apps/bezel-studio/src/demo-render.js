@@ -18,6 +18,7 @@ import { HAND_LENGTHS, analogOf, clockParts, dialDate, dialDue, dialNumerals, fo
 import { canvasFont as fontOf, blinkDue, fitText, laidInPieces, measureText, partStyle, separatorsOff } from './text-layout.js';
 import { sunCenter, weatherIconParts, weatherIconPaths } from './weather-icon.js';
 import { drawPixelWeather } from './weather-pixel.js';
+import { dancePose, demoBeat, drawDancer } from './dancer-pixel.js';
 import { REST, amplitudeOf, iconPose, iconStep } from './weather-motion.js';
 import { demoPeak, faint, fitGauge, gradientAt, lookOf, needleColor, numberShares, scaleNumber, share, tickShares } from './needle-look.js';
 import { demoRoll, easedDemoValue, rollWheels } from './value-transition.js';
@@ -537,7 +538,9 @@ function drawSpectrum(ctx, e, seconds) {
   const peakOf = value => Math.min(1, value + .08);
   const bar = (x, y, w, h) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, c.corners.map(v => Math.min(v, w / 2, h / 2))); ctx.fill(); };
   ctx.fillStyle = base;
-  if (c.style === 'mirrored') {
+  if (c.style === 'dancer') {
+    drawDancer(ctx, f, c.dancer, c.demo ? dancePose({ levels: values, beat: demoBeat(seconds) }) : 'still');
+  } else if (c.style === 'mirrored') {
     if (c.centre) ctx.fillRect(f.x,mid-.5,f.width,1);
     values.forEach((value,i) => {
       const x=f.x+i*cell+(cell-width)/2, h=value*Math.max(0,f.height/2-2);

@@ -216,6 +216,7 @@ fn studio_ux_v2_templates_render_live_and_unavailable_inputs() {
                                 .map(|i| (f32::from(i) * 0.43).sin().abs() * 0.85)
                                 .collect(),
                             peaks: Vec::new(),
+                            beat: None,
                         },
                     );
                 }

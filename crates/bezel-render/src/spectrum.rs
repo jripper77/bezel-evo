@@ -7,7 +7,7 @@ use crate::{
 };
 use bezel_core::domain::{
     clock::Language,
-    spectrum::{AudioState, Spectrum, SpectrumFrame, SpectrumStyle},
+    spectrum::{AudioState, Spectrum, SpectrumFrame, SpectrumStyle, dance_pose},
     theme::{BoxF, Paint, ShapeKind},
     value_color::ColorByValue,
 };
@@ -43,6 +43,7 @@ pub(crate) fn draw(
         SpectrumStyle::Blocks => blocks(layer, area, s, &bands, paint, colors),
         SpectrumStyle::Line => line(layer, area, s, &bands, paint, colors),
         SpectrumStyle::Radial => radial(layer, area, s, &bands, paint, colors),
+        SpectrumStyle::Dancer => crate::dancer::draw(layer, area, s.dancer, dance_pose(frame)),
     }
 }
 
@@ -396,6 +397,7 @@ mod tests {
                 state: AudioState::Live,
                 levels,
                 peaks: vec![],
+                beat: None,
             },
         );
         let mut renderer = testkit::renderer();
@@ -456,6 +458,7 @@ mod tests {
                 state: AudioState::Live,
                 levels,
                 peaks: vec![],
+                beat: None,
             },
         );
         testkit::render(&mut testkit::renderer(), &theme, &scene)

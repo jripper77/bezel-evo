@@ -93,6 +93,7 @@ fn coordinated_templates_load_and_render_with_live_features() {
                         SpectrumFrame {
                             state: AudioState::Live,
                             peaks: levels.clone(),
+                            beat: None,
                             levels,
                         },
                     );

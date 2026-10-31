@@ -19,6 +19,9 @@ All notable changes to Bezel Evo are documented here. The format follows
   or joined to the line above, and each takes its own font, size, weight and
   colour, like the parts of a value. A name of your own can stand in place
   of the city's.
+- The audio spectrum has a **Pixel dancer** style: a robot, a kid with
+  headphones or a cat dances to the beat of the bass, taking a move on each
+  beat and jumping on a stronger one, and stands still when the music stops.
 
 ### Fixes
 - A player's time moves every second while a track plays. Apps such as
