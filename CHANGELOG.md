@@ -21,6 +21,9 @@ All notable changes to Bezel Evo are documented here. The format follows
   of the city's.
 
 ### Fixes
+- A player's time moves every second while a track plays. Apps such as
+  Spotify or a browser tell Windows the position only now and then, and the
+  time stood still between two of their reports.
 - A rev C 8.8" listed by either of its two ports is one screen with one
   document and one remembered theme. Before, its second port kept a second
   document of the same file, so one of them could save over the other.
