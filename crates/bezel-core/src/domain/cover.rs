@@ -20,8 +20,8 @@ pub enum CoverEffect {
     Wipe,
     /// Strips close one after another in a wave and open the same way.
     Blinds,
-    /// Tiles light up in a scattered order until all is covered, then go
-    /// out in another order.
+    /// Small tiles light up in a wave that sweeps across the screen until
+    /// all is covered, and go out in the same wave.
     Mosaic,
     /// A circle closes on the middle behind a ring of light, and opens again.
     Iris,
@@ -37,12 +37,13 @@ impl CoverEffect {
     pub const fn directed(self) -> bool {
         matches!(
             self,
-            CoverEffect::Curtain | CoverEffect::Wipe | CoverEffect::Blinds
+            CoverEffect::Curtain | CoverEffect::Wipe | CoverEffect::Blinds | CoverEffect::Mosaic
         )
     }
 }
 
-/// Where the cover moves. Curtain uses the axis only; mosaic ignores it.
+/// Where the cover moves. Curtain uses the axis only; iris, television and
+/// pixels ignore it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoverDirection {
     /// Towards the left edge.
@@ -89,11 +90,19 @@ pub const DEFAULT_PANEL: Rgba = Rgba::opaque(0x12, 0x0b, 0x13);
 pub const DEFAULT_ACCENT: Rgba = Rgba::opaque(0xf2, 0x8c, 0x28);
 
 /// Delay of the last strip of a blind, as a share of the closing.
-const BLINDS_STAGGER: f32 = 0.7;
+const BLINDS_STAGGER: f32 = 1.2;
 /// Share of the motion over which a mosaic tile grows, lit with the accent.
-const MOSAIC_FRONT: f32 = 0.2;
+const MOSAIC_FRONT: f32 = 0.22;
+/// Share of a tile's growth lit with the accent: the crest of the wave.
+const LIT: f32 = 0.5;
 /// Mosaic tiles across the short side.
-const MOSAIC_TILES: f32 = 4.0;
+const MOSAIC_TILES: f32 = 12.0;
+/// How much a mosaic's wave leans, and how ragged its front is, as shares of
+/// the sweep.
+const WAVE_LEAN: f32 = 0.3;
+const WAVE_RAGGED: f32 = 0.12;
+/// How close (in short sides) a curtain's leaves light the gap between them.
+const CURTAIN_FLASH: f32 = 0.5;
 /// Pixels across the short side, and the share of the motion each flashes.
 const PIXEL_TILES: f32 = 16.0;
 const PIXEL_FRONT: f32 = 0.12;
@@ -128,10 +137,18 @@ impl Cover {
             CoverEffect::Curtain => painter.curtain(self.direction, c),
             CoverEffect::Wipe => painter.wipe(self.direction, stage, c),
             CoverEffect::Blinds => painter.blinds(self.direction, c),
-            CoverEffect::Mosaic => painter.mosaic(stage, c, MOSAIC_TILES, MOSAIC_FRONT, true),
+            CoverEffect::Mosaic => painter.mosaic(
+                Order::Wave(self.direction, stage),
+                c,
+                MOSAIC_TILES,
+                MOSAIC_FRONT,
+                true,
+            ),
             CoverEffect::Iris => painter.iris(c),
             CoverEffect::Tv => painter.tv(c),
-            CoverEffect::Pixels => painter.mosaic(stage, c, PIXEL_TILES, PIXEL_FRONT, false),
+            CoverEffect::Pixels => {
+                painter.mosaic(Order::Scattered(stage), c, PIXEL_TILES, PIXEL_FRONT, false)
+            }
         }
     }
 }
@@ -204,8 +221,15 @@ impl<'a> Painter<'a> {
 
     /// The lit edge at `at` along the axis, with its glow inside the panel.
     fn edge(&mut self, horizontal: bool, at: f32, inside: Inside) {
-        let line = self.edge as f32;
         let glow = (self.short / 48.0).max(2.0);
+        self.lit_edge(horizontal, at, inside, glow, &[0.55, 0.3, 0.12]);
+    }
+
+    /// The lit edge at `at`, with a glow `glow` long inside the panel fading
+    /// through `amounts` of the accent, and its light ahead on the scene.
+    fn lit_edge(&mut self, horizontal: bool, at: f32, inside: Inside, glow: f32, amounts: &[f32]) {
+        let line = self.edge as f32;
+        let steps = amounts.len() as f32;
         let (line_start, glow_sign) = match inside {
             Inside::Before => (at - line, -1.0),
             Inside::After => (at, 1.0),
@@ -214,9 +238,9 @@ impl<'a> Painter<'a> {
             Inside::Before => line_start,
             Inside::After => line_start + line,
         };
-        for (step, amount) in [0.55, 0.3, 0.12].into_iter().enumerate() {
-            let near = glow_from + glow_sign * glow * step as f32 / 3.0;
-            let far = glow_from + glow_sign * glow * (step + 1) as f32 / 3.0;
+        for (step, &amount) in amounts.iter().enumerate() {
+            let near = glow_from + glow_sign * glow * step as f32 / steps;
+            let far = glow_from + glow_sign * glow * (step + 1) as f32 / steps;
             let color = mix(self.panel, self.accent, amount);
             self.band(horizontal, near.min(far), near.max(far), color);
         }
@@ -226,7 +250,7 @@ impl<'a> Painter<'a> {
             Inside::Before => (at, 1.0),
             Inside::After => (at, -1.0),
         };
-        let spill = glow * 1.5;
+        let spill = (self.short / 32.0).max(3.0);
         for (step, amount) in [0.35, 0.18, 0.07].into_iter().enumerate() {
             let near = outside + sign * spill * step as f32 / 3.0;
             let far = outside + sign * spill * (step + 1) as f32 / 3.0;
@@ -267,6 +291,13 @@ impl<'a> Painter<'a> {
         let horizontal = direction.horizontal();
         let length = self.length(horizontal);
         let half = length / 2.0 * c;
+        // As the leaves meet, the light between them flares up.
+        let gap = length - half * 2.0;
+        let flash = self.short * CURTAIN_FLASH;
+        if gap < flash {
+            let amount = 0.6 * (1.0 - gap / flash).powi(2);
+            self.glaze(horizontal, half, length - half, amount);
+        }
         self.band(horizontal, 0.0, half, self.panel);
         self.band(horizontal, length - half, length, self.panel);
         self.edge(horizontal, half, Inside::Before);
@@ -276,17 +307,21 @@ impl<'a> Painter<'a> {
     fn wipe(&mut self, direction: CoverDirection, stage: CoverStage, c: f32) {
         let horizontal = direction.horizontal();
         let length = self.length(horizontal);
-        let reach = length * c;
+        // Eased once more: it sets off slowly, rushes across and brakes.
+        let reach = length * ease(c);
+        // A long trail of light behind the edge.
+        let trail = (self.short / 10.0).max(4.0);
+        const TRAIL: [f32; 6] = [0.6, 0.42, 0.28, 0.17, 0.09, 0.04];
         // Towards the start (left, up): it enters at the end and leaves at the start.
         let toward_start = matches!(direction, CoverDirection::Left | CoverDirection::Up);
         match (toward_start, stage) {
             (true, CoverStage::Closing) | (false, CoverStage::Opening) => {
                 self.band(horizontal, length - reach, length, self.panel);
-                self.edge(horizontal, length - reach, Inside::After);
+                self.lit_edge(horizontal, length - reach, Inside::After, trail, &TRAIL);
             }
             (true, CoverStage::Opening) | (false, CoverStage::Closing) => {
                 self.band(horizontal, 0.0, reach, self.panel);
-                self.edge(horizontal, reach, Inside::Before);
+                self.lit_edge(horizontal, reach, Inside::Before, trail, &TRAIL);
             }
         }
     }
@@ -311,7 +346,17 @@ impl<'a> Painter<'a> {
             let from = start + (end - start - span) / 2.0;
             self.band(horizontal, from, from + span, self.panel);
             if closed < 1.0 {
-                let border = line.min(span / 2.0);
+                // Each border lit, its glow fading inwards.
+                let room = span / 2.0;
+                let border = line.min(room);
+                let glow = (self.short / 64.0).max(2.0).min(room - border);
+                for (step, amount) in [0.45, 0.2].into_iter().enumerate() {
+                    let near = border + glow * step as f32 / 2.0;
+                    let far = border + glow * (step + 1) as f32 / 2.0;
+                    let color = mix(self.panel, self.accent, amount);
+                    self.band(horizontal, from + near, from + far, color);
+                    self.band(horizontal, from + span - far, from + span - near, color);
+                }
                 self.band(horizontal, from, from + border, self.accent);
                 self.band(horizontal, from + span - border, from + span, self.accent);
             }
@@ -407,21 +452,29 @@ impl<'a> Painter<'a> {
         }
     }
 
-    /// Tiles (`across` on the short side) cover in a scattered order, each
-    /// over `front` of the motion, lit with the accent meanwhile; they grow
-    /// from their middle when `grow`.
-    fn mosaic(&mut self, stage: CoverStage, c: f32, across: f32, front: f32, grow: bool) {
+    /// Tiles (`across` on the short side) cover in `order`, each over
+    /// `front` of the motion, lit with the accent meanwhile; they grow from
+    /// their middle when `grow`.
+    fn mosaic(&mut self, order: Order, c: f32, across: f32, front: f32, grow: bool) {
         let tile = self.short / across;
         let columns = ((self.width / tile).round() as usize).max(4);
         let rows = ((self.height / tile).round() as usize).max(4);
         let count = columns * rows;
-        let rank = scattered(
-            count,
-            match stage {
-                CoverStage::Closing => 0x2026,
-                CoverStage::Opening => 0x0911,
-            },
-        );
+        let rank = match order {
+            Order::Scattered(stage) => scattered(
+                count,
+                match stage {
+                    CoverStage::Closing => 0x2026,
+                    CoverStage::Opening => 0x0911,
+                },
+            ),
+            // Opening, the wave goes on the same way: its first tiles go first.
+            Order::Wave(direction, CoverStage::Closing) => wave(columns, rows, direction),
+            Order::Wave(direction, CoverStage::Opening) => wave(columns, rows, direction)
+                .into_iter()
+                .map(|rank| count - 1 - rank)
+                .collect(),
+        };
         for (cell, &order) in rank.iter().enumerate() {
             // Each tile grows from its middle over MOSAIC_FRONT of the motion,
             // lit while it grows; the last one is whole when the cover is.
@@ -430,7 +483,9 @@ impl<'a> Painter<'a> {
                 continue;
             }
             let grown = ((c - threshold) / front).min(1.0);
-            let color = if grown < 1.0 { self.accent } else { self.panel };
+            // Lit while young (the crest), then dark; a pixel stays lit until whole.
+            let lit = if grow { LIT } else { 1.0 };
+            let color = if grown < lit { self.accent } else { self.panel };
             let scale = if grow {
                 ease(0.5 + grown / 2.0) * 2.0 - 1.0
             } else {
@@ -458,6 +513,43 @@ impl<'a> Painter<'a> {
             );
         }
     }
+}
+
+/// The order tiles cover in.
+#[derive(Clone, Copy)]
+enum Order {
+    /// Scattered, another order to close than to open.
+    Scattered(CoverStage),
+    /// A leaning, ragged wave sweeping towards the direction, closing and
+    /// opening alike.
+    Wave(CoverDirection, CoverStage),
+}
+
+/// The position of each of `columns` × `rows` cells (row by row) in a wave
+/// sweeping towards `direction`, leaning and ragged.
+fn wave(columns: usize, rows: usize, direction: CoverDirection) -> Vec<usize> {
+    let count = columns * rows;
+    let ragged = scattered(count, 0x0a7e);
+    let share = |i: usize, n: usize| i as f32 / n.saturating_sub(1).max(1) as f32;
+    let keys: Vec<f32> = (0..count)
+        .map(|cell| {
+            let (column, row) = (share(cell % columns, columns), share(cell / columns, rows));
+            let (along, across) = match direction {
+                CoverDirection::Left => (1.0 - column, row),
+                CoverDirection::Right => (column, row),
+                CoverDirection::Up => (1.0 - row, column),
+                CoverDirection::Down => (row, column),
+            };
+            along + WAVE_LEAN * across + WAVE_RAGGED * ragged[cell] as f32 / count as f32
+        })
+        .collect();
+    let mut cells: Vec<usize> = (0..count).collect();
+    cells.sort_by(|a, b| keys[*a].total_cmp(&keys[*b]));
+    let mut rank = vec![0; count];
+    for (position, cell) in cells.into_iter().enumerate() {
+        rank[cell] = position;
+    }
+    rank
 }
 
 /// The position of each of `count` cells in a fixed scattered order.
@@ -613,24 +705,60 @@ mod tests {
 
     #[test]
     fn mosaic_tiles_follow_the_short_side() {
-        // 1920 x 480: tiles of 120 px, 16 x 4; the order covers each tile once.
-        let rank = scattered(64, 0x2026);
+        // 1920 x 480: tiles of 40 px, 48 x 12; the order covers each tile once.
+        let rank = wave(48, 12, CoverDirection::Left);
         let mut seen = rank.clone();
         seen.sort_unstable();
-        assert_eq!(seen, (0..64).collect::<Vec<_>>());
+        assert_eq!(seen, (0..576).collect::<Vec<_>>());
         let frame = painted(
             Size::new(1920, 480),
             &cover(CoverEffect::Mosaic, CoverDirection::Left),
             CoverStage::Closing,
             0.5,
         );
-        for x in (0..1920).step_by(120) {
-            for y in (0..480).step_by(120) {
+        for x in (0..1920).step_by(40) {
+            for y in (0..480).step_by(40) {
                 let corner = frame.pixel(x, y).unwrap();
-                let opposite = frame.pixel(x + 119, y + 119).unwrap();
+                let opposite = frame.pixel(x + 39, y + 39).unwrap();
                 assert_eq!(corner, opposite);
             }
         }
+    }
+
+    #[test]
+    fn a_mosaic_sweeps_as_a_wave_towards_its_direction() {
+        let size = Size::new(1920, 480);
+        for (direction, first, last) in [
+            (CoverDirection::Left, (1900, 20), (20, 460)),
+            (CoverDirection::Right, (20, 20), (1900, 460)),
+            (CoverDirection::Up, (20, 460), (1900, 20)),
+            (CoverDirection::Down, (20, 20), (1900, 460)),
+        ] {
+            let frame = painted(
+                size,
+                &cover(CoverEffect::Mosaic, direction),
+                CoverStage::Closing,
+                0.5,
+            );
+            assert_eq!(
+                frame.pixel(first.0, first.1).map(|p| p.a),
+                Some(255),
+                "{direction:?} starts there"
+            );
+            assert_eq!(
+                frame.pixel(last.0, last.1).map(|p| p.a),
+                Some(0),
+                "{direction:?} ends there"
+            );
+        }
+        // Opening goes out in the same wave: where it started, it is gone first.
+        let opening = painted(
+            size,
+            &cover(CoverEffect::Mosaic, CoverDirection::Right),
+            CoverStage::Opening,
+            0.5,
+        );
+        assert_eq!(opening.pixel(1900, 460).map(|p| p.a), Some(255));
     }
 
     #[test]
@@ -641,32 +769,55 @@ mod tests {
         let mut frame = Frame::filled(size, SCENE);
         frame.fill_rect(Rect::new(960, 0, 960, 480), Rgba { a: 0, ..SCENE });
         wipe.paint(&mut frame, CoverStage::Closing, 0.6);
-        // The edge stands at 768 (1920 * 0.4), the panel to its right.
-        let ahead = frame.pixel(760, 100).unwrap();
+        // Eased once more, the edge stands at 492 (1920 * (1 - ease(0.6))), the panel to its right.
+        let ahead = frame.pixel(485, 100).unwrap();
         assert_eq!(ahead.a, 255);
         assert_ne!(ahead, SCENE, "the opaque scene ahead of the edge is lit");
         assert_eq!(
-            frame.pixel(600, 100),
+            frame.pixel(300, 100),
             Some(SCENE),
             "far from the edge it is untouched"
         );
         let mut video = Frame::filled(size, Rgba { a: 0, ..SCENE });
         wipe.paint(&mut video, CoverStage::Closing, 0.6);
-        assert_eq!(video.pixel(760, 100), Some(Rgba { a: 0, ..SCENE }));
+        assert_eq!(video.pixel(485, 100), Some(Rgba { a: 0, ..SCENE }));
     }
 
     #[test]
     fn a_mosaic_tile_grows_from_its_middle() {
         let size = Size::new(480, 480);
         let mosaic = cover(CoverEffect::Mosaic, CoverDirection::Left);
-        // 4 x 4 tiles of 120 px; the first in order starts at 0.
-        let first = scattered(16, 0x2026).iter().position(|&r| r == 0).unwrap();
-        let (x, y) = ((first % 4) as u32 * 120, (first / 4) as u32 * 120);
-        let half = painted(size, &mosaic, CoverStage::Closing, 0.1);
-        assert_eq!(half.pixel(x + 60, y + 60), Some(DEFAULT_ACCENT));
+        // 12 x 12 tiles of 40 px; the first in order starts at 0.
+        let first = wave(12, 12, CoverDirection::Left)
+            .iter()
+            .position(|&r| r == 0)
+            .unwrap();
+        let (x, y) = ((first % 12) as u32 * 40, (first / 12) as u32 * 40);
+        let half = painted(size, &mosaic, CoverStage::Closing, 0.06);
+        assert_eq!(half.pixel(x + 20, y + 20), Some(DEFAULT_ACCENT));
         assert_eq!(half.pixel(x + 1, y + 1).unwrap().a, 0);
-        let whole = painted(size, &mosaic, CoverStage::Closing, 0.2);
+        let whole = painted(size, &mosaic, CoverStage::Closing, 0.3);
         assert_eq!(whole.pixel(x + 1, y + 1).map(|p| p.a), Some(255));
+    }
+
+    #[test]
+    fn curtain_leaves_light_the_gap_as_they_meet() {
+        let size = Size::new(1920, 480);
+        let curtain = cover(CoverEffect::Curtain, CoverDirection::Right);
+        let mut far = Frame::filled(size, SCENE);
+        curtain.paint(&mut far, CoverStage::Closing, 0.5);
+        assert_eq!(
+            far.pixel(960, 240),
+            Some(SCENE),
+            "far apart, the middle is untouched"
+        );
+        let mut near = Frame::filled(size, SCENE);
+        curtain.paint(&mut near, CoverStage::Closing, 0.95);
+        let middle = near.pixel(960, 240).unwrap();
+        assert!(
+            middle != SCENE && middle.r > SCENE.r,
+            "close, it flares: {middle:?}"
+        );
     }
 
     #[test]
@@ -732,7 +883,7 @@ mod tests {
                 assert_eq!(frame.pixel(x, y), frame.pixel(x + 29, y + 29));
             }
         }
-        assert_eq!(EFFECTS.iter().filter(|e| e.directed()).count(), 3);
+        assert_eq!(EFFECTS.iter().filter(|e| e.directed()).count(), 4);
     }
 
     #[test]

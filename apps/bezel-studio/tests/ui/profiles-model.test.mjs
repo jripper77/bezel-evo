@@ -54,7 +54,7 @@ test('icons, orientations and directions follow the profile and the theme', () =
   assert.equal(orientationOf({ canvas: { width: 1920, height: 480 } }), 'landscape');
   assert.equal(orientationOf({ canvas: { width: 320, height: 480 } }), 'portrait');
   assert.equal(orientationOf(undefined), 'portrait');
-  assert.deepEqual(PROFILE_EFFECTS.filter(directed), ['curtain', 'wipe', 'blinds']);
+  assert.deepEqual(PROFILE_EFFECTS.filter(directed), ['curtain', 'wipe', 'blinds', 'mosaic']);
 });
 
 test('the effects and the cover colours are the backend\'s', () => {

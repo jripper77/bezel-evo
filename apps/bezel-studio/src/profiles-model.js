@@ -8,8 +8,8 @@ export const PROFILE_EFFECTS = Object.freeze(['none', 'curtain', 'wipe', 'blinds
 /** The cover's own colours (crates/bezel-core/src/domain/cover.rs DEFAULT_PANEL, DEFAULT_ACCENT). */
 export const COVER_PANEL = '#120b13', COVER_ACCENT = '#f28c28';
 
-/** The cover effects that move in a direction (the mosaic, iris, television and pixels have none). */
-export const directed = (effect) => ['curtain', 'wipe', 'blinds'].includes(effect);
+/** The cover effects that move in a direction (the iris, television and pixels have none). */
+export const directed = (effect) => ['curtain', 'wipe', 'blinds', 'mosaic'].includes(effect);
 
 export const PROFILE_RULE_SOURCES = Object.freeze(['mediaPlaying', 'foreground', 'process', 'sensor', 'time', 'idle', 'locked']);
 /** A fresh rule; changing its source keeps priority and delay in the caller. */

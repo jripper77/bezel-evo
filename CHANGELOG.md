@@ -27,6 +27,10 @@ All notable changes to Bezel Evo are documented here. The format follows
   to a dot like an old television switching off, and **Pixels** fills it
   with small flashing squares. The cover and its light take colours of your
   choice.
+- The other covers are livelier: the curtain's light flares as its leaves
+  meet, the wipe rushes across with a long trail of light, the blinds close
+  in a wider wave with glowing edges, and the mosaic is a wave of small tiles
+  sweeping across the screen in the chosen direction, its crest lit.
 - Colour pickers open inside the profiles dialog; before, they opened behind
   it and could not be used.
 
