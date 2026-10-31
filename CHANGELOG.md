@@ -7,6 +7,8 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.16] - 2026-11-01
+
 ### Studio
 - Deleting a theme asks for one plain confirmation, and works even when the
   theme is in use: the protection from deletion is gone. Screens and profiles

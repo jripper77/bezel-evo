@@ -101,7 +101,9 @@ Studio has been redesigned from the ground up, in dark and light.
 - **An audio spectrum that follows the music.** Five styles: mirrored bars,
   bars rising from the bottom, LED blocks that light up like a level meter, a
   smooth line with a soft fill, and radial bars around a ring. Held peaks, gradients, colour by value and an
-  amplitude multiplier come with every style. It listens to the app your Player
+  amplitude multiplier come with every style. Or a **pixel dancer** instead of
+  bars: a robot, a kid with headphones or a cat that dances to the beat of the
+  bass. It listens to the app your Player
   follows or, if you choose, to everything the PC plays, only in memory, and
   can be turned off in Preferences (Windows 11).
 - **A clear background chooser.** One card shows the background in use; **Change
@@ -145,8 +147,10 @@ a while, times and days, idle and a locked PC; combine a profile's rules with
 delay, and the dialog shows which profile is active now and why. Profiles pause on the display being edited and
 resume when Studio is hidden. The **base themes** are the ones chosen in Studio.
 
-Profile changes, and the return to the base themes, use one of four covers:
-**Curtain**, **Wipe**, **Blinds** or **Mosaic**. A panel closes over the screen,
+Profile changes, and the return to the base themes, use one of seven covers:
+**Curtain**, **Wipe**, **Blinds**, **Mosaic** (a wave of small tiles), **Iris**,
+**TV** (an old television switching off) or **Pixels**, in colours of your
+choice. A panel closes over the screen,
 the new theme is prepared underneath and the panel opens on its first frame, so
 it also works over video a screen plays itself, on any size or shape. Between
 1500 and 2500 ms the motion is smoothest; slower displays show fewer frames. The
