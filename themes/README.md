@@ -13,7 +13,18 @@ Weather coordinates are editable. There are no stored sample readings, hardware 
 
 The four additional type families ship only the faces these templates use, with their original OFL licences in `themes/fonts`. Their exact native optical-family names are **Fraunces 144pt** and **Bricolage Grotesque 96pt**. See [font sources](fonts/UX-V2-SOURCES.md).
 
-Regenerate these four templates only with `python scripts/create-ux-v2-themes.py`. The script never rewrites other templates or user documents. For labelled native review frames, set `BEZEL_UX2_THEME_PREVIEWS` to an absolute task output folder and run `cargo test -p bezel --test bundled_themes studio_ux_v2_templates_render_live_and_unavailable_inputs`.
+## Pixel V2
+
+Two more horizontal templates (1920×480) in the Pixel look, made in Studio rather than by the script below:
+
+| Template | Live content |
+| --- | --- |
+| Pixel V2 | Clock and date, Rome weather with a pixel-art icon, CPU and GPU with their models, load, thermals, clock, power and game FPS (average, minimum, maximum), RAM block matrix, mirrored network traffic |
+| Pixel V2 Music | Session cover, app, title, artist and remaining time, a 48-band LED spectrum with unlit LEDs and held peaks, a timeline and a dancing pixel cat |
+
+Game FPS needs a game running with PresentMon or RTSS; otherwise those readings show as unavailable. The weather city is editable.
+
+Regenerate the four templates above only with `python scripts/create-ux-v2-themes.py`. The script never rewrites other templates or user documents. For labelled native review frames, set `BEZEL_UX2_THEME_PREVIEWS` to an absolute task output folder and run `cargo test -p bezel --test bundled_themes studio_ux_v2_templates_render_live_and_unavailable_inputs`.
 
 # Modern template pairs
 

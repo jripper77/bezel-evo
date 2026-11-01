@@ -97,11 +97,15 @@ Studio has been redesigned from the ground up, in dark and light.
   and red above 90, with as many thresholds as you like.
 - **A media player you compose.** Choose the parts (cover, title, artist, time,
   progress, app name) and style the progress bar: continuous, segments or dots,
-  round or square ends, a knob, times at the sides or above.
-- **An audio spectrum that follows the music.** Five styles: mirrored bars,
-  bars rising from the bottom, LED blocks that light up like a level meter, a
-  smooth line with a soft fill, and radial bars around a ring. Held peaks, gradients, colour by value and an
-  amplitude multiplier come with every style. Or a **pixel dancer** instead of
+  round or square ends, a knob, times at the sides or above. A title too long
+  for its box can shrink, end with an ellipsis or scroll.
+- **An audio spectrum that follows the music.** Six styles: mirrored bars,
+  bars rising from the bottom, LED blocks that light up like a level meter
+  (unlit LEDs in a colour of your choice), a smooth line with a soft fill,
+  radial bars around a ring, and **neon** bars that glow and fade towards
+  their tips under thin waves swelling with the music. Peaks that hold for as
+  long as you choose, gradients, colour by value and an amplitude multiplier
+  come with every style. Or a **pixel dancer** instead of
   bars: a robot, a kid with headphones or a cat that dances to the beat of the
   bass. It listens to the app your Player
   follows or, if you choose, to everything the PC plays, only in memory, and

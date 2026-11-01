@@ -161,6 +161,7 @@ fn studio_ux_v2_templates_render_live_and_unavailable_inputs() {
         "nebula-wide",
         "paper-wide",
         "now-playing-wide",
+        "pixel-v2-wide",
     ] {
         let (theme, assets) = load(&support::themes_dir().join(name));
         assert_eq!(

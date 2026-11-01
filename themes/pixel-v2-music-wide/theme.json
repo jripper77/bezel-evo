@@ -1,0 +1,456 @@
+{
+  "schema": 1,
+  "name": "Pixel V2 Music",
+  "canvas": {
+    "width": 1920,
+    "height": 480
+  },
+  "orientation": "landscape",
+  "refreshSeconds": 1.0,
+  "background": {
+    "type": "color",
+    "color": "#000000ff"
+  },
+  "elements": [
+    {
+      "id": 109,
+      "name": "Pixel panels and dot texture",
+      "frame": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 1920.0,
+        "height": 480.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "image",
+        "asset": "assets/architecture.svg",
+        "fit": "fill"
+      }
+    },
+    {
+      "id": 101,
+      "name": "Cover",
+      "frame": {
+        "x": 56.0,
+        "y": 56.0,
+        "width": 368.0,
+        "height": 368.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": true,
+          "coverRadius": 6.0,
+          "showProgress": false,
+          "showSource": false,
+          "hideWhenStopped": false,
+          "emptyText": "",
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": false
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 20.0,
+          "paint": "#f2ede6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 102,
+      "name": "Music heading",
+      "frame": {
+        "x": 496.0,
+        "y": 51.0,
+        "width": 90.0,
+        "height": 22.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "static",
+          "text": "MUSICA"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 600,
+            "italic": false
+          },
+          "size": 15.0,
+          "paint": "#f2ede6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 2.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 103,
+      "name": "Source",
+      "frame": {
+        "x": 594.0,
+        "y": 51.0,
+        "width": 600.0,
+        "height": 22.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": false,
+          "coverRadius": 0.0,
+          "showProgress": false,
+          "showSource": true,
+          "hideWhenStopped": false,
+          "emptyText": "",
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": false
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 14.0,
+          "paint": "#8a857cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 104,
+      "name": "Remaining time",
+      "frame": {
+        "x": 1664.0,
+        "y": 51.0,
+        "width": 200.0,
+        "height": 22.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": false,
+          "coverRadius": 0.0,
+          "showProgress": false,
+          "showSource": false,
+          "hideWhenStopped": false,
+          "emptyText": "",
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": true,
+          "timeFormat": "remaining"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 14.0,
+          "paint": "#ff9248ff",
+          "align": "right",
+          "valign": "middle",
+          "letterSpacing": 1.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 105,
+      "name": "Title",
+      "frame": {
+        "x": 494.0,
+        "y": 90.0,
+        "width": 1134.0,
+        "height": 92.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": false,
+          "coverRadius": 0.0,
+          "showProgress": false,
+          "showSource": false,
+          "hideWhenStopped": false,
+          "emptyText": "IN ATTESA DI MUSICA",
+          "showArtist": false,
+          "showTime": false
+        },
+        "style": {
+          "font": {
+            "family": "Doto",
+            "weight": 900,
+            "italic": false
+          },
+          "size": 76.0,
+          "paint": "#f2ede6ff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0.0,
+          "overflow": "scroll"
+        }
+      }
+    },
+    {
+      "id": 106,
+      "name": "Artist",
+      "frame": {
+        "x": 496.0,
+        "y": 182.0,
+        "width": 1368.0,
+        "height": 34.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": false,
+          "coverRadius": 0.0,
+          "showProgress": false,
+          "showSource": false,
+          "hideWhenStopped": false,
+          "emptyText": "",
+          "showTitle": false,
+          "showTime": false
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 22.0,
+          "paint": "#8a857cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.0,
+          "overflow": "scroll"
+        }
+      }
+    },
+    {
+      "id": 107,
+      "name": "Spectrum",
+      "frame": {
+        "x": 496.0,
+        "y": 225.0,
+        "width": 1368.0,
+        "height": 163.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "spectrum",
+          "player": null,
+          "bands": 48,
+          "low": 30.0,
+          "high": 16000.0,
+          "motion": "balanced",
+          "peaks": true,
+          "demo": false,
+          "thickness": 20.0,
+          "gap": 8.0,
+          "corners": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "centre": true,
+          "style": "blocks",
+          "block": 15.0,
+          "gain": 1.5,
+          "audio": "system",
+          "peakHold": 0.4,
+          "unlit": "#ffffff26"
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 20.0,
+          "paint": {
+            "angle": 270.0,
+            "stops": [
+              [
+                0.0,
+                "#ff9248ff"
+              ],
+              [
+                1.0,
+                "#ff4d5fff"
+              ]
+            ]
+          },
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 108,
+      "name": "Timeline",
+      "frame": {
+        "x": 496.0,
+        "y": 388.0,
+        "width": 1368.0,
+        "height": 40.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "player",
+          "source": "",
+          "showCover": false,
+          "coverRadius": 0.0,
+          "showProgress": true,
+          "showSource": false,
+          "hideWhenStopped": false,
+          "emptyText": "",
+          "showTitle": false,
+          "showArtist": false,
+          "showTime": true,
+          "progressStyle": {
+            "fill": "#ff9248ff",
+            "track": "#202020ff",
+            "thickness": 10.0,
+            "ends": "square",
+            "knob": false,
+            "pattern": "segments",
+            "segments": 80,
+            "times": "sides"
+          }
+        },
+        "style": {
+          "font": {
+            "family": "IBM Plex Mono",
+            "weight": 400,
+            "italic": false
+          },
+          "size": 15.0,
+          "paint": "#8a857cff",
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 1.0,
+          "overflow": "shrink"
+        }
+      }
+    },
+    {
+      "id": 110,
+      "name": "Spettro audio",
+      "frame": {
+        "x": 1616.0,
+        "y": -116.0,
+        "width": 259.0,
+        "height": 332.0
+      },
+      "opacity": 1.0,
+      "visible": true,
+      "locked": false,
+      "kind": {
+        "type": "text",
+        "content": {
+          "type": "spectrum",
+          "player": null,
+          "bands": 32,
+          "low": 60.0,
+          "high": 16000.0,
+          "motion": "balanced",
+          "peaks": true,
+          "demo": false,
+          "thickness": 12.0,
+          "gap": 3.0,
+          "corners": [
+            2.0,
+            2.0,
+            2.0,
+            2.0
+          ],
+          "centre": true,
+          "style": "dancer",
+          "audio": "system",
+          "dancer": "cat"
+        },
+        "style": {
+          "font": {
+            "family": "Inter",
+            "weight": 600,
+            "italic": false
+          },
+          "size": 20.0,
+          "paint": {
+            "angle": 0.0,
+            "stops": [
+              [
+                0.0,
+                "#38bdf8ff"
+              ],
+              [
+                1.0,
+                "#38bdf8ff"
+              ]
+            ]
+          },
+          "align": "left",
+          "valign": "middle",
+          "letterSpacing": 0.0
+        }
+      }
+    }
+  ]
+}
