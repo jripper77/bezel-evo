@@ -30,10 +30,10 @@ export const WEATHER_PARTS = Object.freeze(['city', 'temperature', 'condition'])
 const isDigit = (ch) => ch >= '0' && ch <= '9' && ch.length === 1;
 const sizeOf = (s) => (Number(s?.size) > 0 ? Number(s.size) : 24);
 
-/** Whether a text element is laid out in pieces: a value, a clock, the weather, or a fixed text with an overflow. */
+/** Whether a text element is laid out in pieces: a value, a clock, the weather, or a fixed text or a player with an overflow. */
 export function laidInPieces(kind) {
   const type = kind?.content?.type;
-  return ['sensor', 'clock', 'weather'].includes(type) || (type === 'static' && OVERFLOWS.includes(kind.style?.overflow));
+  return ['sensor', 'clock', 'weather'].includes(type) || (['static', 'player'].includes(type) && OVERFLOWS.includes(kind.style?.overflow));
 }
 
 /** The style of `part` if it changes something, else null. */

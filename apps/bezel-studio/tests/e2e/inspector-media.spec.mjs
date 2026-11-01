@@ -33,9 +33,9 @@ test('weather animation and own icon color remain available only where applicabl
   await expectAccessible(page); expect(errors).toEqual([]);
 });
 
-test('player stopped controls stay in Data and only its cover receives transparency', async ({ page, t }) => {
+test('player stopped controls stay in Data, its lines can scroll and only its cover receives transparency', async ({ page, t }) => {
   const errors = watchErrors(page); await page.goto('/index.html?demo=turing88'); await clickAddWidget(page, t, 'player');
-  await expect(panel(page).locator('[data-inspector-section="behavior"]')).toHaveCount(0);
+  await openSection(page, 'behavior'); await button(page, t, 'insp.overflow.scroll').click(); await expect(button(page, t, 'insp.overflow.scroll')).toHaveAttribute('aria-pressed', 'true');
   await openSection(page, 'data'); await button(page, t, 'insp.stoppedHide').click(); await expect(panel(page).getByRole('textbox', { name: t('player.empty'), exact: true })).toHaveCount(0);
   await button(page, t, 'insp.stoppedText').click(); await expect(panel(page).getByRole('textbox', { name: t('player.empty'), exact: true })).toBeVisible();
   await openSection(page, 'shape'); const cover = panel(page).locator('[data-section="cover-fade"]');

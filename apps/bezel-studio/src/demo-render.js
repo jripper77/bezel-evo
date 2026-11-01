@@ -469,7 +469,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     return fitPlayer(k.content, shown, block, m, e.frame, s.size);
   }
   const pieces = laidInPieces(k) || k.content.type === 'static';
-  const tabular = s.tabularDigits !== false && k.content.type !== 'static';
+  const tabular = s.tabularDigits !== false && !['static', 'player'].includes(k.content.type);
   if (measure && pieces) {
     const size = measureText(textPieces(e, text, t, value, refresh, false, trial), s, canvasMeasure(ctx), { tabular });
     return size && textFurniture(k).fit(size.width, size.height);

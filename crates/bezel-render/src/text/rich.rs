@@ -467,6 +467,7 @@ impl TextEngine {
                 VAlign::Bottom => area.height - total,
             };
         let mut moving = false;
+        let mut scrolled = false;
         for line in &lines {
             let mut starts = Vec::with_capacity(2);
             if scrolling && line.width > area.width {
@@ -474,6 +475,7 @@ impl TextEngine {
                 let left = area.x - travelled % turn;
                 starts.extend([left, left + turn]);
                 moving |= job.clock.is_some();
+                scrolled = true;
             } else {
                 starts.push(
                     area.x
@@ -547,6 +549,28 @@ impl TextEngine {
                 }
             }
             top += line.height;
+        }
+        // A scrolling line leaves its box at the sides, not over what sits
+        // beside it in the element (a player's cover, a weather icon).
+        if scrolled {
+            let left = area.x.floor() as i32;
+            let right = (area.x + area.width).ceil() as i32;
+            for (_, coverage) in &mut paints {
+                coverage.keep_columns(left - layer.x, right - layer.x);
+            }
+            color_glyphs = color_glyphs
+                .into_iter()
+                .filter_map(|(pixmap, x, y)| {
+                    let (from, to) = (left.max(x), right.min(x + pixmap.width() as i32));
+                    let kept = tiny_skia::IntRect::from_xywh(
+                        from - x,
+                        0,
+                        (to - from).max(0) as u32,
+                        pixmap.height(),
+                    )?;
+                    Some((pixmap.clone_rect(kept)?, from, y))
+                })
+                .collect();
         }
         if let Some(shadow) = job.style.shadow {
             shadow::draw(

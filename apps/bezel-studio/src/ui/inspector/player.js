@@ -5,6 +5,7 @@ import { ICONS } from '../icons.js';
 import { dashedHint, fieldGrid, numberField, prefixedField, iconChoice, propertySection as section, iconButton, selectField, textField } from '../fields.js';
 import { PLAYER_PARTS, PROGRESS_DEFAULTS, PROGRESS_PATTERNS, PROGRESS_SEGMENTS, PROGRESS_THICKNESS, TIME_FORMATS, TIME_PLACEMENTS, partPatch, partsOf, progressOf } from '../../player-parts.js';
 import { ART, PART_TILES, TIME_FORMAT_KEYS, TIME_PLACEMENT_KEYS, PATTERN_KEYS } from './art.js';
+import { overflowField } from './text.js';
 
 export function panels(ctx) {
   const { t, update, colorField, fontFields, coverCorners, appChipGroup, manualSource, optionTiles, customSource } = ctx;
@@ -27,6 +28,7 @@ export function panels(ctx) {
       parts.time ? section('time', t('insp.partTime'), [
         selectField(t('insp.timeFormat'), c.timeFormat ?? 'elapsedTotal', TIME_FORMATS.map((f) => [f, t(TIME_FORMAT_KEYS[f])]), (timeFormat) => set({ timeFormat })),
       ]) : null,
+      parts.title || parts.artist || parts.source ? section('overflow', t('insp.textOverflow'), [overflowField(ctx, e, { bare: true })], { caption: true }) : null,
       dashedHint([t('insp.playerHint')], { iconName: 'info' }),
     ];
     const tiles = PLAYER_PARTS.map((part) => ({ text: t(PART_TILES[part][0]), art: PART_TILES[part][1], pressed: parts[part], onClick: () => set(partPatch(c, part)) }));

@@ -620,8 +620,9 @@ fn text_of(id: ElementId, content: &TextContent, context: &RenderContext<'_>) ->
 }
 
 /// What a text element draws in pieces (its parts, equal digits, its
-/// overflow): a sensor value, a clock, the weather, or a fixed text that
-/// shrinks, cuts or scrolls; `None` for the others, drawn as one run. With
+/// overflow): a sensor value, a clock, the weather, or a fixed text or the
+/// lines of a player that shrink, cut or scroll; `None` for the others,
+/// drawn as one run. With
 /// the job comes when blinking separators next change (`motion` allowed).
 fn rich_job<'a>(
     id: ElementId,
@@ -635,6 +636,9 @@ fn rich_job<'a>(
     let mut blink = None;
     let pieces = match content {
         TextContent::Static(text) if style.overflow.is_some() => vec![Piece::plain(text.clone())],
+        TextContent::Player(_) if style.overflow.is_some() => {
+            vec![Piece::plain(text_of(id, content, context))]
+        }
         TextContent::Weather(w) => w
             .segments(context.snapshot, context.language)
             .into_iter()
@@ -717,7 +721,8 @@ fn rich_job<'a>(
         pieces,
         style,
         area,
-        tabular: style.tabular_digits && !matches!(content, TextContent::Static(_)),
+        tabular: style.tabular_digits
+            && !matches!(content, TextContent::Static(_) | TextContent::Player(_)),
         clock: motion.then_some(context.animation),
     };
     Some((job, blink))

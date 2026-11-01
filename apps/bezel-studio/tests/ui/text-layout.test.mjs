@@ -18,6 +18,7 @@ test('which texts are laid out in pieces', () => {
   assert.ok(laidInPieces({ content: { type: 'static' }, style: { overflow: 'scroll' } }));
   assert.ok(!laidInPieces({ content: { type: 'static' }, style: {} }));
   assert.ok(!laidInPieces({ content: { type: 'player' }, style: {} }));
+  assert.ok(laidInPieces({ content: { type: 'player' }, style: { overflow: 'scroll' } }));
   assert.ok(!laidInPieces(null));
 });
 

@@ -523,6 +523,21 @@ impl Coverage {
         self.add_rows(image, x, y, (i32::MIN, i32::MAX));
     }
 
+    /// Clears every layer column outside `left..right`.
+    fn keep_columns(&mut self, left: i32, right: i32) {
+        let (left, right) = (left.clamp(0, self.width), right.clamp(0, self.width));
+        if self.width > 0 {
+            for row in self.data.chunks_mut(self.width as usize) {
+                row[..left as usize].fill(0);
+                row[right.max(left) as usize..].fill(0);
+            }
+        }
+        self.ink = self
+            .ink
+            .map(|(l, t, r, b)| (l.max(left), t, r.min(right), b))
+            .filter(|(l, _, r, _)| l < r);
+    }
+
     /// Adds a glyph mask whose top-left is at layer `(x, y)`, only on the
     /// layer rows `top..bottom` (a rolling digit inside its line).
     fn add_rows(&mut self, image: &SwashImage, x: i32, y: i32, (top, bottom): (i32, i32)) {

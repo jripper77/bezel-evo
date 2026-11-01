@@ -496,3 +496,34 @@ fn cover_fades_share_the_image_ramp_without_fading_text_or_progress() {
         }
     }
 }
+
+#[test]
+fn a_long_title_scrolls_beside_the_cover_without_drawing_over_it() {
+    use bezel_core::domain::theme::TextOverflow;
+    use std::time::Duration;
+    let mut scene = playing();
+    scene.snapshot.media[0].title = "A very long track title that never seems to end".into();
+    let mut scrolling = style(HAlign::Left, VAlign::Top);
+    scrolling.overflow = Some(TextOverflow::Scroll);
+    let theme = player_theme(legacy(true, false, false), scrolling);
+    let mut r = testkit::renderer();
+    let start = testkit::render(&mut r, &theme, &scene);
+    assert_eq!(r.next_change(), Some(Duration::from_millis(50)));
+    scene.animation = Duration::from_secs(1);
+    let later = testkit::render(&mut r, &theme, &scene);
+    assert_ne!(start, later, "the title moved");
+    for frame in [&start, &later] {
+        for y in 12..30 {
+            for x in 12..96 {
+                assert_eq!(testkit::px(frame, x, y), RED, "cover at {x},{y}");
+            }
+            for x in 231..240 {
+                assert_eq!(
+                    testkit::px(frame, x, y),
+                    Rgba::BLACK,
+                    "past the box at {x},{y}"
+                );
+            }
+        }
+    }
+}
