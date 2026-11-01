@@ -7,6 +7,8 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.19] - 2026-11-01
+
 ### Light
 - The tray menu says what Light is doing: on or off, each screen with the
   theme it shows, and the profile in use.
