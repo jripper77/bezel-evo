@@ -51,6 +51,10 @@ pub struct Settings {
     /// The orientation of the themes the Themes tab lists ([`THEME_AXES`]);
     /// without one, both.
     pub themes_axis: Option<String>,
+    /// Bezel Light was switched off from its menu: its screens show the
+    /// Bezel logo until it is switched on again. Only Light changes it.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub light_off: bool,
 }
 
 /// A choice that starts on: absent from the file, it reads as `true`.
@@ -170,6 +174,15 @@ mod tests {
         let off: Settings = serde_json::from_str(r#"{"audioCapture":false}"#).unwrap();
         assert!(!off.audio_capture.0);
         assert_eq!(serde_json::to_value(&off).unwrap()["audioCapture"], false);
+    }
+
+    #[test]
+    fn keeps_light_switched_off_and_writes_it_only_when_on() {
+        let off: Settings = serde_json::from_str(r#"{"lightOff":true}"#).unwrap();
+        assert!(off.light_off);
+        assert_eq!(serde_json::to_value(&off).unwrap()["lightOff"], true);
+        let value = serde_json::to_value(Settings::default()).unwrap();
+        assert!(value.get("lightOff").is_none());
     }
 
     #[test]

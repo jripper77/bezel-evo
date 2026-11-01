@@ -7,6 +7,13 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Light
+- The tray menu says what Light is doing: on or off, each screen with the
+  theme it shows, and the profile in use.
+- New **Live on the screen** switch in the tray menu. Switched off, the
+  screens show the Bezel logo and profiles wait; the choice is kept across
+  restarts until it is switched on again.
+
 ### Installer
 - The three setup options (Light at sign-in, hardware sensors, game FPS) are
   now all checked by default.

@@ -936,6 +936,10 @@ pub(crate) struct Service {
     documents: BTreeMap<(String, String), Option<Document>>,
 }
 impl Service {
+    /// The file the profiles are read from.
+    pub fn file(&self) -> ProfileFile {
+        self.file.clone()
+    }
     pub fn new(file: ProfileFile) -> Self {
         Self {
             file,

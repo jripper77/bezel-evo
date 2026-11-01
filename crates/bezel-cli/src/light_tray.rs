@@ -13,12 +13,106 @@ use clap::Parser;
 use tao::event::Event;
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 use tao::platform::run_return::EventLoopExtRunReturn;
-use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, Submenu};
+use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
 /// The tray icon's pictures, shared with Studio's tray.
 #[path = "../../../apps/bezel-studio/src-tauri/src/tray_icon.rs"]
 mod tray_picture;
+
+/// What the screens show while Light is switched off.
+const LOGO: &[u8] = include_bytes!("../../../apps/bezel-studio/src-tauri/icons/icon.png");
+
+/// The menu's own words, in the system's language.
+struct Texts {
+    live: &'static str,
+    on: &'static str,
+    off: &'static str,
+    screen: &'static str,
+    profile: &'static str,
+}
+
+fn texts(language: bezel_core::domain::clock::Language) -> Texts {
+    use bezel_core::domain::clock::Language;
+    match language {
+        Language::Italian => Texts {
+            live: "In diretta sullo schermo",
+            on: "Bezel Light · in diretta",
+            off: "Bezel Light · spento (logo sullo schermo)",
+            screen: "Schermo",
+            profile: "Profilo",
+        },
+        Language::PortugueseBr => Texts {
+            live: "Ao vivo na tela",
+            on: "Bezel Light · ao vivo",
+            off: "Bezel Light · desligado (logo na tela)",
+            screen: "Tela",
+            profile: "Perfil",
+        },
+        Language::English => Texts {
+            live: "Live on the screen",
+            on: "Bezel Light · live",
+            off: "Bezel Light · off (logo on the screen)",
+            screen: "Screen",
+            profile: "Profile",
+        },
+    }
+}
+
+/// Whether Light was switched off from its menu (`lightOff` in `settings`).
+fn switched_off(settings: &Path) -> bool {
+    std::fs::read(settings)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .is_some_and(|value| value["lightOff"].as_bool() == Some(true))
+}
+
+/// Writes whether Light is switched off into `settings`, keeping the rest.
+fn remember_off(settings: &Path, off: bool) -> anyhow::Result<()> {
+    let mut value = match std::fs::read(settings) {
+        Ok(bytes) => serde_json::from_slice::<serde_json::Value>(&bytes)?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => serde_json::json!({}),
+        Err(error) => return Err(error.into()),
+    };
+    let object = value
+        .as_object_mut()
+        .context("the settings are not an object")?;
+    if off {
+        object.insert("lightOff".into(), true.into());
+    } else {
+        object.remove("lightOff");
+    }
+    let partial = settings.with_extension("json.light");
+    std::fs::write(&partial, serde_json::to_vec_pretty(&value)?)?;
+    std::fs::rename(&partial, settings)?;
+    Ok(())
+}
+
+/// The menu's status lines: on or off, then each live screen with its theme
+/// and the profile in use (`profiles`: id and name of each).
+fn status_lines(
+    engine: &bezel_runtime::Engine,
+    text: &Texts,
+    profiles: &[(String, String)],
+) -> Vec<String> {
+    let resting = engine.resting();
+    let mut lines = vec![if resting { text.off } else { text.on }.to_owned()];
+    for (model, theme) in engine.shown() {
+        lines.push(format!(
+            "{}: {} — {theme}",
+            text.screen,
+            model.unwrap_or("?")
+        ));
+    }
+    if !resting && let Some(active) = engine.profile_status().and_then(|status| status.active) {
+        let name = profiles
+            .iter()
+            .find(|(id, _)| *id == active.profile)
+            .map_or(active.profile.as_str(), |(_, name)| name.as_str());
+        lines.push(format!("{}: {name}", text.profile));
+    }
+    lines
+}
 
 static OWNER_CONNECTOR: std::sync::OnceLock<bezel_power::owner::OwnerConnector> =
     std::sync::OnceLock::new();
@@ -108,6 +202,7 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         _ => Path::new(&std::env::var_os("APPDATA").unwrap_or_default())
             .join("io.github.slipalison.bezel/settings.json"),
     };
+    let settings_file = settings.clone();
     let _log = bezel_power::diagnostics::LightLog::start(settings)
         .map_err(|_| eprintln!("bezel light: diagnostic log unavailable"))
         .ok();
@@ -131,6 +226,10 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         &owner,
         &runtime_directory,
     )?));
+    let mut off = switched_off(&settings_file);
+    if off && let Ok(mut engine) = engine.lock() {
+        engine.rest(Some(LOGO.to_vec()));
+    }
     let pipe_engine: Arc<std::sync::Mutex<dyn bezel_core::ports::RuntimeEndpoint>> = engine.clone();
     let server = bezel_power::owner_pipe::Server::bind(&runtime_directory)?;
     let pipe_owner = owner.clone();
@@ -177,7 +276,22 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         false,
         None,
     );
-    menu.append_items(&[&open, &memory_item, &quit])?;
+    let language = match locale.as_str() {
+        s if s.starts_with("it") => bezel_core::domain::clock::Language::Italian,
+        s if s.starts_with("pt") => bezel_core::domain::clock::Language::PortugueseBr,
+        _ => bezel_core::domain::clock::Language::English,
+    };
+    let text = texts(language);
+    let live_item = CheckMenuItem::new(text.live, true, !off, None);
+    menu.append_items(&[
+        &PredefinedMenuItem::separator(),
+        &live_item,
+        &PredefinedMenuItem::separator(),
+        &open,
+        &memory_item,
+        &quit,
+    ])?;
+    let mut lines: Vec<MenuItem> = Vec::new();
     let profile_file = match &initial.command {
         Command::Run {
             screens_config: Some(path),
@@ -185,15 +299,10 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         } => Some(bezel_runtime::profiles::ProfileFile::beside(path)),
         _ => None,
     };
-    let language = match locale.as_str() {
-        s if s.starts_with("it") => bezel_core::domain::clock::Language::Italian,
-        s if s.starts_with("pt") => bezel_core::domain::clock::Language::PortugueseBr,
-        _ => bezel_core::domain::clock::Language::English,
-    };
     let labels = bezel_runtime::profiles::menu_labels(language);
     let profiles_menu = Submenu::new(labels[0], true);
     if profile_file.is_some() {
-        menu.insert(&profiles_menu, 1)?;
+        menu.insert(&profiles_menu, 2)?;
     }
     let mut shown_profiles = None;
     let mut profiles_poll = Instant::now();
@@ -207,7 +316,7 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         .with_id("bezel-light")
         .with_tooltip("Bezel Light")
         .with_icon(icon)
-        .with_menu(Box::new(menu))
+        .with_menu(Box::new(menu.clone()))
         // Explicit display lets the informational item refresh BEFORE the
         // native menu's blocking message loop starts.
         .with_menu_on_left_click(false)
@@ -322,12 +431,42 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
             ..
         }))) {
             memory_item.set_text(memory::light_label(&memory::sample(Scope::Light), &locale));
+            let names: Vec<(String, String)> = shown_profiles
+                .as_ref()
+                .map(|overview: &bezel_runtime::profiles::Overview| {
+                    overview.config.profiles.iter().map(|p| (p.id.clone(), p.name.clone())).collect()
+                })
+                .unwrap_or_default();
+            let wanted = engine
+                .lock()
+                .map(|engine| status_lines(&engine, &text, &names))
+                .unwrap_or_default();
+            for line in lines.drain(..) {
+                let _ = menu.remove(&line);
+            }
+            for (at, words) in wanted.iter().enumerate() {
+                let line = MenuItem::new(words, false, None);
+                if menu.insert(&line, at).is_ok() {
+                    lines.push(line);
+                }
+            }
+            live_item.set_checked(!off);
             tray.show_menu();
         }
         let wants_open = match event {
             Event::UserEvent(Action::Menu(ref event)) if event.id.as_ref() == "profile:manage" => {
                 pending_profiles = true;
                 true
+            }
+            Event::UserEvent(Action::Menu(ref event)) if event.id == *live_item.id() => {
+                off = !live_item.is_checked();
+                if let Ok(mut engine) = engine.lock() {
+                    engine.rest(off.then(|| LOGO.to_vec()));
+                }
+                if let Err(error) = remember_off(&settings_file, off) {
+                    eprintln!("bezel light: the on/off choice was not saved: {error:#}");
+                }
+                false
             }
             Event::UserEvent(Action::Menu(ref event)) if event.id == *quit.id() => {
                 quit_requested.store(true, Ordering::SeqCst);
@@ -443,7 +582,9 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                     let mut cli=Cli::try_parse_from(&arguments)?;
                     if !simulate { follow_saved_theme(&mut cli); }
                     let mut engine=engine.lock().map_err(|_|anyhow::anyhow!("runtime lock poisoned"))?;
-                    load_saved_documents(&mut engine,&cli)
+                    load_saved_documents(&mut engine,&cli)?;
+                    if off { engine.rest(Some(LOGO.to_vec())); }
+                    Ok(())
                 })();
                 if let Err(error)=reload { eprintln!("bezel light: saved document recovery: {error}"); }
             }
@@ -644,4 +785,36 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_off_switch_is_saved_beside_the_other_settings() {
+        let directory =
+            std::env::temp_dir().join(format!("bezel-light-off-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&directory);
+        std::fs::create_dir_all(&directory).unwrap();
+        let settings = directory.join("settings.json");
+        assert!(!switched_off(&settings), "no file: on");
+        remember_off(&settings, true).unwrap();
+        assert!(switched_off(&settings));
+        std::fs::write(
+            &settings,
+            br#"{"lastTheme":"a.bezeltheme","lightOff":true}"#,
+        )
+        .unwrap();
+        remember_off(&settings, false).unwrap();
+        assert!(!switched_off(&settings));
+        let value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&settings).unwrap()).unwrap();
+        assert_eq!(value, serde_json::json!({"lastTheme": "a.bezeltheme"}));
+        std::fs::write(&settings, b"[]").unwrap();
+        assert!(
+            remember_off(&settings, true).is_err(),
+            "not an object: left alone"
+        );
+    }
 }

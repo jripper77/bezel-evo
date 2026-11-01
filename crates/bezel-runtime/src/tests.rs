@@ -324,6 +324,71 @@ fn a_profile_switch_restores_the_unsaved_editor_and_never_replaces_its_published
 }
 
 #[test]
+fn resting_shows_the_logo_holds_profiles_and_gives_the_saved_theme_back() {
+    use crate::profiles::{Config, Profile, ProfileFile, Service};
+    use bezel_core::ports::{ThemeLocation, ThemeStore};
+    let mut f = fixture();
+    let mut saved = doc();
+    saved.theme.background = Background::Color(Rgba::BLACK);
+    f.engine.document(&f.key, 1, saved.clone(), true).unwrap();
+    f.engine.scenes.get_mut(&f.key).unwrap().live = true;
+    let directory = f._directory.path().join("resting");
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("music.bezeltheme");
+    let mut music = saved.clone();
+    music.theme.name = "music profile".into();
+    bezel_themes::FsThemeStore
+        .save(
+            &ThemeLocation(path.display().to_string()),
+            &music.theme,
+            &music.assets,
+        )
+        .unwrap();
+    let file = ProfileFile(directory.join("profiles.json"));
+    file.save(&Config {
+        profiles: vec![Profile {
+            id: "music".into(),
+            name: "Music".into(),
+            themes: BTreeMap::from([(f.key.clone(), path.display().to_string())]),
+            rules: vec![],
+            combine: Default::default(),
+        }],
+        automatic: false,
+        manual: Some("music".into()),
+        default_profile: None,
+        transition: Default::default(),
+    })
+    .unwrap();
+    f.engine.profiles = Some(Service::new(file));
+    f.engine.rest(Some(vec![7; 16]));
+    f.engine.tick_at(Duration::ZERO, time()).unwrap();
+    let scene = &f.engine.scenes[&f.key];
+    let shown = scene.runtime.theme();
+    assert_eq!(shown.name, "Bezel", "the profile waits while resting");
+    assert_eq!(shown.canvas, saved.theme.canvas);
+    assert_eq!(shown.elements.len(), 1);
+    assert_eq!(
+        scene
+            .runtime
+            .assets()
+            .get(&AssetRef(super::RESTING_LOGO.into())),
+        Some(&vec![7; 16])
+    );
+    assert!(scene.saved == saved);
+    assert!(f.engine.resting());
+    assert_eq!(f.engine.shown(), vec![(None, "saved".to_owned())]);
+    f.engine.rest(None);
+    assert!(!f.engine.resting());
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+    f.engine.tick_at(Duration::from_secs(1), time()).unwrap();
+    assert_eq!(
+        f.engine.scenes[&f.key].runtime.theme().name,
+        "music profile",
+        "profiles choose again once awake"
+    );
+}
+
+#[test]
 fn one_gaming_profile_switches_two_different_displays_and_restores_both() {
     use crate::profiles::{Config, Profile, ProfileFile, Service};
     use bezel_core::ports::{ThemeLocation, ThemeStore};

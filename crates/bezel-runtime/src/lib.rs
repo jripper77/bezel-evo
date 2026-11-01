@@ -21,7 +21,10 @@ use bezel_core::{
         discovery::Screen,
         frame::Frame,
         sensor::SensorInfo,
-        theme::{AssetRef, Background, BoxF, ElementId, Theme},
+        theme::{
+            Anchor, AssetRef, Background, BoxF, Element, ElementId, ElementKind, Fit, Playback,
+            Theme,
+        },
     },
     ports::{
         DeviceBus, FrameRenderer, MediaLocation, MediaTranscoder, RuntimeEndpoint, ScreenConnector,
@@ -160,6 +163,47 @@ type Handoff = (
     fn() -> Duration,
 );
 
+/// Where the resting logo is kept among a scene's assets.
+const RESTING_LOGO: &str = "assets/bezel-logo.png";
+
+/// `shown`'s canvas, dark, with the logo `png` in the middle.
+fn resting_document(shown: &Theme, png: &[u8]) -> Document {
+    let mut theme = Theme::blank("Bezel", shown.canvas, shown.orientation);
+    theme.canvas = shown.canvas;
+    let (width, height) = (shown.canvas.width as f32, shown.canvas.height as f32);
+    let edge = width.min(height) * 0.6;
+    theme.elements.push(Element {
+        color_by_value: None,
+        visualization: None,
+        value_transition: None,
+        sensor_motion: None,
+        card: None,
+        rotation: 0.0,
+        is_group: false,
+        group_parent: None,
+        card_member: None,
+        id: ElementId(1),
+        name: "Bezel".into(),
+        frame: BoxF::new((width - edge) / 2.0, (height - edge) / 2.0, edge, edge),
+        opacity: 1.0,
+        visible: true,
+        locked: false,
+        kind: ElementKind::Image {
+            fade: None,
+            asset: AssetRef(RESTING_LOGO.into()),
+            fit: Fit::Contain,
+            anchor: Anchor::default(),
+            playback: Playback::default(),
+            radius: 0.0,
+            corners: None,
+        },
+    });
+    Document {
+        theme,
+        assets: BTreeMap::from([(AssetRef(RESTING_LOGO.into()), png.to_vec())]),
+    }
+}
+
 /// Persistent service. Scene lifetimes do not depend on an editor connection.
 pub struct Engine {
     debug_overlay: Option<performance::Corner>,
@@ -190,6 +234,8 @@ pub struct Engine {
     audio_enabled: bool,
     /// Last state each spectrum widget was drawn with, for Light diagnostics.
     spectrum_states: BTreeMap<String, bezel_core::domain::spectrum::AudioState>,
+    /// The logo every screen shows while Light is switched off ([`Engine::rest`]).
+    resting: Option<Vec<u8>>,
 }
 impl Engine {
     /// All adapters are injected; this exact constructor serves real Light,
@@ -243,6 +289,7 @@ impl Engine {
             audio: None,
             audio_enabled: false,
             spectrum_states: BTreeMap::new(),
+            resting: None,
         })
     }
     /// Inject process capture; consent remains disabled until locally configured.
@@ -687,6 +734,59 @@ impl Engine {
         }
         Ok(())
     }
+    /// Light's off switch: with `logo` (a PNG) every screen shows it on a
+    /// dark background instead of its theme, and profiles wait; `None` puts
+    /// the saved themes back and lets profiles choose again.
+    pub fn rest(&mut self, logo: Option<Vec<u8>>) {
+        if logo.is_none() && self.resting.is_none() {
+            return;
+        }
+        for (key, scene) in &mut self.scenes {
+            scene.restore_profile();
+            let document = match &logo {
+                Some(png) => resting_document(scene.runtime.theme(), png),
+                None => scene.saved.clone(),
+            };
+            scene.update(document);
+            scene.dirty = true;
+            self.images.forget(key);
+        }
+        if logo.is_none()
+            && let Some(profiles) = &mut self.profiles
+        {
+            *profiles = profiles::Service::new(profiles.file());
+        }
+        self.resting = logo;
+        self.schedule_sensors();
+        self.wake.notify();
+    }
+    /// What each live screen shows, for Light's menu: its model's name once
+    /// connected, and the theme's name (the saved one while resting).
+    pub fn shown(&self) -> Vec<(Option<&'static str>, String)> {
+        self.scenes
+            .values()
+            .filter(|scene| scene.live)
+            .map(|scene| {
+                let theme = if self.resting.is_some() {
+                    &scene.saved.theme
+                } else {
+                    scene.runtime.theme()
+                };
+                (
+                    scene
+                        .screen
+                        .as_ref()
+                        .and_then(Screen::model)
+                        .map(|m| m.name),
+                    theme.name.clone(),
+                )
+            })
+            .collect()
+    }
+    /// Whether Light is switched off ([`Engine::rest`]).
+    pub fn resting(&self) -> bool {
+        self.resting.is_some()
+    }
     /// Stop scheduling writes during final shutdown; links remain available to finish.
     pub fn suspend(&mut self, on: bool) {
         let resuming = self.suspended && !on;
@@ -738,7 +838,9 @@ impl Engine {
             return Ok(Duration::from_millis(50));
         }
         let reading = self.sensors.latest();
-        if let Some(mut profiles) = self.profiles.take() {
+        if self.resting.is_none()
+            && let Some(mut profiles) = self.profiles.take()
+        {
             let changed = profiles.tick(self, &reading.snapshot, now, time);
             self.profiles = Some(profiles);
             if changed {
