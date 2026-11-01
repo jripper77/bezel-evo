@@ -24,28 +24,28 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.12
+## What's new in 0.2.18
 
-The first published release since 0.2.0; local builds 0.2.1 through 0.2.11 are
+The first published release since 0.2.15; local builds 0.2.16 and 0.2.17 are
 included. See the [changelog](CHANGELOG.md) for the complete history.
 
-- **Vendor theme import.** Open `.turtheme` files with available fonts and
-  corrected sensor bindings. A new theme starts with a clean canvas and Live
-  off, with a visible highlight on the sending control.
-- **Videos checked against the display.** Reuse compatible clips already in
-  storage. When an imported clip is missing, Studio offers to copy its local
-  source or lets you choose a file. Missing video does not block the whole theme.
-- **Game FPS and frame pacing.** Average FPS, frame time, 1%/0.1% lows, one-second
-  min/max, game and source information. Enable the optional FPS collector once
-  in Setup; Studio and Light run as normal Windows applications. RTSS remains
-  the main FPS fallback. See [Game FPS](docs/user/fps.md), including recovery
-  guidance and the limits of DLSS/Frame Generation identification.
-- **Physical-display diagnostics.** Optional delivery FPS, render/transfer time
-  and sensor timing reach the hardware display, including static themes. These
-  readings are separate from game FPS and never become part of the saved theme.
-- **Quieter status and framing controls.** Stable Bezel timing/memory updates
-  and video framing selections consistent with the rest of the inspector.
-
+- **A neon audio spectrum.** Glowing mirrored bars that fade towards their
+  tips, crossed by thin waves that swell with the music. A gradient across the
+  widget colours it like a rainbow.
+- **LEDs and peaks.** LED blocks can show their unlit LEDs in a colour of your
+  choice, and peak caps hold for as long as you choose while the bars fall.
+- **A pixel dancer.** A robot, a kid with headphones or a cat dances to the
+  beat of the bass instead of bars.
+- **Long player titles scroll.** A title or artist too long for its box can
+  shrink, end with an ellipsis or scroll, each line on its own.
+- **Two more Pixel templates.** **Pixel V2** (system, game FPS, weather) and
+  **Pixel V2 Music** (cover, LED spectrum, timeline, dancing cat) for 1920×480
+  screens.
+- **Pixel-art weather and arranged weather text.** Pixel-art weather icons,
+  and the city, temperature and condition can each be hidden, moved and styled.
+- **Livelier profile transitions.** New **Iris**, **TV** and **Pixels** covers,
+  and a livelier curtain, wipe, blinds and mosaic.
+- **A quiet sign-in.** Light starts at sign-in without a PowerShell window.
 ## A new Studio
 
 Studio has been redesigned from the ground up, in dark and light.
@@ -123,7 +123,7 @@ Studio has been redesigned from the ground up, in dark and light.
 
 ## Gallery
 
-[![The five audio spectrum styles drawn by Bezel's screen renderer: mirrored bars, bars with a blue to purple gradient, green and yellow LED blocks, a line with a soft fill, and radial bars around a ring](docs/images/spectrum-styles.png)](docs/images/spectrum-styles.png)
+[![The six audio spectrum styles drawn by Bezel's screen renderer: mirrored bars, bars with a blue to purple gradient, green and yellow LED blocks over dim unlit ones, a line with a soft fill, radial bars around a ring, and rainbow neon bars crossed by thin waves](docs/images/spectrum-styles.png)](docs/images/spectrum-styles.png)
 
 | Colours from your theme | Fonts with their real weights |
 | :---: | :---: |
