@@ -7,6 +7,24 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.17] - 2026-11-01
+
+0.2.16 was a local build; this entry and the one below cover it.
+
+### Widgets
+- The media player can choose what happens to a title or artist too long
+  for its box, like a fixed text: shrink it, cut it with an ellipsis, or let
+  it **scroll** round and round. Each line moves on its own, only when it
+  does not fit, and never over the cover beside it.
+- The audio spectrum has a **Neon** style: glowing mirrored bars that fade
+  towards their tips, crossed by thin waves that swell with the music and
+  drift slowly. A gradient across the widget colours it like a rainbow; the
+  waves can be turned off.
+- LED blocks can show their unlit LEDs in a colour of your choice.
+- Peak caps stay still for as long as you choose (0.35 s until now, up to
+  10 s) before they fall. The demo shows them holding too, in the Studio and
+  on the screen, instead of riding just above the bars.
+
 ## [0.2.16] - 2026-11-01
 
 ### Studio
