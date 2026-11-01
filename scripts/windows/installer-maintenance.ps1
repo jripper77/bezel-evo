@@ -85,8 +85,10 @@ try {
             if ($Startup -eq '1') {
                 if ($old -and -not $old.Contains('"' + $launcher + '"')) { throw 'Another installation owns the Light login entry. It was left unchanged.' }
                 if (-not (Test-Path -LiteralPath $runKey)) { New-Item -Path $runKey | Out-Null }
+                # A headless console host: no PowerShell window flashes at sign-in.
+                $console = Join-Path $env:WINDIR 'System32\conhost.exe'
                 $shell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-                $command = '"{0}" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{1}"' -f $shell, $launcher
+                $command = '"{0}" --headless "{1}" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{2}"' -f $console, $shell, $launcher
                 Set-ItemProperty -LiteralPath $runKey -Name BezelEvoLight -Value $command
             } elseif ($old -and $old.Contains('"' + $launcher + '"')) {
                 Remove-ItemProperty -LiteralPath $runKey -Name BezelEvoLight

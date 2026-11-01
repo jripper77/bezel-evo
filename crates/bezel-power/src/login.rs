@@ -88,11 +88,13 @@ impl LightLogin {
         contains(entry, &self.launcher)
     }
 
-    /// The installer's command: Windows PowerShell running the launcher hidden.
+    /// The installer's command: Windows PowerShell running the launcher in a
+    /// headless console host, so no window flashes at sign-in (PowerShell's
+    /// own `-WindowStyle Hidden` hides its console only once it is shown).
     fn command(&self) -> String {
         let windows = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".into());
         format!(
-            r#""{windows}\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{}""#,
+            r#""{windows}\System32\conhost.exe" --headless "{windows}\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{}""#,
             self.launcher.display()
         )
     }

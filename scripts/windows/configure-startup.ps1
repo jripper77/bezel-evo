@@ -50,8 +50,9 @@ $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $old = (Get-ItemProperty -Path $runKey -Name Bezel -ErrorAction SilentlyContinue).Bezel
 $oldFile = Join-Path $backup 'bezel-run.txt'
 if (-not (Test-Path -LiteralPath $oldFile)) { [string]$old | Set-Content -LiteralPath $oldFile -Encoding UTF8 }
+$console = Join-Path $env:WINDIR 'System32\conhost.exe'
 $powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$command = '"{0}" -NoProfile -WindowStyle Hidden -File "{1}"' -f $powershell, (Join-Path $AppDirectory 'start-light.ps1')
+$command = '"{0}" --headless "{1}" -NoProfile -WindowStyle Hidden -File "{2}"' -f $console, $powershell, (Join-Path $AppDirectory 'start-light.ps1')
 Set-ItemProperty -Path $runKey -Name Bezel -Value $command
 Write-Host 'Configured light Bezel runtime and its elevated hardware sensor reader at login.'
 Write-Host 'Close Studio, then run start-light.ps1 to test without rebooting.'

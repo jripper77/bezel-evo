@@ -77,7 +77,7 @@ FunctionEnd
   SetOutPath "$INSTDIR"
   CreateDirectory "$SMPROGRAMS\Bezel Evo"
   CreateShortCut "$SMPROGRAMS\Bezel Evo\Setup game FPS.lnk" "$INSTDIR\setup-game-fps.cmd" "" "$INSTDIR\bezel-studio.exe"
-  CreateShortCut "$SMPROGRAMS\Bezel Evo\Bezel Evo Light.lnk" "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$INSTDIR\start-light.ps1"' "$INSTDIR\bezel-studio.exe"
+  CreateShortCut "$SMPROGRAMS\Bezel Evo\Bezel Evo Light.lnk" "$SYSDIR\conhost.exe" '--headless "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$INSTDIR\start-light.ps1"' "$INSTDIR\bezel-studio.exe"
   CreateShortCut "$SMPROGRAMS\Bezel Evo\Setup sensors.lnk" "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$INSTDIR\installer-maintenance.ps1" -Mode Sensors -AppDirectory "$INSTDIR"' "$INSTDIR\bezel-studio.exe"
   ${IfNot} ${Silent}
   ${AndIf} $PassiveMode != 1
