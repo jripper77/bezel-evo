@@ -1,8 +1,6 @@
 //! Bounded audio worker: one capture per exact source, latest results only.
 use bezel_core::{
-    domain::spectrum::{
-        AudioBlock, AudioState, Beat, Motion, Spectrum, SpectrumFrame, SpectrumStyle,
-    },
+    domain::spectrum::{AudioBlock, AudioState, Beat, Spectrum, SpectrumFrame, SpectrumStyle},
     ports::{AudioCapture, AudioCaptureFactory},
 };
 use std::{
@@ -482,11 +480,7 @@ impl Envelope {
         let beat = (s.style == SpectrumStyle::Dancer)
             .then(|| self.pulse.update(&target, s, dt))
             .flatten();
-        let (attack, fall) = match s.motion {
-            Motion::Smooth => (0.12, 0.9),
-            Motion::Balanced => (0.035, 0.45),
-            Motion::Snappy => (0.008, 0.18),
-        };
+        let (attack, fall) = s.motion.times();
         for (i, target) in target.into_iter().enumerate() {
             let tau = if target > self.levels[i] {
                 attack
@@ -504,7 +498,7 @@ impl Envelope {
             }
             if self.levels[i] >= self.peaks[i] {
                 self.peaks[i] = self.levels[i];
-                self.held[i] = 0.35;
+                self.held[i] = s.peak_hold;
             } else {
                 self.held[i] = (self.held[i] - dt).max(0.);
                 if self.held[i] == 0. {
@@ -535,6 +529,7 @@ impl Envelope {
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
+    use bezel_core::domain::spectrum::Motion;
     #[test]
     fn hann_log_bands_combine_opposite_phase_channels_without_cancellation() {
         let mut a = Analysis::default();

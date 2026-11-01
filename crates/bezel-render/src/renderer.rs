@@ -1361,13 +1361,7 @@ impl SkiaRenderer {
                 });
             if s.demo {
                 frame.state = bezel_core::domain::spectrum::AudioState::Demo;
-                frame.levels = (0..s.bands)
-                    .map(|i| {
-                        0.45 + 0.25
-                            * (context.animation.as_secs_f32() * 2. + f32::from(i) * 0.37).sin()
-                    })
-                    .collect();
-                frame.peaks = frame.levels.iter().map(|v| (v + 0.08).min(1.)).collect();
+                (frame.levels, frame.peaks) = s.demo_levels(context.animation.as_secs_f32());
                 frame.beat = Some(bezel_core::domain::spectrum::demo_beat(
                     context.animation.as_secs_f32(),
                 ));
@@ -1379,6 +1373,7 @@ impl SkiaRenderer {
                 &frame,
                 &style.paint,
                 element.color_by_value.as_ref(),
+                context.animation.as_secs_f32(),
             );
             let label = crate::spectrum::label(frame.state, context.language);
             if !label.is_empty() {

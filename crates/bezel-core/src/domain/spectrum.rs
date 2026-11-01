@@ -1,5 +1,6 @@
 //! Audio spectrum contracts; no operating-system APIs or audio persistence.
 use super::{
+    frame::Rgba,
     playback,
     sensor::Snapshot,
     theme::{ElementId, ElementKind, TextContent, Theme},
@@ -15,6 +16,17 @@ pub enum Motion {
     Balanced,
     /// Fast attack and fall.
     Snappy,
+}
+impl Motion {
+    /// Seconds a band takes to rise, and to fall: the time constants of its
+    /// envelope.
+    pub fn times(self) -> (f32, f32) {
+        match self {
+            Motion::Smooth => (0.12, 0.9),
+            Motion::Balanced => (0.035, 0.45),
+            Motion::Snappy => (0.008, 0.18),
+        }
+    }
 }
 /// What a spectrum listens to (D-AS-13).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -44,6 +56,9 @@ pub enum SpectrumStyle {
     Radial,
     /// A pixel character dancing to the beat of the bass.
     Dancer,
+    /// Glowing mirrored bars fading towards their tips, crossed by thin
+    /// waves that swell with the music.
+    Neon,
 }
 /// Who dances in a [`SpectrumStyle::Dancer`] spectrum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -83,6 +98,10 @@ pub const MOVES: [DancePose; 4] = [
 pub const BEAT_HELD: f32 = 0.28;
 /// A beat at least this strong jumps.
 pub const JUMP_STRENGTH: f32 = 0.8;
+/// Seconds a peak cap stays still unless chosen.
+pub const PEAK_HOLD: f32 = 0.35;
+/// Spacing of the past moments the demo's peak caps look back at, seconds.
+const DEMO_PEAK_STEP: f32 = 0.05;
 /// Loudest band below which the music counts as stopped.
 pub const SILENCE: f32 = 0.04;
 /// Beats a minute of the demo.
@@ -129,6 +148,8 @@ pub struct Spectrum {
     pub motion: Motion,
     /// Hold and decay peak caps.
     pub peaks: bool,
+    /// Seconds a peak cap stays still before it falls, 0..=10.
+    pub peak_hold: f32,
     /// Explicit synthetic preview; never enables capture.
     pub demo: bool,
     /// Maximum bar thickness in pixels.
@@ -155,6 +176,10 @@ pub struct Spectrum {
     pub audio: SpectrumAudio,
     /// Who dances, for `Dancer`.
     pub dancer: Dancer,
+    /// Colour of the unlit blocks, for `Blocks`; none leaves them out.
+    pub unlit: Option<Rgba>,
+    /// Waves across the bars, for `Neon`.
+    pub waves: bool,
 }
 impl Default for Spectrum {
     fn default() -> Self {
@@ -165,6 +190,7 @@ impl Default for Spectrum {
             high: 16000.,
             motion: Motion::Balanced,
             peaks: true,
+            peak_hold: PEAK_HOLD,
             demo: false,
             thickness: 12.,
             gap: 3.,
@@ -178,6 +204,8 @@ impl Default for Spectrum {
             gain: 1.,
             audio: SpectrumAudio::Player,
             dancer: Dancer::Robot,
+            unlit: None,
+            waves: true,
         }
     }
 }
@@ -202,6 +230,25 @@ impl Spectrum {
             && (1. ..=32.).contains(&self.stroke)
             && (0. ..=90.).contains(&self.inner)
             && (0.1..=4.).contains(&self.gain)
+            && (0. ..=10.).contains(&self.peak_hold)
+    }
+    /// The demo's bands at `seconds`, and their peak caps: each cap holds the
+    /// highest level for [`Spectrum::peak_hold`], then falls like a live one.
+    pub fn demo_levels(&self, seconds: f32) -> (Vec<f32>, Vec<f32>) {
+        let level = |i: u16, t: f32| 0.45 + 0.25 * (t * 2. + f32::from(i) * 0.37).sin();
+        let fall = self.motion.times().1;
+        let steps = ((self.peak_hold + fall) / DEMO_PEAK_STEP).ceil() as u16;
+        (0..self.bands)
+            .map(|i| {
+                let peak = (0..=steps)
+                    .map(|k| {
+                        let ago = f32::from(k) * DEMO_PEAK_STEP;
+                        level(i, seconds - ago) - (ago - self.peak_hold).max(0.) / fall
+                    })
+                    .fold(0., f32::max);
+                (level(i, seconds), peak.min(1.))
+            })
+            .unzip()
     }
     /// The followed session, selected by the Player's own selection function.
     pub fn session<'a>(
@@ -416,5 +463,29 @@ mod tests {
         s.bands = 32;
         s.corners[0] = f32::INFINITY;
         assert!(!s.valid());
+        s.corners[0] = 2.;
+        s.peak_hold = 11.;
+        assert!(!s.valid());
+        s.peak_hold = f32::NAN;
+        assert!(!s.valid());
+    }
+    #[test]
+    fn the_demo_peaks_hold_still_then_fall() {
+        let s = Spectrum {
+            peak_hold: 2.,
+            ..Spectrum::default()
+        };
+        // Band 0 tops out at 0.7 at t = π/4 and is falling by t = 1.2.
+        let (levels, peaks) = s.demo_levels(1.2);
+        assert!(levels[0] < 0.65);
+        assert!((peaks[0] - 0.7).abs() < 0.01, "held: {}", peaks[0]);
+        let unheld = Spectrum {
+            peak_hold: 0.,
+            ..s.clone()
+        };
+        let (_, peaks) = unheld.demo_levels(1.2);
+        assert!(peaks[0] < 0.65, "fallen with the band: {}", peaks[0]);
+        let (levels, peaks) = Spectrum::default().demo_levels(3.);
+        assert!(levels.iter().zip(&peaks).all(|(l, p)| p >= l && *p <= 1.));
     }
 }

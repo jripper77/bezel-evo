@@ -126,6 +126,12 @@ export default {
   "spectrum.fill": "Fill below the line",
   "spectrum.inner": "Inner radius (%)",
   "spectrum.blockColors": "Each block takes the color of its own height.",
+  "spectrum.neon": "Neon",
+  "spectrum.waves": "Waves across the bars",
+  "spectrum.peakHold": "Peak hold",
+  "spectrum.unlit": "Show unlit LEDs",
+  "spectrum.unlitColor": "Unlit LEDs",
+  "spectrum.neonHint": "A gradient across the widget colours the bars like a rainbow.",
 
   'collection.cannotUndo': 'Deleting cannot be undone.',
   "app.version": "{version}",

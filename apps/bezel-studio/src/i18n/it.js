@@ -126,6 +126,12 @@ export default {
   "spectrum.fill": "Riempi sotto la linea",
   "spectrum.inner": "Raggio interno (%)",
   "spectrum.blockColors": "Ogni blocco prende il colore della propria altezza.",
+  "spectrum.neon": "Neon",
+  "spectrum.waves": "Onde sopra le barre",
+  "spectrum.peakHold": "Tenuta del picco",
+  "spectrum.unlit": "Mostra i LED spenti",
+  "spectrum.unlitColor": "LED spenti",
+  "spectrum.neonHint": "Un gradiente lungo il widget colora le barre come un arcobaleno.",
 
   "collection.cannotUndo": "L'eliminazione non si può annullare.",
   "app.version": "{version}",

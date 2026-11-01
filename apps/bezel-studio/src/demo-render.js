@@ -7,7 +7,7 @@ import { boundKey } from './editor/widgets.js';
 import { demoSensorValue, DEMO_SENSORS, DEMO_SYSTEM_TEXT, DEMO_WEATHER } from './demo-sensors.js';
 import { formatValue } from './value-format.js';
 import { demoColorValue, withValueColor } from './value-color.js';
-import { demoSpectrum, spectrumOf } from './spectrum.js';
+import { NEON, demoPeaks, demoSpectrum, spectrumOf } from './spectrum.js';
 import { translator } from './i18n/index.js';
 import { colorAt } from './value-color.js';
 import { cardPoses, drawCardProjection } from './editor/card-motion.js';
@@ -524,18 +524,70 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   drawGlyphs(ctx, s);
 }
 
+/**
+ * Glowing mirrored bars fading towards their tips, crossed by waves that swell
+ * with the bands, in the paint `fill`, drawn apart and then onto `ctx`; `byValue(level)` is the
+ * colour of a level when colours follow the value.
+ */
+function drawNeon(ctx, f, c, fill, values, seconds, byValue) {
+  const mid = f.y + f.height / 2, half = Math.max(0, f.height / 2 - 2);
+  const cell = f.width / c.bands, width = Math.max(0, Math.min(c.thickness, cell - c.gap));
+  const layer = new OffscreenCanvas(Math.max(1, Math.ceil(f.width)), Math.max(1, Math.ceil(f.height))), lc = layer.getContext('2d');
+  lc.translate(-f.x, -f.y);
+  const paintOf = value => byValue(value) ?? canvasPaint(lc, fill, f);
+  values.forEach((value, i) => {
+    const h = value * half;
+    if (h <= 0) return;
+    const x = f.x + i * cell + (cell - width) / 2;
+    lc.fillStyle = paintOf(value);
+    for (const [grow, alpha] of NEON.halos) {
+      const extra = width * grow;
+      lc.globalAlpha = alpha; lc.beginPath(); lc.roundRect(x - extra / 2, mid - h - extra / 2, width + extra, h * 2 + extra, (width + extra) / 2); lc.fill();
+    }
+    lc.globalAlpha = 1; lc.beginPath(); lc.roundRect(x, mid - h, width, h * 2, c.corners.map(v => Math.min(v, width / 2, h))); lc.fill();
+  });
+  if (c.centre) { lc.fillStyle = canvasPaint(lc, fill, f); lc.fillRect(f.x, mid - .5, f.width, 1); }
+  if (half > 0) {
+    // Opaque on the centre line, NEON.tips at the ends of the tallest bars.
+    const fade = lc.createLinearGradient(0, mid - half, 0, mid + half);
+    for (const d of [0, .1, .25, .5, .75, 1]) {
+      const keep = `rgba(0,0,0,${1 - (1 - NEON.tips) * Math.pow(d, .8)})`;
+      fade.addColorStop((1 - d) / 2, keep); fade.addColorStop((1 + d) / 2, keep);
+    }
+    lc.globalCompositeOperation = 'destination-in'; lc.fillStyle = fade; lc.fillRect(f.x, f.y, f.width, f.height);
+    lc.globalCompositeOperation = 'source-over';
+  }
+  if (c.waves && half > 0) {
+    const swell = x => {
+      const at = Math.max(0, Math.min(c.bands - 1, (x - f.x) / cell - .5)), i = Math.floor(at), t = at - i;
+      return values[i] * (1 - t) + values[Math.min(i + 1, c.bands - 1)] * t;
+    };
+    const length = 2 * Math.PI * NEON.periods / Math.max(1, f.width), steps = Math.max(1, Math.ceil(f.width / 2));
+    lc.strokeStyle = paintOf(Math.max(0, ...values)); lc.globalAlpha = .8; lc.lineWidth = 1; lc.lineCap = 'round'; lc.lineJoin = 'round';
+    for (let k = 0; k < NEON.waves; k++) {
+      const phase = seconds * NEON.speed + k * .5, reach = half * .8 * (1 - k * .07);
+      lc.beginPath();
+      for (let j = 0; j <= steps; j++) {
+        const x = f.x + f.width * j / steps, y = mid + swell(x) * reach * Math.sin((x - f.x) * length + phase);
+        if (j === 0) lc.moveTo(x, y); else lc.lineTo(x, y);
+      }
+      lc.stroke();
+    }
+  }
+  ctx.drawImage(layer, f.x, f.y);
+}
+
 function drawSpectrum(ctx, e, seconds) {
   const c = spectrumOf(e.kind.content), f = e.frame, mid = f.y + f.height / 2, bottom = f.y + f.height;
   const values = (c.demo ? demoSpectrum(c, seconds) : Array(c.bands).fill(0)).map(v => Math.min(1, v * c.gain));
+  const peaks = (c.demo ? demoPeaks(c, seconds) : Array(c.bands).fill(0)).map(v => Math.min(1, v * c.gain));
   const tr = translator(globalThis.document?.documentElement?.lang ?? 'en');
   ctx.save(); ctx.globalAlpha = e.opacity ?? 1; ctx.beginPath(); ctx.rect(f.x,f.y,f.width,f.height); ctx.clip();
   const fill = e.kind.style.paint;
-  let base = paint(fill);
-  if (fill?.stops) { base = ctx.createLinearGradient(f.x, f.y, f.x, f.y + f.height); for (const [stop,hex] of fill.stops) base.addColorStop(stop,color(hex)); }
+  const base = canvasPaint(ctx, fill, f);
   // Same geometry as the screen renderer (bezel-render spectrum.rs, D-AS-11).
   const level = value => e.colorByValue ? color(colorAt(e.colorByValue, value * 100)) : base;
   const cell = f.width / c.bands, width = Math.max(0,Math.min(c.thickness,cell-c.gap));
-  const peakOf = value => Math.min(1, value + .08);
   const bar = (x, y, w, h) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, c.corners.map(v => Math.min(v, w / 2, h / 2))); ctx.fill(); };
   ctx.fillStyle = base;
   if (c.style === 'dancer') {
@@ -546,7 +598,7 @@ function drawSpectrum(ctx, e, seconds) {
       const x=f.x+i*cell+(cell-width)/2, h=value*Math.max(0,f.height/2-2);
       ctx.fillStyle = level(value);
       if(h>0) { ctx.beginPath(); ctx.roundRect(x,mid-h,width,h*2,c.corners.map(v=>Math.min(v,width/2,h))); ctx.fill(); }
-      if(c.peaks && value>0) { const peak=peakOf(value)*Math.max(0,f.height/2-2);ctx.fillRect(x,mid-peak-1,width,1);ctx.fillRect(x,mid+peak,width,1); }
+      if(c.peaks && peaks[i]>0) { const peak=peaks[i]*Math.max(0,f.height/2-2);ctx.fillRect(x,mid-peak-1,width,1);ctx.fillRect(x,mid+peak,width,1); }
     });
   } else if (c.style === 'bars') {
     if (c.centre) ctx.fillRect(f.x, bottom - 1, f.width, 1);
@@ -555,17 +607,20 @@ function drawSpectrum(ctx, e, seconds) {
       const x = f.x + i * cell + (cell - width) / 2;
       ctx.fillStyle = level(value);
       if (value > 0) bar(x, bottom - value * full, width, value * full);
-      if (c.peaks && value > 0) ctx.fillRect(x, bottom - peakOf(value) * full - 2, width, 1);
+      if (c.peaks && peaks[i] > 0) ctx.fillRect(x, bottom - peaks[i] * full - 2, width, 1);
     });
   } else if (c.style === 'blocks') {
     const space = Math.min(Math.max(c.gap, 1), c.block), pitch = c.block + space;
     const count = Math.max(0, Math.floor((f.height + space) / pitch));
-    const block = (x, k) => { ctx.fillStyle = level((k + 1) / count); bar(x, bottom - k * pitch - c.block, width, c.block); };
+    // An unlit block takes the unlit colour, when there is one.
+    const block = (x, k, unlit = null) => { ctx.fillStyle = unlit ? color(unlit) : level((k + 1) / count); bar(x, bottom - k * pitch - c.block, width, c.block); };
     values.forEach((value, i) => {
       const x = f.x + i * cell + (cell - width) / 2, lit = Math.min(count, Math.round(value * count));
-      for (let k = 0; k < lit; k++) block(x, k);
-      const peak = Math.min(count, Math.round(peakOf(value) * count));
-      if (c.peaks && value > 0 && peak > lit) block(x, peak - 1);
+      const peak = Math.min(count, Math.round(peaks[i] * count)), held = c.peaks && peak > lit ? peak - 1 : null;
+      for (let k = 0; k < count; k++) {
+        if (k < lit || k === held) block(x, k);
+        else if (c.unlit) block(x, k, c.unlit);
+      }
     });
   } else if (c.style === 'line') {
     const room = Math.max(0, f.height - c.stroke - 1);
@@ -587,9 +642,11 @@ function drawSpectrum(ctx, e, seconds) {
     if (room > 0) values.forEach((value, i) => {
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(i * 2 * Math.PI / c.bands); ctx.fillStyle = level(value);
       if (value > 0) bar(-w / 2, -inner - value * room, w, value * room);
-      if (c.peaks && value > 0) ctx.fillRect(-w / 2, -inner - peakOf(value) * room - 2, w, 1);
+      if (c.peaks && peaks[i] > 0) ctx.fillRect(-w / 2, -inner - peaks[i] * room - 2, w, 1);
       ctx.restore();
     });
+  } else if (c.style === 'neon') {
+    drawNeon(ctx, f, c, fill, values, seconds, value => e.colorByValue ? level(value) : null);
   }
   ctx.font = `${e.kind.style.size}px sans-serif`; ctx.textBaseline='top'; ctx.fillStyle=base;
   ctx.fillText(tr(c.demo ? 'spectrum.demo' : 'spectrum.disabled'), f.x, f.y);

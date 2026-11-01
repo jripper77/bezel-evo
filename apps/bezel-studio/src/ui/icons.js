@@ -22,6 +22,7 @@ export const ICONS = Object.freeze({
   'spectrum-snappy': ['M3 17h4V7h4v10h4V7h6'],
   'spectrum-baseline': ['M3 12h18'],
   'spectrum-peaks': ['M5 6h4M15 4h4M5 20V10M17 20V8'],
+  'spectrum-waves': ['M2 12c3.3-5 6.7 5 10 0s6.7 5 10 0', 'M2 12c3.3-2.5 6.7 2.5 10 0s6.7 2.5 10 0'],
   'graph-single': ['m3 16 5-5 4 3 4-6 5 4'],
   'graph-mirrored': ['m3 10 5-4 4 2 4-4 5 3M3 14l5 4 4-2 4 4 5-3'],
   'corners-all': ['M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3'],

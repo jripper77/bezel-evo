@@ -8,6 +8,9 @@ import { el } from '../dom.js';
 import { DANCERS, drawDancer } from '../../dancer-pixel.js';
 import { numberField, prefixedField, iconChoice, fieldGrid, propertySection as section, segmented, selectField, toggleField as switchRow } from '../fields.js';
 
+/** Colour of unlit LEDs when they are first shown: a faint white. */
+const UNLIT = '#ffffff26';
+
 export function panels(ctx) {
   const { t, store, update, colorField, barCorners } = ctx;
   /** The media player (artboards PlayerData and PlayerLook). */
@@ -18,11 +21,13 @@ export function panels(ctx) {
     const selected = followedPlayer(theme, c);
     const options = [['', t('spectrum.automatic')], ...players.map(item => [String(item.id), item.name])];
     if (c.player != null && !players.some(p => p.id === c.player)) options.push([String(c.player), t('spectrum.playerMissing')]);
-    const STYLE_LABELS = { mirrored: 'spectrum.mirrored', bars: 'graph.bars', blocks: 'spectrum.blocks', line: 'graph.line', radial: 'fade.radial', dancer: 'spectrum.dancer' };
+    const STYLE_LABELS = { mirrored: 'spectrum.mirrored', bars: 'graph.bars', blocks: 'spectrum.blocks', line: 'graph.line', radial: 'fade.radial', neon: 'spectrum.neon', dancer: 'spectrum.dancer' };
     // Fields that do not apply to the chosen style are hidden, never disabled.
-    const line = c.style === 'line', dancing = c.style === 'dancer';
+    const line = c.style === 'line', dancing = c.style === 'dancer', neon = c.style === 'neon';
+    // Neon bars have no caps; the others hold theirs as long as chosen.
+    const capped = !line && !dancing && !neon;
     const dancerPreview = (dancer, pose) => { const canvas = el('canvas', { width: 48, height: 48, 'aria-hidden': 'true' }); drawDancer(canvas.getContext('2d'), { x: 0, y: 0, width: 48, height: 48 }, dancer, pose); return canvas; };
-    const baseLabel = { mirrored: 'spectrum.centre', radial: 'spectrum.ring' }[c.style] ?? 'spectrum.baseline';
+    const baseLabel = { mirrored: 'spectrum.centre', neon: 'spectrum.centre', radial: 'spectrum.ring' }[c.style] ?? 'spectrum.baseline';
     return {
       data: [section('spectrum-source', t('spectrum.source'), [
         // D-AS-13: the followed Player's app, or everything the PC plays.
@@ -52,14 +57,19 @@ export function panels(ctx) {
         numberField(t('spectrum.gap'), c.gap, gap => set({ gap }), { min: 0, max: 128, unit: 'px', iconName: 'spacing', compact: true })]),
         c.style === 'blocks' && numberField(t('spectrum.block'), c.block, block => set({ block }), { min: 1, max: 64, unit: 'px', iconName: 'height' }),
         c.style === 'blocks' && el('p', { class: 'hint', text: t('spectrum.blockColors') }),
+        c.style === 'blocks' && switchRow(t('spectrum.unlit'), c.unlit != null, on => set({ unlit: on ? UNLIT : null })),
+        c.style === 'blocks' && c.unlit != null && colorField(t('spectrum.unlitColor'), c.unlit, unlit => set({ unlit })),
+        neon && el('p', { class: 'hint', text: t('spectrum.neonHint') }),
         line && numberField(t('spectrum.stroke'), c.stroke, stroke => set({ stroke }), { min: 1, max: 32, unit: 'px', iconName: 'strokeWidth' }),
         line && switchRow(t('spectrum.fill'), c.fill, fill => set({ fill })),
         c.style === 'radial' && numberField(t('spectrum.inner'), c.inner, inner => set({ inner }), { min: 0, max: 90 }),
         !line && !dancing && barCorners(e.id, c, set, e.frame),
         !dancing && fieldGrid([
           c.style !== 'blocks' && switchRow(t(baseLabel), c.centre, centre => set({ centre }), { iconName: 'spectrum-baseline', leading: true }),
-          !line && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks }), { iconName: 'spectrum-peaks', leading: true }),
+          capped && switchRow(t('spectrum.peaks'), c.peaks, peaks => set({ peaks }), { iconName: 'spectrum-peaks', leading: true }),
+          neon && switchRow(t('spectrum.waves'), c.waves, waves => set({ waves }), { iconName: 'spectrum-waves', leading: true }),
         ].filter(Boolean)),
+        capped && c.peaks && numberField(t('spectrum.peakHold'), c.peakHold, peakHold => set({ peakHold }), { min: 0, max: 10, step: 0.05, unit: 's', iconName: 'clock', compact: true }),
       ], { caption: true })],
       behavior: dancing ? [] : [section('spectrum-motion', t('insp.spectrum.motion'), [iconChoice(t('insp.spectrum.motion'), c.motion, ['smooth', 'balanced', 'snappy'].map(value => [value, t(`spectrum.${value}`), `spectrum-${value}`]), motion => set({ motion }), { wide: true, bare: true })], { caption: true })],
     };

@@ -111,3 +111,24 @@ test('a pixel dancer is a style of its own with three characters and no bar fiel
   await expect(who.getByRole('button',{name:t('spectrum.dancer.robot'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expectAccessible(page);expect(errors).toEqual([]);
 });
+
+test('neon bars wave, LEDs can show their unlit colour and peak caps hold as long as chosen',async({page,t})=>{
+  const errors=watchErrors(page), inspector=await setup(page,t);
+  await inspector.getByRole('button',{name:t('spectrum.demo'),exact:true}).click();
+  await tab(page,t,'inspector.tab.look');
+  const styles=inspector.getByRole('group',{name:t('spectrum.style'),exact:true});
+  const toggle=name=>toggleButton(inspector, t(name)), hold=inspector.getByRole('spinbutton',{name:t('spectrum.peakHold'),exact:true});
+  await expect(hold).toHaveValue('0.35');await hold.fill('2');await hold.press('Tab');await expect(hold).toHaveValue('2');
+  await setToggle(toggle('spectrum.peaks'),false);await expect(hold).toHaveCount(0);await setToggle(toggle('spectrum.peaks'),true);
+  await styles.getByRole('button',{name:t('spectrum.blocks'),exact:true}).click();
+  await expect(inspector.getByText(t('spectrum.unlitColor'),{exact:true})).toHaveCount(0);
+  await setToggle(toggle('spectrum.unlit'),true);await expect(inspector.getByText(t('spectrum.unlitColor'),{exact:true})).toBeVisible();
+  await styles.getByRole('button',{name:t('spectrum.neon'),exact:true}).click();
+  await expect(styles.getByRole('button',{name:t('spectrum.neon'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(toggle('spectrum.waves')).toHaveAttribute('aria-pressed','true');await expect(toggle('spectrum.peaks')).toHaveCount(0);await expect(hold).toHaveCount(0);
+  await expect(inspector.getByText(t('spectrum.neonHint'),{exact:true})).toBeVisible();
+  const canvas=inspector.locator('canvas[role="img"]');const before=await canvas.evaluate(c=>c.toDataURL());await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
+  await setToggle(toggle('spectrum.waves'),false);await expect(toggle('spectrum.waves')).toHaveAttribute('aria-pressed','false');
+  await page.getByRole('button',{name:t('top.undo'),exact:true}).click();await expect(toggle('spectrum.waves')).toHaveAttribute('aria-pressed','true');
+  await expectAccessible(page);expect(errors).toEqual([]);
+});

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SPECTRUM_DEFAULTS, SPECTRUM_STYLES, followedPlayer, spectrumOf, spectrumPatch, demoSpectrum } from '../../src/spectrum.js';
+import { SPECTRUM_DEFAULTS, SPECTRUM_STYLES, followedPlayer, spectrumOf, spectrumPatch, demoSpectrum, demoPeaks } from '../../src/spectrum.js';
 import { createWidget, widgetOf } from '../../src/editor/widgets.js';
 import { createStore } from '../../src/editor/store.js';
 import { DEMO_THEME } from '../../src/demo-theme.js';
@@ -58,4 +58,20 @@ test('audio capture is a local preference, on by default and independent from im
   const demo=createDemoBackend('turing88'); assert.equal((await demo.preferences()).audioCapture,true);
   await demo.setAudioCapture(false); assert.equal((await demo.preferences()).audioCapture,false);
   await demo.setAudioCapture(true); assert.equal((await demo.preferences()).audioCapture,true);
+});
+test('peak hold, unlit LEDs and neon waves stay within the file format', () => {
+  assert.deepEqual([spectrumOf({}).peakHold, spectrumOf({}).unlit, spectrumOf({}).waves], [0.35, null, true]);
+  assert.deepEqual([spectrumPatch({}, { peakHold: -1 }).peakHold, spectrumPatch({}, { peakHold: 99 }).peakHold, spectrumPatch({}, { peakHold: NaN }).peakHold], [0, 10, 0.35]);
+  assert.equal(spectrumPatch({}, { unlit: '#ffffff26' }).unlit, '#ffffff26');
+  assert.equal(spectrumPatch({}, { unlit: 'red' }).unlit, null);
+  assert.equal(spectrumPatch({}, { waves: false }).waves, false);
+  assert.equal(spectrumPatch({}, { style: 'neon' }).style, 'neon');
+});
+test('demo peaks hold the highest level, then fall like the backend', () => {
+  // Band 0 tops out at 0.7 at t = π/4 and is falling by t = 1.2.
+  const held = demoPeaks({ peakHold: 2 }, 1.2)[0], level = demoSpectrum({}, 1.2)[0];
+  assert.ok(level < 0.65 && Math.abs(held - 0.7) < 0.01, `${level} ${held}`);
+  assert.ok(demoPeaks({ peakHold: 0 }, 1.2)[0] < 0.65);
+  const levels = demoSpectrum({}, 3), peaks = demoPeaks({}, 3);
+  assert.ok(peaks.every((p, i) => p >= levels[i] && p <= 1));
 });

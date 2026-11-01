@@ -1130,6 +1130,15 @@ pub struct SpectrumDto {
     /// `robot`, `headphones` or `cat`, for the `dancer` style.
     #[serde(skip_serializing_if = "is_robot")]
     pub dancer: String,
+    /// Seconds a peak cap stays still.
+    #[serde(skip_serializing_if = "is_default_peak_hold")]
+    pub peak_hold: f32,
+    /// Colour of the unlit blocks, `#rrggbbaa`, for the `blocks` style.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unlit: Option<String>,
+    /// Waves across the bars, for the `neon` style.
+    #[serde(skip_serializing_if = "is_default_waves")]
+    pub waves: bool,
 }
 fn is_player_audio(audio: &str) -> bool {
     audio == "player"
@@ -1157,6 +1166,12 @@ fn is_default_inner(v: &f32) -> bool {
 }
 fn is_default_gain(v: &f32) -> bool {
     *v == spectrum_default().gain
+}
+fn is_default_peak_hold(v: &f32) -> bool {
+    *v == spectrum_default().peak_hold
+}
+fn is_default_waves(v: &bool) -> bool {
+    *v == spectrum_default().waves
 }
 impl Default for SpectrumDto {
     fn default() -> Self {
@@ -1190,6 +1205,7 @@ impl From<&bezel_core::domain::spectrum::Spectrum> for SpectrumDto {
                 SpectrumStyle::Line => "line",
                 SpectrumStyle::Radial => "radial",
                 SpectrumStyle::Dancer => "dancer",
+                SpectrumStyle::Neon => "neon",
             }
             .into(),
             block: s.block,
@@ -1208,6 +1224,9 @@ impl From<&bezel_core::domain::spectrum::Spectrum> for SpectrumDto {
                 Dancer::Cat => "cat",
             }
             .into(),
+            peak_hold: s.peak_hold,
+            unlit: s.unlit.map(crate::color::to_hex),
+            waves: s.waves,
         }
     }
 }
@@ -1229,6 +1248,7 @@ impl SpectrumDto {
             "line" => SpectrumStyle::Line,
             "radial" => SpectrumStyle::Radial,
             "dancer" => SpectrumStyle::Dancer,
+            "neon" => SpectrumStyle::Neon,
             _ => return err("unknown spectrum style"),
         };
         let dancer = match self.dancer.as_str() {
@@ -1262,6 +1282,9 @@ impl SpectrumDto {
             gain: self.gain,
             audio,
             dancer,
+            peak_hold: self.peak_hold,
+            unlit: self.unlit.as_deref().map(color).transpose()?,
+            waves: self.waves,
         };
         if !s.valid() {
             return err("invalid spectrum bounds");
@@ -3545,12 +3568,21 @@ mod spectrum_tests {
         s.gain = 1.;
         s.audio = "microphone".into();
         assert!(s.domain().is_err());
+        s.audio = "player".into();
+        s.peak_hold = 20.;
+        assert!(s.domain().is_err());
+        s.peak_hold = 1.;
+        s.unlit = Some("not a colour".into());
+        assert!(s.domain().is_err());
     }
     #[test]
     fn every_style_round_trips_and_the_default_keeps_the_old_shape() {
         use bezel_core::domain::spectrum::{Spectrum, SpectrumStyle};
         let mirrored = serde_json::to_value(SpectrumDto::default()).unwrap();
-        for key in ["style", "block", "stroke", "fill", "inner", "gain", "audio"] {
+        for key in [
+            "style", "block", "stroke", "fill", "inner", "gain", "audio", "peakHold", "unlit",
+            "waves",
+        ] {
             assert!(mirrored.get(key).is_none(), "{key}");
         }
         for style in [
@@ -3558,9 +3590,16 @@ mod spectrum_tests {
             SpectrumStyle::Blocks,
             SpectrumStyle::Line,
             SpectrumStyle::Radial,
+            SpectrumStyle::Neon,
         ] {
             let s = Spectrum {
                 style,
+                peak_hold: 1.5,
+                unlit: Some(Rgba {
+                    a: 32,
+                    ..Rgba::WHITE
+                }),
+                waves: false,
                 block: 4.,
                 stroke: 3.,
                 fill: false,
