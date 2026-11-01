@@ -7,9 +7,24 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.2.17] - 2026-11-01
+## [0.2.18] - 2026-11-01
 
-0.2.16 was a local build; this entry and the one below cover it.
+0.2.16 and 0.2.17 were local builds; this entry and the two below cover them.
+
+### Themes
+- Two new included templates in the Pixel look for 1920×480 screens:
+  **Pixel V2**, with clock and date, the weather with a pixel-art icon, CPU
+  and GPU with their models, thermals, power and game FPS (average, minimum,
+  maximum), a RAM block matrix and network traffic; and **Pixel V2 Music**,
+  with the session cover, title, artist and remaining time, a 48-band LED
+  spectrum with unlit LEDs and held peaks, a timeline and a dancing pixel cat.
+
+### Fixes
+- No PowerShell window flashes at sign-in any more. Light's start at sign-in
+  and its Start menu shortcut now run their launcher in a headless console;
+  updating with **Start Light at sign-in** checked rewrites the entry.
+
+## [0.2.17] - 2026-11-01
 
 ### Widgets
 - The media player can choose what happens to a title or artist too long
