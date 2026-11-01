@@ -20,15 +20,13 @@ Function EvoOptions
   Pop $R0
   ${NSD_CreateCheckbox} 0 44u 100% 24u "$(EvoStartupText)"
   Pop $EvoStartupCheckbox
-  ReadRegStr $R0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "BezelEvoLight"
-  ${If} $R0 != ""
-    ${NSD_Check} $EvoStartupCheckbox
-  ${EndIf}
+  ${NSD_Check} $EvoStartupCheckbox
   ${NSD_CreateCheckbox} 0 76u 100% 30u "$(EvoSensorsText)"
   Pop $EvoSensorsCheckbox
   ${NSD_Check} $EvoSensorsCheckbox
   ${NSD_CreateCheckbox} 0 110u 100% 30u "$(EvoFpsText)"
   Pop $EvoFpsCheckbox
+  ${NSD_Check} $EvoFpsCheckbox
   nsDialogs::Show
   done:
 FunctionEnd

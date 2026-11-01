@@ -7,6 +7,10 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Installer
+- The three setup options (Light at sign-in, hardware sensors, game FPS) are
+  now all checked by default.
+
 ## [0.2.18] - 2026-11-01
 
 0.2.16 and 0.2.17 were local builds; this entry and the two below cover them.
