@@ -1,5 +1,6 @@
 // The preferences dialog (the top bar's button): the app's language, which
-// follows the system's until the user picks one, and the sensors that take
+// follows the system's until the user picks one, whether Bezel starts at
+// sign-in (the same login entry as Setup and Screen › Settings), and the sensors that take
 // settings (the host `net.ping` measures). Each change applies at once and the
 // backend remembers it.
 import { el, icon } from './dom.js';
@@ -28,11 +29,14 @@ export function languageOptions(t, systemLanguage) {
  * @param {(k: string, p?: object) => string} deps.t
  * @param {object} deps.bridge
  * @param {(locale: string) => void} deps.onLanguage the UI switches to `locale`
+ * @param {(on: boolean) => void} [deps.onAutostart] the start at sign-in changed
  * @param {(message: string) => void} deps.notify
  */
-export function createPreferences({ t, bridge, onLanguage, notify }) {
+export function createPreferences({ t, bridge, onLanguage, onAutostart = () => {}, notify }) {
   let dialog = null;
   let prefs = null;
+  // Whether Bezel starts at sign-in; null when the host cannot tell.
+  let autostart = null;
   // Why the last sensor change was refused (shown under its field), and the
   // host typed then (kept in the field to fix it).
   let sensorError = null;
@@ -48,6 +52,23 @@ export function createPreferences({ t, bridge, onLanguage, notify }) {
       el('h3', { id: 'prefs-language-title', text: t('prefs.languageTitle') }),
       el('label', { class: 'field', for: 'prefs-language' }, [el('span', { text: t('prefs.language') }), select]),
       el('p', { id: 'prefs-language-hint', class: 'hint', text: t('prefs.languageHint') }),
+    ]);
+  }
+
+  /** Start at sign-in: one switch for the user, though it is Light that starts. */
+  function startupSection() {
+    if (autostart === null) return null;
+    const input = el('input', { id: 'prefs-autostart', type: 'checkbox', role: 'switch', checked: autostart, 'aria-describedby': 'prefs-autostart-hint' });
+    input.addEventListener('change', async () => {
+      input.disabled = true;
+      try { await bridge.setAutostart(input.checked); autostart = input.checked; onAutostart(autostart); }
+      catch (error) { input.checked = autostart; notify(errorText(t, error)); }
+      finally { input.disabled = false; }
+    });
+    return el('section', { class: 'prefs-section', 'aria-labelledby': 'prefs-startup-title' }, [
+      el('h3', { id: 'prefs-startup-title', text: t('prefs.startupTitle') }),
+      el('label', { class: 'check', for: 'prefs-autostart' }, [input, el('span', { text: t('prefs.autostart') })]),
+      el('p', { id: 'prefs-autostart-hint', class: 'hint', text: t('prefs.autostartHint') }),
     ]);
   }
 
@@ -171,7 +192,7 @@ export function createPreferences({ t, bridge, onLanguage, notify }) {
     const close = el('button', { type: 'button', class: 'icon-button dialog-close', title: t('dialog.close'), 'aria-label': t('dialog.close'), onclick: () => dialog.close() }, [icon(ICONS.close, 16)]);
     dialog.replaceChildren(
       el('div', { class: 'dialog-head' }, [el('h2', { id: 'prefs-title', text: t('prefs.title') }), close]),
-      el('div', { class: 'dialog-body' }, [languageField(), audioSection(), debugSection(), logsSection(), sensorsSection()]),
+      el('div', { class: 'dialog-body' }, [languageField(), startupSection(), audioSection(), debugSection(), logsSection(), sensorsSection()]),
       el('div', { class: 'dialog-actions' }, [el('button', { type: 'button', class: 'primary-button', text: t('common.done'), onclick: () => dialog.close() })]),
     );
     if (focused) dialog.querySelector(`#${focused}`)?.focus();
@@ -186,6 +207,7 @@ export function createPreferences({ t, bridge, onLanguage, notify }) {
       notify(errorText(t, e));
       return;
     }
+    autostart = await bridge.getAutostart().catch(() => null);
     const opener = document.activeElement;
     sensorError = null;
     typedHost = null;

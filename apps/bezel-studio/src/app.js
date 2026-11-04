@@ -1548,7 +1548,7 @@ function setLocale(next) {
   renderNow();
 }
 
-const preferences = createPreferences({ t, bridge, onLanguage: setLocale, notify: toast });
+const preferences = createPreferences({ t, bridge, onLanguage: setLocale, onAutostart: (on) => { state.autostart = on; renderScreenSelect(); }, notify: toast });
 const profiles = createProfilesDialog({ t, bridge, notify: toast, pickers });
 $('theme-profiles').addEventListener('click', () => profiles.open());
 const openRequestedProfiles = async () => { if (await bridge.profilesRequested()) await profiles.open(); };

@@ -7,6 +7,11 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Studio
+- **Preferences** has a **Startup** switch again: *Start Bezel Evo when I sign
+  in to Windows*. It is the same setting as the Setup checkbox and the one in
+  Screen › Settings, so the three always agree.
+
 ## [0.2.20] - 2026-11-04
 
 0.2.19 was a local build; this entry and the one below cover it.

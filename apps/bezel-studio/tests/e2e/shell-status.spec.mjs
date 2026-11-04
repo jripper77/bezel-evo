@@ -1,7 +1,7 @@
 // T-9b (D-2026-10-20-studio-ux-v2-11, boards MainNew and StatusBarNew): the
 // save state beside the theme's name, ⋯ with the version, the statusbar's
 // left side and the active profile in the screen chip.
-import { test, expect, watchErrors, expectAccessible, clickAddWidget } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openPreferences } from './helpers.mjs';
 
 test('the save state sits under the theme name and ⋯ holds the preferences and the version', async ({ page, t }) => {
   const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
@@ -61,4 +61,19 @@ test('the screen chip shows the profile the engine has active, and nothing witho
   // opening, without waiting for another device or profile refresh.
   expect(await popover.textContent()).toContain(t('shell.profileActive', { name: 'Gioco', mode: t('shell.profileManual') }));
   await expectAccessible(page); expect(errors).toEqual([]);
+});
+
+test('Preferences start Bezel at sign-in, the same switch as Screen › Settings', async ({ page, t }) => {
+  const errors = watchErrors(page); await page.goto('/index.html?demo=turing88');
+  await openPreferences(page, t);
+  const dialog = page.getByRole('dialog', { name: t('prefs.title') });
+  const toggle = dialog.getByRole('switch', { name: t('prefs.autostart') });
+  await expect(toggle).not.toBeChecked();
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: t('common.done') }).click();
+  await openPreferences(page, t);
+  await expect(page.getByRole('dialog', { name: t('prefs.title') }).getByRole('switch', { name: t('prefs.autostart') })).toBeChecked();
+  expect(errors).toEqual([]);
 });
