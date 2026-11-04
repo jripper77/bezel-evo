@@ -17,6 +17,11 @@ appearance and is the default for existing themes.
 - **Modern dial** (ring): inset arc, outer scale marks and an optional outlined
   endpoint marker. Arc colors, range, direction and value transitions still apply.
 - **Rounded bars** (graph): rounded historical columns with adjustable spacing.
+- **Pixel bars** (graph): each column is a stack of square cells, as wide as
+  a bar and as far apart as the bars; **Thickness** and **Spacing** set both.
+  A cell lights completely or not at all. **Show unlit cells** draws the empty
+  cells in a colour of your choice; switched off, only lit cells are drawn.
+  Pixel bars also work in a mirrored graph.
 - **Mirrored graph**: the primary source above a central gap and a separately
   selected lower source below it. Choose the lower source and color in Data.
   This works with lines, filled areas or bars; the lower source is not a

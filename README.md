@@ -24,28 +24,21 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.18
+## What's new in 0.2.20
 
-The first published release since 0.2.15; local builds 0.2.16 and 0.2.17 are
-included. See the [changelog](CHANGELOG.md) for the complete history.
+The first published release since 0.2.18; local build 0.2.19 is included. See
+the [changelog](CHANGELOG.md) for the complete history.
 
-- **A neon audio spectrum.** Glowing mirrored bars that fade towards their
-  tips, crossed by thin waves that swell with the music. A gradient across the
-  widget colours it like a rainbow.
-- **LEDs and peaks.** LED blocks can show their unlit LEDs in a colour of your
-  choice, and peak caps hold for as long as you choose while the bars fall.
-- **A pixel dancer.** A robot, a kid with headphones or a cat dances to the
-  beat of the bass instead of bars.
-- **Long player titles scroll.** A title or artist too long for its box can
-  shrink, end with an ellipsis or scroll, each line on its own.
-- **Two more Pixel templates.** **Pixel V2** (system, game FPS, weather) and
-  **Pixel V2 Music** (cover, LED spectrum, timeline, dancing cat) for 1920×480
-  screens.
-- **Pixel-art weather and arranged weather text.** Pixel-art weather icons,
-  and the city, temperature and condition can each be hidden, moved and styled.
-- **Livelier profile transitions.** New **Iris**, **TV** and **Pixels** covers,
-  and a livelier curtain, wipe, blinds and mosaic.
-- **A quiet sign-in.** Light starts at sign-in without a PowerShell window.
+- **Pixel bar graphs.** Graph columns made of square cells, for one sensor or
+  a mirrored pair such as download and upload, with optional unlit cells in a
+  colour of your choice.
+- **Smooth automatic scaling.** A graph's scale glides with the scroll instead
+  of jumping when a peak arrives or leaves, and new bars are never cut off.
+- **Light in the tray.** The tray menu shows whether Light is on, each screen
+  with its theme and the profile in use, and **Live on the screen** switches
+  the screens to the Bezel logo until you turn it back on.
+- **A simpler setup.** The three setup options are checked by default.
+
 ## A new Studio
 
 Studio has been redesigned from the ground up, in dark and light.
@@ -88,7 +81,7 @@ Studio has been redesigned from the ground up, in dark and light.
   fan RPM or another reading, with adjustable visual speed, inertia and direction.
   Zero or missing readings slow them to a stop, also inside cards and groups.
 - **Native visualization presets.** Block matrices, pixel arcs, modern dials,
-  rounded bars and mirrored two-sensor graphs. [See the styles](docs/user/visualizations.md).
+  rounded or pixel bars and mirrored two-sensor graphs. [See the styles](docs/user/visualizations.md).
 - **Graphs that scroll smoothly.** Line, area and bar histories move between
   real samples, up to 50 fps where rendering and the display allow. Each screen
   follows its own output pace. Sampling stays unchanged; scrolling uses up to

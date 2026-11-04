@@ -7,6 +7,22 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.20] - 2026-11-04
+
+0.2.19 was a local build; this entry and the one below cover it.
+
+### Widgets
+- New **Pixel** bar style for graphs: each column is a stack of square cells,
+  one bar wide and as far apart as the bars. It works with one series and with
+  mirrored two-sensor graphs. **Show unlit cells** draws the empty cells in a
+  colour of your choice, so the graph reads as a grid.
+
+### Fixes
+- Automatic graph scaling no longer jumps when a new sample arrives or a peak
+  leaves the window: the scale glides with the scroll. Entering and leaving
+  bars grow and settle with it, so a new peak is never drawn cut off against
+  the old scale.
+
 ## [0.2.19] - 2026-11-01
 
 ### Light
