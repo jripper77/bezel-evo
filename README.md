@@ -24,10 +24,15 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.20
+## What's new in 0.2.21
 
-The first published release since 0.2.18; local build 0.2.19 is included. See
-the [changelog](CHANGELOG.md) for the complete history.
+See the [changelog](CHANGELOG.md) for the complete history.
+
+- **Start with Windows, from the Preferences.** The switch that starts Bezel
+  at sign-in is back in **Preferences › Startup**. It is the same setting as
+  the Setup checkbox and the one in the screen panel, so all three agree.
+
+### In 0.2.20
 
 - **Pixel bar graphs.** Graph columns made of square cells, for one sensor or
   a mirrored pair such as download and upload, with optional unlit cells in a
@@ -164,9 +169,10 @@ So opening and closing Studio is seamless: **no redraw, graphs keep their
 history, a video keeps playing, the picture stays fluid.** Close Studio without
 saving and the screen goes back to the saved theme, still without starting
 over. Studio talks to Light over a local channel that only your Windows user
-can open; if Light cannot run, Studio drives the screens itself. **Start with
-the computer**, in Studio's screen panel, starts Light at sign-in: the same
-option Setup offers, so either place turns it on or off.
+can open; if Light cannot run, Studio drives the screens itself. **Start Bezel
+Evo when I sign in to Windows**, in Studio's Preferences (also in the screen
+panel), starts Light at sign-in: the same option Setup offers, so any of them
+turns it on or off.
 
 ## And everything else
 

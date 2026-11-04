@@ -15,7 +15,8 @@ With the portable ZIP, double-click `start-light.cmd` to start Light; the
 [Windows packaging guide](../../packaging/windows/README.md) has the command that
 adds it to sign-in.
 
-**Screen → Settings → Start with the computer** in Studio is the same option:
+**Preferences → Startup → Start Bezel Evo when I sign in to Windows** in Studio
+(also **Screen → Settings → Start with the computer**) is the same option:
 turning it on or off there does the same as the Setup checkbox. Studio itself
 does not start at sign-in; an older Studio entry that did is switched to Light
 the next time Studio opens.
