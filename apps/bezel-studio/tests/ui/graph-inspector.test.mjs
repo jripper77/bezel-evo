@@ -52,3 +52,22 @@ test('bar thickness is opt-in, centered, and independent of old line widths', ()
   rects.length = 0; drawVisualization(ctx, element, 0, [1, .5, 0, .75], []);
   assert.deepEqual(rects.map(r => r[2]), [22, 22, 22]);
 });
+
+test('pixel bars switch with the other bar shapes and the demo lights whole cells', () => {
+  let e = { frame: { x: 0, y: 0, width: 40, height: 40 }, kind: { type: 'graph', style: 'line', history: 2, lineWidth: 2, color: '#ffffffff' } };
+  e = merge(e, graphStylePatch(e, 'pixel'));
+  assert.equal(graphStyleOf(e), 'pixel'); assert.equal(e.kind.style, 'bars');
+  e = merge(e, graphSeriesPatch(e, 'mirrored'));
+  assert.equal(graphStyleOf(e), 'pixel'); assert.equal(graphSeriesOf(e), 'mirrored');
+  e = merge(e, graphSeriesPatch(e, 'single'));
+  e = merge(e, graphStylePatch(e, 'rounded'));
+  assert.equal(graphStyleOf(e), 'rounded'); assert.equal(e.visualization.pixelBars, false);
+  e = merge(e, graphStylePatch(e, 'pixel'));
+  e.visualization.barWidth = 10;
+  const cells = [], ctx = { beginPath() {}, roundRect(...r) { cells.push([r[0], r[1], this.fillStyle]); }, fill() {} };
+  drawVisualization(ctx, e, 0, [1, .5], []);
+  assert.deepEqual(cells, [[5, 30, '#ffffffff'], [5, 10, '#ffffffff'], [25, 30, '#ffffffff']]);
+  cells.length = 0; e.visualization.unlitColor = '#333333ff';
+  drawVisualization(ctx, e, 0, [1, .5], []);
+  assert.deepEqual(cells.at(-1), [25, 10, '#333333ff']);
+});

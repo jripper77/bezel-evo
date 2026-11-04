@@ -412,6 +412,12 @@ pub struct VisualizationDto {
     /// Rounded bars independently of the mirrored-series choice.
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     pub rounded_bars: bool,
+    /// Graph bars built from square cells.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub pixel_bars: bool,
+    /// Colour of the unlit cells of pixel bars; absent leaves them out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unlit_color: Option<String>,
     /// Distance between mirrored series; absent keeps the original two pixels.
     #[serde(
         default = "series_gap_default",
@@ -442,6 +448,8 @@ impl Default for VisualizationDto {
         Self {
             bar_width: None,
             rounded_bars: true,
+            pixel_bars: false,
+            unlit_color: None,
             series_gap: 2.,
             style: "matrix".into(),
             columns: 16,
@@ -468,6 +476,8 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
     let v = Visualization {
         bar_width: d.bar_width,
         rounded_bars: d.rounded_bars,
+        pixel_bars: d.pixel_bars,
+        unlit_color: d.unlit_color.as_deref().map(color).transpose()?,
         series_gap: d.series_gap,
         style,
         columns: d.columns,
@@ -489,6 +499,8 @@ fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> Vi
     VisualizationDto {
         bar_width: v.bar_width,
         rounded_bars: v.rounded_bars,
+        pixel_bars: v.pixel_bars,
+        unlit_color: v.unlit_color.map(to_hex),
         series_gap: v.series_gap,
         style: match v.style {
             VisualStyle::Matrix => "matrix",
@@ -571,6 +583,19 @@ mod graph_options_tests {
         }
         assert!(original.get("roundedBars").is_none());
         assert!(original.get("seriesGap").is_none());
+        assert!(original.get("pixelBars").is_none());
+        assert!(original.get("unlitColor").is_none());
+        let mut pixel = legacy.clone();
+        pixel.pixel_bars = true;
+        pixel.unlit_color = Some("#2a2a2aff".into());
+        let native = visualization(&pixel).unwrap();
+        assert!(native.pixel_bars);
+        assert_eq!(native.unlit_color, Some(Rgba::opaque(42, 42, 42)));
+        let written = serde_json::to_value(visualization_dto(&native)).unwrap();
+        assert_eq!(written["pixelBars"], true);
+        assert_eq!(written["unlitColor"], "#2a2a2aff");
+        pixel.unlit_color = Some("grey".into());
+        assert!(visualization(&pixel).is_err());
         for gap in [-1., 33., f32::NAN] {
             let mut dto = legacy.clone();
             dto.series_gap = gap;

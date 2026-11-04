@@ -1,8 +1,8 @@
 import { describeSections } from './sections.js';
-import { graphSeriesOf, graphStyleOf, graphSeriesPatch, graphStylePatch, graphBarWidth, graphThicknessPatch } from '../../graph-inspector.js';
+import { GRAPH_BAR_STYLES, UNLIT_DEFAULT, graphSeriesOf, graphStyleOf, graphSeriesPatch, graphStylePatch, graphBarWidth, graphThicknessPatch } from '../../graph-inspector.js';
 // Existing graph controls, isolated from inspector navigation.
 import { el, svgEl as node } from '../dom.js';
-import { chipButton, detailsField, fieldGrid, numberField, iconButton, iconChoice, propertySection as section, segmented, selectField, sentence } from '../fields.js';
+import { chipButton, detailsField, fieldGrid, numberField, iconButton, iconChoice, propertySection as section, segmented, selectField, sentence, toggleField } from '../fields.js';
 import { joinColor, splitColor } from '../../color-math.js';
 import { sentenceParts } from '../../sentence.js';
 import { DURATION_UNITS, INTERVAL_UNITS, TIME_UNITS, graphRuler, graphSentence, graphTimingPatch, graphWindowRange, quickDurations } from '../../inspector-helpers.js';
@@ -91,18 +91,22 @@ export function panels(ctx) {
       graphWindow(e),
     ];
     // Look (artboard GraphLook): the style, the color, the fill of an area and the line.
-    const style = (value, text) => ({ text, art: ART[value === 'rounded' ? 'bars' : value], pressed: graphStyleOf(e) === value, onClick: () => graphStyleOf(e) !== value && update(e.id, graphStylePatch(e, value)) });
+    const style = (value, text) => ({ text, art: ART[value === 'rounded' ? 'bars' : value === 'pixel' ? 'pixelBars' : value], pressed: graphStyleOf(e) === value, onClick: () => graphStyleOf(e) !== value && update(e.id, graphStylePatch(e, value)) });
     const { rgb } = splitColor(k.color);
     const fillAlpha = typeof k.fill === 'string' ? splitColor(k.fill).alpha : 25;
     const look = [
       section('style', t('inspector.style'), [
-        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars')), style('rounded', t('insp.graphRounded'))]),
+        optionTiles(t('inspector.style'), [style('line', t('graph.line')), style('area', t('graph.area')), style('bars', t('graph.bars')), style('rounded', t('insp.graphRounded')), style('pixel', t('insp.graphPixel'))]),
         fieldGrid([el('div', { class: 'bound-field' }, [numberField(t('insp.thickness'), k.style === 'bars' ? Math.round(graphBarWidth(e) * 100) / 100 : k.lineWidth, width => update(e.id, graphThicknessPatch(e, width)), { min: 1, step: 0.5, unit: 'px', compact: true }), k.style === 'bars' && e.visualization?.barWidth != null && iconButton(t('insp.graphAutoWidth'), ICONS.undo, () => update(e.id, graphThicknessPatch(e, null)))]),
         graphSeriesOf(e) === 'mirrored' && numberField(t('insp.graphSeriesGap'), e.visualization.seriesGap ?? 2, seriesGap => update(e.id, { visualization: { seriesGap: Math.min(32, Math.max(0, seriesGap)) } }), { min: 0, max: 32, unit: 'px', compact: true }),
         ].filter(Boolean)),
-        e.visualization && e.visualization.barWidth == null && ['rounded', 'bars'].includes(graphStyleOf(e)) && numberField(t('visual.gap'), e.visualization.gap, gap => update(e.id, { visualization: { gap: Math.max(0, Math.min(32, gap)) } }), { min: 0, max: 32, unit: 'px' }),
+        e.visualization && e.visualization.barWidth == null && GRAPH_BAR_STYLES.includes(graphStyleOf(e)) && numberField(t('visual.gap'), e.visualization.gap, gap => update(e.id, { visualization: { gap: Math.max(0, Math.min(32, gap)) } }), { min: 0, max: 32, unit: 'px' }),
       ]),
       section('color', t('inspector.color'), [colorField(t('inspector.color'), k.color, (v) => update(e.id, { kind: { color: v } }))]),
+      graphStyleOf(e) === 'pixel' ? section('unlit', t('insp.graphUnlit'), [
+        toggleField(t('insp.graphUnlitShow'), e.visualization.unlitColor != null, show => update(e.id, { visualization: { unlitColor: show ? UNLIT_DEFAULT : null } })),
+        e.visualization.unlitColor != null && colorField(t('insp.graphUnlit'), e.visualization.unlitColor, unlitColor => update(e.id, { visualization: { unlitColor } })),
+      ].filter(Boolean)) : null,
       k.style === 'area' ? section('fill', t('insp.areaFill'), [fieldGrid([
         numberField(t('insp.areaFill'), fillAlpha, value => update(e.id, { kind: { fill: joinColor(rgb, Math.max(0, Math.min(100, value))) } }), { min: 0, max: 100, unit: '%', iconName: 'graph-single', compact: true }),
       ])], { heading: false }) : null,

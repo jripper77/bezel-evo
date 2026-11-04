@@ -1,15 +1,21 @@
 import { visualization } from './visualization.js';
 
 export const graphSeriesOf = element => element.visualization?.style === 'mirrored' ? 'mirrored' : 'single';
-export const graphStyleOf = element => element.kind.style === 'bars' && ['rounded', 'mirrored'].includes(element.visualization?.style) && element.visualization.roundedBars !== false ? 'rounded' : element.kind.style;
+const barShapeOf = visual => visual?.pixelBars ? 'pixel' : visual?.roundedBars !== false ? 'rounded' : 'bars';
+export const graphStyleOf = element => element.kind.style === 'bars' && ['rounded', 'mirrored'].includes(element.visualization?.style) ? barShapeOf(element.visualization) : element.kind.style;
+/** Bar styles drawn as bars: plain, rounded or square cells. */
+export const GRAPH_BAR_STYLES = Object.freeze(['bars', 'rounded', 'pixel']);
+/** The default colour of the unlit cells when they are switched on. */
+export const UNLIT_DEFAULT = '#ffffff1f';
 
 export function graphSeriesPatch(element, series) {
-  return { visualization: { ...visualization(series === 'mirrored' ? 'mirrored' : 'rounded', element.visualization ?? {}), roundedBars: graphStyleOf(element) === 'rounded' } };
+  const style = graphStyleOf(element);
+  return { visualization: { ...visualization(series === 'mirrored' ? 'mirrored' : 'rounded', element.visualization ?? {}), roundedBars: style === 'rounded', pixelBars: style === 'pixel' } };
 }
 
 export function graphStylePatch(element, style) {
-  return { kind: { style: style === 'rounded' ? 'bars' : style }, visualization: {
-    ...visualization(graphSeriesOf(element) === 'mirrored' ? 'mirrored' : 'rounded', element.visualization ?? {}), roundedBars: style === 'rounded',
+  return { kind: { style: GRAPH_BAR_STYLES.includes(style) ? 'bars' : style }, visualization: {
+    ...visualization(graphSeriesOf(element) === 'mirrored' ? 'mirrored' : 'rounded', element.visualization ?? {}), roundedBars: style === 'rounded', pixelBars: style === 'pixel',
   } };
 }
 

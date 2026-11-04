@@ -23,6 +23,10 @@ pub struct Visualization {
     pub bar_width: Option<f32>,
     /// Rounded bars in mirrored graphs. True preserves the original preset.
     pub rounded_bars: bool,
+    /// Graph bars built from square cells, one cell per bar width.
+    pub pixel_bars: bool,
+    /// Colour of the unlit cells of pixel bars; absent leaves them out.
+    pub unlit_color: Option<Rgba>,
     /// Space between mirrored series, pixels (0..=32); legacy spacing is 2.
     pub series_gap: f32,
     /// Active preset; only applicable to its corresponding widget kind.
@@ -59,6 +63,8 @@ impl Visualization {
         Self {
             bar_width: None,
             rounded_bars: true,
+            pixel_bars: false,
+            unlit_color: None,
             series_gap: 2.,
             style,
             columns: 16,

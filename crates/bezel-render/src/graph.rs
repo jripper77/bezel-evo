@@ -17,6 +17,8 @@ pub(crate) struct GraphSpec<'a> {
     pub bar_width: Option<f32>,
     /// Rounded bar geometry.
     pub rounded: bool,
+    /// Bars of square cells, and the colour of their unlit cells.
+    pub pixel: Option<PixelCells>,
     /// Explicit bar gap, or original proportional spacing.
     pub gap: Option<f32>,
     /// Draw from the top baseline downwards for a lower series.
@@ -41,6 +43,15 @@ pub(crate) struct GraphSpec<'a> {
     pub max: f64,
 }
 
+/// Square cells of pixel bars.
+#[derive(Clone, Copy)]
+pub(crate) struct PixelCells {
+    /// Unlit cells; absent leaves them out.
+    pub unlit: Option<Rgba>,
+    /// Cell corner radius.
+    pub radius: f32,
+}
+
 /// Alpha of the default area fill.
 const AREA_ALPHA: u8 = 72;
 
@@ -60,6 +71,25 @@ pub(crate) fn value_range(values: &[Option<f64>], spec: &GraphSpec<'_>) -> Optio
         (hi.abs() * 0.1).max(1.0)
     };
     Some((lo - margin, hi + margin))
+}
+
+/// While a sample scrolls in, the visible window slides from `values[..n-1]`
+/// to `values[1..]`: the range glides between the two windows' ranges with
+/// the scroll, so autoscaling never snaps. Linear on purpose: the entering
+/// and leaving edges move linearly too, so every visible point stays inside.
+pub(crate) fn scrolling_range(
+    values: &[Option<f64>],
+    spec: &GraphSpec<'_>,
+    range: impl Fn(&[Option<f64>]) -> Option<(f64, f64)>,
+) -> Option<(f64, f64)> {
+    if spec.scroll <= 0. || values.len() < 2 {
+        return range(values);
+    }
+    let t = f64::from(1. - spec.scroll.min(1.));
+    match (range(&values[..values.len() - 1]), range(&values[1..])) {
+        (Some(a), Some(b)) => Some((a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t)),
+        (a, b) => a.or(b),
+    }
 }
 
 /// Canvas points of each unbroken run of samples.
@@ -137,11 +167,14 @@ pub(crate) fn draw(
     values: &[Option<f64>],
     spec: &GraphSpec<'_>,
 ) {
-    let Some(range) = value_range(values, spec) else {
+    let Some(range) = scrolling_range(values, spec, |v| value_range(v, spec)) else {
         return;
     };
     match spec.style {
-        GraphStyle::Bars => draw_bars(layer, area, values, spec, range),
+        GraphStyle::Bars => match spec.pixel {
+            Some(cells) => draw_pixel_bars(layer, area, values, spec, range, cells),
+            None => draw_bars(layer, area, values, spec, range),
+        },
         GraphStyle::Line => draw_lines(layer, &runs(area, values, spec, range), spec),
         GraphStyle::Area => {
             let runs = runs(area, values, spec, range);
@@ -212,6 +245,102 @@ fn draw_area(layer: &mut Layer<'_>, area: BoxF, runs: &[Vec<(f32, f32)>], spec: 
     }
 }
 
+/// While scrolling, the entering bar grows from its neighbour's height and
+/// the leaving one settles towards its neighbour's, just as a line's clipped
+/// edges do: the gliding range then always holds every visible bar, so none
+/// is drawn against the old scale and cut off.
+fn gliding_edges(values: &[Option<f64>], scroll: f32) -> Vec<Option<f64>> {
+    let mut out = values.to_vec();
+    let n = values.len();
+    if scroll <= 0. || n < 2 {
+        return out;
+    }
+    let t = f64::from(1. - scroll.min(1.));
+    let towards = |from: Option<f64>, to: Option<f64>, t: f64| match (from, to) {
+        (Some(a), Some(b)) => Some(a + (b - a) * t),
+        (_, to) => to,
+    };
+    out[n - 1] = towards(values[n - 2], values[n - 1], t);
+    if n > 2 {
+        out[0] = towards(values[1], values[0], 1. - t);
+    }
+    out
+}
+
+/// Horizontal gap between bars of `slot` width.
+fn bar_gap(spec: &GraphSpec<'_>, slot: f32) -> f32 {
+    spec.bar_width
+        .map(|width| slot - width.clamp(0., slot))
+        .unwrap_or_else(|| {
+            spec.gap
+                .unwrap_or(if slot >= 4.0 { slot * 0.2 } else { 0.0 })
+                .clamp(0., slot * 0.8)
+        })
+}
+
+/// Bars as stacks of square cells: a cell is one bar wide and the cells are
+/// as far apart as the bars. Every slot shows its unlit cells, so the graph
+/// reads as a grid even before its history fills up.
+fn draw_pixel_bars(
+    layer: &mut Layer<'_>,
+    area: BoxF,
+    values: &[Option<f64>],
+    spec: &GraphSpec<'_>,
+    range: (f64, f64),
+    cells: PixelCells,
+) {
+    let slots = usize::from(spec.history).max(1);
+    let slot = area.width / slots as f32;
+    let gap = bar_gap(spec, slot);
+    let side = slot - gap;
+    if !positive(side) {
+        return;
+    }
+    let count = ((area.height + gap) / (side + gap)).floor() as usize;
+    let radius = cells.radius.clamp(0., side / 2.);
+    let right = area.x + area.width;
+    let values = gliding_edges(values, spec.scroll);
+    let (mut lit, mut unlit) = (PathBuilder::new(), PathBuilder::new());
+    for k in 0..=slots {
+        let x = right - (k + 1) as f32 * slot + gap / 2.0 + spec.scroll * slot;
+        let left = x.max(area.x);
+        let width = (x + side).min(right) - left;
+        if !positive(width) {
+            continue;
+        }
+        let on = values
+            .len()
+            .checked_sub(k + 1)
+            .and_then(|i| values[i])
+            .and_then(|v| fraction(v, range.0, range.1))
+            .map_or(0, |f| (f * count as f64).round() as usize);
+        for c in 0..count {
+            let offset = c as f32 * (side + gap);
+            let y = if spec.reverse {
+                area.y + offset
+            } else {
+                area.y + area.height - offset - side
+            };
+            let target = if c < on {
+                &mut lit
+            } else if cells.unlit.is_some() {
+                &mut unlit
+            } else {
+                break;
+            };
+            if let Some(cell) = crate::path::rounded_rect(left, y, width, side, radius) {
+                target.push_path(&cell);
+            }
+        }
+    }
+    if let (Some(path), Some(color)) = (unlit.finish(), cells.unlit) {
+        layer.fill(&path, &solid(color));
+    }
+    if let Some(path) = lit.finish() {
+        layer.fill(&path, &solid(spec.color));
+    }
+}
+
 fn draw_bars(
     layer: &mut Layer<'_>,
     area: BoxF,
@@ -221,17 +350,11 @@ fn draw_bars(
 ) {
     let slots = usize::from(spec.history).max(1);
     let slot = area.width / slots as f32;
-    let gap = spec
-        .bar_width
-        .map(|width| slot - width.clamp(0., slot))
-        .unwrap_or_else(|| {
-            spec.gap
-                .unwrap_or(if slot >= 4.0 { slot * 0.2 } else { 0.0 })
-                .clamp(0., slot * 0.8)
-        });
+    let gap = bar_gap(spec, slot);
     let right = area.x + area.width;
     let bottom = area.y + area.height;
     let mut pb = PathBuilder::new();
+    let values = gliding_edges(values, spec.scroll);
     for (i, v) in values.iter().enumerate() {
         let Some(f) = v.and_then(|v| fraction(v, range.0, range.1)) else {
             continue;
@@ -290,6 +413,7 @@ mod tests {
         GraphSpec {
             bar_width: None,
             rounded: false,
+            pixel: None,
             gap: None,
             reverse: false,
             scroll: 0.,
@@ -369,6 +493,119 @@ mod tests {
             ..spec(false)
         };
         assert_eq!(value_range(&values, &empty), None);
+    }
+
+    #[test]
+    fn autoscale_glides_with_the_scroll_and_never_snaps_between_samples() {
+        let at = |values: &[Option<f64>], scroll: f32| {
+            let spec = GraphSpec {
+                scroll,
+                ..spec(true)
+            };
+            scrolling_range(values, &spec, |v| value_range(v, &spec)).unwrap()
+        };
+        // A peak of 100 arrives: the range starts where the old window was.
+        let before = [Some(5.), Some(10.), Some(20.), Some(30.)];
+        let arriving = [Some(10.), Some(20.), Some(30.), Some(100.)];
+        // Last frame of the previous sample vs first frame of the new one.
+        let settled = at(&before, f32::MIN_POSITIVE);
+        let start = at(&arriving, 1.);
+        assert!((settled.0 - start.0).abs() < 1e-6 && (settled.1 - start.1).abs() < 1e-6);
+        let half = at(&arriving, 0.5);
+        assert!(half.1 > settled.1 && half.1 < value_range(&arriving[1..], &spec(true)).unwrap().1);
+        assert_eq!(
+            at(&arriving[1..], 0.),
+            value_range(&arriving[1..], &spec(true)).unwrap()
+        );
+        // Without motion the range is still the plain window's.
+        assert_eq!(at(&before, 0.), value_range(&before, &spec(true)).unwrap());
+    }
+
+    #[test]
+    fn scrolling_bars_grow_in_and_settle_out_inside_the_gliding_range() {
+        let values = [Some(5.), Some(10.), Some(20.), Some(1000.)];
+        assert_eq!(
+            gliding_edges(&values, 1.),
+            vec![Some(5.), Some(10.), Some(20.), Some(20.)]
+        );
+        assert_eq!(
+            gliding_edges(&values, 0.5),
+            vec![Some(7.5), Some(10.), Some(20.), Some(510.)]
+        );
+        assert_eq!(gliding_edges(&values, 0.), values.to_vec());
+        for scroll in [1., 0.75, 0.5, 0.25, 0.01] {
+            let spec = GraphSpec {
+                scroll,
+                ..spec(true)
+            };
+            let (lo, hi) = scrolling_range(&values, &spec, |v| value_range(v, &spec)).unwrap();
+            assert!(
+                gliding_edges(&values, scroll)
+                    .iter()
+                    .flatten()
+                    .all(|v| (lo..=hi).contains(v)),
+                "every visible bar fits at scroll {scroll}"
+            );
+        }
+    }
+
+    #[test]
+    fn pixel_bars_light_whole_square_cells_and_show_unlit_ones_only_with_a_colour() {
+        let grey = Rgba::opaque(40, 40, 40);
+        let render = |unlit: Option<Rgba>| {
+            let mut pixels = tiny_skia::Pixmap::new(40, 40).unwrap();
+            let mut layer = Layer {
+                pixmap: pixels.as_mut(),
+                x: 0,
+                y: 0,
+            };
+            let spec = GraphSpec {
+                bar_width: Some(10.),
+                history: 2,
+                style: GraphStyle::Bars,
+                pixel: Some(PixelCells { unlit, radius: 0. }),
+                ..spec(false)
+            };
+            // Two 20px slots of 10px cells, 10px apart: two cells per bar.
+            draw(
+                &mut layer,
+                BoxF::new(0., 0., 40., 40.),
+                &[Some(100.), Some(50.)],
+                &spec,
+            );
+            pixels
+        };
+        let rgb = |p: &tiny_skia::Pixmap, x, y| {
+            let c = p.pixel(x, y).unwrap();
+            (c.red(), c.green(), c.blue(), c.alpha())
+        };
+        let pixels = render(Some(grey));
+        assert_eq!(
+            rgb(&pixels, 10, 35),
+            (255, 255, 255, 255),
+            "full bar, low cell"
+        );
+        assert_eq!(
+            rgb(&pixels, 10, 15),
+            (255, 255, 255, 255),
+            "full bar, high cell"
+        );
+        assert_eq!(
+            rgb(&pixels, 30, 35),
+            (255, 255, 255, 255),
+            "half bar, low cell"
+        );
+        assert_eq!(
+            rgb(&pixels, 30, 15),
+            (40, 40, 40, 255),
+            "half bar, unlit cell"
+        );
+        assert_eq!(
+            rgb(&pixels, 30, 25).3,
+            0,
+            "the gap between cells stays empty"
+        );
+        assert_eq!(rgb(&render(None), 30, 15).3, 0, "no colour, no unlit cells");
     }
 
     #[test]

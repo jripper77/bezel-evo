@@ -51,7 +51,14 @@ export function drawVisualization(ctx, e, fraction, points, secondaryPoints) {
       if(k.style==='bars') {
         const pitch=area.width/values.length,gap=v.barWidth == null ? Math.min(v.gap,pitch*.8) : pitch-Math.max(0,Math.min(v.barWidth,pitch));
         const radius = v.roundedBars !== false ? (pitch-gap)/2 : 0;
-        values.forEach((value,i)=>box(area.x+i*pitch+gap/2,reverse?base:base-value*area.height,pitch-gap,value*area.height,radius,color));
+        if(v.pixelBars){
+          // Square cells one bar wide, as far apart as the bars (native graph).
+          const side=pitch-gap,count=side>0?Math.floor((area.height+gap)/(side+gap)):0,corner=Math.min(v.radius ?? 2,side/2);
+          values.forEach((value,i)=>{const on=Math.round(value*count);for(let c=0;c<count;c++){
+            if(c>=on&&!v.unlitColor)break;
+            const off=c*(side+gap);box(area.x+i*pitch+gap/2,reverse?area.y+off:area.y+area.height-off-side,side,side,corner,c<on?color:v.unlitColor);
+          }});
+        } else values.forEach((value,i)=>box(area.x+i*pitch+gap/2,reverse?base:base-value*area.height,pitch-gap,value*area.height,radius,color));
       } else {
         if(k.style==='area'){ctx.globalAlpha*=.28;ctx.beginPath();ctx.moveTo(area.x,base);coords.forEach(([x,y])=>ctx.lineTo(x,y));ctx.lineTo(area.x+area.width,base);ctx.closePath();ctx.fill();ctx.globalAlpha/=.28;}
         ctx.beginPath();coords.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();

@@ -7,6 +7,7 @@ export const ART = Object.freeze({
   line: ['M2 17l5-4 4 2 5-8 6 4'],
   area: ['M2 17l5-4 4 2 5-8 6 4v8H2z'],
   bars: ['M4 21v-5', 'M9 21V9', 'M14 21v-7', 'M19 21V5'],
+  pixelBars: ['M3 18h3v3H3z', 'M3 13h3v3H3z', 'M8 18h3v3H8z', 'M8 13h3v3H8z', 'M8 8h3v3H8z', 'M13 18h3v3h-3z', 'M18 18h3v3h-3z', 'M18 13h3v3h-3z', 'M18 8h3v3h-3z', 'M18 3h3v3h-3z'],
   neon: ['M5 9v6', 'M9 5v14', 'M15 7v10', 'M19 10v4', 'M2 12c3.3-5 6.7 5 10 0s6.7 5 10 0'],
   cover: ['M3 6h10v12H3z', 'M16 9h5', 'M16 14h3'],
   progress: ['M3 11h18', 'M3 11h8', 'M3 17h3', 'M18 17h3'],
