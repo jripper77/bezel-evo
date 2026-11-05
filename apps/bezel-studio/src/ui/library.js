@@ -733,7 +733,7 @@ export function createLibrary({ store, canvas, stage, t, pickers, locale = () =>
         el('span', { class: 'card-meta' }, [
           el('span', { class: 'badge' }, [icon(ICONS[axis], 14), t(`axis.${axis}`)]),
           th.bundled && el('span', { class: 'tag', text: t('themes.bundled') }),
-          ...themeUses(th, gallery.overview()).filter(use => ['screen', 'profile'].includes(use.kind)).map(use => el('span', { class: 'badge', text: use.kind === 'screen' ? t('themesPanel.onScreen') : use.name })),
+          ...themeUses(th, gallery.overview()).map(use => el('span', { class: 'badge', dataset: { use: use.kind }, text: use.kind === 'screen' ? t('themesPanel.onScreen') : use.kind === 'base' ? t('themesPanel.baseBadge') : use.name })),
           missingSensors(th, catalogReady ? catalog : null).length > 0 && el('span', { class: 'badge theme-missing', text: t('themesPanel.missing') }),
         ]),
       ]),

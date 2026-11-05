@@ -1112,6 +1112,8 @@ export default {
   "unsaved.body": "“{name}” ha modifiche non ancora salvate. Se le scarti, vanno perse.",
   "unsaved.discard": "Scarta",
   "unsaved.title": "Salvare le modifiche?",
+  "lightSave.title": "Aggiornare anche Light?",
+  "lightSave.body": "“{name}” è in uso su Light ({uses}). Salvando aggiorni anche quello che mostra lo schermo.",
   "weight.100": "Thin",
   "weight.200": "Extra light",
   "weight.300": "Light",

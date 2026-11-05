@@ -43,6 +43,24 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
     message.textContent = count ? t('themesPanel.trialStarted') : t('profileRules.ui.noLiveScreen');
     await facts();
   }
+  /** Makes the theme Light's on the selected screen: in a profile, or as its base theme. */
+  async function useOnLight(entry) {
+    const current = screen();
+    if (!current) { message.textContent = t('themesPanel.noScreenUse'); return; }
+    const name = overview?.displays.find(display => display.key === current.key)?.name ?? current.key;
+    const profiles = overview?.config.profiles ?? [];
+    const active = profiles.some(profile => profile.id === overview?.status?.active?.profile) ? overview.status.active.profile : 'base';
+    const answer = !profiles.length ? 'base' : await askChoice(t, {
+      title: t('themesPanel.useTitle', { name: entry.name }), body: t('themesPanel.useBody', { screen: name }),
+      actions: [{ id: 'base', label: t('themesPanel.useBase') }, ...profiles.map(profile => ({ id: profile.id, label: t('themesPanel.useProfile', { name: profile.name }) }))]
+        .map(action => ({ ...action, kind: action.id === active ? 'primary' : undefined })),
+      initial: active,
+    });
+    if (answer === 'cancel') return;
+    await bridge.useOnLight(entry.location, current.key, answer === 'base' ? null : answer);
+    message.textContent = t('themesPanel.usedOnLight', { name: entry.name, screen: name });
+    await facts(); onFacts();
+  }
   // Where a theme is in use, the editor's open document included.
   const used = entry => [...(editing() === entry.location ? [{ kind: 'editor', name: '' }] : []), ...themeUses(entry, overview)];
   /** Deletes after one confirmation, even in use: the logo takes its place there. */
@@ -63,6 +81,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
   function menu(entry, anchor) {
     openMenuAt(anchor, { label: entry.name, items: [
       { label: t('themesPanel.openEditor'), run: () => { dialog.close(); openTheme(entry); } },
+      { label: t('themesPanel.useOnLight'), run: () => void run(() => useOnLight(entry)) },
       { label: t('common.duplicate'), run: () => void run(() => duplicateTheme(entry)) },
       { label: t('themesPanel.export'), run: () => void run(() => exportTheme(entry)) },
       !entry.bundled && { label: t('storage.deleteAction'), run: () => void run(() => remove(entry)) },
@@ -99,6 +118,7 @@ export function createThemesDialog({ root, t, openTheme, duplicateTheme, bridge,
       ]),
       el('div', { class: 'gallery-actions' }, [
         action(t('themesPanel.openEditor'), () => { dialog.close(); openTheme(entry); }, { class: 'primary-button' }),
+        action(t('themesPanel.useOnLight'), () => useOnLight(entry), { dataset: { action: 'use-on-light' } }),
         iconChoice(t('themesPanel.details'), null, [
           ['duplicate', t('common.duplicate'), 'copy', { disabled: busy }],
           ['export', t('themesPanel.export'), 'download', { disabled: busy, text: t('themesPanel.exportShort') }],

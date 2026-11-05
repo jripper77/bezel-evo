@@ -1112,6 +1112,8 @@ export default {
   'unsaved.body': '“{name}” has changes that are not saved yet. If you discard them, they are lost.',
   'unsaved.discard': 'Discard',
   'unsaved.title': 'Save your changes?',
+  'lightSave.title': 'Update Light too?',
+  'lightSave.body': '“{name}” is in use on Light ({uses}). Saving also updates what the screen shows.',
   'weight.100': 'Thin',
   'weight.200': 'Extra light',
   'weight.300': 'Light',

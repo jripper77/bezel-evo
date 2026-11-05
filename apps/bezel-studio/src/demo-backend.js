@@ -1164,6 +1164,9 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   let themeTrial = null;
   const themeExports = new Map();
   let profileConfig = { profiles: [], automatic: true, manual: null, defaultProfile: null };
+  // Light's base theme per screen, set only by "Use on Light" (none until then:
+  // the demo screen shows the first saved theme that fits it).
+  const lightThemes = new Map();
   const systemText = DEMO_SYSTEM_TEXT;
   const cards = createCardMotion();
   const sensorMotion = createSensorMotion();
@@ -1749,16 +1752,27 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
         status.preview = { themes: { ...themeTrial.themes }, profile: themeTrial.profile, remainingSeconds: Math.ceil(themeTrial.until - seconds) };
       }
       return Promise.resolve({ status, config: structuredClone(profileConfig), displays: devices.screens.map((screen) => {
-      const current = screen.key === selectedScreen ? theme : screenDocuments.get(screen.key)?.theme;
-      const selected = saved.find((entry) => current && entry.theme.name === current.name)
-        ?? saved.find((entry) => demoFits(entry.theme).models.some((id) => screen.models.some((m) => m.id === id)));
+      const selected = saved.find((entry) => entry.location === lightThemes.get(screen.key))
+        ?? (lightThemes.has(screen.key) ? undefined
+          : saved.find((entry) => demoFits(entry.theme).models.some((id) => screen.models.some((m) => m.id === id))));
       return { key: screen.key, name: screen.models[0]?.name ?? screen.family, theme: selected?.location ?? null,
-        themeName: current?.name ?? selected?.theme.name ?? null, connected: true };
+        themeName: selected?.theme.name ?? null, connected: true };
     }) });
     },
     profilesRequested: () => Promise.resolve(false),
     onProfilesRequested: () => Promise.resolve(() => {}),
     saveProfiles: (config) => { profileConfig = structuredClone(config); return Promise.resolve(); },
+    useOnLight: (location, screen, profile = null) => {
+      if (!saved.some((entry) => entry.location === location)) return Promise.reject(Object.assign(new Error('not in library'), { code: 'notInLibrary', args: { location } }));
+      if (profile) {
+        const chosen = profileConfig.profiles.find((p) => p.id === profile);
+        if (!chosen) return Promise.reject(Object.assign(new Error('unknown profile'), { code: 'invalidInput', args: { detail: 'unknown profile' } }));
+        chosen.themes = { ...chosen.themes, [screen]: location };
+        if (lightThemes.has(screen)) return Promise.resolve();
+      }
+      lightThemes.set(screen, location);
+      return Promise.resolve();
+    },
     // No screen to cover in the demo: the request is kept for the page to read,
     // and it answers as the backend would with each demo screen live.
     tryThemes: (themes, profile = null) => {

@@ -268,3 +268,38 @@ test('the hover trash deletes after one confirmation, even the theme open in the
   await expect(page.locator('#theme-name')).toHaveValue('Bezel Evo');
   await expectAccessible(page); expect(errors).toEqual([]);
 });
+
+// D-2026-11-05-light-studio-split-3/-4: "Use on Light" makes a theme the
+// screen's base theme; saving it then asks once before updating Light.
+test('use on Light marks the base theme and saving it asks once', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await openThemes(page, t);
+  await page.locator('#theme-name').fill('Mine');
+  await page.locator('#theme-name').press('Tab');
+  await page.keyboard.press('Control+s');
+  await expect(page.locator('.theme-card strong').getByText('Mine', { exact: true })).toBeVisible();
+  await page.locator('#theme-gallery').click();
+  const dialog = page.locator('.themes-dialog');
+  const card = dialog.locator('.theme-card').filter({ has: page.locator('strong').getByText('Mine', { exact: true }) });
+  await card.click();
+  await expect(card.locator('[data-use="base"]')).toHaveCount(0);
+  await dialog.locator('.themes-gallery-detail').getByRole('button', { name: t('themesPanel.useOnLight'), exact: true }).click();
+  await expect(dialog.locator('.themes-gallery-message')).toContainText('Mine');
+  await expect(card.locator('[data-use="base"]')).toHaveText(t('themesPanel.baseBadge'));
+  await dialog.getByRole('button', { name: t('dialog.close'), exact: true }).click();
+  await page.locator('#theme-name').fill('Mine again');
+  await page.locator('#theme-name').press('Tab');
+  await page.keyboard.press('Control+s');
+  const confirm = page.locator('dialog[open]').last();
+  await expect(confirm.locator('h2')).toHaveText(t('lightSave.title'));
+  await expectAccessible(page);
+  await confirm.getByRole('button', { name: t('common.save'), exact: true }).click();
+  await expect(confirm).not.toBeVisible();
+  await expect(page.locator('.theme-card strong').getByText('Mine again', { exact: true })).toBeVisible();
+  await page.locator('#theme-name').fill('Mine once more');
+  await page.locator('#theme-name').press('Tab');
+  await page.keyboard.press('Control+s');
+  await expect(page.locator('.theme-card strong').getByText('Mine once more', { exact: true })).toBeVisible();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

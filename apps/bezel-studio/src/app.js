@@ -15,6 +15,7 @@ import { createConfirm, createStoragePanel, formatBytes, wireSubtabs } from './u
 import { applyIcons, el, icon } from './ui/dom.js';
 import { ICONS } from './ui/icons.js';
 import { askChoice } from './ui/dialog.js';
+import { themeUses } from './gallery-model.js';
 import { createPreferences } from './ui/preferences.js';
 import { createProfilesDialog } from './ui/profiles.js';
 import { createGifSearch } from './ui/gif-search.js';
@@ -1415,10 +1416,34 @@ for (const [id, target] of [['stage', 'canvas'], ['panel-media', 'media']]) {
   });
 }
 
+/** The theme location whose save into Light was confirmed, until another theme is open. */
+let lightSaveConfirmed = null;
+/**
+ * Saving a theme Light uses (base theme or any profile) updates the screen too:
+ * asked once per opened theme (D-2026-11-05-light-studio-split-4). `true` to save.
+ */
+async function confirmLightSave(location, name) {
+  if (!location || lightSaveConfirmed === location) return true;
+  // A bundled theme is saved as a copy: what Light shows does not change.
+  if (listedThemes?.find(th => th.location === location)?.bundled) return true;
+  const overview = await bridge.profiles().catch(() => null);
+  const uses = themeUses({ location }, overview).filter(use => use.kind !== 'screen');
+  if (!uses.length) return true;
+  const answer = await askChoice(t, {
+    title: t('lightSave.title'),
+    body: t('lightSave.body', { name, uses: uses.map(use => t(`themesPanel.use.${use.kind}`, { name: use.name })).join(' · ') }),
+    actions: [{ id: 'save', label: t('common.save'), kind: 'primary' }], initial: 'save',
+  });
+  if (answer !== 'save') return false;
+  lightSaveConfirmed = location;
+  return true;
+}
+
 /** Saves the theme; `true` once it is saved. */
 async function save(saveAs = false, copyName = null) {
   try {
     const theme = store.getState().theme;
+    if (!saveAs && !copyName && !(await confirmLightSave(state.location, theme.name))) return false;
     const saved = await bridge.saveTheme(copyName ? { ...theme, name: copyName } : theme, saveAs, state.location);
     if (!saved) return false;
     if (copyName) store.dispatch('setTheme', { patch: { name: copyName } });

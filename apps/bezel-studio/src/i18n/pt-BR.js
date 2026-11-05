@@ -1112,6 +1112,8 @@ export default {
   'unsaved.body': '“{name}” tem alterações que ainda não foram salvas. Se você descartar, elas se perdem.',
   'unsaved.discard': 'Descartar',
   'unsaved.title': 'Salvar as alterações?',
+  'lightSave.title': 'Atualizar o Light também?',
+  'lightSave.body': '“{name}” está em uso no Light ({uses}). Salvar também atualiza o que a tela mostra.',
   'weight.100': 'Fina',
   'weight.200': 'Extraleve',
   'weight.300': 'Leve',
