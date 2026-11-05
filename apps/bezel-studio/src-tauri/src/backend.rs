@@ -1511,8 +1511,8 @@ impl Backend {
             return Err(UiError::new(ErrorCode::InvalidInput).arg("detail", "an empty theme name"));
         }
         let (mut theme, assets) = self.store.load(&source)?;
-        theme.name = name.to_string();
-        let copy = self.library.new_location(name);
+        theme.name = self.library.unique_name(name, None);
+        let copy = self.library.new_location(&theme.name);
         self.store.save(&copy, &theme, &assets)?;
         self.library
             .entry(&copy)
@@ -1706,6 +1706,15 @@ impl Backend {
         }
         let location =
             target.unwrap_or_else(|| self.library.save_location(studio.location(), &theme.name));
+        // Two themes never share a name (D-2026-11-06-unique-theme-names-1).
+        if self.library.name_taken(&theme.name, Some(&location)) {
+            return Err(UiError::new(ErrorCode::NameTaken)
+                .arg("name", theme.name.trim())
+                .arg(
+                    "suggestion",
+                    self.library.unique_name(&theme.name, Some(&location)),
+                ));
+        }
         studio.set_theme(theme);
         if let Some(poster) = poster {
             studio.poster_taken(poster);
@@ -1769,7 +1778,11 @@ impl Backend {
                 .and_then(|k| self.settings.load().orientation_for(k))
                 .unwrap_or_else(|| default_orientation(model)),
         };
-        let theme = Theme::blank(name, model.panel, orientation);
+        let theme = Theme::blank(
+            &self.library.unique_name(name, None),
+            model.panel,
+            orientation,
+        );
         let mut studio = self.studio();
         studio.start(theme, Default::default(), None);
         Ok(ThemeDto::from(studio.theme()))
@@ -1813,6 +1826,8 @@ impl Backend {
                 report.warnings.iter().map(Into::into).collect(),
             )
         };
+        let mut theme = theme;
+        theme.name = self.library.unique_name(&theme.name, None);
         self.pause_live_for_open()?;
         let mut studio = self.studio();
         // A copy: saving writes to the user folder, not over the imported file.
@@ -2440,8 +2455,14 @@ mod tests {
         let session = f.backend.session();
         assert_eq!(session.theme.name, "Wide", "the 8.8\" starts horizontal");
         assert!(session.location.unwrap().ends_with("Wide.bezeltheme"));
-        // Saving it writes a copy in the user folder, never over the bundled file.
-        let saved = f.backend.save(&session.theme, None).unwrap();
+        // Saving it writes a copy in the user folder, never over the bundled
+        // file, under a name of its own (D-2026-11-06-unique-theme-names-1).
+        let error = f.backend.save(&session.theme, None).unwrap_err();
+        assert_eq!(error.code(), "nameTaken", "{error}");
+        assert_eq!(error.value("suggestion"), Some("Wide 2"));
+        let mut mine = theme_of(&session.theme).unwrap();
+        mine.name = "Wide 2".into();
+        let saved = f.backend.save(&ThemeDto::from(&mine), None).unwrap();
         assert!(
             Path::new(&saved.location).starts_with(f.root.join("themes")),
             "{}",
@@ -4465,7 +4486,13 @@ mod tests {
             Default::default(),
             Some(at.clone()),
         );
-        let copy = f.backend.save(&theme, None).unwrap().location;
+        let mut elsewhere = theme_of(&theme).unwrap();
+        elsewhere.name = "Copied".into();
+        let copy = f
+            .backend
+            .save(&ThemeDto::from(&elsewhere), None)
+            .unwrap()
+            .location;
         assert!(
             Path::new(&copy).starts_with(f.root.join("themes")),
             "{copy}"
@@ -4689,7 +4716,7 @@ static_text:
             .unwrap()
             .location;
         let imported = f.backend.import(Path::new(&native)).unwrap();
-        assert_eq!(imported.theme.name, "Start");
+        assert_eq!(imported.theme.name, "Start 2", "a name of its own");
         assert!(imported.warnings.is_empty());
         assert_eq!(f.backend.session().location, None, "a copy, not the file");
         let folder = f.root.join("Folder theme");
@@ -4701,7 +4728,10 @@ static_text:
             .unwrap();
         assert!(folder.join("theme.json").is_file());
         let imported = f.backend.import(&folder).unwrap();
-        assert_eq!(imported.theme.name, "Start");
+        assert_eq!(
+            imported.theme.name, "Start 2",
+            "free: a picked file is not listed"
+        );
         assert!(imported.warnings.is_empty());
 
         let dir = python_theme(&f.root);

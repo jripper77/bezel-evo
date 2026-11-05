@@ -5,7 +5,7 @@
 // theme, closing the window, quitting from the tray), the screen turns
 // between vertical and horizontal, and the preferences switch the language,
 // set the sensors and keep the Light switch.
-import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey, openSection, themeSize, sizeText, openPreferences } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, prefixOf, layers, libraryTabKey, openSection, themeSize, sizeText, openPreferences, saveTheme } from './helpers.mjs';
 import { translator } from '../../src/i18n/index.js';
 
 test('the editor opens the demo theme', async ({ page, t, lang }) => {
@@ -84,7 +84,7 @@ test('keyboard move and undo', async ({ page, t }) => {
   await expect(page.locator('#layer-list')).toContainText(t('layers.copyOf', { name: 'CPU' }));
   await page.keyboard.press('Delete');
   await expect(layers(page)).toHaveCount(3);
-  await page.keyboard.press('Control+s');
+  await saveTheme(page, () => page.keyboard.press('Control+s'));
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
   await expect(page.locator('#toast')).toHaveText(t('toast.saved'));
   expect(errors).toEqual([]);

@@ -39,3 +39,40 @@ export function askChoice(t, { title, body, actions, initial }) {
     (buttons.find((b) => b.dataset.choice === initial) ?? cancel).focus();
   });
 }
+
+/**
+ * Asks for a name ("Save as"): resolves with the trimmed name, or `null`
+ * when cancelled. An empty name cannot be confirmed.
+ * @param {(k: string, p?: object) => string} t
+ * @param {{title: string, body: string, label: string, value: string, confirm: string}} opts
+ * @returns {Promise<string|null>}
+ */
+export function askName(t, { title, body, label, value, confirm }) {
+  return new Promise((resolve) => {
+    const opener = document.activeElement;
+    const input = el('input', { type: 'text', id: 'name-input', class: 'text-input', value, autocomplete: 'off', spellcheck: 'false' });
+    const ok = el('button', { type: 'submit', class: 'primary-button', text: confirm });
+    const cancel = el('button', { type: 'button', class: 'text-button', text: t('dialog.cancel') });
+    const close = el('button', { type: 'button', class: 'icon-button dialog-close', title: t('dialog.close'), 'aria-label': t('dialog.close') }, [icon(ICONS.close, 16)]);
+    const form = el('form', { method: 'dialog' }, [
+      el('div', { class: 'dialog-head' }, [el('h2', { id: 'name-title', text: title }), close]),
+      el('div', { class: 'dialog-body' }, [el('p', { id: 'name-body', text: body }), el('label', { for: 'name-input', text: label }), input]),
+      el('div', { class: 'dialog-actions' }, [cancel, ok]),
+    ]);
+    const dialog = el('dialog', { class: 'confirm-dialog name-dialog', 'aria-labelledby': 'name-title', 'aria-describedby': 'name-body' }, [form]);
+    const valid = () => { ok.disabled = !input.value.trim(); };
+    input.addEventListener('input', valid);
+    form.addEventListener('submit', (evt) => { evt.preventDefault(); if (input.value.trim()) dialog.close('ok'); });
+    cancel.addEventListener('click', () => dialog.close('cancel'));
+    close.addEventListener('click', () => dialog.close('cancel'));
+    dialog.addEventListener('close', () => {
+      const name = dialog.returnValue === 'ok' ? input.value.trim() : null;
+      dialog.remove();
+      if (opener?.isConnected) opener.focus();
+      resolve(name);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+    valid(); input.focus(); input.select();
+  });
+}

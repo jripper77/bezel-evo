@@ -1,4 +1,4 @@
-import { test, expect, openSection, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
+import { test, expect, openSection, clickAddWidget, expectAccessible, watchErrors, saveTheme } from './helpers.mjs';
 
 const number = (page, t, key) => page.locator('#inspector').getByRole('spinbutton', { name: t(key), exact: true });
 async function change(input, value) { await input.fill(String(value)); await input.press('Tab'); }
@@ -149,7 +149,7 @@ test('graph series and rounded bars combine, retaining the lower sensor across s
   await inspector.getByRole('button', { name: t('graph.line'), exact: true }).click();
   await expect(inspector.getByRole('button', { name: t('insp.graphMirrored'), exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(inspector.locator('[data-inspector-section="behavior"]')).toHaveCount(0);
-  await page.locator('#save').click();
+  await saveTheme(page);
   await openSection(page, 'layout');
   await inspector.getByRole('button', { name: t('insp.sensorMotion'), exact: true }).click();
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
@@ -224,7 +224,7 @@ test('multi Try uses isolated native previews, finishes and leaves the document 
   await page.locator('#grid-toggle').focus(); await page.keyboard.press('Control+a'); await page.keyboard.press('Delete');
   await clickAddWidget(page, t, 'ring'); await clickAddWidget(page, t, 'bar');
   await page.locator('#grid-toggle').focus(); await page.keyboard.press('Control+a');
-  await page.locator('#save').click();
+  await saveTheme(page);
   const button = page.locator('#inspector').getByRole('button', { name: t('insp.tryObject'), exact: true });
   await button.click(); await page.clock.runFor(1500);
   await expect(button).toHaveAttribute('aria-pressed', 'true');

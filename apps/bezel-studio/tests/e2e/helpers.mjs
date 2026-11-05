@@ -214,3 +214,16 @@ export async function openGraphPrecision(page) {
   if (!(await details.evaluate(node => node.open))) await details.locator('summary').click();
   await expect(details).toHaveAttribute('open', '');
 }
+
+/**
+ * Saves the edited theme. The demo starts on "Demo", a built-in theme's
+ * name, so the first save asks for a name of its own (a free one offered,
+ * D-2026-11-06-unique-theme-names-1): it is confirmed when asked.
+ */
+export async function saveTheme(page, trigger = () => page.locator('#save').click()) {
+  await trigger();
+  const named = page.locator('.name-dialog');
+  if (await named.waitFor({ state: 'visible', timeout: 2000 }).then(() => true, () => false)) {
+    await named.locator('button[type=submit]').click();
+  }
+}

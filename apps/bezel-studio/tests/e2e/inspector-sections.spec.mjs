@@ -1,4 +1,4 @@
-import { openSection, test, expect, watchErrors, expectAccessible } from './helpers.mjs';
+import { openSection, test, expect, watchErrors, expectAccessible, saveTheme } from './helpers.mjs';
 
 const addWidget = async (page, t, widget) => {
   await page.locator('#tab-widgets').click();
@@ -16,7 +16,7 @@ test('canonical independent sections remember each kind across edits, Undo and r
   await expect(toggle('data')).toHaveAttribute('aria-expanded', 'true');
   await expect(toggle('shape')).toHaveAttribute('aria-expanded', 'false');
   await expect(inspector.locator('[data-inspector-section="shape"] .accordion-summary')).toContainText('24');
-  await page.locator('#save').click();
+  await saveTheme(page);
   await toggle('shape').click();
   await expect(toggle('data')).toHaveAttribute('aria-expanded', 'true');
   await expect(toggle('shape')).toHaveAttribute('aria-expanded', 'true');

@@ -1,4 +1,4 @@
-import { openSection, openInspectorTab, test, expect, clickAddWidget, expectAccessible, watchErrors } from './helpers.mjs';
+import { openSection, openInspectorTab, test, expect, clickAddWidget, expectAccessible, watchErrors, saveTheme } from './helpers.mjs';
 
 const painted = canvas => canvas.evaluate(node => {
   const pixels = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
@@ -11,7 +11,7 @@ test('Try takes a gauge to full scale, returns to live, and never dirties the do
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   await clickAddWidget(page, t, 'ring');
-  await page.locator('#save').click();
+  await saveTheme(page);
   const saved = page.locator('#status-main');
   await expect(saved).toHaveText(t('status.saved'));
   const inspector = page.locator('#inspector');

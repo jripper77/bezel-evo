@@ -14,7 +14,7 @@ import { sampledSensorKeys } from './sensor-sampling.js';
 import { createConfirm, createStoragePanel, formatBytes, wireSubtabs } from './ui/storage.js';
 import { applyIcons, el, icon } from './ui/dom.js';
 import { ICONS } from './ui/icons.js';
-import { askChoice } from './ui/dialog.js';
+import { askChoice, askName } from './ui/dialog.js';
 import { themeUses } from './gallery-model.js';
 import { createPreferences } from './ui/preferences.js';
 import { createProfilesDialog } from './ui/profiles.js';
@@ -1439,8 +1439,28 @@ async function confirmLightSave(location, name) {
   return true;
 }
 
+/** `name`, or the first free "`name` 2", "`name` 3"… among the listed themes but `except`. */
+function freeName(name, except) {
+  const taken = new Set(listedThemes.filter(th => th.location !== except).map(th => th.name.trim().toLocaleLowerCase()));
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? name.trim() : `${name.trim()} ${n}`;
+    if (!taken.has(candidate.toLocaleLowerCase())) return candidate;
+  }
+}
+
+/** "Save with a name": the name asked (a free one offered), saved; `false` when cancelled. */
+async function saveWithName(body, suggestion) {
+  const name = await askName(t, { title: t('saveName.title'), body, label: t('top.themeName'), value: suggestion, confirm: t('common.save') });
+  return name ? save(false, name) : false;
+}
+
 /** Saves the theme; `true` once it is saved. */
 async function save(saveAs = false, copyName = null) {
+  // A built-in theme is saved as the user's own, under a name of its own
+  // (D-2026-11-06-unique-theme-names-1).
+  if (!saveAs && !copyName && listedThemes.find(th => th.location === state.location)?.bundled) {
+    return saveWithName(t('saveName.bundledBody'), freeName(store.getState().theme.name, null));
+  }
   try {
     const theme = store.getState().theme;
     if (!saveAs && !copyName && !(await confirmLightSave(state.location, theme.name))) return false;
@@ -1454,6 +1474,10 @@ async function save(saveAs = false, copyName = null) {
     refreshThemes();
     return true;
   } catch (e) {
+    // Two themes never share a name: ask for another one, a free one offered.
+    if (e?.code === 'nameTaken') {
+      return saveWithName(t('saveName.takenBody', { name: e.args?.name ?? '' }), e.args?.suggestion ?? '');
+    }
     // The session's document is another file: never write over it, offer a new file.
     if (e?.code === 'documentChanged' && !saveAs) {
       const answer = await askChoice(t, {

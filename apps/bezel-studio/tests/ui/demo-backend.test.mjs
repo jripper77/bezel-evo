@@ -64,7 +64,9 @@ test('saving, listing and opening themes', async () => {
   assert.deepEqual([listed[0].orientation, listed.at(-1).orientation], ['reverse-portrait', 'reverse-portrait']);
   assert.equal((await demo.openTheme('demo://Mine')).name, 'Mine');
   await assert.rejects(demo.openTheme('demo://nope'), (e) => e.code === 'notInLibrary' && e.args.location === 'demo://nope');
-  await demo.saveTheme({ ...theme, name: 'Mine', orientation: 'landscape', canvas: { width: 1920, height: 480 } }, false);
+  await demo.saveTheme({ ...theme, name: 'Mine', orientation: 'landscape', canvas: { width: 1920, height: 480 } }, false, 'demo://Mine');
+  // Like the backend, two themes never share a name.
+  await assert.rejects(demo.saveTheme({ ...theme, name: 'mine ' }, false, null), (e) => e.code === 'nameTaken' && e.args.suggestion === 'mine 2');
   assert.equal((await demo.listThemes()).length, library + 2);
   const mine = (await demo.listThemes()).at(-1);
   assert.equal(mine.orientation, 'landscape', 'saving again updates the entry');
@@ -89,6 +91,7 @@ test('library themes say when they changed and duplicate into new user themes', 
   assert.deepEqual(copy.models, ['turing-8.8', 'turing-usb-8.8']);
   const again = await demo.duplicateTheme('demo://Demo', 'Copia di Demo');
   assert.equal(again.location, 'demo://Copia di Demo-2', 'a free name each time');
+  assert.equal(again.name, 'Copia di Demo 2', 'never the name of another theme');
   const all = await demo.listThemes();
   assert.deepEqual(all.slice(-2), [copy, again]);
   assert.equal(all[0].bundled, true, 'the original stays as it was');
@@ -97,7 +100,7 @@ test('library themes say when they changed and duplicate into new user themes', 
   await assert.rejects(demo.duplicateTheme('demo://Demo', '  '), (e) => e.code === 'invalidInput');
   const { theme } = await demo.session();
   clock = 6000;
-  await demo.saveTheme({ ...theme, name: 'Copia di Demo' }, false);
+  await demo.saveTheme({ ...theme, name: 'Copia di Demo' }, false, copy.location);
   assert.equal((await demo.listThemes()).find((e) => e.location === copy.location).modifiedMs, 6_000_000, 'saving changes it');
 });
 
@@ -116,7 +119,7 @@ test('library themes name their screens and have thumbnails, but one', async () 
   await assert.rejects(demo.themeThumbnail('demo://nope'), (e) => e.code === 'notInLibrary');
   // Saved again, a theme that could not be drawn has its thumbnail.
   const broken = await demo.openTheme('demo://TURZX 3.5"');
-  await demo.saveTheme(broken, false);
+  await demo.saveTheme(broken, false, 'demo://TURZX 3.5"');
   assert.match(await demo.themeThumbnail('demo://TURZX 3.5"'), /^data:image\/svg\+xml,/);
 });
 

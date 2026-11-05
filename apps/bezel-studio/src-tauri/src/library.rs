@@ -306,6 +306,34 @@ impl ThemeLibrary {
         self.bundled.iter().any(|dir| inside(path, dir))
     }
 
+    /// Whether a theme of the library other than the one at `except` is
+    /// called `name` (ignoring case and the spaces around it): two themes
+    /// never share a name (D-2026-11-06-unique-theme-names-1).
+    pub fn name_taken(&self, name: &str, except: Option<&ThemeLocation>) -> bool {
+        let name = name.trim().to_lowercase();
+        self.list().iter().any(|entry| {
+            Some(&entry.location) != except && entry.theme.name.trim().to_lowercase() == name
+        })
+    }
+
+    /// `name` when it is free ([`Self::name_taken`]), else the first free
+    /// "`name` 2", "`name` 3"…
+    pub fn unique_name(&self, name: &str, except: Option<&ThemeLocation>) -> String {
+        let name = name.trim();
+        let mut n = 1;
+        loop {
+            let candidate = if n == 1 {
+                name.to_owned()
+            } else {
+                format!("{name} {n}")
+            };
+            if !self.name_taken(&candidate, except) {
+                return candidate;
+            }
+            n += 1;
+        }
+    }
+
     /// A free `.bezeltheme` location in the user folder named after `name`.
     pub fn new_location(&self, name: &str) -> ThemeLocation {
         let slug = slug(name);
@@ -569,6 +597,24 @@ mod tests {
         std::fs::write(user.join("broken.bezeltheme"), b"not a zip").unwrap();
         let broken = ThemeLocation(user.join("broken.bezeltheme").display().to_string());
         assert_eq!(library.entry(&broken), None, "unreadable");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn two_themes_never_share_a_name() {
+        let root = scratch("unique");
+        let library = ThemeLibrary::new(root.clone(), vec![]);
+        save(root.join("a.bezeltheme"), "Pixel V2");
+        save(root.join("b.bezeltheme"), "Pixel V2 2");
+        let a = ThemeLocation(root.join("a.bezeltheme").display().to_string());
+        assert!(
+            library.name_taken(" pixel v2 ", None),
+            "case and spaces aside"
+        );
+        assert!(!library.name_taken("Pixel V2", Some(&a)), "its own name");
+        assert_eq!(library.unique_name("Pixel V2", None), "Pixel V2 3");
+        assert_eq!(library.unique_name("Pixel V2", Some(&a)), "Pixel V2");
+        assert_eq!(library.unique_name("Nebula", None), "Nebula");
         let _ = std::fs::remove_dir_all(&root);
     }
 

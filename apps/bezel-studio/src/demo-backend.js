@@ -1584,7 +1584,14 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       if (wasLive) live = key;
       return { key, live: wasLive };
     },
-    saveTheme: (next, saveAs) => {
+    saveTheme: (next, saveAs, shown = null) => {
+      // Like the backend: two themes never share a name.
+      const takenBy = (name, except) => saved.some((s) => s.location !== except && s.theme.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (takenBy(next.name, shown)) {
+        let n = 2;
+        while (takenBy(`${next.name.trim()} ${n}`, shown)) n += 1;
+        return Promise.reject(Object.assign(new Error('name taken'), { code: 'nameTaken', args: { name: next.name.trim(), suggestion: `${next.name.trim()} ${n}` } }));
+      }
       next = normalizeCardTheme(next);
       theme = structuredClone(next);
       const location = `demo://${next.name}`;
@@ -1623,7 +1630,9 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       const free = (n) => `demo://${trimmed}${n === 1 ? '' : `-${n}`}`;
       let n = 1;
       while (saved.some((s) => s.location === free(n))) n += 1;
-      const copy = { location: free(n), theme: { ...structuredClone(found.theme), name: trimmed }, bundled: false, drawable: found.drawable, revision: 1, modifiedMs: Math.round(now() * 1000) };
+      let unique = trimmed;
+      for (let k = 2; saved.some((s) => s.theme.name.trim().toLowerCase() === unique.toLowerCase()); k += 1) unique = `${trimmed} ${k}`;
+      const copy = { location: free(n), theme: { ...structuredClone(found.theme), name: unique }, bundled: false, drawable: found.drawable, revision: 1, modifiedMs: Math.round(now() * 1000) };
       saved.push(copy);
       return Promise.resolve(listed(copy));
     },

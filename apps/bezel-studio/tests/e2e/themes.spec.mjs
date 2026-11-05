@@ -124,6 +124,8 @@ test('a saved theme gets a new thumbnail', async ({ page, t }) => {
   await page.keyboard.press('Shift+ArrowRight');
   await expect(page.locator('#status-main')).toHaveText(t('status.unsaved'));
   await page.keyboard.press('Control+s');
+  // "Demo" is a built-in theme's name: saved under a free one.
+  await page.locator('.name-dialog').getByRole('button', { name: t('common.save'), exact: true }).click();
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
   await page.getByRole('tab', { name: t('library.themes') }).click();
   await expect(screen).toHaveAttribute('data-state', 'ready');
@@ -301,5 +303,32 @@ test('use on Light marks the base theme and saving it asks once', async ({ page,
   await page.keyboard.press('Control+s');
   await expect(page.locator('.theme-card strong').getByText('Mine once more', { exact: true })).toBeVisible();
   await expect(page.locator('dialog[open]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+// D-2026-11-06-unique-theme-names-1: a built-in theme is saved with a name of
+// its own, and a name another theme has is refused with a free one offered.
+test('saving with a name keeps every theme name unique', async ({ page, t }) => {
+  const errors = watchErrors(page);
+  await openThemes(page, t);
+  const named = page.locator('.name-dialog');
+  await page.keyboard.press('Control+s');
+  await expect(named.locator('h2')).toHaveText(t('saveName.title'));
+  await expect(named.getByRole('textbox')).toHaveValue('Demo 2');
+  await expectAccessible(page);
+  await named.getByRole('textbox').fill('');
+  await expect(named.getByRole('button', { name: t('common.save'), exact: true })).toBeDisabled();
+  await named.getByRole('textbox').fill('Mine');
+  await named.getByRole('button', { name: t('common.save'), exact: true }).click();
+  await expect(page.locator('.theme-card strong').getByText('Mine', { exact: true })).toBeVisible();
+  await expect(page.locator('#theme-name')).toHaveValue('Mine');
+  // Renamed like another theme: refused, a free name offered.
+  await page.locator('#theme-name').fill('Demo');
+  await page.locator('#theme-name').press('Tab');
+  await page.keyboard.press('Control+s');
+  await expect(named.getByRole('textbox')).toHaveValue('Demo 2');
+  await named.getByRole('button', { name: t('dialog.cancel'), exact: true }).click();
+  await expect(named).toHaveCount(0);
+  await expect(page.locator('.theme-card strong').getByText('Demo', { exact: true })).toHaveCount(1);
   expect(errors).toEqual([]);
 });

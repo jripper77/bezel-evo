@@ -1,5 +1,5 @@
 import { openInspectorMenu } from './helpers.mjs';
-import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection } from './helpers.mjs';
+import { test, expect, watchErrors, expectAccessible, clickAddWidget, openSection, saveTheme } from './helpers.mjs';
 
 test.describe('Italian numeric fields', () => {
   test.use({ locale: 'it-IT' });
@@ -37,7 +37,7 @@ test('linked size keeps proportions with one Undo and linking never changes the 
   await expect(width).toHaveValue('400'); await expect(height).toHaveValue('400');
   await page.locator('#undo').click();
   await expect(width).toHaveValue(before[0]); await expect(height).toHaveValue(before[1]);
-  await page.locator('#save').click(); await link.click();
+  await saveTheme(page); await link.click();
   await expect(link).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#status-main')).toHaveText(t('status.saved'));
   await width.fill('500'); await width.press('Tab');
