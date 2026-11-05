@@ -2537,15 +2537,23 @@ fn a_screen_without_a_theme_shows_the_logo_and_how_to_set_one() {
     let hint = |f: &Fixture| {
         let scene = &f.engine.scenes[&f.key];
         assert!(scene.live);
-        assert!(scene.saved.theme == *scene.runtime.theme(), "it is Light's own");
+        assert!(
+            scene.saved.theme == *scene.runtime.theme(),
+            "it is Light's own"
+        );
         assert!(scene.runtime.theme().canvas.width > scene.runtime.theme().canvas.height);
-        scene.runtime.theme().elements.iter().find_map(|e| match &e.kind {
-            ElementKind::Text {
-                content: TextContent::Static(text),
-                ..
-            } => Some(text.clone()),
-            _ => None,
-        })
+        scene
+            .runtime
+            .theme()
+            .elements
+            .iter()
+            .find_map(|e| match &e.kind {
+                ElementKind::Text {
+                    content: TextContent::Static(text),
+                    ..
+                } => Some(text.clone()),
+                _ => None,
+            })
     };
     assert_eq!(
         hint(&f).as_deref(),
