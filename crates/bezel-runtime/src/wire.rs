@@ -51,6 +51,9 @@ pub enum RuntimeOp {
     Live {
         on: bool,
     },
+    /// The scene shows its saved document again (Light's theme) and its
+    /// profile resumes: the editor stopped showing a draft there.
+    Revert,
     Image {
         after: u64,
         max: u32,
@@ -328,6 +331,10 @@ fn dispatch_inner(
         }
         RuntimeOp::Live { on } => {
             engine.live(key, on)?;
+            Ok((Value::Null, Vec::new()))
+        }
+        RuntimeOp::Revert => {
+            engine.revert(key);
             Ok((Value::Null, Vec::new()))
         }
         RuntimeOp::TryThemes { themes, profile } => {

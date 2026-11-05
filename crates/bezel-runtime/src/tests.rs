@@ -2484,3 +2484,39 @@ fn a_bundled_video_already_stored_on_the_display_starts_and_presents() {
             .any(|c| matches!(c, StorageCall::PlayVideo(_, _)))
     );
 }
+#[test]
+fn revert_gives_the_scene_back_its_saved_theme_and_keeps_it_live() {
+    let mut f = fixture();
+    let saved = doc();
+    f.engine.document(&f.key, 0, saved.clone(), true).unwrap();
+    f.engine.live(&f.key, true).unwrap();
+    let mut draft = saved.clone();
+    draft.theme.name = "studio preview".into();
+    send(
+        &mut f.engine,
+        &f.key,
+        RuntimeOp::Draft {
+            revision: 1,
+            saved: false,
+        },
+        &document(&draft.theme, None).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        f.engine.scenes[&f.key].runtime.theme().name,
+        "studio preview"
+    );
+    assert!(f.engine.scenes[&f.key].profile_edit_at.is_some());
+    send(&mut f.engine, &f.key, RuntimeOp::Revert, &[]).unwrap();
+    let scene = &f.engine.scenes[&f.key];
+    assert_eq!(scene.runtime.theme().name, "saved");
+    assert!(scene.saved == saved);
+    assert!(scene.live, "Light keeps showing the screen");
+    assert!(
+        scene.profile_edit_at.is_none(),
+        "its profile may cover it again"
+    );
+    assert_eq!(scene.revision, 0);
+    // A scene the runtime does not know is left alone.
+    send(&mut f.engine, "unknown", RuntimeOp::Revert, &[]).unwrap();
+}

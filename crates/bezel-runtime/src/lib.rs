@@ -673,6 +673,26 @@ impl Engine {
         Ok(count)
     }
 
+    /// The scene shows its saved document again and its profile may cover
+    /// it at once: an editor's draft there is dropped. An unknown scene is
+    /// left alone.
+    pub fn revert(&mut self, key: &str) {
+        let Some(scene) = self.scenes.get_mut(key) else {
+            return;
+        };
+        scene.restore_profile();
+        scene.profile_edit_at = None;
+        self.images.unview(key);
+        if scene.runtime.theme() != &scene.saved.theme
+            || scene.runtime.assets() != &scene.saved.assets
+        {
+            self.images.forget(key);
+            scene.update(scene.saved.clone());
+        }
+        scene.revision = 0;
+        self.schedule_sensors();
+        self.wake.notify();
+    }
     pub fn live(&mut self, key: &str, on: bool) -> Result<()> {
         let scene = self
             .scenes

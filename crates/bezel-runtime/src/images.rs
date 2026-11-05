@@ -31,6 +31,13 @@ impl Images {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(key.into(), Arc::new(snapshot));
     }
+    /// The editor stopped looking at this scene: its profile may cover it now.
+    pub(crate) fn unview(&self, key: &str) {
+        self.viewed
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .remove(key);
+    }
     pub(crate) fn forget(&self, key: &str) {
         self.frames
             .write()

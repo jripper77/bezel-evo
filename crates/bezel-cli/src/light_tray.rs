@@ -170,7 +170,13 @@ fn follow_saved_theme(cli: &mut Cli) {
     else {
         return;
     };
-    if let Some(saved) = settings["lastTheme"].as_str()
+    // Light's own theme for its screen; settings written before Studio kept
+    // its own themes (`editorThemes`) follow the last one opened.
+    let own = settings["liveScreen"]
+        .as_str()
+        .and_then(|screen| settings["screenThemes"][screen].as_str());
+    let legacy = settings.get("editorThemes").is_none();
+    if let Some(saved) = own.or_else(|| legacy.then(|| settings["lastTheme"].as_str()).flatten())
         && Path::new(saved).is_file()
     {
         *theme = saved.into();
@@ -741,9 +747,12 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
             && let Some(keys) = settings["liveScreens"].as_array()
         {
             for key in keys.iter().filter_map(serde_json::Value::as_str) {
+                // Settings written before Studio kept its own themes
+                // (`editorThemes`) let Light follow the last one opened.
+                let legacy = settings.get("editorThemes").is_none();
                 if let Some(path) = settings["screenThemes"][key]
                     .as_str()
-                    .or_else(|| settings["lastTheme"].as_str())
+                    .or_else(|| legacy.then(|| settings["lastTheme"].as_str()).flatten())
                 {
                     themes.push((key.to_owned(), std::path::PathBuf::from(path)));
                 }

@@ -197,7 +197,8 @@ fn multi_screens(
     let mut seen = std::collections::BTreeSet::new();
     for key in keys.iter().filter_map(|k| k.as_str()) {
         let theme = saved["screenThemes"][key].as_str().or_else(|| {
-            (saved["liveScreen"].as_str() == Some(key))
+            // Before `editorThemes`, Light followed the last theme opened.
+            (saved.get("editorThemes").is_none() && saved["liveScreen"].as_str() == Some(key))
                 .then(|| saved["lastTheme"].as_str())
                 .flatten()
         });

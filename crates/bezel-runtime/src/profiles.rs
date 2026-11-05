@@ -647,9 +647,12 @@ impl ProfileFile {
                 let theme = settings["screenThemes"][&key]
                     .as_str()
                     .or_else(|| {
-                        (settings["selectedScreen"].as_str() == Some(&key))
-                            .then(|| settings["lastTheme"].as_str())
-                            .flatten()
+                        // Settings written before Studio kept its own themes
+                        // (`editorThemes`) let Light follow the last one opened.
+                        (settings.get("editorThemes").is_none()
+                            && settings["selectedScreen"].as_str() == Some(&key))
+                        .then(|| settings["lastTheme"].as_str())
+                        .flatten()
                     })
                     .map(str::to_owned);
                 let theme_name = theme.as_ref().and_then(|path| {
@@ -1138,6 +1141,21 @@ pub(crate) fn scene_bytes(scene: &crate::Scene) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn base_themes_follow_studio_only_in_settings_without_editor_themes() {
+        let directory = tempfile::TempDir::new().unwrap();
+        let file = ProfileFile::beside(&directory.path().join("settings.json"));
+        let theme = |settings: &str| {
+            std::fs::write(directory.path().join("settings.json"), settings).unwrap();
+            file.overview().unwrap().displays[0].theme.clone()
+        };
+        let legacy = r#"{"selectedScreen":"COM9","lastTheme":"open.bezeltheme"}"#;
+        assert_eq!(theme(legacy).as_deref(), Some("open.bezeltheme"));
+        let split = r#"{"selectedScreen":"COM9","lastTheme":"open.bezeltheme","editorThemes":{}}"#;
+        assert_eq!(theme(split), None, "Studio's open theme is not Light's");
+        let assigned = r#"{"selectedScreen":"COM9","lastTheme":"open.bezeltheme","editorThemes":{},"screenThemes":{"COM9":"light.bezeltheme"}}"#;
+        assert_eq!(theme(assigned).as_deref(), Some("light.bezeltheme"));
+    }
     #[test]
     fn transitions_are_backward_compatible_and_bounded() {
         let mut config: Config = serde_json::from_str("{}").unwrap();
