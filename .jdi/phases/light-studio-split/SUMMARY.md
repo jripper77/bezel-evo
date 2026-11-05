@@ -32,5 +32,6 @@ Commit: 9b4e11f8, 04614b9c, ba504eda, 18c21662 (più questo riepilogo).
 ## Non verificato
 
 - Prova sull'hardware reale (Light + Studio + schermo): da fare dopo una build locale.
-- Primo avvio di un utente nuovo: la diretta non assegna più nulla a Light, quindi finché non
-  usa «Usa su Light» lo schermo torna spento chiudendo Studio.
+- Schermo senza tema (D-…-5, commit 5753ad7a): logo + «Usa Bezel Studio per impostare un tema»
+  nella lingua di Light; resa controllata con `bezel render` in 1920×480 e 480×1920, non ancora
+  sullo schermo vero.
