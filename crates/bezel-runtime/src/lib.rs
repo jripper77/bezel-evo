@@ -42,6 +42,9 @@ use std::{
 
 /// Maximum persistent scenes and bytes of each complete document.
 pub const MAX_SCENES: usize = 16;
+/// Scenes whose key starts with this belong to the connected editor alone
+/// (its document outside a live preview): they are dropped when it leaves.
+pub const EDITOR_SCENE: &str = "__editor__";
 pub const MAX_DOCUMENT: usize = 64 * 1024 * 1024;
 const MAX_ALL_ASSETS: usize = 256 * 1024 * 1024;
 /// Shortest interval between two spectrum frames, under the audio worker's 50 ms step.
@@ -1448,6 +1451,8 @@ impl Engine {
             0.0,
             "session",
         );
+        self.scenes
+            .retain(|key, scene| scene.live || !key.starts_with(EDITOR_SCENE));
         for scene in self.scenes.values_mut() {
             scene.restore_profile();
             scene.update(scene.saved.clone());

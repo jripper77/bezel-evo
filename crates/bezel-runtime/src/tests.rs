@@ -2519,4 +2519,10 @@ fn revert_gives_the_scene_back_its_saved_theme_and_keeps_it_live() {
     assert_eq!(scene.revision, 0);
     // A scene the runtime does not know is left alone.
     send(&mut f.engine, "unknown", RuntimeOp::Revert, &[]).unwrap();
+    // The editor's own scene goes with the editor; Light's stays.
+    let editor = format!("{}/{}", crate::EDITOR_SCENE, f.key);
+    f.engine.document(&editor, 0, draft, false).unwrap();
+    f.engine.detach().unwrap();
+    assert!(!f.engine.scenes.contains_key(&editor));
+    assert!(f.engine.scenes[&f.key].live);
 }

@@ -2105,9 +2105,9 @@ impl Backend {
 /// The key `screen` goes by: the address it is listed by (its display's
 /// when awake), else `asked`, the key it was asked for.
 /// The runtime scene Studio edits on outside a live preview: its drafts
-/// never reach a screen and never pause Light's profiles
-/// (D-2026-11-05-light-studio-split-2).
-const EDITOR_SCENE: &str = "__editor__";
+/// never reach a screen and never pause Light's profiles, and Light drops
+/// it when Studio leaves (D-2026-11-05-light-studio-split-2).
+use bezel_runtime::EDITOR_SCENE;
 
 /// The runtime scene of the edited document: the selected screen's own
 /// while it shows the preview live, else Studio's editor scene for it.
