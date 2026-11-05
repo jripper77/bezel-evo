@@ -20,10 +20,12 @@ use bezel_core::{
         clock::{Language, LocalTime},
         discovery::Screen,
         frame::Frame,
+        frame::Rgba,
+        geometry::Orientation,
         sensor::SensorInfo,
         theme::{
-            Anchor, AssetRef, Background, BoxF, Element, ElementId, ElementKind, Fit, Playback,
-            Theme,
+            Anchor, AssetRef, Background, BoxF, Element, ElementId, ElementKind, Fit, HAlign,
+            Paint, Playback, TextContent, TextOverflow, TextStyle, Theme, VAlign,
         },
     },
     ports::{
@@ -165,6 +167,52 @@ type Handoff = (
     Arc<dyn bezel_core::ports::HandoffStore + Send + Sync>,
     fn() -> Duration,
 );
+
+/// Bezel's logo: Light shows it while it rests and on a screen it shows
+/// without a theme of its own.
+pub const LOGO: &[u8] = include_bytes!("../../../apps/bezel-studio/src-tauri/icons/icon.png");
+
+/// The line under the logo on a screen Light shows without a theme.
+pub fn unassigned_hint(language: Language) -> &'static str {
+    match language {
+        Language::Italian => "Usa Bezel Studio per impostare un tema",
+        Language::PortugueseBr => "Use o Bezel Studio para definir um tema",
+        Language::English => "Use Bezel Studio to set a theme",
+    }
+}
+
+/// `shape`'s canvas, dark, with the logo and, under it, how to give the
+/// screen a theme (D-2026-11-05-light-studio-split-5).
+fn unassigned_document(shape: &Theme, language: Language) -> Document {
+    let mut document = resting_document(shape, LOGO);
+    let (width, height) = (shape.canvas.width as f32, shape.canvas.height as f32);
+    let short = width.min(height);
+    let edge = short * 0.42;
+    let top = (height - edge - short * 0.2) / 2.0;
+    document.theme.elements[0].frame = BoxF::new((width - edge) / 2.0, top, edge, edge);
+    let mut hint = document.theme.elements[0].clone();
+    hint.id = ElementId(2);
+    hint.name = "Hint".into();
+    hint.frame = BoxF::new(
+        width * 0.05,
+        top + edge + short * 0.04,
+        width * 0.9,
+        short * 0.14,
+    );
+    hint.kind = ElementKind::Text {
+        content: TextContent::Static(unassigned_hint(language).into()),
+        style: TextStyle {
+            size: (short * 0.075).clamp(14.0, 40.0),
+            paint: Paint::solid(Rgba::opaque(200, 204, 214)),
+            align: HAlign::Center,
+            valign: VAlign::Middle,
+            overflow: Some(TextOverflow::Shrink),
+            ..TextStyle::default()
+        },
+    };
+    document.theme.elements.push(hint);
+    document
+}
 
 /// Where the resting logo is kept among a scene's assets.
 const RESTING_LOGO: &str = "assets/bezel-logo.png";
@@ -676,6 +724,35 @@ impl Engine {
         Ok(count)
     }
 
+    /// Light shows the screen `key` without a theme of its own: the logo and
+    /// how to set one, in Light's language, as its saved document. The shape
+    /// is the scene's, else the connected screen's in `orientation` (its
+    /// usual one when `None`); a screen not connected is left alone.
+    pub fn unassigned(&mut self, key: &str, orientation: Option<Orientation>) -> Result<()> {
+        let shape = match self.scenes.get(key) {
+            Some(scene) => scene.runtime.theme().clone(),
+            None => {
+                let screens = bezel_core::app::discover_screens(self.bus.as_ref())?;
+                let Some(model) = screens
+                    .iter()
+                    .find(|screen| screen.answers_to(key))
+                    .and_then(Screen::model)
+                else {
+                    return Ok(());
+                };
+                let panel = model.panel.portrait();
+                let usual = if u64::from(panel.height) >= 2 * u64::from(panel.width) {
+                    Orientation::Landscape
+                } else {
+                    model.native_orientation
+                };
+                Theme::blank("Bezel", model.panel, orientation.unwrap_or(usual))
+            }
+        };
+        self.document(key, 0, unassigned_document(&shape, self.language), true)?;
+        self.revert(key);
+        self.live(key, true)
+    }
     /// The scene shows its saved document again and its profile may cover
     /// it at once: an editor's draft there is dropped. An unknown scene is
     /// left alone.

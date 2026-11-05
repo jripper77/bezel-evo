@@ -21,7 +21,7 @@ use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEv
 mod tray_picture;
 
 /// What the screens show while Light is switched off.
-const LOGO: &[u8] = include_bytes!("../../../apps/bezel-studio/src-tauri/icons/icon.png");
+use bezel_runtime::LOGO;
 
 /// The menu's own words, in the system's language.
 struct Texts {
@@ -730,6 +730,18 @@ fn make_engine(
 
 // Only startup and lock-protected legacy recovery read files again. Pipe editor
 // leases restore documents inside the existing scenes and never enter this path.
+/// The orientation Studio spelled `slug` in its settings.
+fn orientation_of(slug: &str) -> Option<bezel_core::domain::geometry::Orientation> {
+    use bezel_core::domain::geometry::Orientation;
+    match slug {
+        "portrait" => Some(Orientation::Portrait),
+        "reverse-portrait" => Some(Orientation::ReversePortrait),
+        "landscape" => Some(Orientation::Landscape),
+        "reverse-landscape" => Some(Orientation::ReverseLandscape),
+        _ => None,
+    }
+}
+
 fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow::Result<()> {
     if let Command::Run {
         theme,
@@ -743,6 +755,8 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
             .and_then(|p| std::fs::read(p).ok())
             .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok());
         let mut themes = Vec::new();
+        // Screens Light shows without a theme: the logo and how to set one.
+        let mut unassigned = Vec::new();
         if let Some(settings) = settings.as_ref()
             && let Some(keys) = settings["liveScreens"].as_array()
         {
@@ -755,6 +769,11 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
                     .or_else(|| legacy.then(|| settings["lastTheme"].as_str()).flatten())
                 {
                     themes.push((key.to_owned(), std::path::PathBuf::from(path)));
+                } else {
+                    let orientation = settings["screenOrientations"][key]
+                        .as_str()
+                        .and_then(orientation_of);
+                    unassigned.push((key.to_owned(), orientation));
                 }
             }
         }
@@ -771,6 +790,7 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
             &themes
                 .iter()
                 .map(|(key, _)| key.clone())
+                .chain(unassigned.iter().map(|(key, _)| key.clone()))
                 .collect::<Vec<_>>(),
         );
         for (key, path) in themes {
@@ -789,7 +809,15 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
                         eprintln!("bezel light: {key}: {error}");
                     }
                 }
-                Err(error) => eprintln!("bezel light: saved theme: {error}"),
+                Err(error) => {
+                    eprintln!("bezel light: saved theme: {error}");
+                    unassigned.push((key, None));
+                }
+            }
+        }
+        for (key, orientation) in unassigned {
+            if let Err(error) = engine.unassigned(&key, orientation) {
+                eprintln!("bezel light: {key}: {error}");
             }
         }
     }

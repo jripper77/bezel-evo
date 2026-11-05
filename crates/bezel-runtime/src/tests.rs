@@ -2526,3 +2526,36 @@ fn revert_gives_the_scene_back_its_saved_theme_and_keeps_it_live() {
     assert!(!f.engine.scenes.contains_key(&editor));
     assert!(f.engine.scenes[&f.key].live);
 }
+#[test]
+fn a_screen_without_a_theme_shows_the_logo_and_how_to_set_one() {
+    use bezel_core::domain::theme::TextContent;
+    let mut f = fixture();
+    // Not a scene yet: the connected screen gives its shape.
+    f.engine
+        .unassigned(&f.key, Some(Orientation::Landscape))
+        .unwrap();
+    let hint = |f: &Fixture| {
+        let scene = &f.engine.scenes[&f.key];
+        assert!(scene.live);
+        assert!(scene.saved.theme == *scene.runtime.theme(), "it is Light's own");
+        assert!(scene.runtime.theme().canvas.width > scene.runtime.theme().canvas.height);
+        scene.runtime.theme().elements.iter().find_map(|e| match &e.kind {
+            ElementKind::Text {
+                content: TextContent::Static(text),
+                ..
+            } => Some(text.clone()),
+            _ => None,
+        })
+    };
+    assert_eq!(
+        hint(&f).as_deref(),
+        Some(crate::unassigned_hint(f.engine.language))
+    );
+    // Through the wire, for a scene Studio previewed.
+    f.engine.document(&f.key, 0, doc(), false).unwrap();
+    send(&mut f.engine, &f.key, RuntimeOp::Unassigned, &[]).unwrap();
+    assert!(hint(&f).is_some());
+    // A screen that is not connected is left alone.
+    f.engine.unassigned("nowhere", None).unwrap();
+    assert!(!f.engine.scenes.contains_key("nowhere"));
+}

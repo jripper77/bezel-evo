@@ -54,6 +54,9 @@ pub enum RuntimeOp {
     /// The scene shows its saved document again (Light's theme) and its
     /// profile resumes: the editor stopped showing a draft there.
     Revert,
+    /// The scene shows Bezel's logo and how to set a theme, as Light's own
+    /// document: Light has no theme for this screen.
+    Unassigned,
     Image {
         after: u64,
         max: u32,
@@ -335,6 +338,10 @@ fn dispatch_inner(
         }
         RuntimeOp::Revert => {
             engine.revert(key);
+            Ok((Value::Null, Vec::new()))
+        }
+        RuntimeOp::Unassigned => {
+            engine.unassigned(key, None)?;
             Ok((Value::Null, Vec::new()))
         }
         RuntimeOp::TryThemes { themes, profile } => {

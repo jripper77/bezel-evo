@@ -897,13 +897,15 @@ impl Backend {
     }
 
     /// The screen `key` stops showing Studio's preview: Light's theme there
-    /// again, or the screen off when Light does not show it.
+    /// again. A screen Light did not show yet becomes Light's, with Bezel's
+    /// logo and how to set a theme (D-2026-11-05-light-studio-split-5).
     fn give_back_to_light(&self, key: &str) -> UiResult<()> {
         if let Some(engine) = &self.engine {
             engine.release(key)?;
             if !self.settings.load().live_screens.iter().any(|k| k == key) {
-                // A scene the engine never had is already off.
-                let _ = engine.live(key, false);
+                engine.request(key, bezel_runtime::wire::RuntimeOp::Unassigned)?;
+                self.settings
+                    .update(|s| s.live_screens.push(key.to_owned()));
             }
         }
         Ok(())
@@ -1039,7 +1041,11 @@ impl Backend {
         if let Some(engine) = &self.engine {
             let key = self.sync_engine(false)?;
             engine.live(&key, false)?;
+            // Light stops showing it too, now and after a restart.
+            let _ = engine.live(screen, false);
         }
+        self.settings
+            .update(|s| s.live_screens.retain(|k| k != screen));
         let _claim = self.storage.claim()?;
         let live = {
             let mut studio = self.idle_studio();
