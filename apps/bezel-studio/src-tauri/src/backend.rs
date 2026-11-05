@@ -297,7 +297,9 @@ impl Backend {
     }
     fn sync_engine(&self, saved: bool) -> bezel_core::Result<String> {
         let studio = self.studio();
-        let key = studio.selected_screen().unwrap_or("__editor__").to_owned();
+        let key = scene_key(&studio);
+        // A live preview never becomes Light's saved theme.
+        let saved = saved && key.starts_with(EDITOR_SCENE);
         if let Some(engine) = &self.engine {
             let revision = studio.document_revision();
             if !engine.needs_sync(&key, revision, saved) {
@@ -588,12 +590,6 @@ impl Backend {
                     .map_or_else(|| screen.family.to_owned(), |m| m.name.to_owned());
             }
         }
-        for (key, (name, location)) in self.studio().profile_documents() {
-            if let Some(display) = overview.displays.iter_mut().find(|d| d.key == key) {
-                display.theme_name = Some(name);
-                display.theme = location;
-            }
-        }
         overview.displays.sort_by(|a, b| {
             b.connected
                 .cmp(&a.connected)
@@ -605,6 +601,104 @@ impl Backend {
             None => None,
         };
         Ok(overview)
+    }
+
+    /// Makes the theme at `location` Bezel Light's on `screen`: in the
+    /// profile `profile`, else as the screen's base theme. A screen Light
+    /// does not show yet gets it as its base theme too, and Light shows it
+    /// at once (D-2026-11-05-light-studio-split-3).
+    pub fn use_on_light(
+        &self,
+        location: &str,
+        screen: &str,
+        profile: Option<&str>,
+    ) -> UiResult<()> {
+        let location = ThemeLocation(location.to_string());
+        if !self.library.allows(&location) {
+            return Err(UiError::new(ErrorCode::NotInLibrary).arg("location", location.0));
+        }
+        let (theme, assets) = self.store.load(&location)?;
+        if let Some(id) = profile {
+            let file = bezel_runtime::profiles::ProfileFile::beside(self.settings.path());
+            let mut config = file.load()?;
+            let chosen = config
+                .profiles
+                .iter_mut()
+                .find(|p| p.id == id)
+                .ok_or_else(|| {
+                    bezel_core::BezelError::InvalidInput(format!("unknown profile {id}"))
+                })?;
+            chosen.themes.insert(screen.to_owned(), location.0.clone());
+            self.save_profiles(config)?;
+            if self
+                .settings
+                .load()
+                .live_screens
+                .iter()
+                .any(|k| k == screen)
+            {
+                return Ok(());
+            }
+        }
+        self.settings.update(|s| {
+            s.screen_themes
+                .insert(screen.to_owned(), location.0.clone());
+            if !s.live_screens.iter().any(|k| k == screen) {
+                s.live_screens.push(screen.to_owned());
+            }
+        });
+        if let Some(engine) = &self.engine {
+            engine.commit(screen, bezel_runtime::Document { theme, assets })?;
+            engine.live(screen, true)?;
+        }
+        Ok(())
+    }
+
+    /// The theme at `location` was saved: every screen showing it as Light's
+    /// base theme shows the new version, and the profiles that use it read
+    /// it again (D-2026-11-05-light-studio-split-4). A failure is reported;
+    /// Light reads the file again when Studio closes.
+    fn update_light(&self, location: &ThemeLocation) {
+        let settings = self.settings.load();
+        let screens: Vec<&String> = settings
+            .screen_themes
+            .iter()
+            .filter(|(key, theme)| **theme == location.0 && settings.live_screens.contains(key))
+            .map(|(key, _)| key)
+            .collect();
+        let profiles = bezel_runtime::profiles::ProfileFile::beside(self.settings.path());
+        let config = profiles.load().ok().filter(|c| {
+            c.profiles
+                .iter()
+                .any(|p| p.themes.values().any(|t| *t == location.0))
+        });
+        if screens.is_empty() && config.is_none() {
+            return;
+        }
+        let updated = (|| -> UiResult<()> {
+            if let Some(engine) = &self.engine
+                && !screens.is_empty()
+            {
+                let (theme, assets) = self.store.load(location)?;
+                for key in screens {
+                    engine.commit(
+                        key,
+                        bezel_runtime::Document {
+                            theme: theme.clone(),
+                            assets: assets.clone(),
+                        },
+                    )?;
+                }
+            }
+            // Writing the profiles again makes Light read their themes again.
+            if let Some(config) = &config {
+                profiles.save(config)?;
+            }
+            Ok(())
+        })();
+        if updated.is_err() {
+            diag::report(DiagCode::DocumentNotSynced);
+        }
     }
 
     pub fn save_profiles(&self, config: bezel_runtime::profiles::Config) -> UiResult<()> {
@@ -788,18 +882,30 @@ impl Backend {
         self.finish_live_off()
     }
 
+    /// The live preview stopped: the selected screen goes back to Light
+    /// (its theme and profile), or off when Light does not show it
+    /// (D-2026-11-05-light-studio-split-2). Light's screens stay as they are.
     fn finish_live_off(&self) -> UiResult<()> {
-        if let Some(engine) = &self.engine {
-            let key = self.sync_engine(false)?;
-            engine.live(&key, false)?;
-        }
         let selected = self.studio().selected_screen().map(str::to_owned);
-        self.settings.update(|s| {
-            if let Some(key) = selected {
-                s.live_screens.retain(|k| *k != key);
+        if let Some(key) = selected {
+            self.give_back_to_light(&key)?;
+        }
+        if self.engine.is_some() {
+            self.sync_engine(false)?;
+        }
+        Ok(())
+    }
+
+    /// The screen `key` stops showing Studio's preview: Light's theme there
+    /// again, or the screen off when Light does not show it.
+    fn give_back_to_light(&self, key: &str) -> UiResult<()> {
+        if let Some(engine) = &self.engine {
+            engine.release(key)?;
+            if !self.settings.load().live_screens.iter().any(|k| k == key) {
+                // A scene the engine never had is already off.
+                let _ = engine.live(key, false);
             }
-            s.live_screen = s.live_screens.last().cloned();
-        });
+        }
         Ok(())
     }
 
@@ -845,12 +951,10 @@ impl Backend {
             (key, studio.theme().orientation)
         };
         self.show_now(time)?;
+        // A preview: Light's screens (`live_screens`) are not changed.
         self.settings.update(|s| {
             s.live_screen = Some(key.clone());
             s.selected_screen = Some(key.clone());
-            if !s.live_screens.contains(&key) {
-                s.live_screens.push(key.clone());
-            }
             s.remember_orientation(&key, orientation);
         });
         Ok(())
@@ -861,16 +965,14 @@ impl Backend {
     /// after.
     pub fn toggle_live(&self, time: LocalTime) -> UiResult<bool> {
         if self.studio().any_live() {
-            if let Some(engine) = &self.engine {
-                for key in self.settings.load().live_screens {
-                    engine.live(&key, false)?;
-                }
-            }
+            let keys = self.studio().live_keys();
             self.idle_studio().stop_all();
-            self.settings.update(|s| {
-                s.live_screens.clear();
-                s.live_screen = None;
-            });
+            for key in keys {
+                self.give_back_to_light(&key)?;
+            }
+            if self.engine.is_some() {
+                self.sync_engine(false)?;
+            }
             return Ok(false);
         }
         let screen =
@@ -1007,11 +1109,7 @@ impl Backend {
     /// screen's frame rate and the applications and media sessions.
     pub fn sample(&self) -> SampleDto {
         if let Some(engine) = &self.engine {
-            let key = self
-                .studio()
-                .selected_screen()
-                .unwrap_or("__editor__")
-                .to_owned();
+            let key = scene_key(&self.studio());
             let status = engine.request(
                 &key,
                 bezel_runtime::wire::RuntimeOp::Sensors { listed: None },
@@ -1103,7 +1201,8 @@ impl Backend {
             .filter(|k| *k == key || screen.answers_to(k))
             .map_or_else(|| key.to_owned(), str::to_owned);
         self.settings.update(|s| {
-            for map in [&mut s.screen_themes, &mut s.screen_orientations] {
+            let editor = s.editor_themes.get_or_insert_with(Default::default);
+            for map in [&mut s.screen_themes, editor, &mut s.screen_orientations] {
                 let aliases: Vec<String> = map
                     .keys()
                     .filter(|k| **k != target && screen.answers_to(k))
@@ -1124,7 +1223,7 @@ impl Backend {
         let fresh = self
             .studio()
             .select_screen_answering(&target, blank, |k| screen.answers_to(k));
-        if fresh && let Some(path) = settings.screen_themes.get(&target) {
+        if fresh && let Some(path) = settings.editor_theme(&target) {
             let location = ThemeLocation(path.clone());
             self.library.grant(&location);
             if self.open_at(location).is_err() {
@@ -1142,10 +1241,11 @@ impl Backend {
 
     fn remember_document(&self, location: &ThemeLocation) {
         let selected = self.studio().selected_screen().map(str::to_owned);
+        // Studio's own memory: Light's themes change only with "Use on Light".
         self.settings.update(|s| {
             s.last_theme = Some(location.0.clone());
             if let Some(key) = selected {
-                s.screen_themes.insert(key, location.0.clone());
+                s.editor_themes_mut().insert(key, location.0.clone());
             }
         });
     }
@@ -1474,6 +1574,7 @@ impl Backend {
         }
         self.settings.update(|s| {
             s.screen_themes.retain(|_, theme| theme != location);
+            s.editor_themes_mut().retain(|_, theme| theme != location);
             if s.last_theme.as_deref() == Some(location) {
                 s.last_theme = None;
             }
@@ -1494,7 +1595,9 @@ impl Backend {
         let synced = match (key, &self.engine) {
             (Some(key), Some(engine)) if Some(key) != selected.as_deref() => {
                 let studio = self.studio();
-                let Some(parked) = studio.parked(key) else {
+                // A parked document reaches the runtime only while its screen
+                // shows it live; else when it is selected again.
+                let Some(parked) = studio.parked(key).filter(|p| p.is_live(key)) else {
                     return;
                 };
                 let revision = parked.document_revision();
@@ -1503,7 +1606,7 @@ impl Backend {
                     assets: parked.assets().clone(),
                 };
                 drop(studio);
-                engine.sync(key, revision, document, true).map(|_| ())
+                engine.sync(key, revision, document, false).map(|_| ())
             }
             _ => self.sync_engine(true).map(|_| ()),
         };
@@ -1607,6 +1710,7 @@ impl Backend {
         self.thumbnails.forget(&location);
         self.remember_document(&location);
         self.sync_engine_after_document_change();
+        self.update_light(&location);
         Ok(SavedDto {
             location: location.0,
         })
@@ -1886,7 +1990,7 @@ impl Backend {
             self.studio().select_screen(key, blank);
         }
         if let Some(last) = selected
-            .and_then(|k| settings.screen_themes.get(k).cloned())
+            .and_then(|k| settings.editor_theme(k).cloned())
             .or(settings.last_theme)
         {
             // The app's own record of a theme the window was allowed to open
@@ -1924,36 +2028,6 @@ impl Backend {
             && self.open_at(entry.location.clone()).is_err()
         {
             diag::report(DiagCode::BundledThemeNotOpened);
-        }
-    }
-
-    /// Shows the theme live again on the screen that was live when the app
-    /// last ran, when it is connected. A failure leaves live mode off. A key
-    /// saved by an older version as the MCU's port is replaced by the
-    /// display's ([`Self::set_live`]; D-2026-10-01-live-screen-controls-2).
-    pub fn restore_live(&self, time: LocalTime) {
-        let settings = self.settings.load();
-        let keys = if settings.live_screens.is_empty() {
-            settings.live_screen.into_iter().collect()
-        } else {
-            settings.live_screens
-        };
-        for key in keys {
-            if self
-                .select_screen(&key)
-                .and_then(|_| self.set_live(true, Some(&key), time))
-                .is_err()
-            {
-                diag::report(DiagCode::LiveNotRestored);
-            }
-        }
-        if let Some(selected) = settings.selected_screen {
-            let canonical = self
-                .find_screen(&selected)
-                .ok()
-                .and_then(|screen| screen.address().map(|address| address.0.clone()))
-                .unwrap_or(selected);
-            let _ = self.select_screen(&canonical);
         }
     }
 
@@ -2030,6 +2104,21 @@ impl Backend {
 
 /// The key `screen` goes by: the address it is listed by (its display's
 /// when awake), else `asked`, the key it was asked for.
+/// The runtime scene Studio edits on outside a live preview: its drafts
+/// never reach a screen and never pause Light's profiles
+/// (D-2026-11-05-light-studio-split-2).
+const EDITOR_SCENE: &str = "__editor__";
+
+/// The runtime scene of the edited document: the selected screen's own
+/// while it shows the preview live, else Studio's editor scene for it.
+fn scene_key(studio: &Studio) -> String {
+    match studio.selected_screen() {
+        Some(key) if studio.is_live(key) => key.to_owned(),
+        Some(key) => format!("{EDITOR_SCENE}/{key}"),
+        None => EDITOR_SCENE.to_owned(),
+    }
+}
+
 fn key_of(screen: &Screen, asked: &str) -> String {
     screen
         .address()
@@ -2417,6 +2506,80 @@ mod tests {
         assert_eq!(
             f.backend.profiles().unwrap().config.profiles[0].themes,
             paths
+        );
+    }
+
+    /// D-2026-11-05-light-studio-split-1..3: opening, saving and the live
+    /// preview are Studio's; only "Use on Light" changes Light's themes.
+    #[test]
+    fn only_use_on_light_changes_what_light_shows() {
+        use bezel_runtime::profiles::{Config, Profile};
+        let f = fixture("use-on-light");
+        let mut theme = theme_of(&f.backend.session().theme).unwrap();
+        theme.name = "Dashboard".into();
+        let saved = f
+            .backend
+            .save(&ThemeDto::from(&theme), None)
+            .unwrap()
+            .location;
+        f.backend.open(&saved).unwrap();
+        f.backend.set_live(true, Some(KEY), TIME).unwrap();
+        f.backend.set_live(false, None, TIME).unwrap();
+        let settings = f.backend.settings.load();
+        assert!(settings.screen_themes.is_empty(), "{settings:?}");
+        assert!(settings.live_screens.is_empty(), "{settings:?}");
+        assert_eq!(
+            settings.editor_theme(KEY).map(String::as_str),
+            Some(saved.as_str())
+        );
+        let shown = |f: &Fixture| {
+            f.backend
+                .profiles()
+                .unwrap()
+                .displays
+                .into_iter()
+                .find(|d| d.key == KEY)
+                .and_then(|d| d.theme)
+        };
+        assert_eq!(shown(&f), None, "the open theme is not Light's base theme");
+
+        f.backend.use_on_light(&saved, KEY, None).unwrap();
+        let settings = f.backend.settings.load();
+        assert_eq!(settings.screen_themes[KEY], saved);
+        assert_eq!(settings.live_screens, [KEY]);
+        assert_eq!(shown(&f).as_deref(), Some(saved.as_str()));
+
+        f.backend
+            .save_profiles(Config {
+                profiles: vec![Profile {
+                    id: "gaming".into(),
+                    name: "Gaming".into(),
+                    themes: [("COM9".to_owned(), saved.clone())].into(),
+                    rules: vec![],
+                    combine: Default::default(),
+                }],
+                ..Config::default()
+            })
+            .unwrap();
+        theme.name = "Game".into();
+        let game = f
+            .backend
+            .save(&ThemeDto::from(&theme), None)
+            .unwrap()
+            .location;
+        f.backend.use_on_light(&game, KEY, Some("gaming")).unwrap();
+        let overview = f.backend.profiles().unwrap();
+        assert_eq!(overview.config.profiles[0].themes[KEY], game);
+        assert_eq!(
+            f.backend.settings.load().screen_themes[KEY],
+            saved,
+            "the base theme stays"
+        );
+        assert!(f.backend.use_on_light(&game, KEY, Some("nope")).is_err());
+        assert!(
+            f.backend
+                .use_on_light("/elsewhere.bezeltheme", KEY, None)
+                .is_err()
         );
     }
 
@@ -3915,7 +4078,10 @@ mod tests {
         assert_eq!(f.connector.log().frames.len(), 1);
         assert!(!f.backend.toggle_live(TIME).unwrap());
         assert_eq!(f.backend.sample().live, None);
-        assert_eq!(f.backend.settings.load().live_screen, None);
+        assert!(
+            f.backend.settings.load().live_screens.is_empty(),
+            "the preview never changes Light's screens"
+        );
 
         let mut empty = fixture("tray-empty");
         empty.backend.bus = Arc::new(FakeBus::new(Vec::new()));
@@ -4095,40 +4261,6 @@ mod tests {
         assert_eq!(f.backend.settings.load().live_screen.as_deref(), Some(KEY));
     }
 
-    /// D-2026-10-01-live-screen-controls-2: a settings file that kept the
-    /// live screen by its MCU's port (0.1.0-dev.287) brings it back live
-    /// under its display's key and is rewritten with it: the UI's
-    /// brightness, by the display, then goes through the live link.
-    #[test]
-    fn a_saved_mcu_key_is_restored_under_the_display_key() {
-        let f = fixture("restore-mcu");
-        f.backend
-            .settings
-            .update(|s| s.live_screen = Some(MCU.into()));
-        f.backend.restore_live(TIME);
-        assert_eq!(f.backend.sample().live.as_deref(), Some(KEY));
-        let settings = f.backend.settings.load();
-        assert_eq!(settings.live_screen.as_deref(), Some(KEY));
-        assert_eq!(settings.orientation_for(MCU), None);
-        let _held = f.connector.clone().refusing_after(1, vec![busy()]);
-        f.backend.set_brightness(KEY, 60).unwrap();
-        let log = f.connector.log();
-        assert_eq!((log.connects, log.brightness.len()), (1, 1));
-    }
-
-    #[test]
-    fn restoring_live_does_not_reselect_the_stale_wake_alias_document() {
-        let f = fixture("restore-selected-alias");
-        f.backend.settings.update(|s| {
-            s.selected_screen = Some(MCU.into());
-            s.live_screens = vec![KEY.into()];
-        });
-        f.backend.restore_live(TIME);
-        assert_eq!(f.backend.session().screen.as_deref(), Some(KEY));
-        assert_eq!(f.backend.sample().live.as_deref(), Some(KEY));
-        assert_eq!(f.connector.log().connects, 1);
-    }
-
     #[test]
     fn live_from_wake_document_releases_existing_display_document_before_reopening() {
         let mut f = fixture("live-alias-document");
@@ -4249,9 +4381,12 @@ mod tests {
             .settings
             .update(|s| s.live_screen = Some(KEY.into()));
         f.backend.restore_theme();
-        f.backend.restore_live(TIME);
         assert_eq!(f.backend.session().theme.name, "Mine");
-        assert_eq!(f.backend.sample().live.as_deref(), Some(KEY));
+        assert_eq!(
+            f.backend.sample().live,
+            None,
+            "Studio starts without a live preview"
+        );
     }
 
     #[test]

@@ -69,6 +69,7 @@
     "allow-profiles",
     "allow-profiles-requested",
     "allow-save-profiles",
+    "allow-use-on-light",
     "allow-preview-transition",
     "allow-try-themes",
     "allow-set-language",

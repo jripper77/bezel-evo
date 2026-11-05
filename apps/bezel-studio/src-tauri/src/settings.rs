@@ -29,9 +29,17 @@ pub struct Settings {
     /// Key of the screen that was live when the app last changed it.
     pub live_screen: Option<String>,
     pub selected_screen: Option<String>,
-    /// Last opened/saved file and Live choice for each display.
+    /// Bezel Light's base theme for each display, changed only by "Use on
+    /// Light" (D-2026-11-05-light-studio-split-1).
     pub screen_themes: BTreeMap<String, String>,
+    /// The displays Bezel Light shows (Studio's live preview never changes
+    /// them; D-2026-11-05-light-studio-split-2).
     pub live_screens: Vec<String>,
+    /// The theme Studio last opened or saved for each display. Absent only
+    /// in settings written before it existed ([`SettingsFile::load`]
+    /// migrates them; Light then stops following Studio's open theme).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub editor_themes: Option<BTreeMap<String, String>>,
     /// The orientation last used with each screen (`portrait`, `landscape`…),
     /// by screen key.
     pub screen_orientations: BTreeMap<String, String>,
@@ -112,6 +120,38 @@ impl Settings {
             .and_then(|slug| parse_orientation(slug))
     }
 
+    /// The theme Studio last had open for `screen`.
+    pub fn editor_theme(&self, screen: &str) -> Option<&String> {
+        self.editor_themes.as_ref()?.get(screen)
+    }
+
+    /// Studio's own theme memory, created when missing.
+    pub fn editor_themes_mut(&mut self) -> &mut BTreeMap<String, String> {
+        self.editor_themes.get_or_insert_with(BTreeMap::new)
+    }
+
+    /// Settings of an older version: Studio's open theme was Light's. Studio
+    /// keeps remembering it, and every screen Light shows keeps the theme it
+    /// showed (the last one opened when it had none of its own).
+    fn migrate(&mut self) {
+        if self.editor_themes.is_some() {
+            return;
+        }
+        self.editor_themes = Some(self.screen_themes.clone());
+        let shown: Vec<String> = if self.live_screens.is_empty() {
+            self.live_screen.iter().cloned().collect()
+        } else {
+            self.live_screens.clone()
+        };
+        if let Some(last) = &self.last_theme {
+            for key in shown {
+                self.screen_themes
+                    .entry(key)
+                    .or_insert_with(|| last.clone());
+            }
+        }
+    }
+
     /// Remembers `orientation` as the one last used with `screen`.
     pub fn remember_orientation(&mut self, screen: &str, orientation: Orientation) {
         self.screen_orientations.insert(
@@ -140,10 +180,12 @@ impl SettingsFile {
 
     /// The stored settings; defaults when the file is missing or unreadable.
     pub fn load(&self) -> Settings {
-        std::fs::read(&self.path)
+        let mut settings: Settings = std::fs::read(&self.path)
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok())
-            .unwrap_or_default()
+            .unwrap_or_default();
+        settings.migrate();
+        settings
     }
 
     /// Changes the stored settings with `edit` (read, edit, write).
@@ -190,7 +232,11 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("bezel-settings-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let file = SettingsFile::new(dir.join("nested/settings.json"));
-        assert_eq!(file.load(), Settings::default());
+        let fresh = Settings {
+            editor_themes: Some(BTreeMap::new()),
+            ..Settings::default()
+        };
+        assert_eq!(file.load(), fresh);
         file.update(|s| s.last_theme = Some("/t.bezeltheme".into()));
         file.update(|s| s.live_screen = Some("/dev/ttyACM1".into()));
         assert_eq!(
@@ -198,12 +244,43 @@ mod tests {
             Settings {
                 last_theme: Some("/t.bezeltheme".into()),
                 live_screen: Some("/dev/ttyACM1".into()),
+                editor_themes: Some(BTreeMap::new()),
                 ..Settings::default()
             }
         );
         std::fs::write(file.path(), b"{ broken").unwrap();
-        assert_eq!(file.load(), Settings::default());
+        assert_eq!(file.load(), fresh);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn older_settings_split_studio_themes_from_lights_and_keep_what_light_shows() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = SettingsFile::new(dir.path().join("settings.json"));
+        std::fs::write(
+            file.path(),
+            br#"{"lastTheme":"/open.bezeltheme","liveScreens":["COM9","COM7"],
+                "screenThemes":{"COM9":"/light.bezeltheme"}}"#,
+        )
+        .unwrap();
+        let settings = file.load();
+        assert_eq!(
+            settings.editor_theme("COM9").map(String::as_str),
+            Some("/light.bezeltheme")
+        );
+        assert_eq!(settings.screen_themes["COM9"], "/light.bezeltheme");
+        assert_eq!(
+            settings.screen_themes["COM7"], "/open.bezeltheme",
+            "Light keeps showing what it showed"
+        );
+        file.update(|s| {
+            s.editor_themes_mut()
+                .insert("COM9".into(), "/other.bezeltheme".into());
+        });
+        let written: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(file.path()).unwrap()).unwrap();
+        assert_eq!(written["editorThemes"]["COM9"], "/other.bezeltheme");
+        assert_eq!(written["screenThemes"]["COM9"], "/light.bezeltheme");
     }
 
     #[test]

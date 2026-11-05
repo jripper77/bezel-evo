@@ -364,6 +364,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::profiles,
             commands::profiles_requested,
             commands::save_profiles,
+            commands::use_on_light,
             commands::preview_transition,
             commands::try_themes,
             commands::set_audio_capture,
@@ -574,9 +575,9 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
     // connected screen.
     backend.restore_debug();
     backend.restore_theme();
-    // Restore every screen before exposing the session to the webview:
-    // selecting a background document must not race the first preview.
-    backend.restore_live(clock::now());
+    // Studio starts without a live preview: Light keeps showing its own
+    // themes until the user turns the preview on
+    // (D-2026-11-05-light-studio-split-2).
     app.manage(Arc::clone(&backend));
     // Its own state, which asks nothing of KLIPY until a search.
     let gifs: SharedGifs = Arc::new(gifs(&folders, start.gif_source));

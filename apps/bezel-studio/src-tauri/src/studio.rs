@@ -813,6 +813,21 @@ impl Studio {
     pub fn any_live(&self) -> bool {
         self.live.is_some() || self.documents.values().any(Self::any_live)
     }
+    /// The screens showing a document live, by the key they are edited under.
+    pub fn live_keys(&self) -> Vec<String> {
+        let mut keys: Vec<String> = self
+            .documents
+            .iter()
+            .filter(|(_, studio)| studio.any_live())
+            .map(|(key, _)| key.clone())
+            .collect();
+        if self.live.is_some()
+            && let Some(key) = &self.selected_screen
+        {
+            keys.push(key.clone());
+        }
+        keys
+    }
     pub fn stop_all(&mut self) {
         drop(self.stop_live());
         for studio in self.documents.values_mut() {
@@ -1095,33 +1110,6 @@ impl Studio {
     /// The document of screen `key` while another one is edited.
     pub fn parked(&self, key: &str) -> Option<&Studio> {
         self.documents.get(key)
-    }
-
-    /// Names and saved locations of every display document, without selecting it.
-    pub fn profile_documents(&self) -> BTreeMap<String, (String, Option<String>)> {
-        let mut documents: BTreeMap<_, _> = self
-            .documents
-            .iter()
-            .map(|(key, studio)| {
-                (
-                    key.clone(),
-                    (
-                        studio.theme().name.clone(),
-                        studio.location().map(|p| p.0.clone()),
-                    ),
-                )
-            })
-            .collect();
-        if let Some(key) = &self.selected_screen {
-            documents.insert(
-                key.clone(),
-                (
-                    self.theme().name.clone(),
-                    self.location().map(|p| p.0.clone()),
-                ),
-            );
-        }
-        documents
     }
 
     /// The session's assets (used by the theme or added for it).
@@ -3014,9 +3002,7 @@ mod tests {
         assert_eq!(second.log().frames.len(), 1);
         s.select_screen("one", theme_88());
         assert_eq!(s.theme().name, "T");
-        let documents = s.profile_documents();
-        assert_eq!(documents["one"].0, "T");
-        assert_eq!(documents["two"].0, "Second");
+        assert_eq!(s.parked("two").unwrap().theme().name, "Second");
         assert_eq!(s.selected_screen(), Some("one"));
         assert_eq!(s.live_key(), Some("one"));
         assert!(s.is_live("two"));

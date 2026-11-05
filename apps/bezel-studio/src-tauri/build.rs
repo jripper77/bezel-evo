@@ -67,6 +67,7 @@ const COMMANDS: &[&str] = &[
     "profiles",
     "profiles_requested",
     "save_profiles",
+    "use_on_light",
     "preview_transition",
     "try_themes",
     "set_language",

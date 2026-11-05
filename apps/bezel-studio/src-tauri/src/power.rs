@@ -163,8 +163,7 @@ impl Backend {
         self.studio().enter_final_state();
     }
 
-    /// The shutdown was cancelled: the final state ends. The caller shows
-    /// the theme live again ([`Self::restore_live`]).
+    /// The shutdown was cancelled: the final state ends.
     pub fn leave_final_state(&self) {
         if let Some(engine) = &self.engine {
             engine.suspend(false);

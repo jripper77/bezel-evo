@@ -16,7 +16,9 @@ use std::{
 type Factory = Box<dyn Fn() -> Result<Engine> + Send + Sync>;
 struct Draft {
     document: Document,
-    saved: Document,
+    /// What the scene commits to after a reconnection; `None` for a preview
+    /// on a scene whose saved theme belongs to Light, not to the editor.
+    saved: Option<Document>,
     revision: (u64, u64),
 }
 struct State {
@@ -85,7 +87,9 @@ impl EngineBridge {
                         local.options(options.clone())?;
                     }
                     for (key, draft) in &state.drafts {
-                        local.document(key, 0, draft.saved.clone(), true)?;
+                        if let Some(saved) = &draft.saved {
+                            local.document(key, 0, saved.clone(), true)?;
+                        }
                         local.document(key, 0, draft.document.clone(), false)?;
                         if state.live.get(key) == Some(&true) {
                             local.live(key, true)?;
@@ -128,7 +132,8 @@ impl EngineBridge {
             )?;
         }
         for (key, draft) in &state.drafts {
-            for (document, saved) in [(&draft.saved, true), (&draft.document, false)] {
+            let documents = draft.saved.iter().map(|saved| (saved, true));
+            for (document, saved) in documents.chain([(&draft.document, false)]) {
                 state.revision = state.revision.saturating_add(1);
                 send(
                     key,
@@ -175,15 +180,15 @@ impl EngineBridge {
             .get(key)
             .is_none_or(|d| d.revision.1 != revision.1);
         let binary = wire::document(&document.theme, assets.then_some(&document.assets))?;
-        let previous = state
-            .drafts
-            .get(key)
-            .map(|d| d.saved.clone())
-            .unwrap_or_else(|| document.clone());
+        let previous = state.drafts.get(key).and_then(|d| d.saved.clone());
         state.drafts.insert(
             key.into(),
             Draft {
-                saved: if saved { document.clone() } else { previous },
+                saved: if saved {
+                    Some(document.clone())
+                } else {
+                    previous
+                },
                 document,
                 revision,
             },
@@ -197,6 +202,64 @@ impl EngineBridge {
             RuntimeOp::Draft { revision, saved },
             &binary,
         )?;
+        Ok(())
+    }
+    /// Light's theme for the scene `key` is now `document` (a theme saved or
+    /// chosen with "Use on Light"): the scene keeps it as saved and shows
+    /// it, unless the editor previews a draft there, which stays on show.
+    pub fn commit(&self, key: &str, document: Document) -> Result<()> {
+        let mut state = self.lock()?;
+        state.cursor = None;
+        state.revision = state.revision.saturating_add(1);
+        let revision = state.revision;
+        let binary = wire::document(&document.theme, Some(&document.assets))?;
+        self.call(
+            &mut state,
+            key,
+            RuntimeOp::Draft {
+                revision,
+                saved: true,
+            },
+            &binary,
+        )?;
+        let preview = match state.drafts.get_mut(key) {
+            Some(draft) => {
+                draft.saved = Some(document);
+                Some(draft.document.clone())
+            }
+            None => None,
+        };
+        match preview {
+            Some(preview) => {
+                let binary = wire::document(&preview.theme, Some(&preview.assets))?;
+                state.revision = state.revision.saturating_add(1);
+                let revision = state.revision;
+                self.call(
+                    &mut state,
+                    key,
+                    RuntimeOp::Draft {
+                        revision,
+                        saved: false,
+                    },
+                    &binary,
+                )?;
+            }
+            // Its profile, if one covers it, comes back at once.
+            None => {
+                self.call(&mut state, key, RuntimeOp::Revert, &[])?;
+            }
+        }
+        Ok(())
+    }
+    /// The editor leaves the scene `key`: it shows its saved theme again
+    /// (Light's) and is no longer restored after a reconnection.
+    pub fn release(&self, key: &str) -> Result<()> {
+        let mut state = self.lock()?;
+        state.drafts.remove(key);
+        state.live.remove(key);
+        state.cards.remove(key);
+        state.cursor = None;
+        self.call(&mut state, key, RuntimeOp::Revert, &[])?;
         Ok(())
     }
     pub fn live(&self, key: &str, on: bool) -> Result<()> {
@@ -464,6 +527,34 @@ mod tests {
         assert_eq!(u32::from_le_bytes(image[..4].try_into().unwrap()), 213);
         assert_eq!(u32::from_le_bytes(image[4..8].try_into().unwrap()), 320);
         assert!(bridge.lock().unwrap().local.is_none());
+    }
+
+    #[test]
+    fn a_live_preview_never_becomes_lights_theme_and_release_gives_it_back() {
+        let (bridge, connection, _) = setup();
+        let mut light = document();
+        light.theme.name = "light".into();
+        {
+            let mut server = connection.server.lock().unwrap();
+            server.document("screen", 0, light, true).unwrap();
+            server.live("screen", true).unwrap();
+        }
+        let mut preview = document();
+        preview.theme.name = "preview".into();
+        bridge.sync("screen", (1, 1), preview, false).unwrap();
+        bridge.live("screen", true).unwrap();
+        let shown = |c: &Connection| c.server.lock().unwrap().shown()[0].1.clone();
+        assert_eq!(shown(&connection), "preview");
+        assert!(bridge.lock().unwrap().drafts["screen"].saved.is_none());
+        bridge.release("screen").unwrap();
+        assert_eq!(
+            shown(&connection),
+            "light",
+            "Light's theme is back, still live"
+        );
+        assert!(bridge.lock().unwrap().drafts.is_empty());
+        connection.server.lock().unwrap().detach().unwrap();
+        assert_eq!(shown(&connection), "light");
     }
 
     #[test]

@@ -619,6 +619,7 @@ function tauriBridge(invoke, tauri = {}) {
     profilesRequested: () => invoke('profiles_requested'),
     onProfilesRequested: (cb) => (typeof tauri.event?.listen === 'function' ? tauri.event.listen('profiles-requested', cb) : Promise.resolve(() => {})),
     saveProfiles: (config) => invoke('save_profiles', { config }),
+    useOnLight: (location, screen, profile = null) => invoke('use_on_light', { location, screen, profile }),
     tryThemes: (themes, profile = null) => invoke('try_themes', { themes, profile }),
     previewTransition: (transition, themes = {}) => invoke('preview_transition', { transition, themes }),
     setDebug: (on, showReadings, corner) => invoke('set_debug', { on, showReadings, corner }),

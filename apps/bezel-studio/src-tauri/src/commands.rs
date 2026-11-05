@@ -784,6 +784,27 @@ pub async fn save_profiles(
     Ok(())
 }
 
+/// Makes a library theme Bezel Light's on a screen (in a profile, or as the
+/// screen's base theme).
+#[tauri::command]
+pub async fn use_on_light(
+    app: AppHandle,
+    state: State<'_, Shared>,
+    location: String,
+    screen: String,
+    profile: Option<String>,
+) -> UiResult<()> {
+    let refresh = profile.is_some();
+    blocking(&state, move |b| {
+        b.use_on_light(&location, &screen, profile.as_deref())
+    })
+    .await?;
+    if refresh && let Some(menu) = app.try_state::<TrayMenu>() {
+        menu.refresh_profiles(&app);
+    }
+    Ok(())
+}
+
 /// Show saved themes for thirty seconds without modifying the open editor document.
 #[tauri::command]
 pub async fn try_themes(
