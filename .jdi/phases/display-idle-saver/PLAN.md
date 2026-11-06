@@ -70,7 +70,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - `idle_saver_on(settings)` legge `idleSaver` (assente = attivo) come `audioCapture`; con l'opzione spenta nessuna transizione.
 - **Dependencies:** T-2, T-3, T-4
 - **Test:** `cargo test -p bezel-cli idle` (`light_tray::tests::idle_saver_is_on_unless_turned_off`, `light_tray::tests::idle_power_events_drive_engine_and_owner` con engine e owner fake: test sul gestore vero, non grep del sorgente)
-- **Status:** pending
+- **Status:** completed
 
 #### T-6: opzione «Idle quando i monitor si spengono» nel backend Studio
 - **Specialist:** jdi-doer-bezel
