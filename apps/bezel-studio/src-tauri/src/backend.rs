@@ -287,7 +287,7 @@ impl Backend {
                 debug_overlay: (settings.debug && settings.debug_show_readings)
                     .then_some(settings.debug_corner),
                 audio_capture: settings.audio_capture.0,
-                idle_saver: true,
+                idle_saver: settings.idle_saver.0,
                 ping_host: options.ping_host,
                 presentmon_path: settings.presentmon_path,
 
@@ -295,6 +295,13 @@ impl Backend {
             })?;
         }
         Ok(())
+    }
+    /// Saves the idle option and hands it to the runtime, so a running
+    /// Bezel Light applies it at once (D-2026-11-06-display-idle-saver-4).
+    pub fn set_idle_saver(&self, on: bool) -> bezel_core::Result<()> {
+        self.settings
+            .update(|s| s.idle_saver = crate::settings::DefaultOn(on));
+        self.sync_engine_options()
     }
     fn sync_engine(&self, saved: bool) -> bezel_core::Result<String> {
         let studio = self.studio();
@@ -550,6 +557,7 @@ impl Backend {
         let settings = self.settings.load();
         PreferencesDto {
             audio_capture: settings.audio_capture.0,
+            idle_saver: settings.idle_saver.0,
             debug: settings.debug,
             debug_show_readings: settings.debug_show_readings,
             debug_corner: settings.debug_corner,
@@ -2643,6 +2651,60 @@ mod tests {
             f.backend.profiles().unwrap().config.transition,
             TransitionSettings::default()
         );
+    }
+
+    #[test]
+    fn idle_saver_reaches_the_engine_options() {
+        /// The runtime behind the pipe: Bezel Light's engine.
+        struct Light(std::sync::Mutex<bezel_runtime::Engine>);
+        impl bezel_core::ports::RuntimeConnection for Light {
+            fn request(
+                &self,
+                metadata: &[u8],
+                payload: &[u8],
+            ) -> bezel_core::Result<(Vec<u8>, Vec<u8>)> {
+                use bezel_core::ports::RuntimeEndpoint;
+                self.0.lock().unwrap().request(metadata, payload)
+            }
+            fn take_direct_ownership(&self) -> bezel_core::Result<()> {
+                panic!("Light is running")
+            }
+        }
+        let mut f = fixture("idle-saver");
+        let engine = bezel_runtime::Engine::new(
+            Box::new(SkiaRenderer::with_fonts(Vec::new(), SystemFonts::Skip)),
+            Box::new(FakeSensors::demo()),
+            Box::new(bezel_media::FfmpegTranscoder::new(None)),
+            Arc::new(FakeBus::turing_88()),
+            Arc::new(FakeConnector::default()),
+            Language::English,
+            f.root.join("fallback"),
+            || TIME,
+        )
+        .unwrap();
+        let light = Arc::new(Light(std::sync::Mutex::new(engine)));
+        f.backend.engine = Some(Arc::new(crate::engine::EngineBridge::new(
+            light.clone(),
+            Box::new(|| panic!("no second engine")),
+        )));
+        assert!(f.backend.preferences().idle_saver, "on by default");
+
+        f.backend.set_idle_saver(false).unwrap();
+        assert!(
+            !light.0.lock().unwrap().idle_saver(),
+            "Light follows at once"
+        );
+        assert!(!f.backend.preferences().idle_saver);
+        let json = std::fs::read_to_string(f.backend.settings.path()).unwrap();
+        assert!(json.contains("\"idleSaver\": false"), "{json}");
+
+        // Another option sent later keeps the saved choice.
+        f.backend.set_sensor_options("example.org").unwrap();
+        assert!(!light.0.lock().unwrap().idle_saver());
+
+        f.backend.set_idle_saver(true).unwrap();
+        assert!(light.0.lock().unwrap().idle_saver());
+        assert!(f.backend.preferences().idle_saver);
     }
 
     #[test]

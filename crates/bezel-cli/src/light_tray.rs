@@ -884,6 +884,9 @@ const SUSPEND_BUDGET: Duration = Duration::from_millis(1800);
 trait PowerTargets {
     /// The user's option reached the runtime.
     fn engine_saver(&mut self, on: bool);
+    /// The option the runtime holds now (Studio changes it over the pipe
+    /// with `Options`); `None` when the runtime stays busy.
+    fn engine_saver_now(&mut self) -> Option<bool>;
     /// The runtime shows the moving logo (or leaves it).
     fn engine_idle(&mut self, on: bool);
     /// The runtime stops (or resumes) its writes, waiting until `deadline`.
@@ -936,6 +939,11 @@ enum PowerMessage {
 fn on_power_message(state: &mut IdleState, targets: &mut dyn PowerTargets, message: PowerMessage) {
     match message {
         PowerMessage::Event(event, done) => {
+            // Studio's switch reaches the runtime at once; the screen owner
+            // follows it from the next event, not from the next reload.
+            if let Some(on) = targets.engine_saver_now() {
+                on_power_event(targets, state.set_enabled(on), Instant::now());
+            }
             on_power_event(targets, state.on(event), Instant::now());
             if let Some(done) = done {
                 let _ = done.send(());
@@ -991,6 +999,19 @@ impl LightTargets {
 impl PowerTargets for LightTargets {
     fn engine_saver(&mut self, on: bool) {
         self.with_engine(None, |engine| engine.set_idle_saver(on));
+    }
+    fn engine_saver_now(&mut self) -> Option<bool> {
+        // Short: the computer's sleep waits for the whole event.
+        let deadline = Instant::now() + Duration::from_millis(100);
+        loop {
+            match self.engine.try_lock() {
+                Ok(engine) => return Some(engine.idle_saver()),
+                Err(std::sync::TryLockError::WouldBlock) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                Err(_) => return None,
+            }
+        }
     }
     fn engine_idle(&mut self, on: bool) {
         self.with_engine(None, |engine| engine.idle(on));
@@ -1139,11 +1160,17 @@ mod tests {
     struct FakeTargets {
         log: Vec<String>,
         start: Option<Instant>,
+        /// The option Studio sent to the runtime, when it did.
+        runtime_saver: Option<bool>,
     }
 
     impl PowerTargets for FakeTargets {
         fn engine_saver(&mut self, on: bool) {
+            self.runtime_saver = Some(on);
             self.log.push(format!("engine.saver({on})"));
+        }
+        fn engine_saver_now(&mut self) -> Option<bool> {
+            self.runtime_saver
         }
         fn engine_idle(&mut self, on: bool) {
             self.log.push(format!("engine.idle({on})"));
@@ -1170,9 +1197,18 @@ mod tests {
     }
 
     fn feed(enabled: bool, messages: Vec<PowerMessage>) -> Vec<String> {
+        feed_with(enabled, None, messages)
+    }
+
+    fn feed_with(
+        enabled: bool,
+        runtime_saver: Option<bool>,
+        messages: Vec<PowerMessage>,
+    ) -> Vec<String> {
         let mut state = IdleState::new(enabled);
         let mut targets = FakeTargets {
             start: Some(Instant::now()),
+            runtime_saver,
             ..FakeTargets::default()
         };
         for message in messages {
@@ -1260,5 +1296,13 @@ mod tests {
                 "owner.idle(true)",
             ]
         );
+    }
+
+    #[test]
+    fn idle_follows_the_option_studio_sent_to_the_runtime() {
+        let off = vec![event(PowerEvent::DisplayOff), event(PowerEvent::Suspend)];
+        assert!(feed_with(true, Some(false), off).is_empty());
+        let log = feed_with(false, Some(true), vec![event(PowerEvent::DisplayOff)]);
+        assert_eq!(log, ["engine.idle(true)", "owner.idle(true)"]);
     }
 }

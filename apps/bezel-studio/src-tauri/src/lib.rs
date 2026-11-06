@@ -368,6 +368,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::preview_transition,
             commands::try_themes,
             commands::set_audio_capture,
+            commands::set_idle_saver,
             commands::set_debug,
             commands::set_language,
             commands::set_sensor_options,
@@ -520,6 +521,7 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
         let options = backend.settings.load().sensor_options();
         let ffmpeg = backend.settings.load().ffmpeg_path.map(PathBuf::from);
         let audio = backend.settings.load().audio_capture.0;
+        let idle_saver = backend.settings.load().idle_saver.0;
         let cache = folders.cache.join("runtime-fallback");
         let profile_file = bezel_runtime::profiles::ProfileFile::beside(backend.settings.path());
         let font_dirs: Vec<_> = bundled_theme_dirs(&folders)
@@ -561,6 +563,7 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
                     );
                     // The Preferences choice, not "disabled", until options sync.
                     engine.audio_consent(audio);
+                    engine.set_idle_saver(idle_saver);
                     engine = engine.with_profiles(profile_file.clone());
                     engine
                 })

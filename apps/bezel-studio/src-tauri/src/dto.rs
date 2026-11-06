@@ -518,6 +518,8 @@ pub struct SavedDto {
 #[serde(rename_all = "camelCase")]
 pub struct PreferencesDto {
     pub audio_capture: bool,
+    /// The screens idle while the monitors are off.
+    pub idle_saver: bool,
     pub debug: bool,
     pub debug_show_readings: bool,
     pub debug_corner: crate::performance::Corner,

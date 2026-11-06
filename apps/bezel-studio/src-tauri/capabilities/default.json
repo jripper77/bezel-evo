@@ -74,6 +74,7 @@
     "allow-try-themes",
     "allow-set-language",
     "allow-set-audio-capture",
+    "allow-set-idle-saver",
     "allow-set-debug",
     "allow-set-sensor-options",
     "allow-pick-folder",

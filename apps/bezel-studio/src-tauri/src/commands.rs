@@ -742,6 +742,12 @@ pub async fn set_audio_capture(state: State<'_, Shared>, on: bool) -> UiResult<(
     .await
 }
 
+/// Whether the screens idle while Windows has the monitors off.
+#[tauri::command]
+pub async fn set_idle_saver(state: State<'_, Shared>, on: bool) -> UiResult<()> {
+    blocking(&state, move |b| b.set_idle_saver(on).map_err(UiError::from)).await
+}
+
 /// Enables bounded diagnostic logs and the optional physical-screen overlay.
 #[tauri::command]
 pub fn set_debug(

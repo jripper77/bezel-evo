@@ -21,6 +21,10 @@ pub struct Settings {
     /// Local permission to capture the followed app's audio; on unless the
     /// user turned it off. Never read from theme documents.
     pub audio_capture: DefaultOn,
+    /// The screens idle (dimmed, moving logo, no audio capture) while
+    /// Windows has the monitors off; on unless the user turned it off
+    /// (D-2026-11-06-display-idle-saver-4). Bezel Light reads it too.
+    pub idle_saver: DefaultOn,
     pub debug: bool,
     pub debug_show_readings: bool,
     pub debug_corner: crate::performance::Corner,
@@ -216,6 +220,17 @@ mod tests {
         let off: Settings = serde_json::from_str(r#"{"audioCapture":false}"#).unwrap();
         assert!(!off.audio_capture.0);
         assert_eq!(serde_json::to_value(&off).unwrap()["audioCapture"], false);
+    }
+
+    #[test]
+    fn idle_saver_is_on_unless_turned_off() {
+        assert!(Settings::default().idle_saver.0);
+        let old: Settings = serde_json::from_str(r#"{"audioCapture":false}"#).unwrap();
+        assert!(old.idle_saver.0);
+        let off: Settings = serde_json::from_str(r#"{"idleSaver":false}"#).unwrap();
+        assert!(!off.idle_saver.0);
+        assert!(off.audio_capture.0, "independent of the audio capture");
+        assert_eq!(serde_json::to_value(&off).unwrap()["idleSaver"], false);
     }
 
     #[test]
