@@ -37,7 +37,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - Il callback di `Suspend` è sincrono (Windows aspetta il ritorno): documentato un budget di 2 s per l'handler; gli altri eventi non bloccano.
 - **Dependencies:** T-1
 - **Test:** `cargo test -p bezel-power idle` (`display_state::tests::idle_event_maps_display_states`, `display_state::tests::idle_event_maps_suspend_and_resume`, `display_state::tests::idle_watch_registers_and_unregisters`)
-- **Status:** pending
+- **Status:** completed
 
 #### T-3: luminosità idle nell'Owner (ricorda l'ultimo livello, abbassa e ripristina)
 - **Specialist:** jdi-doer-bezel
