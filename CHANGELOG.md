@@ -7,6 +7,16 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+### Screens
+- **Screens rest while the monitors are off.** When Windows turns the
+  monitors off, Bezel stops audio capture, dims every screen to 10% and shows
+  a small Pixel logo that moves every 30 seconds (every minute on the Turing
+  3.5" and Kipye screens) to prevent burn-in. When the monitors turn back on,
+  the theme and the brightness come back. When the PC sleeps, audio capture
+  stops too and the screens follow the power-off choice; on wake they come
+  back as the monitors are. The option is on by default and can be turned off in
+  Preferences, under *Screens while the monitors are off*.
+
 ## [0.2.23] - 2026-11-06
 
 ### Fixes

@@ -59,6 +59,11 @@ test('audio capture is a local preference, on by default and independent from im
   await demo.setAudioCapture(false); assert.equal((await demo.preferences()).audioCapture,false);
   await demo.setAudioCapture(true); assert.equal((await demo.preferences()).audioCapture,true);
 });
+test('the idle saver is a local preference, on by default', async () => {
+  const demo = createDemoBackend('turing88'); assert.equal((await demo.preferences()).idleSaver, true);
+  await demo.setIdleSaver(false); assert.equal((await demo.preferences()).idleSaver, false);
+  await demo.setIdleSaver(true); assert.equal((await demo.preferences()).idleSaver, true);
+});
 test('peak hold, unlit LEDs and neon waves stay within the file format', () => {
   assert.deepEqual([spectrumOf({}).peakHold, spectrumOf({}).unlit, spectrumOf({}).waves], [0.35, null, true]);
   assert.deepEqual([spectrumPatch({}, { peakHold: -1 }).peakHold, spectrumPatch({}, { peakHold: 99 }).peakHold, spectrumPatch({}, { peakHold: NaN }).peakHold], [0, 10, 0.35]);

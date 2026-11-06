@@ -87,6 +87,21 @@ export function createPreferences({ t, bridge, onLanguage, onAutostart = () => {
     ]);
   }
 
+  function idleSection() {
+    const input = el('input', { id: 'prefs-idle-saver', type: 'checkbox', role: 'switch', checked: prefs.idleSaver !== false, 'aria-describedby': 'prefs-idle-hint' });
+    input.addEventListener('change', async () => {
+      input.disabled = true;
+      try { await bridge.setIdleSaver(input.checked); prefs.idleSaver = input.checked; }
+      catch (error) { input.checked = prefs.idleSaver !== false; notify(errorText(t, error)); }
+      finally { input.disabled = false; }
+    });
+    return el('section', { class: 'prefs-section', 'aria-labelledby': 'prefs-idle-title' }, [
+      el('h3', { id: 'prefs-idle-title', text: t('prefs.idleTitle') }),
+      el('label', { class: 'check', for: 'prefs-idle-saver' }, [input, el('span', { text: t('prefs.idleSaver') })]),
+      el('p', { id: 'prefs-idle-hint', class: 'hint', text: t('prefs.idleHint') }),
+    ]);
+  }
+
   function debugSection() {
     const input = el('input', { id: 'prefs-debug', type: 'checkbox', role: 'switch', checked: prefs.debug });
     const overlay = el('input', { id: 'prefs-debug-overlay', type: 'checkbox', checked: prefs.debugShowReadings, disabled: !prefs.debug });
@@ -192,7 +207,7 @@ export function createPreferences({ t, bridge, onLanguage, onAutostart = () => {
     const close = el('button', { type: 'button', class: 'icon-button dialog-close', title: t('dialog.close'), 'aria-label': t('dialog.close'), onclick: () => dialog.close() }, [icon(ICONS.close, 16)]);
     dialog.replaceChildren(
       el('div', { class: 'dialog-head' }, [el('h2', { id: 'prefs-title', text: t('prefs.title') }), close]),
-      el('div', { class: 'dialog-body' }, [languageField(), startupSection(), audioSection(), debugSection(), logsSection(), sensorsSection()]),
+      el('div', { class: 'dialog-body' }, [languageField(), startupSection(), audioSection(), idleSection(), debugSection(), logsSection(), sensorsSection()]),
       el('div', { class: 'dialog-actions' }, [el('button', { type: 'button', class: 'primary-button', text: t('common.done'), onclick: () => dialog.close() })]),
     );
     if (focused) dialog.querySelector(`#${focused}`)?.focus();

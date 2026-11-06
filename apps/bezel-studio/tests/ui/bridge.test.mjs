@@ -490,6 +490,12 @@ test('process capture consent uses an explicit local command, not a theme patch'
   assert.deepEqual(calls,[['set_audio_capture',{on:true}],['set_audio_capture',{on:false}]]);
 });
 
+test('the idle saver switch uses its own local command', async () => {
+  const calls = [], bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => { calls.push([command, args]); } } } });
+  await bridge.setIdleSaver(false); await bridge.setIdleSaver(true);
+  assert.deepEqual(calls, [['set_idle_saver', { on: false }], ['set_idle_saver', { on: true }]]);
+});
+
 
 test('thirty-second trials use a dedicated transient command', async () => {
   const calls = [], bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => calls.push([command, args]) } } });

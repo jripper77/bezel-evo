@@ -1413,6 +1413,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   let debugShowReadings = false;
   let debugCorner = "bottom-left";
   let audioCapture = true;
+  let idleSaver = true;
   const systemLanguage = pickLocale(hooks.languages ?? []);
   const sensorOptions = { pingHost: null };
   const closeListeners = new Set();
@@ -1750,6 +1751,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     openLogsFolder: () => Promise.resolve(),
     setDebug: (on, show, corner) => { debug = on; debugShowReadings = show; debugCorner = corner ?? "bottom-left"; return Promise.resolve(); },
     setAudioCapture: (on) => { audioCapture = Boolean(on); return Promise.resolve(); },
+    setIdleSaver: (on) => { idleSaver = Boolean(on); return Promise.resolve(); },
     profiles: () => {
       const seconds = now(), date = new Date(seconds * 1000);
       const status = profileSelection.evaluate(profileConfig, { readings: sampleReadings(seconds), activity: DEMO_ACTIVITY,
@@ -1797,6 +1799,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     preferences: () => Promise.resolve({
       debug, debugShowReadings, debugCorner, debugLogPath: "Demo: no file logging",
       audioCapture,
+      idleSaver,
       lightRuntime: true,
       language,
       systemLanguage,
