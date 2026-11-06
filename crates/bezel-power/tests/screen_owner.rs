@@ -347,3 +347,74 @@ fn runtime_payload_limit_is_checked_before_reading_or_allocating_it() {
         std::io::ErrorKind::InvalidData
     );
 }
+
+fn level(percent: u8) -> Brightness {
+    Brightness::new(percent).unwrap()
+}
+
+fn second_screen(f: &Fixture) -> Screen {
+    let mut second = f.screens[0].clone();
+    for endpoint in [&mut second.display, &mut second.wake]
+        .into_iter()
+        .flatten()
+    {
+        endpoint.address.0.push_str("-second");
+    }
+    second
+}
+
+#[test]
+fn idle_dims_every_kept_screen_and_restores_the_last_level() {
+    let f = Fixture::new();
+    let mut light = f.owner.client(false).connect(&f.screens[0]).unwrap();
+    let _second = f.owner.client(false).connect(&second_screen(&f)).unwrap();
+    light.set_brightness(level(70)).unwrap();
+    let fallback = |_: &bezel_core::domain::screen::ScreenIdentity| level(40);
+    f.owner.idle(true, &fallback).unwrap();
+    f.owner.idle(true, &fallback).unwrap(); // repeated: nothing more sent
+    assert!(f.owner.is_idle());
+    f.owner.idle(false, &fallback).unwrap();
+    f.owner.idle(false, &fallback).unwrap();
+    assert!(!f.owner.is_idle());
+    let dim = bezel_core::domain::idle::IDLE_BRIGHTNESS;
+    assert_eq!(
+        f.physical.log().brightness,
+        [level(70), dim, dim, level(70), level(40)]
+    );
+    assert_eq!(f.physical.log().connects, 2);
+}
+
+#[test]
+fn idle_never_opens_a_screen() {
+    let f = Fixture::new();
+    let fallback = |_: &bezel_core::domain::screen::ScreenIdentity| Brightness::MAX;
+    f.owner.idle(true, &fallback).unwrap();
+    f.owner.idle(false, &fallback).unwrap();
+    let mut asleep = f.owner.client(false).connect(&f.screens[0]).unwrap();
+    asleep.screen_off().unwrap();
+    f.owner.idle(true, &fallback).unwrap();
+    f.owner.idle(false, &fallback).unwrap();
+    let log = f.physical.log();
+    assert_eq!(log.connects, 1);
+    assert_eq!(log.offs, 1);
+    assert!(log.brightness.is_empty());
+}
+
+#[test]
+fn idle_keeps_a_level_set_while_idle_for_the_restore() {
+    let f = Fixture::new();
+    let mut light = f.owner.client(false).connect(&f.screens[0]).unwrap();
+    let mut studio = f.remote(Arc::default()).connect(&f.screens[0]).unwrap();
+    light.set_brightness(level(80)).unwrap();
+    let fallback = |_: &bezel_core::domain::screen::ScreenIdentity| Brightness::MAX;
+    f.owner.idle(true, &fallback).unwrap();
+    studio.set_brightness(level(30)).unwrap();
+    assert_eq!(
+        f.physical.log().brightness,
+        [level(80), bezel_core::domain::idle::IDLE_BRIGHTNESS],
+        "a level set while idle waits for the restore"
+    );
+    f.owner.idle(false, &fallback).unwrap();
+    assert_eq!(f.physical.log().brightness.last(), Some(&level(30)));
+    assert_eq!(f.physical.log().connects, 1);
+}

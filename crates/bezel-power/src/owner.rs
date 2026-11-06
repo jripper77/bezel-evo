@@ -3,10 +3,12 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use bezel_core::app::idle;
 use bezel_core::domain::{
     discovery::Screen,
     frame::Frame,
     geometry::Orientation,
+    idle::IdleBrightness,
     job::Job,
     screen::{Brightness, ScreenIdentity},
     standby::PlanB,
@@ -29,6 +31,8 @@ struct Kept {
     video: Option<(RemotePath, Repeat)>,
     edited: bool,
     failed: bool,
+    /// The levels set through this link, to restore when idle ends.
+    levels: IdleBrightness,
 }
 
 impl Kept {
@@ -63,6 +67,7 @@ pub struct Owner {
     editing: Arc<AtomicBool>,
     disabled: Arc<AtomicBool>,
     reload: Arc<AtomicBool>,
+    idle: Arc<AtomicBool>,
 }
 
 impl Owner {
@@ -74,7 +79,47 @@ impl Owner {
             editing: Arc::default(),
             disabled: Arc::default(),
             reload: Arc::default(),
+            idle: Arc::default(),
         }
+    }
+
+    /// Enters (`true`) or leaves (`false`) idle while the computer's
+    /// monitors are off (D-2026-11-06-display-idle-saver-1): every link
+    /// kept open is dimmed with [`idle::dim`], then restored with
+    /// [`idle::restore`] to the last level set through it, else to
+    /// `fallback` of its screen (the start level a rev C record keeps, or
+    /// [`Brightness::MAX`]). Closed links and screens put to sleep are never
+    /// opened; asking for the state already in place sends nothing. Levels
+    /// set while idle are only remembered for the restore. The first error
+    /// is returned after every screen was tried.
+    pub fn idle(&self, on: bool, fallback: &dyn Fn(&ScreenIdentity) -> Brightness) -> Result<()> {
+        if self.idle.swap(on, Ordering::SeqCst) == on {
+            return Ok(());
+        }
+        let links: Vec<_> = lock(&self.links)?.values().cloned().collect();
+        let mut first_error = None;
+        for link in links {
+            let mut kept = lock(&link)?;
+            if kept.failed {
+                continue;
+            }
+            let result = kept.call(|kept| {
+                if on {
+                    return idle::dim(kept.link.as_mut()).map(drop);
+                }
+                let fallback = fallback(kept.link.identity());
+                idle::restore(kept.link.as_mut(), &kept.levels, fallback).map(drop)
+            });
+            if let Err(error) = result {
+                first_error.get_or_insert(error);
+            }
+        }
+        first_error.map_or(Ok(()), Err)
+    }
+
+    /// Whether the screens are dimmed for idle ([`Owner::idle`]).
+    pub fn is_idle(&self) -> bool {
+        self.idle.load(Ordering::SeqCst)
     }
 
     /// Suspend/resume saved-theme device writes; renderer state stays local.
@@ -211,6 +256,7 @@ impl ScreenConnector for OwnerConnector {
                 video: None,
                 edited: false,
                 failed: false,
+                levels: IdleBrightness::default(),
             }));
             links.insert(key, Arc::clone(&link));
             link
@@ -325,7 +371,16 @@ impl ScreenLink for OwnedLink {
         lock(&self.kept).ok()?.link.last_transfer()
     }
     fn set_brightness(&mut self, value: Brightness) -> Result<()> {
-        self.write(|k| k.link.set_brightness(value))
+        let idle = Arc::clone(&self.owner.idle);
+        self.write(|k| {
+            k.levels.record(value);
+            // Checked under the link's lock, like `Owner::idle` dims it:
+            // while idle the level waits for the restore.
+            if idle.load(Ordering::SeqCst) {
+                return Ok(());
+            }
+            k.link.set_brightness(value)
+        })
     }
     fn set_orientation(&mut self, value: Orientation) -> Result<()> {
         self.claim_editor()?;
