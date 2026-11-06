@@ -1,0 +1,3 @@
+- [backlog] `bezel run` (tema headless, servizio) con lo stesso idle a monitor spenti (D-2026-11-06-display-idle-saver-4)
+- [backlog] PC-idle screensaver (inattività tastiera/mouse con tema dedicato, TODO.md:167): distinto da questa fase, che reagisce solo allo stato dei monitor di Windows
+- [backlog] Luminosità e intervallo del logo configurabili in Preferenze, se servirà (D-2026-11-06-display-idle-saver-1, -2)

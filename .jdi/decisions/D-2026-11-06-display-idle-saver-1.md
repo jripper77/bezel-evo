@@ -1,0 +1,1 @@
+D-2026-11-06-display-idle-saver-1 (2026-11-06): Luminosità in idle fissa al 10% (nessuno slider in Preferenze), applicata con `set_brightness` a ogni schermo connesso quando Windows spegne i monitor; alla riaccensione si ripristina la luminosità precedente dell'utente.
