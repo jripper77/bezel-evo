@@ -7,6 +7,14 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.23] - 2026-11-06
+
+### Fixes
+- With Live off, a theme with moving graphs in Studio no longer keeps a whole
+  processor core busy in Bezel Light and slows the computer down: Studio's
+  preview now moves at most 20 times a second, and once a second while the
+  Studio window is not looking at it.
+
 ## [0.2.22] - 2026-11-06
 
 ### Light and Studio
