@@ -3,6 +3,8 @@
 
 pub mod diagnostics;
 
+pub mod display_state;
+
 #[cfg(windows)]
 pub mod eyedropper;
 
