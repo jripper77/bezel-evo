@@ -287,6 +287,7 @@ impl Backend {
                 debug_overlay: (settings.debug && settings.debug_show_readings)
                     .then_some(settings.debug_corner),
                 audio_capture: settings.audio_capture.0,
+                idle_saver: true,
                 ping_host: options.ping_host,
                 presentmon_path: settings.presentmon_path,
 

@@ -22,6 +22,7 @@ use bezel_core::{
         frame::Frame,
         frame::Rgba,
         geometry::Orientation,
+        idle,
         sensor::SensorInfo,
         theme::{
             Anchor, AssetRef, Background, BoxF, Element, ElementId, ElementKind, Fit, HAlign,
@@ -130,6 +131,11 @@ struct Scene {
     /// Until when a tried profile stays on show; the profile service then
     /// covers it again and returns to what the screen should show.
     preview_until: Option<Duration>,
+    /// While the monitors are off the scene shows the moving logo: what it
+    /// showed before, given back when they come back on ([`Engine::idle`]).
+    idle_restore: Option<Document>,
+    /// The logo's place ([`idle::logo_box`]) the scene shows now.
+    idle_slot: Option<u64>,
 }
 impl Scene {
     fn restore_profile(&mut self) {
@@ -140,6 +146,48 @@ impl Scene {
             self.runtime.automatic_cards(self.cards);
         }
         self.profile_id = None;
+    }
+    /// Shows `document`; while the logo stands in for the scene, keeps it
+    /// for the end of idle instead.
+    fn show(&mut self, document: Document) {
+        match &mut self.idle_restore {
+            Some(kept) => *kept = document,
+            None => self.update(document),
+        }
+    }
+    /// Shows the logo at its `slot`-th place, keeping what the scene showed
+    /// (its profile closed first) for the end of idle.
+    fn show_idle_logo(&mut self, slot: u64) {
+        if self.idle_restore.is_none() {
+            self.restore_profile();
+            self.idle_restore = Some(Document {
+                theme: self.runtime.theme().clone(),
+                assets: self.runtime.assets().clone(),
+            });
+        }
+        let Some(shape) = &self.idle_restore else {
+            return;
+        };
+        let mut document = resting_document(&shape.theme, LOGO);
+        let place = idle::logo_box(shape.theme.canvas, slot);
+        document.theme.elements[0].frame = BoxF::new(
+            place.x as f32,
+            place.y as f32,
+            place.width as f32,
+            place.height as f32,
+        );
+        self.update(document);
+        self.idle_slot = Some(slot);
+        self.dirty = true;
+    }
+    /// Ends idle: the scene shows what it showed before.
+    fn leave_idle(&mut self) {
+        if let Some(document) = self.idle_restore.take() {
+            self.update(document);
+        }
+        self.idle_slot = None;
+        self.queued_sequence = None;
+        self.dirty = true;
     }
     fn update(&mut self, document: Document) {
         if self.runtime.theme() == &document.theme && self.runtime.assets() == &document.assets {
@@ -301,6 +349,13 @@ pub struct Engine {
     spectrum_states: BTreeMap<String, bezel_core::domain::spectrum::AudioState>,
     /// The logo every screen shows while Light is switched off ([`Engine::rest`]).
     resting: Option<Vec<u8>>,
+    /// The user's option: the screens idle while the monitors are off
+    /// (on by default, D-2026-11-06-display-idle-saver-4).
+    idle_saver: bool,
+    /// The monitors are off and the screens show the moving logo.
+    idle: bool,
+    /// When the idle logo took its first place, at the first idle tick.
+    idle_since: Option<Duration>,
 }
 impl Engine {
     /// All adapters are injected; this exact constructor serves real Light,
@@ -355,6 +410,9 @@ impl Engine {
             audio_enabled: false,
             spectrum_states: BTreeMap::new(),
             resting: None,
+            idle_saver: true,
+            idle: false,
+            idle_since: None,
         })
     }
     /// Inject process capture; consent remains disabled until locally configured.
@@ -431,6 +489,7 @@ impl Engine {
             }
         }
         self.set_audio_enabled(options.audio_capture);
+        self.set_idle_saver(options.idle_saver);
         self.diagnostic_overlay(options.debug_overlay);
         self.options = Some(options);
         Ok(())
@@ -492,7 +551,7 @@ impl Engine {
             if saved {
                 scene.saved = document.clone();
             }
-            scene.update(document);
+            scene.show(document);
             scene.revision = revision;
         } else {
             let mut runtime = ThemeRuntime::new(
@@ -533,6 +592,8 @@ impl Engine {
                     profile_edit_at: None,
                     profile_animation: None,
                     preview_until: None,
+                    idle_restore: None,
+                    idle_slot: None,
                 },
             );
             self.next_id += 1;
@@ -552,10 +613,21 @@ impl Engine {
         Ok(())
     }
     fn schedule_sensors(&self) {
+        let (periods, wanted) = self.sensor_schedule();
+        self.sensors.schedule(periods, wanted);
+    }
+    /// What the sensor reader samples and how often: nothing while the
+    /// computer sleeps or the monitors are off.
+    fn sensor_schedule(
+        &self,
+    ) -> (
+        Vec<(Duration, Duration)>,
+        bezel_core::domain::sensor::Wanted,
+    ) {
         use bezel_core::domain::{history::Cadence, sensor::Wanted};
         let mut periods = Vec::new();
         let mut wanted = Wanted::nothing();
-        if !self.suspended {
+        if !self.suspended && !self.idle {
             if let Some(profiles) = &self.profiles {
                 let activity = profiles.wanted();
                 if activity != Wanted::nothing() {
@@ -575,7 +647,7 @@ impl Engine {
         }
         periods.sort();
         periods.dedup();
-        self.sensors.schedule(periods, wanted);
+        (periods, wanted)
     }
     /// Reconcile only explicit persisted live choices after legacy direct recovery.
     pub fn follow_saved_live(&mut self, keys: &[String]) {
@@ -624,6 +696,9 @@ impl Engine {
         let Some(cover) = transition.cover()? else {
             return Ok(0);
         };
+        if self.idle {
+            return Ok(0);
+        }
         let now = self.origin.elapsed();
         let mut covered = 0;
         for (key, scene) in self
@@ -662,7 +737,7 @@ impl Engine {
         profile: Option<String>,
     ) -> Result<usize> {
         // The service owns expiry and restoration. Without it a trial cannot run.
-        if self.profiles.is_none() {
+        if self.profiles.is_none() || self.idle {
             return Ok(0);
         }
         let until = self.origin.elapsed() + Duration::from_secs(30);
@@ -777,7 +852,9 @@ impl Engine {
         scene.restore_profile();
         scene.profile_edit_at = None;
         self.images.unview(key);
-        if scene.runtime.theme() != &scene.saved.theme
+        if scene.idle_restore.is_some() {
+            scene.show(scene.saved.clone());
+        } else if scene.runtime.theme() != &scene.saved.theme
             || scene.runtime.assets() != &scene.saved.assets
         {
             self.images.forget(key);
@@ -793,6 +870,12 @@ impl Engine {
             .get_mut(key)
             .ok_or_else(|| invalid("unknown scene"))?;
         if scene.live == on && (!on || scene.presenter.is_some()) {
+            return Ok(());
+        }
+        // No connection opens while the monitors are off: the end of idle
+        // opens it.
+        if on && self.idle && scene.presenter.is_none() {
+            scene.live = true;
             return Ok(());
         }
         if on && let Some(presenter) = &scene.presenter {
@@ -848,6 +931,202 @@ impl Engine {
         }
         Ok(())
     }
+    /// Readies the scene's screen for its next frame: the theme fits it, its
+    /// orientation, and its video started or stopped. `false` while the
+    /// screen still answers a query (the frame waits).
+    fn playback(
+        scene: &mut Scene,
+        media: &mut dyn MediaTranscoder,
+        cache: &std::path::Path,
+        now: Duration,
+    ) -> Result<bool> {
+        Self::source(scene, media, cache)?;
+        if let Some(link) = &mut scene.link {
+            if scene
+                .runtime
+                .theme()
+                .misfit(link.identity().model.panel)
+                .is_some()
+            {
+                return Err(invalid("theme does not fit screen"));
+            }
+            let orientation = scene.runtime.theme().orientation;
+            if scene.orientation != Some(orientation) {
+                link.set_orientation(orientation)?;
+                scene.orientation = Some(orientation);
+            }
+            if scene.video_dirty || matches!(scene.runtime.video(), VideoState::NotStarted) {
+                link.pending = false;
+                let host = scene.source.as_ref().map(|source| HostVideo {
+                    media: &mut *media,
+                    source: source.clone(),
+                    fps: HOST_VIDEO_FPS,
+                });
+                let result = scene.runtime.start_video(link, host);
+                if link.pending {
+                    return Ok(false);
+                }
+                result?;
+                scene.video_started = now;
+                scene.video_dirty = false;
+            }
+        }
+        if scene.link.is_none()
+            && !scene.live
+            && matches!(scene.runtime.video(), VideoState::NotStarted)
+            && let Some(source) = &scene.source
+        {
+            scene.runtime.start_host_video(HostVideo {
+                media,
+                source: source.clone(),
+                fps: HOST_VIDEO_FPS,
+            })?;
+            scene.video_started = now;
+        }
+        Ok(true)
+    }
+    /// The monitors went off (`on`) or came back. While they are off every
+    /// screen shown with an open link dims (the caller's, through the
+    /// owner) and shows the logo, moved every [`idle::interval`]; nothing
+    /// samples the sensors, no spectrum listens, no theme frame is drawn,
+    /// and no connection opens. When they come back each scene shows what
+    /// it showed before: its theme, or the resting logo while Light is off
+    /// ([`Engine::rest`], also when switched off meanwhile). With the
+    /// option off ([`Engine::set_idle_saver`]) the screens never idle.
+    pub fn idle(&mut self, on: bool) {
+        let on = on && self.idle_saver;
+        if self.idle == on {
+            return;
+        }
+        self.idle = on;
+        self.idle_since = None;
+        if !on {
+            for scene in self.scenes.values_mut() {
+                scene.leave_idle();
+            }
+        }
+        tracing::info!(target: "bezel_light", idle = on, "monitors idle");
+        self.schedule_sensors();
+        self.wake.notify();
+    }
+    /// The screens show the idle logo ([`Engine::idle`]).
+    pub fn is_idle(&self) -> bool {
+        self.idle
+    }
+    /// The user's option: the screens idle while the monitors are off.
+    pub fn idle_saver(&self) -> bool {
+        self.idle_saver
+    }
+    /// Changes the option; turning it off while idle leaves idle at once.
+    pub fn set_idle_saver(&mut self, on: bool) {
+        self.idle_saver = on;
+        if !on {
+            self.idle(false);
+        }
+    }
+    /// A tick while the monitors are off: each live scene with an open link
+    /// shows the logo at its place for `now` and draws only when the place
+    /// changes; a presenter without a link stops (no reconnection). When the
+    /// next move is due.
+    fn idle_tick(&mut self, now: Duration, time: LocalTime) -> Duration {
+        let since = *self.idle_since.get_or_insert(now);
+        let mut next = Duration::from_secs(60);
+        for scene in self.scenes.values_mut() {
+            Self::poll_presenter(scene);
+            if scene.link.is_none() {
+                scene.presenter = None;
+                continue;
+            }
+            let Some(family) = scene
+                .link
+                .as_ref()
+                .filter(|_| scene.live)
+                .map(|link| link.identity().model.family)
+            else {
+                continue;
+            };
+            let every = idle::interval(family);
+            let slot = (now.saturating_sub(since).as_nanos() / every.as_nanos().max(1)) as u64;
+            if scene.idle_slot != Some(slot) {
+                scene.show_idle_logo(slot);
+            }
+            let moves = u32::try_from(slot.saturating_add(1)).unwrap_or(u32::MAX);
+            let mut wait = (since + every.saturating_mul(moves)).saturating_sub(now);
+            if scene.dirty {
+                let (renderer, media) = (self.renderer.as_mut(), self.media.as_mut());
+                match Self::present_idle(scene, renderer, media, &self.cache, now, time) {
+                    Ok(true) => {}
+                    Ok(false) => wait = Duration::from_millis(5),
+                    Err(error) => {
+                        scene.error = Some(error.to_string());
+                        light(LightEvent::ScreenError, scene.id, 0.0, "scene");
+                    }
+                }
+            }
+            next = next.min(wait);
+        }
+        next.max(Duration::from_millis(5))
+    }
+    /// Takes what the scene's presenter reports: a link opened or lost.
+    fn poll_presenter(scene: &mut Scene) {
+        let Some(presenter) = &scene.presenter else {
+            return;
+        };
+        let update = presenter.poll();
+        if update.error {
+            scene.error = Some("screen I/O failed".into());
+            scene.link = None;
+            scene.runtime.forget_screen();
+            scene.dirty = true;
+        }
+        if let Some((screen, link)) = update.opened {
+            scene.screen = Some(screen);
+            scene.link = Some(link);
+            scene.queued_sequence = None;
+            scene.orientation = None;
+            scene.runtime.forget_screen();
+            scene.dirty = true;
+            scene.error = None;
+        }
+    }
+    /// Draws the idle logo and hands it to the screen; `false` while the
+    /// screen still answers a query (the frame waits).
+    fn present_idle(
+        scene: &mut Scene,
+        renderer: &mut dyn FrameRenderer,
+        media: &mut dyn MediaTranscoder,
+        cache: &std::path::Path,
+        now: Duration,
+        time: LocalTime,
+    ) -> Result<bool> {
+        // The logo plays no video: this stops the one the screen played.
+        let ready = Self::playback(scene, media, cache, now)?;
+        if !ready {
+            return Ok(false);
+        }
+        renderer.set_scene(scene.id);
+        renderer.set_motion(false);
+        let frame = scene
+            .runtime
+            .render_at(renderer, time, now, Duration::ZERO)?;
+        if scene
+            .frame
+            .as_ref()
+            .is_none_or(|previous| previous.as_ref() != &frame)
+        {
+            scene.sequence = scene.sequence.saturating_add(1);
+            scene.frame = Some(Arc::new(frame));
+        }
+        if scene.queued_sequence != Some(scene.sequence)
+            && let (Some(presenter), Some(frame)) = (&scene.presenter, &scene.frame)
+        {
+            presenter.frame(frame.clone());
+            scene.queued_sequence = Some(scene.sequence);
+        }
+        scene.rendered_at = now;
+        scene.dirty = false;
+        Ok(true)
+    }
     /// Light's off switch: with `logo` (a PNG) every screen shows it on a
     /// dark background instead of its theme, and profiles wait; `None` puts
     /// the saved themes back and lets profiles choose again.
@@ -861,7 +1140,7 @@ impl Engine {
                 Some(png) => resting_document(scene.runtime.theme(), png),
                 None => scene.saved.clone(),
             };
-            scene.update(document);
+            scene.show(document);
             scene.dirty = true;
             self.images.forget(key);
         }
@@ -883,6 +1162,8 @@ impl Engine {
             .map(|scene| {
                 let theme = if self.resting.is_some() {
                     &scene.saved.theme
+                } else if let Some(kept) = &scene.idle_restore {
+                    &kept.theme
                 } else {
                     scene.runtime.theme()
                 };
@@ -950,6 +1231,12 @@ impl Engine {
                 audio.sync(Vec::new(), false);
             }
             return Ok(Duration::from_millis(50));
+        }
+        if self.idle {
+            if let Some(audio) = &self.audio {
+                audio.sync(Vec::new(), false);
+            }
+            return Ok(self.idle_tick(now, time));
         }
         let reading = self.sensors.latest();
         if self.resting.is_none()
@@ -1226,54 +1513,7 @@ impl Engine {
                 }
                 // A video/device failure must not keep the preceding document's
                 // picture on the editor canvas: its poster and objects still render.
-                let playback = (|| -> Result<bool> {
-                    Self::source(scene, self.media.as_mut(), &self.cache)?;
-                    if let Some(link) = &mut scene.link {
-                        if scene
-                            .runtime
-                            .theme()
-                            .misfit(link.identity().model.panel)
-                            .is_some()
-                        {
-                            return Err(invalid("theme does not fit screen"));
-                        }
-                        let orientation = scene.runtime.theme().orientation;
-                        if scene.orientation != Some(orientation) {
-                            link.set_orientation(orientation)?;
-                            scene.orientation = Some(orientation);
-                        }
-                        if scene.video_dirty
-                            || matches!(scene.runtime.video(), VideoState::NotStarted)
-                        {
-                            link.pending = false;
-                            let host = scene.source.as_ref().map(|source| HostVideo {
-                                media: self.media.as_mut(),
-                                source: source.clone(),
-                                fps: HOST_VIDEO_FPS,
-                            });
-                            let result = scene.runtime.start_video(link, host);
-                            if link.pending {
-                                return Ok(false);
-                            }
-                            result?;
-                            scene.video_started = now;
-                            scene.video_dirty = false;
-                        }
-                    }
-                    if scene.link.is_none()
-                        && !scene.live
-                        && matches!(scene.runtime.video(), VideoState::NotStarted)
-                        && let Some(source) = &scene.source
-                    {
-                        scene.runtime.start_host_video(HostVideo {
-                            media: self.media.as_mut(),
-                            source: source.clone(),
-                            fps: HOST_VIDEO_FPS,
-                        })?;
-                        scene.video_started = now;
-                    }
-                    Ok(true)
-                })();
+                let playback = Self::playback(scene, self.media.as_mut(), &self.cache, now);
                 let playback_ready = match playback {
                     Ok(ready) => ready,
                     Err(error) => {
@@ -1553,7 +1793,7 @@ impl Engine {
             .retain(|key, scene| scene.live || !key.starts_with(EDITOR_SCENE));
         for scene in self.scenes.values_mut() {
             scene.restore_profile();
-            scene.update(scene.saved.clone());
+            scene.show(scene.saved.clone());
             scene.revision = 0;
             if !scene.cards {
                 scene.cards = true;

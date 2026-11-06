@@ -13,8 +13,16 @@ pub struct Options {
     pub ping_host: String,
     #[serde(default)]
     pub audio_capture: bool,
+    /// The screens idle while the monitors are off ([`Engine::idle`]); on
+    /// when absent (D-2026-11-06-display-idle-saver-4).
+    #[serde(default = "on")]
+    pub idle_saver: bool,
     pub presentmon_path: Option<String>,
     pub ffmpeg: Option<String>,
+}
+
+fn on() -> bool {
+    true
 }
 
 /// The element a canvas trial holds still and the share of its scale.
@@ -104,6 +112,11 @@ pub enum RuntimeOp {
     /// What the profiles do now (the scene named is ignored): the active
     /// profile and why, and which rules are true.
     ProfileStatus,
+    /// The monitors went off (`on`) or came back (the scene named is
+    /// ignored): every screen idles ([`Engine::idle`]).
+    Idle {
+        on: bool,
+    },
 }
 #[derive(Serialize, Deserialize)]
 pub struct Reply {
@@ -439,6 +452,10 @@ fn dispatch_inner(
                 0,
                 u32::MAX,
             ))
+        }
+        RuntimeOp::Idle { on } => {
+            engine.idle(on);
+            Ok((Value::Null, Vec::new()))
         }
         RuntimeOp::ProfileStatus => Ok((
             serde_json::to_value(engine.profile_status()).unwrap_or(Value::Null),

@@ -800,6 +800,7 @@ fn diagnostic_overlay_reaches_physical_output_without_changing_the_canvas_or_the
                 options: wire::Options {
                     debug_overlay: Some(corner),
                     audio_capture: false,
+                    idle_saver: true,
                     ping_host: "127.0.0.1".into(),
                     presentmon_path: None,
                     ffmpeg: None,
@@ -1416,6 +1417,7 @@ fn sensor_options_status_and_catalog_use_engine_sources_without_losing_histories
     let options = wire::Options {
         debug_overlay: None,
         audio_capture: false,
+        idle_saver: true,
         ping_host: "127.0.0.1".into(),
         presentmon_path: None,
         ffmpeg: None,
@@ -1439,6 +1441,7 @@ fn sensor_options_status_and_catalog_use_engine_sources_without_losing_histories
         RuntimeOp::Options {
             options: wire::Options {
                 audio_capture: true,
+                idle_saver: true,
                 ..options.clone()
             },
         },
@@ -1955,6 +1958,7 @@ fn rejected_options_do_not_grant_capture_permission() {
     let invalid = wire::Options {
         debug_overlay: None,
         audio_capture: true,
+        idle_saver: true,
         ping_host: "x".repeat(254),
         presentmon_path: None,
         ffmpeg: None,
@@ -2594,4 +2598,270 @@ fn the_editors_own_scene_does_not_redraw_its_graph_at_every_tick() {
             .unwrap();
         assert_eq!(f.engine.scenes[&editor].rendered_at, drawn, "step {step}");
     }
+}
+
+/// A saved theme on the fixture's screen, live and presented.
+fn idle_fixture() -> Fixture {
+    let mut f = fixture();
+    let mut saved = doc();
+    saved.theme.background = Background::Color(Rgba::BLACK);
+    f.engine.document(&f.key, 0, saved, true).unwrap();
+    f.engine.live(&f.key, true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    f
+}
+
+fn logo_frame(canvas: Size, slot: u64) -> BoxF {
+    let place = bezel_core::domain::idle::logo_box(canvas, slot);
+    BoxF::new(
+        place.x as f32,
+        place.y as f32,
+        place.width as f32,
+        place.height as f32,
+    )
+}
+
+fn idle_options(idle_saver: bool) -> RuntimeOp {
+    RuntimeOp::Options {
+        options: wire::Options {
+            debug_overlay: None,
+            audio_capture: false,
+            idle_saver,
+            ping_host: "127.0.0.1".into(),
+            presentmon_path: None,
+            ffmpeg: None,
+        },
+    }
+}
+
+#[test]
+fn idle_shows_the_moving_logo_without_theme_frames() {
+    let previous_pixels = DISTINCT.with(|d| d.replace(Some(0)));
+    let mut f = idle_fixture();
+    let canvas = f.engine.scenes[&f.key].runtime.theme().canvas;
+    let renders = f.seen.lock().unwrap().len();
+    f.engine.idle(true);
+    assert!(f.engine.is_idle());
+    let (periods, wanted) = f.engine.sensor_schedule();
+    assert!(periods.is_empty(), "nothing samples the sensors");
+    assert!(wanted == bezel_core::domain::sensor::Wanted::nothing());
+    let start = Duration::from_secs(1);
+    advance(&mut f.engine, start, time()).unwrap();
+    let scene = &f.engine.scenes[&f.key];
+    assert_eq!(scene.runtime.theme().name, "Bezel");
+    assert_eq!(
+        scene.runtime.theme().elements[0].frame,
+        logo_frame(canvas, 0)
+    );
+    assert_eq!(
+        scene.runtime.assets().get(&AssetRef(RESTING_LOGO.into())),
+        Some(&LOGO.to_vec())
+    );
+    assert_eq!(
+        f.engine.shown()[0].1,
+        "saved",
+        "Light's menu names the theme"
+    );
+    let seen = f.seen.lock().unwrap()[renders..].to_vec();
+    assert_eq!(seen.len(), 1, "one logo frame, no theme frame");
+    assert_eq!(seen[0].theme, "Bezel");
+    let frames = f.physical.log().frames.len();
+    // Between two moves (30 s on the 8.8" rev C) nothing is drawn or sent.
+    for later in [1, 10, 29] {
+        let delay = f
+            .engine
+            .tick_at(start + Duration::from_secs(later), time())
+            .unwrap();
+        assert_eq!(delay, Duration::from_secs(30 - later));
+    }
+    std::thread::sleep(Duration::from_millis(30));
+    assert_eq!(f.seen.lock().unwrap().len(), renders + 1);
+    assert_eq!(f.physical.log().frames.len(), frames);
+    advance(&mut f.engine, start + Duration::from_secs(30), time()).unwrap();
+    let moved = f.engine.scenes[&f.key].runtime.theme().elements[0].frame;
+    assert_eq!(moved, logo_frame(canvas, 1));
+    assert_ne!(moved, logo_frame(canvas, 0));
+    assert_eq!(f.seen.lock().unwrap().len(), renders + 2);
+    assert_eq!(f.physical.log().frames.len(), frames + 1);
+    f.engine.idle(false);
+    assert!(!f.engine.is_idle());
+    advance(&mut f.engine, start + Duration::from_secs(31), time()).unwrap();
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+    assert_eq!(f.seen.lock().unwrap().last().unwrap().theme, "saved");
+    assert_eq!(f.physical.log().frames.len(), frames + 2);
+    assert!(!f.engine.sensor_schedule().0.is_empty());
+    DISTINCT.with(|d| d.set(previous_pixels));
+}
+
+#[test]
+fn idle_releases_audio_capture_and_leaving_reopens_it() {
+    use bezel_core::{
+        domain::{
+            spectrum::{AudioBlock, AudioState, Spectrum, SpectrumAudio},
+            theme::{TextContent, TextStyle},
+        },
+        ports::{AudioCapture, AudioCaptureFactory},
+    };
+    #[derive(Clone, Default)]
+    struct Counts {
+        opened: Arc<AtomicU64>,
+        closed: Arc<AtomicU64>,
+    }
+    struct Capture(Arc<AtomicU64>);
+    impl Drop for Capture {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+    impl AudioCapture for Capture {
+        fn read(&mut self) -> std::result::Result<AudioBlock, AudioState> {
+            Ok(AudioBlock {
+                samples: vec![],
+                rate: 48000,
+                channels: 2,
+            })
+        }
+    }
+    impl AudioCaptureFactory for Counts {
+        fn open(&self, _: &str) -> std::result::Result<Box<dyn AudioCapture>, AudioState> {
+            self.opened.fetch_add(1, Ordering::SeqCst);
+            Ok(Box::new(Capture(self.closed.clone())))
+        }
+    }
+    fn until(what: &str, mut condition: impl FnMut() -> bool) {
+        let limit = Instant::now() + Duration::from_secs(2);
+        while !condition() {
+            assert!(Instant::now() < limit, "{what}");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+    let mut f = fixture();
+    let mut document = doc();
+    document.theme.elements[0].kind = ElementKind::Text {
+        content: TextContent::Spectrum(Spectrum {
+            audio: SpectrumAudio::System,
+            ..Spectrum::default()
+        }),
+        style: TextStyle::default(),
+    };
+    let counts = Counts::default();
+    f.engine = f.engine.with_audio(Arc::new(counts.clone()));
+    f.engine.audio_consent(true);
+    f.engine.document("preview", 0, document, false).unwrap();
+    f.engine.tick_at(Duration::ZERO, time()).unwrap();
+    f.engine.images.latest("preview", 0, 64).unwrap();
+    f.engine.tick_at(Duration::from_millis(50), time()).unwrap();
+    until("the capture did not open", || {
+        counts.opened.load(Ordering::SeqCst) == 1
+    });
+    f.engine.idle(true);
+    f.engine
+        .tick_at(Duration::from_millis(100), time())
+        .unwrap();
+    until("idle did not release the capture", || {
+        counts.closed.load(Ordering::SeqCst) == 1
+    });
+    f.engine
+        .tick_at(Duration::from_millis(150), time())
+        .unwrap();
+    std::thread::sleep(Duration::from_millis(60));
+    assert_eq!(
+        counts.opened.load(Ordering::SeqCst),
+        1,
+        "no capture in idle"
+    );
+    f.engine.idle(false);
+    f.engine.images.latest("preview", 0, 64).unwrap();
+    f.engine
+        .tick_at(Duration::from_millis(200), time())
+        .unwrap();
+    until("leaving idle did not reopen the capture", || {
+        counts.opened.load(Ordering::SeqCst) == 2
+    });
+}
+
+#[test]
+fn idle_opens_no_new_connection() {
+    let mut f = idle_fixture();
+    assert_eq!(f.physical.log().connects, 1);
+    f.engine.idle(true);
+    advance(&mut f.engine, Duration::from_secs(1), time()).unwrap();
+    // The link is lost while the monitors are off: it is not reopened.
+    f.engine.disconnect_links();
+    f.owner.clear().unwrap();
+    for second in 2..=6 {
+        f.engine
+            .tick_at(Duration::from_secs(second), time())
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert_eq!(f.physical.log().connects, 1);
+    assert!(f.engine.scenes[&f.key].presenter.is_none());
+    // A scene shown meanwhile waits for the monitors as well.
+    let mut other = doc();
+    other.theme.background = Background::Color(Rgba::BLACK);
+    f.engine.document("other", 0, other, true).unwrap();
+    f.engine.live("other", true).unwrap();
+    f.engine.tick_at(Duration::from_secs(7), time()).unwrap();
+    assert!(f.engine.scenes["other"].live);
+    assert!(f.engine.scenes["other"].presenter.is_none());
+    f.engine.live("other", false).unwrap();
+    f.engine.idle(false);
+    advance(&mut f.engine, Duration::from_secs(8), time()).unwrap();
+    assert_eq!(f.physical.log().connects, 2);
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+}
+
+#[test]
+fn idle_is_ignored_when_the_option_is_off() {
+    let absent: wire::Options =
+        serde_json::from_str(r#"{"ping_host":"","presentmon_path":null,"ffmpeg":null}"#).unwrap();
+    assert!(absent.idle_saver, "on unless turned off");
+    let mut f = idle_fixture();
+    assert!(f.engine.idle_saver());
+    send(&mut f.engine, "__options__", idle_options(false), &[]).unwrap();
+    assert!(!f.engine.idle_saver());
+    f.engine.idle(true);
+    send(&mut f.engine, &f.key, RuntimeOp::Idle { on: true }, &[]).unwrap();
+    assert!(!f.engine.is_idle());
+    advance(&mut f.engine, Duration::from_secs(1), time()).unwrap();
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+    // Turning the option off while idle leaves idle at once.
+    send(&mut f.engine, "__options__", idle_options(true), &[]).unwrap();
+    send(&mut f.engine, &f.key, RuntimeOp::Idle { on: true }, &[]).unwrap();
+    assert!(f.engine.is_idle());
+    advance(&mut f.engine, Duration::from_secs(2), time()).unwrap();
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "Bezel");
+    send(&mut f.engine, "__options__", idle_options(false), &[]).unwrap();
+    assert!(!f.engine.is_idle());
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+}
+
+#[test]
+fn idle_ends_on_the_resting_logo_when_light_is_off() {
+    let mut f = idle_fixture();
+    let resting = |f: &Fixture| {
+        f.engine.scenes[&f.key]
+            .runtime
+            .assets()
+            .get(&AssetRef(RESTING_LOGO.into()))
+            .cloned()
+    };
+    // Light was switched off before the monitors.
+    f.engine.rest(Some(vec![7; 16]));
+    f.engine.idle(true);
+    advance(&mut f.engine, Duration::from_secs(1), time()).unwrap();
+    assert_eq!(resting(&f), Some(LOGO.to_vec()));
+    f.engine.idle(false);
+    assert_eq!(resting(&f), Some(vec![7; 16]));
+    f.engine.rest(None);
+    assert_eq!(f.engine.scenes[&f.key].runtime.theme().name, "saved");
+    // Light is switched off while the monitors are off.
+    f.engine.idle(true);
+    advance(&mut f.engine, Duration::from_secs(2), time()).unwrap();
+    f.engine.rest(Some(vec![9; 16]));
+    assert_eq!(resting(&f), Some(LOGO.to_vec()), "the idle logo stays");
+    f.engine.idle(false);
+    assert_eq!(resting(&f), Some(vec![9; 16]));
+    assert_eq!(f.engine.scenes[&f.key].saved.theme.name, "saved");
 }
