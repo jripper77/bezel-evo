@@ -92,7 +92,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - `power::on_power_event(backend, transition)`: `Suspend` → `shut_down(backend, now + 2 s)` (stessa scelta rev C di D-3, schermi addormentati non svegliati); `Resume` → `leave_final_state`; con opzione spenta nulla; `lib.rs` tiene il `Watch` e chiama solo questa funzione.
 - **Dependencies:** T-2, T-6
 - **Test:** `cargo test -p bezel-studio idle` (`power::tests::idle_dims_live_screens_and_restores_them`, `power::tests::idle_suspend_applies_choices_and_resume_leaves_final_state`, `power::tests::idle_option_off_ignores_power_events`; un log ordinato unico nel fake)
-- **Status:** pending
+- **Status:** completed
 
 #### T-8: interruttore in Preferenze, i18n e changelog
 - **Specialist:** jdi-doer-bezel
