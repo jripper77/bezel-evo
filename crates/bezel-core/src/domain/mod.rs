@@ -2,7 +2,8 @@
 //! stored media, the framing of a video background, the archive of what
 //! Bezel sent, the cleanup assistant, long-running jobs, GIF and sticker
 //! search with the user's collection, what a screen does when the computer
-//! shuts down, and the frame handed from one Bezel program to another.
+//! shuts down, what the screens do while the monitors are off, and the frame
+//! handed from one Bezel program to another.
 
 pub mod animation;
 pub mod archive;
@@ -19,6 +20,7 @@ pub mod geometry;
 pub mod gifs;
 pub mod handoff;
 pub mod history;
+pub mod idle;
 pub mod job;
 pub mod media;
 pub mod needle;
