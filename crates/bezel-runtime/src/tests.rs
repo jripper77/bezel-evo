@@ -2567,3 +2567,31 @@ fn a_screen_without_a_theme_shows_the_logo_and_how_to_set_one() {
     f.engine.unassigned("nowhere", None).unwrap();
     assert!(!f.engine.scenes.contains_key("nowhere"));
 }
+#[test]
+fn a_scene_no_screen_paces_draws_its_motion_at_a_bounded_rate() {
+    let ms = Duration::from_millis;
+    // Motion due at once (a graph's 20 ms step) waits for the editor's pace...
+    assert_eq!(crate::unpaced_due(ms(1020), ms(1000), true), ms(1050));
+    // ...and for a second while nobody looks at the editor.
+    assert_eq!(crate::unpaced_due(ms(1020), ms(1000), false), ms(2000));
+    // A later due time stays as it is.
+    assert_eq!(crate::unpaced_due(ms(5000), ms(1000), true), ms(5000));
+}
+#[test]
+fn the_editors_own_scene_does_not_redraw_its_graph_at_every_tick() {
+    let mut f = fixture();
+    let mut document = doc();
+    document.theme.background = Background::Color(Rgba::BLACK);
+    let editor = format!("{}/{}", crate::EDITOR_SCENE, f.key);
+    f.engine.document(&editor, 1, document, true).unwrap();
+    advance(&mut f.engine, Duration::ZERO, time()).unwrap();
+    advance(&mut f.engine, Duration::from_secs(1), time()).unwrap();
+    let drawn = f.engine.scenes[&editor].rendered_at;
+    // A graph would draw every 20 ms; nobody looks at the editor's canvas.
+    for step in 1..45 {
+        f.engine
+            .tick_at(drawn + Duration::from_millis(20 * step), time())
+            .unwrap();
+        assert_eq!(f.engine.scenes[&editor].rendered_at, drawn, "step {step}");
+    }
+}

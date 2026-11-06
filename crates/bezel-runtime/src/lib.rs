@@ -44,6 +44,20 @@ use std::{
 
 /// Maximum persistent scenes and bytes of each complete document.
 pub const MAX_SCENES: usize = 16;
+/// The shortest step between two pictures of a scene no screen paces.
+const EDITOR_FRAME: Duration = Duration::from_millis(50);
+
+/// When a scene no screen paces draws next: never sooner than
+/// [`EDITOR_FRAME`] after its last picture while the editor looks at it, a
+/// second when nobody does (its motion would otherwise run at every tick).
+fn unpaced_due(due: Duration, rendered_at: Duration, viewed: bool) -> Duration {
+    let step = if viewed {
+        EDITOR_FRAME
+    } else {
+        Duration::from_secs(1)
+    };
+    due.max(rendered_at + step)
+}
 /// Scenes whose key starts with this belong to the connected editor alone
 /// (its document outside a live preview): they are dropped when it leaves.
 pub const EDITOR_SCENE: &str = "__editor__";
@@ -1199,6 +1213,13 @@ impl Engine {
                 }
                 if matches!(scene.runtime.video(), VideoState::Host) {
                     due = due.min(scene.rendered_at + Duration::from_secs(1) / HOST_VIDEO_FPS);
+                }
+                // No screen paces the editor's own scene: its motion is drawn
+                // at most every EDITOR_FRAME while the editor looks at it, and
+                // once a second when it does not. An edit (`dirty`) is still
+                // drawn at once.
+                if !scene.live && scene.frame.is_some() && key.starts_with(EDITOR_SCENE) {
+                    due = unpaced_due(due, scene.rendered_at, self.images.viewed(key));
                 }
                 if !scene.dirty && now < due {
                     return Ok(audio_wait.map_or(due - now, |wait| wait.min(due - now)));
