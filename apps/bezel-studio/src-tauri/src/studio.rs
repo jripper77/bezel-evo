@@ -72,10 +72,11 @@ use bezel_core::domain::discovery::{DeviceAddress, Screen};
 use bezel_core::domain::frame::Frame;
 use bezel_core::domain::framing::{PanelLayout, VideoFraming, auto_turns};
 use bezel_core::domain::geometry::{Orientation, Size};
+use bezel_core::domain::idle::IdleBrightness;
 use bezel_core::domain::media::{MediaInfo, MediaTools, PREVIEW_FPS};
 use bezel_core::domain::poster::PosterSpec;
 use bezel_core::domain::reconnect::{Reconnect, worth_reconnecting};
-use bezel_core::domain::screen::Brightness;
+use bezel_core::domain::screen::{Brightness, ScreenIdentity};
 use bezel_core::domain::sensor::{Quantities, SensorInfo, Snapshot, Wanted};
 use bezel_core::domain::theme::{AssetRef, Background, ElementId, Theme, refresh_interval};
 use bezel_core::ports::{
@@ -467,6 +468,9 @@ struct Live {
     restart_video: bool,
     /// The video decoded here ([`VideoState::Host`]).
     host: Option<HostPlayback>,
+    /// The levels set on it through the studio, to restore when idle ends
+    /// (D-2026-11-06-display-idle-saver-1).
+    levels: IdleBrightness,
 }
 
 impl Live {
@@ -620,6 +624,9 @@ pub struct Studio {
     /// The final state of a shutdown ([`Self::enter_final_state`]): no
     /// frame, no reconnection, no link lent, no screen going live.
     shutting_down: bool,
+    /// The computer's monitors are off and the live screens are dimmed
+    /// ([`Self::idle`]).
+    idle: bool,
 }
 
 #[derive(Clone)]
@@ -950,6 +957,7 @@ impl Studio {
             serials: 0,
             origin: Instant::now(),
             shutting_down: false,
+            idle: false,
         };
         studio.follow_video();
         studio
@@ -1991,6 +1999,7 @@ impl Studio {
             orientation: None,
             restart_video: true,
             host: None,
+            levels: IdleBrightness::default(),
         });
         self.live_error = None;
         true
@@ -2037,11 +2046,65 @@ impl Studio {
 
     /// Sets the brightness of the live screen when it is `key`; `false` when
     /// that screen is not live. `InUse` while its link is out.
+    /// The level is remembered for the end of idle; while idle only that
+    /// is done, the screen stays dimmed.
     pub fn live_brightness(&mut self, key: &str, brightness: Brightness) -> Result<bool> {
-        match self.link_of(key)? {
-            Some(link) => link.set_brightness(brightness).map(|()| true),
-            None => Ok(false),
+        if !self.live.as_ref().is_some_and(|l| l.answers_to(key))
+            && let Some(studio) = self.documents.values_mut().find(|s| s.is_live(key))
+        {
+            return studio.live_brightness(key, brightness);
         }
+        let idle = self.idle;
+        let Some(link) = self.link_of(key)? else {
+            return Ok(false);
+        };
+        if !idle {
+            link.set_brightness(brightness)?;
+        }
+        if let Some(live) = self.live.as_mut() {
+            live.levels.record(brightness);
+        }
+        Ok(true)
+    }
+
+    /// The computer's monitors went off (`on`) or came back
+    /// (D-2026-11-06-display-idle-saver-1): every live screen whose link is
+    /// here is dimmed ([`bezel_core::app::idle::dim`]) or gets back the last level set
+    /// through the studio, else `fallback`'s ([`bezel_core::app::idle::restore`]).
+    /// Nothing is opened and nothing else is sent; asking for the state in
+    /// force sends nothing. In the final state of a shutdown only the state
+    /// changes. Whether a screen failed to take its level.
+    pub fn idle(&mut self, on: bool, fallback: &dyn Fn(&ScreenIdentity) -> Brightness) -> bool {
+        let mut failed = false;
+        for studio in self.documents.values_mut() {
+            failed |= studio.idle(on, fallback);
+        }
+        if self.idle == on {
+            return failed;
+        }
+        self.idle = on;
+        if self.shutting_down {
+            return failed;
+        }
+        let Some(live) = self.live.as_mut() else {
+            return failed;
+        };
+        let levels = live.levels;
+        let Some(link) = live.slot.link() else {
+            return failed;
+        };
+        let sent = if on {
+            bezel_core::app::idle::dim(link.as_mut())
+        } else {
+            let fallback = fallback(link.identity());
+            bezel_core::app::idle::restore(link.as_mut(), &levels, fallback)
+        };
+        failed | sent.is_err()
+    }
+
+    /// Whether the live screens are dimmed for the monitors being off.
+    pub fn is_idle(&self) -> bool {
+        self.idle
     }
 
     /// Starts the theme's video on the live screen when it has to (a failure

@@ -582,6 +582,13 @@ fn setup<R: Runtime>(app: &App<R>, start: Start<R>) -> Result<(), Box<dyn std::e
     // themes until the user turns the preview on
     // (D-2026-11-05-light-studio-split-2).
     app.manage(Arc::clone(&backend));
+    // The monitors going off and the computer's sleep, for the app's
+    // lifetime (D-2026-11-06-display-idle-saver-2); not in the demo.
+    if !start.simulate
+        && let Some(watch) = power::watch(Arc::clone(&backend))
+    {
+        app.manage(watch);
+    }
     // Its own state, which asks nothing of KLIPY until a search.
     let gifs: SharedGifs = Arc::new(gifs(&folders, start.gif_source));
     app.manage(gifs);

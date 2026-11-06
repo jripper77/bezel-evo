@@ -29,6 +29,9 @@ struct State {
     revision: u64,
     options: Option<wire::Options>,
     suspended: bool,
+    /// The monitors are off (D-2026-11-06-display-idle-saver-2): kept for
+    /// the engine of a recovery, like `suspended`.
+    idle: bool,
     cursor: Option<(String, u32, u64)>,
 }
 /// One serialized editor connection, shared with device control requests.
@@ -50,6 +53,7 @@ impl EngineBridge {
                 revision: 0,
                 options: None,
                 suspended: false,
+                idle: false,
                 cursor: None,
             }),
         }
@@ -100,6 +104,8 @@ impl EngineBridge {
                             .request(&wire::request(key, RuntimeOp::Cards { on: *on })?, &[])?;
                         wire::response(&reply)?;
                     }
+                    // After the options: the idle saver option decides.
+                    local.idle(state.idle);
                     state.cursor = None;
                     let mut request: wire::RuntimeMessage = serde_json::from_slice(&metadata)
                         .map_err(|e| BezelError::InvalidInput(e.to_string()))?;
@@ -357,6 +363,19 @@ impl EngineBridge {
             state.suspended = on;
             if let Some(local) = &mut state.local {
                 local.suspend(on);
+            }
+        }
+    }
+    /// The monitors went off (`on`) or came back: the engine Studio runs
+    /// itself (a recovery's) shows the moving logo or leaves it
+    /// ([`Engine::idle`]), and the state is kept for a later one. Light's
+    /// engine is not told: Light watches the monitors itself, and two
+    /// sources would race on its screens.
+    pub fn idle(&self, on: bool) {
+        if let Ok(mut state) = self.lock() {
+            state.idle = on;
+            if let Some(local) = &mut state.local {
+                local.idle(on);
             }
         }
     }
@@ -654,6 +673,26 @@ mod tests {
         bridge.drive().unwrap();
         bridge.canvas("editor", 640, true).unwrap();
         assert_eq!(built.load(Ordering::SeqCst), 1);
+    }
+    #[test]
+    fn idle_is_kept_for_the_engine_of_a_recovery_and_never_sent_to_light() {
+        let (bridge, connection, built) = setup();
+        bridge.sync("editor", (1, 1), document(), true).unwrap();
+        let calls = connection.calls.load(Ordering::SeqCst);
+        bridge.idle(true);
+        assert_eq!(
+            connection.calls.load(Ordering::SeqCst),
+            calls,
+            "Light watches itself"
+        );
+        assert!(!connection.server.lock().unwrap().is_idle());
+        connection.dead.store(true, Ordering::SeqCst);
+        bridge.canvas("editor", 320, true).unwrap();
+        assert_eq!(built.load(Ordering::SeqCst), 1);
+        let idle = |b: &EngineBridge| b.lock().unwrap().local.as_ref().unwrap().is_idle();
+        assert!(idle(&bridge), "the recovered engine starts idle");
+        bridge.idle(false);
+        assert!(!idle(&bridge));
     }
     #[test]
     fn missing_light_recovers_but_service_validation_errors_do_not_take_over() {

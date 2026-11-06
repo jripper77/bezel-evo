@@ -13,6 +13,7 @@ use bezel_core::domain::device::ModelId;
 use bezel_core::domain::discovery::Screen;
 use bezel_core::domain::frame::Frame;
 use bezel_core::domain::geometry::Orientation;
+use bezel_core::domain::idle::{IdleState, PowerEvent, Transition};
 use bezel_core::domain::job::Job;
 use bezel_core::domain::screen::{Brightness, ScreenIdentity};
 use bezel_core::domain::standby::{PlanB, SleepMinutes, Standby, StoredPlanB};
@@ -27,7 +28,7 @@ use bezel_media::archive::{DiskArchive, storage_dir};
 use bezel_sensors::FakeSensors;
 
 use super::*;
-use crate::settings::SettingsFile;
+use crate::settings::{DefaultOn, SettingsFile};
 use crate::tests::temp_root;
 use crate::{Adapters, Folders, compose};
 
@@ -185,6 +186,8 @@ struct Recording {
     inner: FakeConnector,
     heard: Heard,
     hold: Hold,
+    /// Bezel Light keeps the screens ([`ScreenConnector::manages_shutdown`]).
+    light: bool,
 }
 
 impl Recording {
@@ -193,11 +196,24 @@ impl Recording {
             inner,
             heard: heard.clone(),
             hold,
+            light: false,
+        }
+    }
+
+    /// The same, the screens kept by Bezel Light.
+    fn kept_by_light(self) -> Self {
+        Self {
+            light: true,
+            ..self
         }
     }
 }
 
 impl ScreenConnector for Recording {
+    fn manages_shutdown(&self) -> bool {
+        self.light
+    }
+
     fn connect(&self, screen: &Screen) -> Result<Box<dyn ScreenLink>> {
         self.heard.note("connect");
         let inner = self.inner.connect(screen)?;
@@ -665,4 +681,139 @@ fn a_shutdown_opens_the_awake_screens_and_wakes_none() {
     );
     assert_eq!(shut_down(&backend, Instant::now() + PATIENCE), Ending::Done);
     assert!(heard.all().is_empty(), "{:?}", heard.all());
+}
+
+// ------------------------------------------------------- idle saver --
+
+/// The levels the fake screens took, in percent.
+fn levels(fake: &FakeConnector) -> Vec<u8> {
+    fake.log()
+        .brightness
+        .iter()
+        .map(|level| level.percent())
+        .collect()
+}
+
+/// D-2026-11-06-display-idle-saver-1: the monitors going off dim the
+/// studio's live screen to 10% (once, whatever repeats), a level set
+/// meanwhile is only remembered, and the monitors coming back restore it;
+/// without a level set through the studio the screen gets full brightness
+/// back. Screens Bezel Light keeps are never touched: Light dims them.
+#[test]
+fn idle_dims_live_screens_and_restores_them() {
+    let (_root, folders) = folders_for("power-idle", Standby::Keep);
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake.clone(), &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    backend.set_brightness(DISPLAY, 60).unwrap();
+    let before = heard.all();
+    let now = Instant::now();
+    on_power_event(&backend, Transition::EnterIdle, now);
+    on_power_event(&backend, Transition::EnterIdle, now);
+    assert!(backend.studio().is_idle());
+    backend.set_brightness(DISPLAY, 40).unwrap();
+    on_power_event(&backend, Transition::LeaveIdle, now);
+    on_power_event(&backend, Transition::LeaveIdle, now);
+    assert_eq!(
+        heard.since(before.len()),
+        ["set_brightness", "set_brightness"],
+        "nothing but the backlight"
+    );
+    assert_eq!(levels(&fake), [60, 10, 40]);
+    assert!(!backend.studio().is_idle());
+
+    let (_root, folders) = folders_for("power-idle-start", Standby::Keep);
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake.clone(), &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    on_power_event(&backend, Transition::EnterIdle, now);
+    on_power_event(&backend, Transition::LeaveIdle, now);
+    assert_eq!(levels(&fake), [10, 100], "full brightness back");
+
+    let (_root, folders) = folders_for("power-idle-light", Standby::Keep);
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake, &heard, Hold::Never).kept_by_light();
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    let before = heard.all();
+    on_power_event(&backend, Transition::EnterIdle, now);
+    on_power_event(&backend, Transition::LeaveIdle, now);
+    assert_eq!(heard.all(), before, "Light's screens are Light's");
+}
+
+/// D-2026-11-06-display-idle-saver-3: the computer going to sleep applies
+/// each screen's shutdown choice as a shutdown does (through the live
+/// link, within the sleep's budget) and holds the final state; the wake
+/// leaves it, and the screen the choice turned off gets no level.
+#[test]
+fn idle_suspend_applies_choices_and_resume_leaves_final_state() {
+    let (_root, folders) = folders_for("power-idle-sleep", off());
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake.clone(), &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    let before = heard.all();
+    on_power_event(&backend, Transition::EnterIdle, Instant::now());
+    let asked = Instant::now();
+    on_power_event(&backend, Transition::Suspend, asked);
+    assert!(asked.elapsed() < SUSPEND_BUDGET);
+    assert!(backend.studio().shutting_down(), "the final state holds");
+    assert!(backend.set_brightness(DISPLAY, 50).is_err());
+    on_power_event(&backend, Transition::Resume { idle: false }, Instant::now());
+    assert!(!backend.studio().shutting_down());
+    assert!(!backend.studio().is_idle());
+    assert_eq!(
+        heard.since(before.len()),
+        ["set_brightness", "turn_off_now"]
+    );
+    assert_eq!(
+        fake.log().storage.calls.last(),
+        Some(&StorageCall::TurnOffNow)
+    );
+    assert!(backend.storage.claim().is_ok());
+}
+
+/// D-2026-11-06-display-idle-saver-4: with the option off in Preferences
+/// no power event reaches a screen, the sleep included; turning it off
+/// while idle restores the screens at the next event.
+#[test]
+fn idle_option_off_ignores_power_events() {
+    let (_root, folders) = folders_for("power-idle-off", off());
+    settings(&folders.config).update(|s| s.idle_saver = DefaultOn(false));
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake.clone(), &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    let before = heard.all();
+    let mut state = IdleState::new(true);
+    for event in [
+        PowerEvent::DisplayOff,
+        PowerEvent::Suspend,
+        PowerEvent::Resume,
+        PowerEvent::DisplayOn,
+    ] {
+        on_event(&backend, &mut state, event);
+    }
+    assert_eq!(heard.all(), before, "a screen heard a power event");
+    assert!(!backend.studio().shutting_down());
+    assert!(!backend.studio().is_idle());
+
+    settings(&folders.config).update(|s| s.idle_saver = DefaultOn(true));
+    on_event(&backend, &mut state, PowerEvent::DisplayOff);
+    assert!(backend.studio().is_idle());
+    settings(&folders.config).update(|s| s.idle_saver = DefaultOn(false));
+    on_event(&backend, &mut state, PowerEvent::DisplayDimmed);
+    assert!(!backend.studio().is_idle());
+    assert_eq!(
+        heard.since(before.len()),
+        ["set_brightness", "set_brightness"]
+    );
+    assert_eq!(levels(&fake), [10, 100]);
 }
