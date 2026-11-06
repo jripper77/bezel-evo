@@ -47,7 +47,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - Un `set_brightness` dell'utente durante l'idle aggiorna solo il livello da ripristinare; nessun link chiuso o schermo addormentato viene aperto per l'idle.
 - **Dependencies:** T-1
 - **Test:** `cargo test -p bezel-power --test screen_owner idle` (`idle_dims_every_kept_screen_and_restores_the_last_level`, `idle_never_opens_a_screen`, `idle_keeps_a_level_set_while_idle_for_the_restore`)
-- **Status:** pending
+- **Status:** completed
 
 #### T-4: modalità idle nel runtime (logo mobile, niente audio, niente nuove connessioni) e protocollo
 - **Specialist:** jdi-doer-bezel
