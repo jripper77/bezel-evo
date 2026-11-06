@@ -24,7 +24,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - `app::idle::{dim, restore}` su `&mut dyn ScreenLink`: `dim` invia solo `set_brightness(10)` e solo se `model.brightness`; `restore` rimanda il livello ricordato; nessun altro comando.
 - **Dependencies:** none
 - **Test:** `cargo test -p bezel-core idle` (almeno 8 test, nomi `idle_*`; un log ordinato unico nel fake per i comandi inviati)
-- **Status:** pending
+- **Status:** completed
 
 ### Wave 2 (parallel-eligible)
 
