@@ -103,7 +103,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - Voce Unreleased nel CHANGELOG (inglese, per l'utente).
 - **Dependencies:** T-6
 - **Test:** da `apps/bezel-studio`: `node --test tests/ui/i18n.test.mjs tests/ui/bridge.test.mjs tests/ui/spectrum.test.mjs` (parità chiavi: «en, pt-BR and it have the same keys, each with the same placeholders»)
-- **Status:** pending
+- **Status:** completed
 
 ## Execution
 - Total tasks: 8
