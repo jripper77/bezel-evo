@@ -7,6 +7,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use bezel_cli::{Cli, Command};
+use bezel_core::domain::archive::{ScreenKey, ScreenRecord};
+use bezel_core::domain::idle::{IdleState, PowerEvent, Transition};
+use bezel_core::domain::screen::{Brightness, ScreenIdentity};
 use bezel_power::handoff;
 use bezel_sensors::memory::{self, Scope};
 use clap::Parser;
@@ -236,6 +239,22 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
     if off && let Ok(mut engine) = engine.lock() {
         engine.rest(Some(LOGO.to_vec()));
     }
+    let idle_saver = idle_saver_on(&settings_file);
+    if let Ok(mut engine) = engine.lock() {
+        engine.set_idle_saver(idle_saver);
+    }
+    let resumed = Arc::new(AtomicBool::new(false));
+    let resume_idle = Arc::new(AtomicBool::new(false));
+    // Kept for the whole run: dropping it stops the power notifications.
+    let (_power_watch, power) = watch_power(
+        LightTargets {
+            engine: Arc::clone(&engine),
+            owner: owner.clone(),
+            resumed: Arc::clone(&resumed),
+            resume_idle: Arc::clone(&resume_idle),
+        },
+        idle_saver,
+    );
     let pipe_engine: Arc<std::sync::Mutex<dyn bezel_core::ports::RuntimeEndpoint>> = engine.clone();
     let server = bezel_power::owner_pipe::Server::bind(&runtime_directory)?;
     let pipe_owner = owner.clone();
@@ -349,6 +368,8 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
     let mut retry_at = Instant::now();
     let mut reload_saved = false;
     let mut reopen_after_pause = false;
+    // Set by the wake: whether the monitors are still off.
+    let mut after_wake: Option<bool> = None;
     let studio_exe = directory.join("bezel-studio.exe");
     let mut fatal = None;
     let mut pause_watch = bezel_cli::light_recovery::PauseWatch::new(std::time::SystemTime::now());
@@ -407,7 +428,14 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                 }
                 profiles_poll = Instant::now();
         }
-        if pause_watch.poll(std::time::SystemTime::now()) && !simulate && !finite
+        // The wake after the computer's sleep reopens the screens like a
+        // long pause does (the rev C may be asleep by its shutdown choice).
+        let paused = pause_watch.poll(std::time::SystemTime::now());
+        let woke = resumed.swap(false, Ordering::SeqCst);
+        if woke {
+            after_wake = Some(resume_idle.load(Ordering::SeqCst));
+        }
+        if ((paused && !simulate && !finite) || woke)
             && !quit_requested.load(Ordering::SeqCst)
         {
             bezel_power::diagnostics::light(bezel_power::diagnostics::LightEvent::SensorRestart,0,0.0,"resume");
@@ -415,7 +443,7 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
             reopen_after_pause = true;
             stop.store(true, Ordering::SeqCst);
             reload_saved = true;
-            if sensor_recovery.is_none() && directory.join("sensors/bezel-sensors-helper.exe").is_file() {
+            if !simulate && sensor_recovery.is_none() && directory.join("sensors/bezel-sensors-helper.exe").is_file() {
                 match std::thread::Builder::new().name("bezel-resume-sensors".into())
                     .spawn(bezel_sensors::restart_libre_reader) {
                     Ok(thread) => sensor_recovery = Some(thread),
@@ -546,6 +574,16 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                 fatal = Some(anyhow::Error::from(error));
                 quit_requested.store(true, Ordering::SeqCst);
             }
+            // The sleep's shutdown choice refused new links; with none kept,
+            // the idle state only changes its flag (nothing is written).
+            if let Some(idle) = after_wake.take() {
+                owner.set_enabled(screen_guard.is_some());
+                for on in [false, idle] {
+                    if let Err(error) = owner.idle(on, &start_level) {
+                        eprintln!("bezel light: idle brightness after the wake: {error}");
+                    }
+                }
+            }
             reopen_after_pause = false;
         }
         if pending_open && !quit_requested.load(Ordering::SeqCst) {
@@ -593,6 +631,8 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                     Ok(())
                 })();
                 if let Err(error)=reload { eprintln!("bezel light: saved document recovery: {error}"); }
+                // Studio may have changed the option meanwhile.
+                let _ = power.send(PowerMessage::Saver(idle_saver_on(&settings_file)));
             }
             reload_saved = false;
             owner.saved_ready();
@@ -824,6 +864,220 @@ fn load_saved_documents(engine: &mut bezel_runtime::Engine, cli: &Cli) -> anyhow
     Ok(())
 }
 
+/// Whether the screens idle while the monitors are off (`idleSaver` in
+/// `settings`, on unless turned off, D-2026-11-06-display-idle-saver-4).
+fn idle_saver_on(settings: &Path) -> bool {
+    std::fs::read(settings)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .is_none_or(|value| value["idleSaver"].as_bool() != Some(false))
+}
+
+/// How long Windows waits for the sleep to be applied
+/// ([`bezel_power::display_state::watch`]).
+const SUSPEND_WAIT: Duration = Duration::from_secs(2);
+/// The part of [`SUSPEND_WAIT`] the rev C shutdown choice may use.
+const SUSPEND_BUDGET: Duration = Duration::from_millis(1800);
+
+/// What a power [`Transition`] acts on in Light: the runtime and the
+/// screen owner.
+trait PowerTargets {
+    /// The user's option reached the runtime.
+    fn engine_saver(&mut self, on: bool);
+    /// The runtime shows the moving logo (or leaves it).
+    fn engine_idle(&mut self, on: bool);
+    /// The runtime stops (or resumes) its writes, waiting until `deadline`.
+    fn engine_suspend(&mut self, on: bool, deadline: Instant);
+    /// The kept screens are dimmed (or restored).
+    fn owner_idle(&mut self, on: bool);
+    /// The rev C shutdown choice is applied through the kept links.
+    fn finish_kept(&mut self, deadline: Instant);
+    /// The screens are reopened as after a long pause; `idle` is whether
+    /// the monitors are still off.
+    fn reopen(&mut self, idle: bool);
+}
+
+/// Applies `transition` (from [`IdleState`]) at `now`. Idle and sleep are
+/// independent in the runtime: the wake resumes it, then puts it back in
+/// idle when the monitors are still off.
+fn on_power_event(targets: &mut dyn PowerTargets, transition: Transition, now: Instant) {
+    match transition {
+        Transition::Nothing => {}
+        Transition::EnterIdle => {
+            targets.engine_idle(true);
+            targets.owner_idle(true);
+        }
+        Transition::LeaveIdle => {
+            targets.engine_idle(false);
+            targets.owner_idle(false);
+        }
+        Transition::Suspend => {
+            let deadline = now + SUSPEND_BUDGET;
+            targets.engine_suspend(true, deadline);
+            targets.finish_kept(deadline);
+        }
+        Transition::Resume { idle } => {
+            targets.engine_suspend(false, now + SUSPEND_BUDGET);
+            targets.engine_idle(idle);
+            targets.reopen(idle);
+        }
+    }
+}
+
+/// A message for the power worker.
+enum PowerMessage {
+    /// A power event; the sender, when present, is told once it is applied.
+    Event(PowerEvent, Option<std::sync::mpsc::SyncSender<()>>),
+    /// The user's option, read again from the settings.
+    Saver(bool),
+}
+
+/// Feeds `message` through `state` and applies what it says.
+fn on_power_message(state: &mut IdleState, targets: &mut dyn PowerTargets, message: PowerMessage) {
+    match message {
+        PowerMessage::Event(event, done) => {
+            on_power_event(targets, state.on(event), Instant::now());
+            if let Some(done) = done {
+                let _ = done.send(());
+            }
+        }
+        PowerMessage::Saver(on) => {
+            targets.engine_saver(on);
+            on_power_event(targets, state.set_enabled(on), Instant::now());
+        }
+    }
+}
+
+/// Light's runtime and screen owner, as the power worker drives them.
+struct LightTargets {
+    engine: Arc<std::sync::Mutex<bezel_runtime::Engine>>,
+    owner: bezel_power::owner::Owner,
+    /// Set on a wake: the event loop reopens the screens.
+    resumed: Arc<AtomicBool>,
+    /// Whether the monitors were still off at the last wake.
+    resume_idle: Arc<AtomicBool>,
+}
+
+impl LightTargets {
+    /// Runs `action` on the runtime; with a `deadline`, gives up when the
+    /// runtime stays busy until then (the computer's sleep cannot wait).
+    fn with_engine(
+        &self,
+        deadline: Option<Instant>,
+        action: impl FnOnce(&mut bezel_runtime::Engine),
+    ) {
+        let Some(deadline) = deadline else {
+            match self.engine.lock() {
+                Ok(mut engine) => action(&mut engine),
+                Err(_) => eprintln!("bezel light: runtime lock poisoned"),
+            }
+            return;
+        };
+        loop {
+            match self.engine.try_lock() {
+                Ok(mut engine) => return action(&mut engine),
+                Err(std::sync::TryLockError::WouldBlock) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                Err(_) => {
+                    eprintln!("bezel light: the runtime was busy at the computer's sleep");
+                    return;
+                }
+            }
+        }
+    }
+}
+
+impl PowerTargets for LightTargets {
+    fn engine_saver(&mut self, on: bool) {
+        self.with_engine(None, |engine| engine.set_idle_saver(on));
+    }
+    fn engine_idle(&mut self, on: bool) {
+        self.with_engine(None, |engine| engine.idle(on));
+    }
+    fn engine_suspend(&mut self, on: bool, deadline: Instant) {
+        self.with_engine(Some(deadline), |engine| engine.suspend(on));
+    }
+    fn owner_idle(&mut self, on: bool) {
+        if let Err(error) = self.owner.idle(on, &start_level) {
+            eprintln!("bezel light: idle brightness: {error}");
+        }
+    }
+    fn finish_kept(&mut self, deadline: Instant) {
+        if let Err(error) = self
+            .owner
+            .finish_until(deadline, &mut bezel_cli::finish_shutdown)
+        {
+            eprintln!("bezel light: shutdown choice at sleep: {error}");
+        }
+    }
+    fn reopen(&mut self, idle: bool) {
+        self.resume_idle.store(idle, Ordering::SeqCst);
+        self.resumed.store(true, Ordering::SeqCst);
+    }
+}
+
+/// The level a screen goes back to when idle ends and none was set through
+/// Bezel: the start level its rev C record keeps, else full brightness.
+fn start_level(identity: &ScreenIdentity) -> Brightness {
+    use bezel_core::ports::ArchiveStore;
+    bezel_cli::theme::data_home(|name| std::env::var_os(name))
+        .and_then(|data| {
+            bezel_media::archive::DiskArchive::open(bezel_media::archive::storage_dir(&data)).ok()
+        })
+        .and_then(|mut archive| archive.load().ok())
+        .and_then(|catalog| {
+            catalog
+                .screen(&ScreenKey::new(identity.model.id))
+                .and_then(ScreenRecord::start_brightness)
+        })
+        .unwrap_or(Brightness::MAX)
+}
+
+/// Watches the monitors and the computer's sleep for Light: the events go
+/// through one [`IdleState`] on a worker thread; the sleep waits for it (up
+/// to [`SUSPEND_WAIT`]). The returned sender takes the option again.
+fn watch_power(
+    targets: LightTargets,
+    enabled: bool,
+) -> (
+    Option<bezel_power::display_state::Watch>,
+    std::sync::mpsc::Sender<PowerMessage>,
+) {
+    let (sender, receiver) = std::sync::mpsc::channel::<PowerMessage>();
+    let spawned = std::thread::Builder::new()
+        .name("bezel-light-power".into())
+        .spawn(move || {
+            let mut state = IdleState::new(enabled);
+            let mut targets = targets;
+            for message in receiver {
+                on_power_message(&mut state, &mut targets, message);
+            }
+        });
+    if let Err(error) = spawned {
+        eprintln!("bezel light: power events unavailable: {error}");
+        return (None, sender);
+    }
+    let events = sender.clone();
+    let watch = bezel_power::display_state::watch(move |event| {
+        if event != PowerEvent::Suspend {
+            let _ = events.send(PowerMessage::Event(event, None));
+            return;
+        }
+        let (done, applied) = std::sync::mpsc::sync_channel(1);
+        if events.send(PowerMessage::Event(event, Some(done))).is_ok() {
+            let _ = applied.recv_timeout(SUSPEND_WAIT);
+        }
+    });
+    match watch {
+        Ok(watch) => (Some(watch), sender),
+        Err(error) => {
+            eprintln!("bezel light: the monitors' state is unavailable: {error}");
+            (None, sender)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -852,6 +1106,159 @@ mod tests {
         assert!(
             remember_off(&settings, true).is_err(),
             "not an object: left alone"
+        );
+    }
+
+    #[test]
+    fn idle_saver_is_on_unless_turned_off() {
+        let directory =
+            std::env::temp_dir().join(format!("bezel-light-idle-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&directory);
+        std::fs::create_dir_all(&directory).unwrap();
+        let settings = directory.join("settings.json");
+        assert!(idle_saver_on(&settings), "no file: on");
+        for (text, on) in [
+            (&br#"{"lastTheme":"a.bezeltheme"}"#[..], true),
+            (br#"{"idleSaver":true}"#, true),
+            (br#"{"idleSaver":false}"#, false),
+            (br#"{"idleSaver":"no"}"#, true),
+            (b"not json", true),
+        ] {
+            std::fs::write(&settings, text).unwrap();
+            assert_eq!(
+                idle_saver_on(&settings),
+                on,
+                "{}",
+                String::from_utf8_lossy(text)
+            );
+        }
+    }
+
+    /// Records every call in one ordered log.
+    #[derive(Default)]
+    struct FakeTargets {
+        log: Vec<String>,
+        start: Option<Instant>,
+    }
+
+    impl PowerTargets for FakeTargets {
+        fn engine_saver(&mut self, on: bool) {
+            self.log.push(format!("engine.saver({on})"));
+        }
+        fn engine_idle(&mut self, on: bool) {
+            self.log.push(format!("engine.idle({on})"));
+        }
+        fn engine_suspend(&mut self, on: bool, deadline: Instant) {
+            let start = self.start.unwrap();
+            assert!(deadline <= start + Duration::from_secs(3));
+            self.log.push(format!("engine.suspend({on})"));
+        }
+        fn owner_idle(&mut self, on: bool) {
+            self.log.push(format!("owner.idle({on})"));
+        }
+        fn finish_kept(&mut self, deadline: Instant) {
+            let budget = deadline.saturating_duration_since(self.start.unwrap());
+            assert!(
+                budget <= SUSPEND_WAIT,
+                "the sleep waits at most 2 s: {budget:?}"
+            );
+            self.log.push("owner.finish".into());
+        }
+        fn reopen(&mut self, idle: bool) {
+            self.log.push(format!("reopen({idle})"));
+        }
+    }
+
+    fn feed(enabled: bool, messages: Vec<PowerMessage>) -> Vec<String> {
+        let mut state = IdleState::new(enabled);
+        let mut targets = FakeTargets {
+            start: Some(Instant::now()),
+            ..FakeTargets::default()
+        };
+        for message in messages {
+            on_power_message(&mut state, &mut targets, message);
+        }
+        targets.log
+    }
+
+    fn event(event: PowerEvent) -> PowerMessage {
+        PowerMessage::Event(event, None)
+    }
+
+    #[test]
+    fn idle_power_events_drive_engine_and_owner() {
+        let (done, applied) = std::sync::mpsc::sync_channel(1);
+        let log = feed(
+            true,
+            vec![
+                event(PowerEvent::DisplayOn),
+                event(PowerEvent::DisplayDimmed),
+                event(PowerEvent::DisplayOff),
+                event(PowerEvent::DisplayOff),
+                event(PowerEvent::DisplayOn),
+                event(PowerEvent::DisplayOff),
+                PowerMessage::Event(PowerEvent::Suspend, Some(done)),
+                event(PowerEvent::Resume),
+                event(PowerEvent::Resume),
+                event(PowerEvent::DisplayOn),
+                PowerMessage::Saver(false),
+                event(PowerEvent::DisplayOff),
+            ],
+        );
+        assert_eq!(applied.try_recv(), Ok(()), "the sleep is told when applied");
+        assert_eq!(
+            log,
+            [
+                "engine.idle(true)",
+                "owner.idle(true)",
+                "engine.idle(false)",
+                "owner.idle(false)",
+                "engine.idle(true)",
+                "owner.idle(true)",
+                "engine.suspend(true)",
+                "owner.finish",
+                "engine.suspend(false)",
+                "engine.idle(true)",
+                "reopen(true)",
+                "engine.idle(false)",
+                "owner.idle(false)",
+                "engine.saver(false)",
+            ]
+        );
+    }
+
+    #[test]
+    fn idle_option_off_leaves_power_events_alone() {
+        let log = feed(
+            false,
+            vec![
+                event(PowerEvent::DisplayOff),
+                event(PowerEvent::Suspend),
+                event(PowerEvent::Resume),
+                event(PowerEvent::DisplayOn),
+            ],
+        );
+        assert!(log.is_empty(), "{log:?}");
+        let log = feed(
+            true,
+            vec![
+                event(PowerEvent::DisplayOff),
+                PowerMessage::Saver(false),
+                PowerMessage::Saver(true),
+            ],
+        );
+        assert_eq!(
+            log,
+            [
+                "engine.idle(true)",
+                "owner.idle(true)",
+                "engine.saver(false)",
+                "engine.idle(false)",
+                "owner.idle(false)",
+                "engine.saver(true)",
+                "engine.idle(true)",
+                "owner.idle(true)",
+            ]
         );
     }
 }
