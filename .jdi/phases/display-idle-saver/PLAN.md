@@ -80,7 +80,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - `wire::Options.idle_saver` riempito dalle impostazioni nei due punti dove oggi si passa `audio_capture`.
 - **Dependencies:** T-4
 - **Test:** `cargo test -p bezel-studio idle_saver` (`settings::tests::idle_saver_is_on_unless_turned_off`, test del backend `idle_saver_reaches_the_engine_options`)
-- **Status:** pending
+- **Status:** completed
 
 ### Wave 4 (parallel-eligible)
 
