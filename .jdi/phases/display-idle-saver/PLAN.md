@@ -58,7 +58,7 @@ Quando Windows spegne i monitor Bezel ferma la cattura audio, abbassa la luminos
   - `wire::Options.idle_saver` (serde default `true`) e `RuntimeOp::Idle { on }`; con l'opzione spenta `idle(true)` non fa nulla e spegnerla durante l'idle esce dall'idle; `Engine::idle_saver()` per Light.
 - **Dependencies:** T-1
 - **Test:** `cargo test -p bezel-runtime idle` (`idle_shows_the_moving_logo_without_theme_frames`, `idle_releases_audio_capture_and_leaving_reopens_it`, `idle_opens_no_new_connection`, `idle_is_ignored_when_the_option_is_off`, `idle_ends_on_the_resting_logo_when_light_is_off`)
-- **Status:** pending
+- **Status:** completed
 
 ### Wave 3 (parallel-eligible)
 
