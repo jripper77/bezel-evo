@@ -7,6 +7,29 @@ All notable changes to Bezel Evo are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.22] - 2026-11-06
+
+### Light and Studio
+- **Light keeps its own themes.** Opening or saving a theme in Studio no
+  longer changes what Light shows. Light shows each screen's base theme, or
+  the theme of the active profile.
+- **Live in Studio is a preview.** While it is on, the screen shows what you
+  edit; turned off, or with Studio closed, the screen goes back to Light's
+  theme and profile. Studio no longer turns Live on by itself at start.
+- **Use on Light** in the theme gallery makes a theme Light's on the selected
+  screen: as its base theme or in a profile (the active one is offered first).
+  Gallery cards show which themes are base themes.
+- **Saving a theme Light uses** asks once, *Update Light too?*, and lists where
+  it is used; the screen then shows the new version at once.
+- **A screen without a theme** shows the Bezel logo and *Use Bezel Studio to
+  set a theme* (in Light's language) instead of staying dark.
+
+### Themes
+- **Two themes never share a name.** Saving a built-in theme opens **Save with
+  a name** with a free name offered (for example *Pixel V2 2*); a name another
+  theme already has is refused, with a free one offered. Duplicate, Import and
+  New theme pick a free name by themselves.
+
 ## [0.2.21] - 2026-11-04
 
 ### Studio
