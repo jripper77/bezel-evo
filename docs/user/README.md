@@ -47,7 +47,8 @@ has three parts:
 - [Running at sign-in](run-at-login.md): Light, multiple screens and what
   happens at shutdown.
 - [When the computer shuts down](power-off.md): leave the screen as it is,
-  turn it off, loop a video stored on it or show the card's photo album.
+  turn it off, loop a video stored on it or show the card's photo album; what
+  the screens do while the monitors are off and when the PC sleeps.
 - [Coming from turing-smart-screen-python](migrating.md).
 
 ## When something goes wrong

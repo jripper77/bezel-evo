@@ -36,7 +36,24 @@ suportada nelas.
   dormindo fica como está.
 - Quando o computador liga de novo, o Bezel acorda a tela e volta a mostrar o
   seu tema ao vivo.
-- Suspender o computador não está coberto.
+- Quando o computador **suspende**, o Light (ou o Studio) aplica a mesma
+  escolha e, ao acordar, mostra o tema de novo (ou o logo em repouso, se os
+  monitores continuarem apagados). Isso segue a opção abaixo: com ela
+  desligada, a suspensão fica como antes.
+
+## Enquanto os monitores estão apagados
+
+Quando o Windows apaga os monitores (o temporizador *Desligar minha tela
+após*, ou uma tecla que os apaga), o Light (ou o Studio) deixa cada tela em
+repouso: o brilho desce para 10% e um pequeno logo Pixel muda de lugar a cada
+30 segundos (a cada minuto nas telas Turing 3,5" e Kipye), para que nada fique
+parado tempo bastante para marcar o painel. Nada mais é enviado, os sensores
+não são lidos e a captura de áudio do espectro para, então o computador pode
+suspender sozinho. Uma tela que já estava apagada ou em repouso fica como
+está. Quando os monitores voltam, voltam também o tema e o brilho.
+
+Vem ligado: **Preferências › Telas com os monitores desligados**. Monitores
+apenas escurecidos (antes de apagar) não contam.
 
 ## O plano B
 

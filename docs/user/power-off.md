@@ -36,7 +36,25 @@ supported for them.
   already asleep stays as it is.
 - When the computer starts again, Bezel wakes the screen and shows your live
   theme again.
-- Suspending the computer (sleep) is not covered.
+- When the computer **sleeps**, Light (or Studio) applies the same choice, and
+  on wake it shows your theme again (or the resting logo, if the monitors are
+  still off). This follows the option below: with it turned off, sleep is
+  left alone.
+
+## While the monitors are off
+
+When Windows turns the monitors off (its *Turn off my screen after* timer, or
+a key that turns them off), Light (or Studio) lets every screen rest: the
+brightness goes down to 10% and a small Pixel logo moves to a new place every
+30 seconds (every minute on the Turing 3.5" and Kipye screens), so that
+nothing stays still long enough to mark the panel. Nothing else is sent, the
+sensors are not read, and the audio capture of the spectrum stops, so the
+computer can go to sleep on its own. A screen that was already off or asleep
+is left as it is. When the monitors come back, so do the theme and the
+brightness.
+
+It is on by default: **Preferences › Screens while the monitors are off**.
+Dimmed monitors (before they turn off) do not count.
 
 ## The plan B
 

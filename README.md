@@ -24,9 +24,24 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.21
+## What's new in 0.2.24
 
 See the [changelog](CHANGELOG.md) for the complete history.
+
+- **Screens rest while the monitors are off.** When Windows turns the
+  monitors off, the screens dim to 10% and show a small Pixel logo that moves
+  every 30 seconds against burn-in; the theme comes back with the monitors.
+  When the PC sleeps, each screen follows its
+  [power-off choice](docs/user/power-off.md). On by default, in
+  **Preferences › Screens while the monitors are off**.
+- **Bezel no longer keeps the PC awake.** A theme with the audio spectrum used
+  to stop Windows from sleeping on its own; the audio capture now stops while
+  the monitors are off.
+- **Light keeps its own themes.** Studio's **Live** is a preview: turned off,
+  or with Studio closed, each screen goes back to Light's theme and profile.
+  **Use on Light** in the theme gallery picks what Light shows.
+
+### In 0.2.21
 
 - **Start with Windows, from the Preferences.** The switch that starts Bezel
   at sign-in is back in **Preferences › Startup**. It is the same setting as

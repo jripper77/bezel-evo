@@ -48,7 +48,8 @@ do sistema, ou o que você escolher em **Preferências → Idioma**.
   acontece ao desligar.
 - [Quando o computador desligar](power-off.md): deixar a tela como está,
   apagá-la, tocar em loop um vídeo guardado nela ou mostrar o álbum de fotos
-  do cartão.
+  do cartão; o que as telas fazem com os monitores apagados e quando o PC
+  suspende.
 - [Vindo do turing-smart-screen-python](migrating.md).
 
 ## Quando algo dá errado
