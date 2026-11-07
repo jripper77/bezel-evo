@@ -1292,4 +1292,147 @@ mod tests {
         let log = feed_with(false, Some(true), vec![event(PowerEvent::DisplayOff)]);
         assert_eq!(log, ["engine.idle(true)", "owner.idle(true)"]);
     }
+
+    /// Light's real runtime and screen owner over the fake 8.8", as the
+    /// power worker drives them; the cache folder is removed when dropped.
+    struct Light {
+        targets: LightTargets,
+        engine: Arc<std::sync::Mutex<bezel_runtime::Engine>>,
+        _cache: Cache,
+    }
+
+    struct Cache(std::path::PathBuf);
+
+    impl Drop for Cache {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn light(name: &str) -> Light {
+        let cache = std::env::temp_dir().join(format!("bezel-light-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&cache);
+        std::fs::create_dir_all(&cache).unwrap();
+        let cli = Cli::try_parse_from(["bezel", "--fake", "run", "missing.bezeltheme"]).unwrap();
+        let owner = bezel_power::owner::Owner::new(Arc::new(crate::fake_connector()));
+        let engine = make_engine(&cli, Arc::new(crate::fake_bus()), &owner, &cache).unwrap();
+        let engine = Arc::new(std::sync::Mutex::new(engine));
+        let targets = LightTargets {
+            engine: Arc::clone(&engine),
+            owner,
+            resumed: Arc::new(AtomicBool::new(false)),
+            resume_idle: Arc::new(AtomicBool::new(false)),
+        };
+        Light {
+            targets,
+            engine,
+            _cache: Cache(cache),
+        }
+    }
+
+    fn idle(engine: &std::sync::Mutex<bezel_runtime::Engine>) -> bool {
+        engine.lock().unwrap().is_idle()
+    }
+
+    /// D-2026-11-06-display-idle-saver-1 to -4 on Light's real targets: the
+    /// option reaches the runtime, the monitors off put it in idle, the
+    /// sleep is told once applied and the wake asks the event loop to
+    /// reopen the screens, still idle while the monitors are off.
+    #[test]
+    fn idle_light_targets_drive_the_runtime() {
+        let Light {
+            mut targets,
+            engine,
+            _cache,
+        } = light("targets");
+        let mut state = IdleState::new(true);
+        on_power_message(&mut state, &mut targets, PowerMessage::Saver(true));
+        assert!(engine.lock().unwrap().idle_saver());
+        on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOff));
+        assert!(idle(&engine));
+        let (done, applied) = std::sync::mpsc::sync_channel(1);
+        let suspend = PowerMessage::Event(PowerEvent::Suspend, Some(done));
+        on_power_message(&mut state, &mut targets, suspend);
+        assert_eq!(applied.try_recv(), Ok(()));
+        on_power_message(&mut state, &mut targets, event(PowerEvent::Resume));
+        assert!(targets.resumed.load(Ordering::SeqCst), "the screens reopen");
+        assert!(targets.resume_idle.load(Ordering::SeqCst));
+        assert!(idle(&engine), "the monitors are still off");
+        on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOn));
+        assert!(!idle(&engine));
+        on_power_message(&mut state, &mut targets, PowerMessage::Saver(false));
+        on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOff));
+        assert!(!idle(&engine), "the option is off");
+        assert!(!engine.lock().unwrap().idle_saver());
+    }
+
+    /// The sleep cannot wait for a runtime that stays busy: the option is
+    /// not read and the suspend gives up at its deadline instead of
+    /// blocking Windows' thread.
+    #[test]
+    fn idle_light_targets_give_up_on_a_busy_runtime() {
+        let Light {
+            mut targets,
+            engine,
+            _cache,
+        } = light("busy");
+        let (locked, held) = std::sync::mpsc::channel();
+        let (release, released) = std::sync::mpsc::channel::<()>();
+        let holder = Arc::clone(&engine);
+        let thread = std::thread::spawn(move || {
+            let _guard = holder.lock().unwrap();
+            locked.send(()).unwrap();
+            let _ = released.recv();
+        });
+        held.recv().unwrap();
+        let started = Instant::now();
+        assert_eq!(targets.engine_saver_now(), None);
+        targets.engine_suspend(true, Instant::now() + Duration::from_millis(30));
+        assert!(started.elapsed() < Duration::from_secs(1));
+        release.send(()).unwrap();
+        thread.join().unwrap();
+        assert_eq!(targets.engine_saver_now(), Some(true));
+        targets.finish_kept(Instant::now() + SUSPEND_BUDGET);
+        targets.owner_idle(true);
+        targets.owner_idle(false);
+    }
+
+    /// A poisoned runtime lock is said, never unwound into the worker.
+    #[test]
+    fn idle_light_targets_survive_a_poisoned_runtime() {
+        let Light {
+            mut targets,
+            engine,
+            _cache,
+        } = light("poisoned");
+        let holder = Arc::clone(&engine);
+        let poisoned = std::thread::spawn(move || {
+            let _guard = holder.lock().unwrap();
+            panic!("runtime failure");
+        });
+        assert!(poisoned.join().is_err());
+        assert_eq!(targets.engine_saver_now(), None);
+        targets.engine_idle(true);
+        targets.engine_suspend(true, Instant::now() + SUSPEND_BUDGET);
+    }
+
+    /// Light's watch registers with Windows and its worker takes the
+    /// option sent through the returned sender.
+    #[test]
+    fn idle_watch_power_feeds_the_worker() {
+        let Light {
+            targets,
+            engine,
+            _cache,
+        } = light("watch");
+        let (watch, power) = watch_power(targets, true);
+        assert!(watch.is_some(), "Windows reports the monitors' state");
+        power.send(PowerMessage::Saver(false)).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while engine.lock().unwrap().idle_saver() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!engine.lock().unwrap().idle_saver());
+        drop(watch);
+    }
 }

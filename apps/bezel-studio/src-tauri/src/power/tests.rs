@@ -865,3 +865,18 @@ fn idle_watch_hands_events_to_the_worker_and_waits_for_the_sleep() {
     }
     assert!(!backend.studio().shutting_down(), "the wake leaves it");
 }
+
+/// The studio's watch registers with Windows, which reports the monitors'
+/// state at once, and unregisters when dropped.
+#[test]
+fn idle_watch_registers_with_windows() {
+    let (_root, folders) = folders_for("power-watch-windows", Standby::Keep);
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake, &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    let watch = super::watch(Arc::clone(&backend));
+    assert!(watch.is_some(), "Windows reports the monitors' state");
+    drop(watch);
+    assert!(!backend.studio().shutting_down());
+}
