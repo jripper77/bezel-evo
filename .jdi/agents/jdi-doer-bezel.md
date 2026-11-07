@@ -99,7 +99,7 @@ MCP `context7` is the FIRST stop for any library question (Tauri 2, nusb 0.2, se
 ```
 Cargo.toml                  workspace: members, [workspace.dependencies], [workspace.lints]
 clippy.toml                 allow-unwrap-in-tests = true, allow-expect-in-tests = true
-crates/bezel-core/          THE HEXAGON. Deps: thiserror ONLY.
+crates/bezel-core/          THE HEXAGON. Deps: thiserror + unicode-segmentation ONLY.
   src/domain/               DeviceModel catalog, Orientation, Frame (RGBA8), Rect, DirtyRegion/diff,
                             theme model (Theme, Element, Binding, Style), sensor catalog (SensorId, Reading, Unit),
                             storage model (RemotePath, FileEntry), Confirm, BezelError
@@ -123,7 +123,7 @@ Every code unit is exactly one of: core, port (inside core), adapter, compositio
 
 ### Core purity (review-blocking)
 
-- `crates/bezel-core/Cargo.toml` `[dependencies]` = `thiserror` only. No serde, tiny-skia, serialport, nusb, tauri, clap, image. Serialization DTOs live in `bezel-themes` (files) and in the driving adapters (JSON). `bezel-devices`/`bezel-sensors` may appear only under `[dev-dependencies]` for use-case tests with fakes.
+- `crates/bezel-core/Cargo.toml` `[dependencies]` = `thiserror` and `unicode-segmentation` (pure `no_std` text, D-2026-11-07-display-idle-saver-1) only. No serde, tiny-skia, serialport, nusb, tauri, clap, image. Serialization DTOs live in `bezel-themes` (files) and in the driving adapters (JSON). `bezel-devices`/`bezel-sensors` may appear only under `[dev-dependencies]` for use-case tests with fakes.
 - No I/O in core: never `std::fs`, `std::process`, `std::net`, `std::thread`, `std::time::SystemTime::now`. Time and durations are values passed in.
 - No `#[cfg(windows)]` / `#[cfg(target_os = ...)]` in core. Platform branching lives in adapters.
 - Ports are `pub trait`s in `bezel_core::ports`; signatures use only core types (never `serialport::SerialPort`, never a `String` that is secretly a device path — use `DeviceAddress`).

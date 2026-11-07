@@ -71,9 +71,9 @@ Any failure = BLOCK. Each `allow` without a `// reason:` line above it = BLOCK.
 
 #### 5.1 Core dependency whitelist — BLOCK
 ```bash
-[ -f crates/bezel-core/Cargo.toml ] && awk '/^\[dependencies\]/{f=1;next} /^\[/{f=0} f && NF && $1!~/^#/' crates/bezel-core/Cargo.toml | grep -vE '^thiserror\b'
+[ -f crates/bezel-core/Cargo.toml ] && awk '/^\[dependencies\]/{f=1;next} /^\[/{f=0} f && NF && $1!~/^#/' crates/bezel-core/Cargo.toml | grep -vE '^(thiserror|unicode-segmentation)\b'
 ```
-Expected: no output.
+Expected: no output. Whitelist: `thiserror`; `unicode-segmentation` (pure `no_std` text segmentation, D-2026-11-07-display-idle-saver-1). Any other crate needs a new D-XX.
 
 #### 5.2 No I/O, threads or platform cfg in core — BLOCK
 ```bash
