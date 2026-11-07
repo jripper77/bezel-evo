@@ -5,7 +5,9 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
-## [Unreleased]
+## [0.2.24] - 2026-11-07
+
+0.2.22 and 0.2.23 were local builds; this entry and the two below cover them.
 
 ### Screens
 - **Screens rest while the monitors are off.** When Windows turns the
@@ -16,6 +18,14 @@ All notable changes to Bezel Evo are documented here. The format follows
   stops too and the screens follow the power-off choice; on wake they come
   back as the monitors are. The option is on by default and can be turned off in
   Preferences, under *Screens while the monitors are off*.
+- **Bezel no longer keeps the PC awake.** With a theme that shows the audio
+  spectrum, the audio capture used to count as sound in use and stopped
+  Windows from sleeping on its own, even in silence. It now stops while the
+  monitors are off.
+
+### Fixes
+- Updated the TLS certificate checks (`rustls-webpki`, `webpki-roots`) and
+  `tokio` to versions with the published security fixes.
 
 ## [0.2.23] - 2026-11-06
 
