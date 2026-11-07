@@ -40,6 +40,7 @@ use bezel_core::domain::idle::{IdleState, PowerEvent, Transition};
 use bezel_core::domain::screen::{Brightness, ScreenIdentity};
 use bezel_core::domain::standby::{Standby, supports};
 use bezel_core::ports::ScreenLink;
+use bezel_power::display_state::{SuspendDone, forwarder};
 
 use crate::backend::Backend;
 use crate::commands::Shared;
@@ -53,12 +54,9 @@ pub const SESSION_END: Duration = Duration::from_secs(4);
 /// How often the shutdown looks for the live link while it is out.
 const LINK_POLL: Duration = Duration::from_millis(10);
 
-/// How long Windows waits for the sleep to be applied
-/// ([`bezel_power::display_state::watch`]).
-const SUSPEND_WAIT: Duration = Duration::from_secs(2);
-
-/// The part of [`SUSPEND_WAIT`] the shutdown choices may use at sleep.
-pub const SUSPEND_BUDGET: Duration = Duration::from_millis(1800);
+/// The part of the sleep's wait the shutdown choices may use
+/// ([`bezel_power::display_state::SUSPEND_BUDGET`]).
+pub use bezel_power::display_state::SUSPEND_BUDGET;
 
 /// How the app ends, as `RunEvent::Exit` tells it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -169,11 +167,12 @@ pub fn on_event(backend: &Shared, state: &mut IdleState, event: PowerEvent) {
 /// Watches the monitors and the computer's sleep for the studio
 /// ([`bezel_power::display_state::watch`]), the returned watch kept for the
 /// app's lifetime: the events go through one [`IdleState`] on a thread of
-/// their own ([`on_event`]); the sleep waits for it, [`SUSPEND_WAIT`] at
-/// most. `None` when Windows does not report them.
+/// their own ([`on_event`]); the sleep waits for it,
+/// [`bezel_power::display_state::SUSPEND_WAIT`] at most ([`forwarder`]).
+/// `None` when Windows does not report them.
 pub fn watch(backend: Shared) -> Option<bezel_power::display_state::Watch> {
     let enabled = backend.settings.load().idle_saver.0;
-    let (events, received) = mpsc::channel::<(PowerEvent, Option<mpsc::SyncSender<()>>)>();
+    let (events, received) = mpsc::channel::<(PowerEvent, Option<SuspendDone>)>();
     std::thread::Builder::new()
         .name("bezel-studio-power".into())
         .spawn(move || {
@@ -186,17 +185,7 @@ pub fn watch(backend: Shared) -> Option<bezel_power::display_state::Watch> {
             }
         })
         .ok()?;
-    bezel_power::display_state::watch(move |event| {
-        if event != PowerEvent::Suspend {
-            let _ = events.send((event, None));
-            return;
-        }
-        let (done, applied) = mpsc::sync_channel(1);
-        if events.send((event, Some(done))).is_ok() {
-            let _ = applied.recv_timeout(SUSPEND_WAIT);
-        }
-    })
-    .ok()
+    bezel_power::display_state::watch(forwarder(events, |event, done| (event, done))).ok()
 }
 
 /// The level a screen goes back to when idle ends and none was set through

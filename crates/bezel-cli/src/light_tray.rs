@@ -10,6 +10,7 @@ use bezel_cli::{Cli, Command};
 use bezel_core::domain::archive::{ScreenKey, ScreenRecord};
 use bezel_core::domain::idle::{IdleState, PowerEvent, Transition};
 use bezel_core::domain::screen::{Brightness, ScreenIdentity};
+use bezel_power::display_state::{SUSPEND_BUDGET, SuspendDone, forwarder};
 use bezel_power::handoff;
 use bezel_sensors::memory::{self, Scope};
 use clap::Parser;
@@ -873,12 +874,6 @@ fn idle_saver_on(settings: &Path) -> bool {
         .is_none_or(|value| value["idleSaver"].as_bool() != Some(false))
 }
 
-/// How long Windows waits for the sleep to be applied
-/// ([`bezel_power::display_state::watch`]).
-const SUSPEND_WAIT: Duration = Duration::from_secs(2);
-/// The part of [`SUSPEND_WAIT`] the rev C shutdown choice may use.
-const SUSPEND_BUDGET: Duration = Duration::from_millis(1800);
-
 /// What a power [`Transition`] acts on in Light: the runtime and the
 /// screen owner.
 trait PowerTargets {
@@ -930,7 +925,7 @@ fn on_power_event(targets: &mut dyn PowerTargets, transition: Transition, now: I
 /// A message for the power worker.
 enum PowerMessage {
     /// A power event; the sender, when present, is told once it is applied.
-    Event(PowerEvent, Option<std::sync::mpsc::SyncSender<()>>),
+    Event(PowerEvent, Option<SuspendDone>),
     /// The user's option, read again from the settings.
     Saver(bool),
 }
@@ -1057,7 +1052,8 @@ fn start_level(identity: &ScreenIdentity) -> Brightness {
 
 /// Watches the monitors and the computer's sleep for Light: the events go
 /// through one [`IdleState`] on a worker thread; the sleep waits for it (up
-/// to [`SUSPEND_WAIT`]). The returned sender takes the option again.
+/// to [`bezel_power::display_state::SUSPEND_WAIT`], [`forwarder`]). The
+/// returned sender takes the option again.
 fn watch_power(
     targets: LightTargets,
     enabled: bool,
@@ -1079,17 +1075,7 @@ fn watch_power(
         eprintln!("bezel light: power events unavailable: {error}");
         return (None, sender);
     }
-    let events = sender.clone();
-    let watch = bezel_power::display_state::watch(move |event| {
-        if event != PowerEvent::Suspend {
-            let _ = events.send(PowerMessage::Event(event, None));
-            return;
-        }
-        let (done, applied) = std::sync::mpsc::sync_channel(1);
-        if events.send(PowerMessage::Event(event, Some(done))).is_ok() {
-            let _ = applied.recv_timeout(SUSPEND_WAIT);
-        }
-    });
+    let watch = bezel_power::display_state::watch(forwarder(sender.clone(), PowerMessage::Event));
     match watch {
         Ok(watch) => (Some(watch), sender),
         Err(error) => {
@@ -1102,6 +1088,7 @@ fn watch_power(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bezel_power::display_state::SUSPEND_WAIT;
 
     #[test]
     fn the_off_switch_is_saved_beside_the_other_settings() {

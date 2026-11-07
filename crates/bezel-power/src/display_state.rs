@@ -4,8 +4,14 @@
 //! suspend/resume notifications, without a window, and hands every change
 //! to the caller as a [`PowerEvent`]. What to do with it is the core's
 //! `IdleState`.
+//!
+//! [`forwarder`] is the bridge both Bezel Light and Studio put between
+//! Windows' thread and their own worker: every event is queued, and the
+//! sleep waits for the worker to apply it, [`SUSPEND_WAIT`] at most.
 
 use std::io;
+use std::sync::mpsc;
+use std::time::Duration;
 
 use bezel_core::domain::idle::PowerEvent;
 
@@ -75,6 +81,69 @@ pub fn watch(handler: impl Fn(PowerEvent) + Send + Sync + 'static) -> io::Result
     Ok(Watch {
         _registrations: registrations,
     })
+}
+
+/// How long Windows waits for the handler of a [`PowerEvent::Suspend`]
+/// before the computer sleeps anyway.
+pub const SUSPEND_WAIT: Duration = Duration::from_secs(2);
+
+/// The part of [`SUSPEND_WAIT`] the work done at sleep (the shutdown
+/// choices, stopping the runtime) may use: the rest is the bridge's margin.
+pub const SUSPEND_BUDGET: Duration = Duration::from_millis(1800);
+
+/// The worker's answer to a [`PowerEvent::Suspend`]: one `()` once it is
+/// applied.
+pub type SuspendDone = mpsc::SyncSender<()>;
+
+/// How [`forward`] handed an event to the worker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Forwarded {
+    /// Not a sleep: queued, not waited for.
+    Queued,
+    /// A sleep, and the worker said it is applied.
+    Applied,
+    /// A sleep the worker did not apply within the wait.
+    TimedOut,
+    /// The worker is gone (its channel closed, or it dropped the answer,
+    /// as a panic does): nothing waits for it.
+    Dropped,
+}
+
+/// Queues `event` for the worker behind `events` as `message` makes it;
+/// for a [`PowerEvent::Suspend`] the message carries a [`SuspendDone`] and
+/// this waits for it, `wait` at most.
+pub fn forward<M>(
+    events: &mpsc::Sender<M>,
+    event: PowerEvent,
+    message: impl FnOnce(PowerEvent, Option<SuspendDone>) -> M,
+    wait: Duration,
+) -> Forwarded {
+    if event != PowerEvent::Suspend {
+        return match events.send(message(event, None)) {
+            Ok(()) => Forwarded::Queued,
+            Err(_) => Forwarded::Dropped,
+        };
+    }
+    let (done, applied) = mpsc::sync_channel(1);
+    if events.send(message(event, Some(done))).is_err() {
+        return Forwarded::Dropped;
+    }
+    match applied.recv_timeout(wait) {
+        Ok(()) => Forwarded::Applied,
+        Err(mpsc::RecvTimeoutError::Timeout) => Forwarded::TimedOut,
+        Err(mpsc::RecvTimeoutError::Disconnected) => Forwarded::Dropped,
+    }
+}
+
+/// The handler for [`watch`] that hands every event to the worker behind
+/// `events` ([`forward`]), the sleep waited for [`SUSPEND_WAIT`] at most.
+pub fn forwarder<M: Send + 'static>(
+    events: mpsc::Sender<M>,
+    message: impl Fn(PowerEvent, Option<SuspendDone>) -> M + Send + Sync + 'static,
+) -> impl Fn(PowerEvent) + Send + Sync + 'static {
+    move |event| {
+        let _ = forward(&events, event, &message, SUSPEND_WAIT);
+    }
 }
 
 /// The handler as [`watch`] keeps it: boxed twice so that the callback's
@@ -313,6 +382,124 @@ mod tests {
         deliver(&handler, kind(PBT_APMSUSPEND));
         deliver(&handler, kind(10));
         assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    type Message = (PowerEvent, Option<SuspendDone>);
+
+    fn message(event: PowerEvent, done: Option<SuspendDone>) -> Message {
+        (event, done)
+    }
+
+    /// A worker that answers each sleep as `answer` says, on a thread of
+    /// its own; it ends when the sender is dropped.
+    fn worker(answer: fn(SuspendDone)) -> mpsc::Sender<Message> {
+        let (events, received) = mpsc::channel::<Message>();
+        std::thread::spawn(move || {
+            for (_, done) in received {
+                if let Some(done) = done {
+                    answer(done);
+                }
+            }
+        });
+        events
+    }
+
+    #[test]
+    fn idle_forward_queues_other_events_without_waiting() {
+        let (events, received) = mpsc::channel::<Message>();
+        for event in [
+            PowerEvent::DisplayOff,
+            PowerEvent::DisplayOn,
+            PowerEvent::DisplayDimmed,
+            PowerEvent::Resume,
+        ] {
+            let forwarded = forward(&events, event, message, SUSPEND_WAIT);
+            assert_eq!(forwarded, Forwarded::Queued);
+            let (got, done) = received.try_recv().unwrap();
+            assert_eq!(got, event);
+            assert!(done.is_none(), "only the sleep is waited for");
+        }
+        drop(received);
+        let forwarded = forward(&events, PowerEvent::DisplayOff, message, SUSPEND_WAIT);
+        assert_eq!(forwarded, Forwarded::Dropped);
+    }
+
+    #[test]
+    fn idle_forward_waits_for_the_sleep_to_be_applied() {
+        let events = worker(|done| {
+            std::thread::sleep(Duration::from_millis(50));
+            let _ = done.send(());
+        });
+        let started = std::time::Instant::now();
+        let forwarded = forward(&events, PowerEvent::Suspend, message, SUSPEND_WAIT);
+        assert_eq!(forwarded, Forwarded::Applied);
+        assert!(started.elapsed() >= Duration::from_millis(50));
+    }
+
+    #[test]
+    fn idle_forward_gives_up_on_a_slow_worker() {
+        let events = worker(|done| {
+            std::thread::sleep(Duration::from_millis(500));
+            let _ = done.send(());
+        });
+        let started = std::time::Instant::now();
+        let wait = Duration::from_millis(30);
+        let forwarded = forward(&events, PowerEvent::Suspend, message, wait);
+        assert_eq!(forwarded, Forwarded::TimedOut);
+        assert!(started.elapsed() < Duration::from_millis(400));
+    }
+
+    #[test]
+    fn idle_forward_does_not_wait_for_a_worker_that_is_gone() {
+        // A worker that panics drops the answer without sending it.
+        let events = worker(|done| {
+            let _ = std::panic::catch_unwind(move || {
+                let _held = done;
+                panic!("worker failure");
+            });
+        });
+        let started = std::time::Instant::now();
+        let forwarded = forward(&events, PowerEvent::Suspend, message, SUSPEND_WAIT);
+        assert_eq!(forwarded, Forwarded::Dropped);
+        assert!(started.elapsed() < SUSPEND_WAIT);
+        let (closed, received) = mpsc::channel::<Message>();
+        drop(received);
+        let forwarded = forward(&closed, PowerEvent::Suspend, message, SUSPEND_WAIT);
+        assert_eq!(forwarded, Forwarded::Dropped);
+    }
+
+    #[test]
+    fn idle_forwarder_hands_events_to_the_worker() {
+        let (events, received) = mpsc::channel::<Message>();
+        let answered = std::thread::spawn(move || {
+            let mut seen = Vec::new();
+            for (event, done) in received {
+                seen.push(event);
+                if let Some(done) = done {
+                    let _ = done.send(());
+                }
+            }
+            seen
+        });
+        let handler = forwarder(events, message);
+        handler(PowerEvent::DisplayOff);
+        handler(PowerEvent::Suspend);
+        handler(PowerEvent::Resume);
+        drop(handler);
+        let seen = answered.join().unwrap();
+        assert_eq!(
+            seen,
+            [
+                PowerEvent::DisplayOff,
+                PowerEvent::Suspend,
+                PowerEvent::Resume
+            ]
+        );
+    }
+
+    #[test]
+    fn idle_budget_fits_in_the_wait() {
+        assert!(SUSPEND_BUDGET < SUSPEND_WAIT);
     }
 
     #[test]
