@@ -160,11 +160,18 @@ pub enum DiagCode {
     /// A screen restarted into its album at shutdown, but the catalog was
     /// not saved: its record still says the plan B stored before.
     ShutdownAlbumNotRecorded,
+    // ------------------------------------- the monitors and the sleep --
+    /// The thread that follows the monitors and the sleep did not start:
+    /// the screens do not idle and the sleep applies no choice.
+    PowerWatchNotStarted,
+    /// Windows did not report the monitors and the sleep: the screens do
+    /// not idle and the sleep applies no choice.
+    PowerEventsUnavailable,
 }
 
 impl DiagCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 51] = [
+    pub const ALL: [Self; 53] = [
         Self::Panicked,
         Self::NotStarted,
         Self::PluginNotStarted,
@@ -216,6 +223,8 @@ impl DiagCode {
         Self::ShutdownScreensNotListed,
         Self::ShutdownChoiceFailed,
         Self::ShutdownAlbumNotRecorded,
+        Self::PowerWatchNotStarted,
+        Self::PowerEventsUnavailable,
     ];
 
     /// Its fixed sentence.
@@ -291,6 +300,12 @@ impl DiagCode {
             Self::ShutdownChoiceFailed => "a screen's choice failed at shutdown",
             Self::ShutdownAlbumNotRecorded => {
                 "a screen restarted into its album at shutdown, but the catalog was not saved"
+            }
+            Self::PowerWatchNotStarted => {
+                "the monitors and the sleep are not followed: their thread did not start"
+            }
+            Self::PowerEventsUnavailable => {
+                "the monitors and the sleep are not followed: Windows does not report them"
             }
         }
     }

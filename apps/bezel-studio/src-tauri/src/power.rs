@@ -169,8 +169,29 @@ pub fn on_event(backend: &Shared, state: &mut IdleState, event: PowerEvent) {
 /// app's lifetime: the events go through one [`IdleState`] on a thread of
 /// their own ([`on_event`]); the sleep waits for it,
 /// [`bezel_power::display_state::SUSPEND_WAIT`] at most ([`forwarder`]).
-/// `None` when Windows does not report them.
+/// `None` when Windows does not report them, said in the log
+/// ([`watch_with`]).
 pub fn watch(backend: Shared) -> Option<bezel_power::display_state::Watch> {
+    watch_with(backend, |handler| {
+        bezel_power::display_state::watch(handler)
+    })
+    .inspect_err(|code| diag::report(*code))
+    .ok()
+}
+
+/// What [`watch_with`] hands to the registration: the handler of every
+/// power event.
+pub(crate) type PowerHandler = Box<dyn Fn(PowerEvent) + Send + Sync>;
+
+/// [`watch`], the registration done by `register`: the worker started,
+/// then the handler registered. The error is what to say: the worker's
+/// thread did not start ([`DiagCode::PowerWatchNotStarted`]) or the
+/// registration failed ([`DiagCode::PowerEventsUnavailable`]); the worker
+/// then ends with the handler.
+pub(crate) fn watch_with<W>(
+    backend: Shared,
+    register: impl FnOnce(PowerHandler) -> std::io::Result<W>,
+) -> Result<W, DiagCode> {
     let enabled = backend.settings.load().idle_saver.0;
     let (events, received) = mpsc::channel::<(PowerEvent, Option<SuspendDone>)>();
     std::thread::Builder::new()
@@ -184,8 +205,9 @@ pub fn watch(backend: Shared) -> Option<bezel_power::display_state::Watch> {
                 }
             }
         })
-        .ok()?;
-    bezel_power::display_state::watch(forwarder(events, |event, done| (event, done))).ok()
+        .map_err(|_| DiagCode::PowerWatchNotStarted)?;
+    register(Box::new(forwarder(events, |event, done| (event, done))))
+        .map_err(|_| DiagCode::PowerEventsUnavailable)
 }
 
 /// The level a screen goes back to when idle ends and none was set through

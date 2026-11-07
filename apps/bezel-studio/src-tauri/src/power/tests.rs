@@ -817,3 +817,51 @@ fn idle_option_off_ignores_power_events() {
     );
     assert_eq!(levels(&fake), [10, 100]);
 }
+
+/// Review warning 4: when Windows does not report the monitors and the
+/// sleep, the studio says it ([`DiagCode::PowerEventsUnavailable`]) instead
+/// of going on in silence, and no watch is kept.
+#[test]
+fn idle_watch_says_when_windows_does_not_report_power_events() {
+    let (_root, folders) = folders_for("power-watch-fails", Standby::Keep);
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake, &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    let refused = watch_with(Arc::clone(&backend), |_handler| {
+        Err::<(), _>(std::io::Error::from(std::io::ErrorKind::Unsupported))
+    });
+    assert_eq!(refused, Err(DiagCode::PowerEventsUnavailable));
+    assert!(!backend.studio().shutting_down());
+}
+
+/// D-2026-11-06-display-idle-saver-2: the handler the studio registers
+/// hands every event to its worker; the sleep returns only once the
+/// shutdown choice is applied, the events before it applied first.
+#[test]
+fn idle_watch_hands_events_to_the_worker_and_waits_for_the_sleep() {
+    let (_root, folders) = folders_for("power-watch", off());
+    let heard = Heard::default();
+    let fake = FakeConnector::with_storage(FakeStorage::default());
+    let connector = Recording::over(fake.clone(), &heard, Hold::Never);
+    let backend = backend_on(&folders, FakeBus::turing_88(), connector);
+    backend.set_live(true, Some(DISPLAY), TIME).unwrap();
+    let before = heard.all();
+    let handler = watch_with(Arc::clone(&backend), Ok::<PowerHandler, std::io::Error>);
+    let handler = handler.unwrap();
+    handler(PowerEvent::DisplayOff);
+    let asked = Instant::now();
+    handler(PowerEvent::Suspend);
+    assert!(asked.elapsed() < bezel_power::display_state::SUSPEND_WAIT);
+    assert!(backend.studio().shutting_down(), "the sleep is applied");
+    assert_eq!(
+        heard.since(before.len()),
+        ["set_brightness", "turn_off_now"]
+    );
+    handler(PowerEvent::Resume);
+    let deadline = Instant::now() + PATIENCE;
+    while backend.studio().shutting_down() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(!backend.studio().shutting_down(), "the wake leaves it");
+}
