@@ -23,6 +23,37 @@ pub const IDLE_BRIGHTNESS: Brightness = match Brightness::new(10) {
     None => Brightness::MAX,
 };
 
+/// How long a change of backlight level takes: the level goes from one
+/// value to the other through the ones between, instead of jumping.
+pub const FADE: Duration = Duration::from_millis(400);
+
+/// How often a fade sends the next level.
+pub const FADE_STEP: Duration = Duration::from_millis(40);
+
+/// The level of a fade from `from` to `to` lasting `duration`, `elapsed`
+/// after it started: linear, rounded to the nearest percent, `to` once the
+/// time is up (at once with a zero `duration`). Driven by the time, not by
+/// a count of steps: a step sent late skips ahead instead of slowing the
+/// fade down.
+pub fn fade_level(
+    from: Brightness,
+    to: Brightness,
+    elapsed: Duration,
+    duration: Duration,
+) -> Brightness {
+    if elapsed >= duration {
+        return to;
+    }
+    let from = i64::from(from.percent());
+    let span = i64::from(to.percent()) - from;
+    let total = duration.as_micros() as i64;
+    let done = elapsed.as_micros() as i64;
+    // Rounded half away from zero, whichever way the fade goes.
+    let offset = (2 * span * done + span.signum() * total) / (2 * total);
+    let percent = u8::try_from(from + offset).unwrap_or(0);
+    Brightness::new(percent).unwrap_or(to)
+}
+
 /// How often the logo moves on a screen of `family`: 30 s, and 60 s for the
 /// families whose links are slow (Turing 3.5" rev A, Kipye), where every
 /// move is a whole frame (D-2026-11-06-display-idle-saver-2, -4).
@@ -371,6 +402,34 @@ mod tests {
         assert_eq!(seen.len(), 9);
         assert_eq!(logo_box(canvas, 9), logo_box(canvas, 0));
         assert_eq!(logo_box(canvas, u64::MAX), logo_box(canvas, u64::MAX % 9));
+    }
+
+    #[test]
+    fn idle_fade_goes_through_the_levels_between_and_ends_on_the_target() {
+        let ms = Duration::from_millis;
+        assert_eq!(fade_level(level(10), level(70), ms(0), FADE), level(10));
+        assert_eq!(fade_level(level(10), level(70), ms(200), FADE), level(40));
+        assert_eq!(fade_level(level(70), level(10), ms(200), FADE), level(40));
+        assert_eq!(fade_level(level(10), level(70), ms(400), FADE), level(70));
+        assert_eq!(fade_level(level(10), level(70), ms(9000), FADE), level(70));
+        assert_eq!(fade_level(level(0), level(3), ms(200), FADE), level(2));
+        assert_eq!(fade_level(level(3), level(0), ms(200), FADE), level(1));
+        assert_eq!(
+            fade_level(level(10), level(70), ms(0), Duration::ZERO),
+            level(70)
+        );
+        for (from, to) in [(10, 70), (70, 10), (0, 100), (55, 55)] {
+            let mut previous = level(from);
+            for step in 0..=12 {
+                let now = fade_level(level(from), level(to), FADE_STEP * step, FADE);
+                let (low, high) = (from.min(to), from.max(to));
+                assert!((low..=high).contains(&now.percent()), "{from}->{to}");
+                let towards = |a: u8, b: u8| if to >= from { a <= b } else { a >= b };
+                assert!(towards(previous.percent(), now.percent()), "{from}->{to}");
+                previous = now;
+            }
+            assert_eq!(previous, level(to));
+        }
     }
 
     #[test]
