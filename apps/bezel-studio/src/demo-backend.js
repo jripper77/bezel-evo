@@ -1801,6 +1801,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       audioCapture,
       idleSaver,
       lightRuntime: true,
+      screenBrightness: {},
       language,
       systemLanguage,
       pingHost: sensorOptions.pingHost ?? DEMO_PING_HOST,

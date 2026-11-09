@@ -566,6 +566,7 @@ impl Backend {
                 .display()
                 .to_string(),
             light_runtime: cfg!(windows),
+            screen_brightness: settings.screen_brightness.clone(),
             theme_filter: ThemeFilterDto {
                 scope: settings.themes_shown(),
                 axis: settings.themes_axis(),
@@ -1010,11 +1011,15 @@ impl Backend {
     pub fn set_brightness(&self, screen: &str, percent: u8) -> UiResult<()> {
         let brightness =
             Brightness::new(percent).ok_or_else(|| UiError::new(ErrorCode::BrightnessRange))?;
-        if self.idle_studio().live_brightness(screen, brightness)? {
-            return Ok(());
+        if !self.idle_studio().live_brightness(screen, brightness)? {
+            let _claim = self.storage.claim()?;
+            self.connect(screen)?.set_brightness(brightness)?;
         }
-        let _claim = self.storage.claim()?;
-        Ok(self.connect(screen)?.set_brightness(brightness)?)
+        // Remembered for the next opening of the screen, by Light too.
+        self.settings.update(|s| {
+            s.screen_brightness.insert(screen.to_string(), percent);
+        });
+        Ok(())
     }
 
     /// Hands the live screens to Bezel Light: live mode stops (the settings
@@ -3590,6 +3595,15 @@ mod tests {
         f.backend.set_brightness(KEY, 40).unwrap();
         assert!(f.backend.set_brightness(KEY, 101).is_err());
         assert_eq!(f.backend.settings.load().live_screen.as_deref(), Some(KEY));
+        // The level chosen is kept for the next opening; a refused one is not.
+        assert_eq!(
+            f.backend.settings.load().screen_brightness.get(KEY),
+            Some(&40)
+        );
+        assert_eq!(
+            f.backend.preferences().screen_brightness.get(KEY),
+            Some(&40)
+        );
 
         f.backend.release(KEY).unwrap();
         assert_eq!(f.connector.log().releases, 1);

@@ -536,6 +536,8 @@ pub struct PreferencesDto {
     pub default_ping_host: &'static str,
     /// Which themes the Themes tab lists.
     pub theme_filter: ThemeFilterDto,
+    /// The brightness last chosen for each screen (percent), by key.
+    pub screen_brightness: std::collections::BTreeMap<String, u8>,
 }
 
 /// Which themes the Themes tab lists.

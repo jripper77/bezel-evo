@@ -74,9 +74,9 @@ const state = {
   location: null,
   // How the theme's video background reaches the live screen.
   liveVideo: null,
-  // The brightness set on each screen in this session (percent, by key):
-  // what the slider shows and what the boot media is set with.
-  brightness: {},
+  // The brightness last chosen for each screen (percent, by key), kept in
+  // the settings: what the slider shows and what the boot media is set with.
+  brightness: { ...(prefs?.screenBrightness ?? {}) },
   // The screen restarting now, and the one that stopped responding (its
   // card offers the restart; D-2026-09-30-release-polish-13), by key.
   restarting: null,

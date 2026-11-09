@@ -47,6 +47,11 @@ pub struct Settings {
     /// The orientation last used with each screen (`portrait`, `landscape`…),
     /// by screen key.
     pub screen_orientations: BTreeMap<String, String>,
+    /// The brightness last chosen for each screen (percent), by screen key:
+    /// Bezel Light sends it when it opens the screen and restores it when
+    /// idle ends.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub screen_brightness: BTreeMap<String, u8>,
     /// The ffmpeg chosen with the storage tab's Locate button (the program
     /// or its folder); `PATH` is searched after it.
     pub ffmpeg_path: Option<String>,
@@ -240,6 +245,20 @@ mod tests {
         assert_eq!(serde_json::to_value(&off).unwrap()["lightOff"], true);
         let value = serde_json::to_value(Settings::default()).unwrap();
         assert!(value.get("lightOff").is_none());
+    }
+
+    #[test]
+    fn keeps_the_brightness_of_each_screen_and_writes_it_only_when_set() {
+        let old: Settings = serde_json::from_str(r#"{"lastTheme":"a.bezeltheme"}"#).unwrap();
+        assert!(old.screen_brightness.is_empty());
+        let value = serde_json::to_value(Settings::default()).unwrap();
+        assert!(value.get("screenBrightness").is_none());
+        let set: Settings = serde_json::from_str(r#"{"screenBrightness":{"COM6":70}}"#).unwrap();
+        assert_eq!(set.screen_brightness.get("COM6"), Some(&70));
+        assert_eq!(
+            serde_json::to_value(&set).unwrap()["screenBrightness"]["COM6"],
+            70
+        );
     }
 
     #[test]
