@@ -30,6 +30,7 @@ use bezel_themes::FsThemeStore;
 use clap::Parser;
 
 mod light_tray;
+mod update_check;
 
 /// The simulated bus of `--fake`: a Turing 8.8" and a Turing USB panel in
 /// desktop mode.

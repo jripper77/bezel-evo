@@ -34,6 +34,8 @@ struct Texts {
     off: &'static str,
     screen: &'static str,
     profile: &'static str,
+    /// Before the newer release's version, on the item that opens its page.
+    update: &'static str,
 }
 
 fn texts(language: bezel_core::domain::clock::Language) -> Texts {
@@ -45,6 +47,7 @@ fn texts(language: bezel_core::domain::clock::Language) -> Texts {
             off: "Bezel Light · spento (logo sullo schermo)",
             screen: "Schermo",
             profile: "Profilo",
+            update: "Aggiornamento disponibile",
         },
         Language::PortugueseBr => Texts {
             live: "Ao vivo na tela",
@@ -52,6 +55,7 @@ fn texts(language: bezel_core::domain::clock::Language) -> Texts {
             off: "Bezel Light · desligado (logo na tela)",
             screen: "Tela",
             profile: "Perfil",
+            update: "Atualização disponível",
         },
         Language::English => Texts {
             live: "Live on the screen",
@@ -59,6 +63,7 @@ fn texts(language: bezel_core::domain::clock::Language) -> Texts {
             off: "Bezel Light · off (logo on the screen)",
             screen: "Screen",
             profile: "Profile",
+            update: "Update available",
         },
     }
 }
@@ -332,6 +337,11 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         menu.insert(&profiles_menu, 2)?;
     }
     let mut shown_profiles = None;
+    // The newer release found by the daily check, and the item opening its
+    // page while one is shown (D-2026-11-09-update-check-1).
+    let update_found = crate::update_check::spawn(settings_file.clone());
+    let update_item = MenuItem::new("", true, None);
+    let mut shown_update: Option<String> = None;
     let mut profiles_poll = Instant::now();
     let scale = event_loop
         .primary_monitor()
@@ -422,6 +432,20 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                 let _ = profiles_menu.append(&MenuItem::with_id("profile:manage", labels[3], true, None));
                 shown_profiles = Some(overview);
             }
+        }
+        let found = update_found.lock().map(|found| found.clone()).unwrap_or_default();
+        if found != shown_update {
+            let _ = menu.remove(&update_item);
+            if let Some(version) = &found {
+                update_item.set_text(format!("{}: {version}", text.update));
+                let _ = menu.insert(&update_item, 0);
+            }
+            shown_update = found;
+        }
+        if let Event::UserEvent(Action::Menu(ref event)) = event
+            && event.id == *update_item.id()
+        {
+            crate::update_check::open_releases();
         }
         if let Event::UserEvent(Action::Menu(ref event)) = event
             && let Some(id) = event.id.as_ref().strip_prefix("profile:")

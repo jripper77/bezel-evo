@@ -36,9 +36,12 @@ sys-locale = "0.3.2"
 # Ctrl+C (and SIGTERM/SIGHUP with `termination`) ends `bezel run`, which then
 # hands the screen back instead of leaving it frozen on the last frame.
 ctrlc = { version = "3.5.2", features = ["termination"] }
+# The daily look at the latest published release (D-2026-11-09-update-check-1).
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 assert_cmd = "2"
+tempfile = "3.27.0"
 
 [target.'cfg(windows)'.dependencies]
 tray-icon = { version = "0.25.1", default-features = false }

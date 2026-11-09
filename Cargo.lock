@@ -357,8 +357,10 @@ dependencies = [
  "sys-locale",
  "tao",
  "tauri-winres",
+ "tempfile",
  "tracing-subscriber",
  "tray-icon",
+ "ureq",
 ]
 
 [[package]]
