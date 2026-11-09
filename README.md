@@ -24,9 +24,19 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.24
+## What's new in 0.2.25
 
 See the [changelog](CHANGELOG.md) for the complete history.
+
+- **Each screen keeps its brightness.** The level set with the slider is saved
+  for every screen and comes back when Light starts, when a screen is
+  reconnected and when the monitors wake up.
+- **Brightness changes fade.** The slider, and dimming or restoring the
+  screens with the monitors, go smoothly from one level to the other.
+- **Fixed:** after the monitors woke from standby, the screens could stay at
+  10% and the brightness slider did nothing until Light was restarted.
+
+### In 0.2.24
 
 - **Screens rest while the monitors are off.** When Windows turns the
   monitors off, the screens dim to 10% and show a small Pixel logo that moves
