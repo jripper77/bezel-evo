@@ -5,6 +5,21 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.25] - 2026-11-09
+
+### Screens
+- **Each screen keeps its brightness.** The level set with the slider is
+  saved for every screen and comes back when Bezel Light starts, when a
+  screen is reconnected and when the monitors wake up. Studio's slider now
+  starts from the saved level.
+- **Brightness changes fade.** Moving the slider, and dimming or restoring
+  the screens when the monitors turn off or on, now goes smoothly from one
+  level to the other in under half a second.
+
+### Fixes
+- After the monitors woke from standby, the screens could stay at 10% and the
+  brightness slider had no effect until Bezel Light was restarted.
+
 ## [0.2.24] - 2026-11-07
 
 0.2.22 and 0.2.23 were local builds; this entry and the two below cover them.
