@@ -10,6 +10,7 @@ pub mod profiles;
 mod sampling;
 mod spectrum;
 mod targets;
+pub mod update;
 mod wake;
 pub use wake::Wake;
 pub mod wire;
