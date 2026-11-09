@@ -742,6 +742,16 @@ pub async fn set_audio_capture(state: State<'_, Shared>, on: bool) -> UiResult<(
     .await
 }
 
+/// Whether Bezel Light looks for a newer release once a day.
+#[tauri::command]
+pub async fn set_update_check(state: State<'_, Shared>, on: bool) -> UiResult<()> {
+    blocking(&state, move |b| {
+        b.set_update_check(on);
+        Ok(())
+    })
+    .await
+}
+
 /// Whether the screens idle while Windows has the monitors off.
 #[tauri::command]
 pub async fn set_idle_saver(state: State<'_, Shared>, on: bool) -> UiResult<()> {

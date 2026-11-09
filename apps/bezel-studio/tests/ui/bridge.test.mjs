@@ -497,6 +497,12 @@ test('the idle saver switch uses its own local command', async () => {
 });
 
 
+test('the update check switch uses its own local command', async () => {
+  const calls = [], bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => { calls.push([command, args]); } } } });
+  await bridge.setUpdateCheck(false); await bridge.setUpdateCheck(true);
+  assert.deepEqual(calls, [['set_update_check', { on: false }], ['set_update_check', { on: true }]]);
+});
+
 test('thirty-second trials use a dedicated transient command', async () => {
   const calls = [], bridge = createBridge({ ...page(), __TAURI__: { core: { invoke: async (command, args) => calls.push([command, args]) } } });
   await bridge.tryThemes({ COM3: 'theme.bezeltheme' }, 'gaming');

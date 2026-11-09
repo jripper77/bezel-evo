@@ -102,6 +102,30 @@ export function createPreferences({ t, bridge, onLanguage, onAutostart = () => {
     ]);
   }
 
+  /** Bezel Light's daily look at the latest release, and the newer one it found. */
+  function updateSection() {
+    const input = el('input', { id: 'prefs-update-check', type: 'checkbox', role: 'switch', checked: prefs.updateCheck !== false, 'aria-describedby': 'prefs-update-hint' });
+    const found = prefs.updateCheck !== false && prefs.updateAvailable
+      ? el('p', { id: 'prefs-update-found', class: 'prefs-update-found' }, [
+        el('span', { text: t('prefs.updateFound', { version: prefs.updateAvailable }) }), ' ',
+        el('button', { type: 'button', class: 'text-button', id: 'prefs-open-releases', text: t('prefs.updateOpen'),
+          onclick: () => bridge.openLink('releases').catch((e) => notify(errorText(t, e))) }),
+      ])
+      : null;
+    input.addEventListener('change', async () => {
+      input.disabled = true;
+      try { await bridge.setUpdateCheck(input.checked); prefs.updateCheck = input.checked; if (found) found.hidden = !input.checked; }
+      catch (error) { input.checked = prefs.updateCheck !== false; notify(errorText(t, error)); }
+      finally { input.disabled = false; }
+    });
+    return el('section', { class: 'prefs-section', 'aria-labelledby': 'prefs-update-title' }, [
+      el('h3', { id: 'prefs-update-title', text: t('prefs.updateTitle') }),
+      found,
+      el('label', { class: 'check', for: 'prefs-update-check' }, [input, el('span', { text: t('prefs.updateCheck') })]),
+      el('p', { id: 'prefs-update-hint', class: 'hint', text: t('prefs.updateHint') }),
+    ]);
+  }
+
   function debugSection() {
     const input = el('input', { id: 'prefs-debug', type: 'checkbox', role: 'switch', checked: prefs.debug });
     const overlay = el('input', { id: 'prefs-debug-overlay', type: 'checkbox', checked: prefs.debugShowReadings, disabled: !prefs.debug });
@@ -207,7 +231,7 @@ export function createPreferences({ t, bridge, onLanguage, onAutostart = () => {
     const close = el('button', { type: 'button', class: 'icon-button dialog-close', title: t('dialog.close'), 'aria-label': t('dialog.close'), onclick: () => dialog.close() }, [icon(ICONS.close, 16)]);
     dialog.replaceChildren(
       el('div', { class: 'dialog-head' }, [el('h2', { id: 'prefs-title', text: t('prefs.title') }), close]),
-      el('div', { class: 'dialog-body' }, [languageField(), startupSection(), audioSection(), idleSection(), debugSection(), logsSection(), sensorsSection()]),
+      el('div', { class: 'dialog-body' }, [languageField(), startupSection(), audioSection(), idleSection(), updateSection(), debugSection(), logsSection(), sensorsSection()]),
       el('div', { class: 'dialog-actions' }, [el('button', { type: 'button', class: 'primary-button', text: t('common.done'), onclick: () => dialog.close() })]),
     );
     if (focused) dialog.querySelector(`#${focused}`)?.focus();

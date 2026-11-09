@@ -16,7 +16,7 @@ export const DEMO_GIF_OVERLAP = 2;
 /** A key the demo takes and KLIPY refuses at the first search. */
 export const DEMO_REFUSED_KEY = 'refused-key';
 /** The links `open_link` opens. */
-export const DEMO_LINKS = Object.freeze(['klipyPartnerPanel']);
+export const DEMO_LINKS = Object.freeze(['klipyPartnerPanel', 'releases']);
 
 /** The characters a key may have, like the backend checks it. */
 const KEY_PATTERN = /^[\w-]{1,128}$/;

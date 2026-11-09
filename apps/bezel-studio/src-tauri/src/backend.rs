@@ -207,7 +207,10 @@ pub const GUIDE_PAGES: &[&str] = &["ffmpeg", "gifs-and-stickers"];
 /// The other pages the UI opens in the system's browser, by the name it
 /// asks for: KLIPY's Partner Panel, where a key is made
 /// (D-2026-10-01-gif-sticker-search-3).
-pub const LINKS: &[(&str, &str)] = &[("klipyPartnerPanel", "https://partner.klipy.com")];
+pub const LINKS: &[(&str, &str)] = &[
+    ("klipyPartnerPanel", "https://partner.klipy.com"),
+    ("releases", bezel_core::domain::update::RELEASES_PAGE),
+];
 
 /// The fixed address of the link named `link` ([`LINKS`]), so the UI can
 /// open no other.
@@ -295,6 +298,12 @@ impl Backend {
             })?;
         }
         Ok(())
+    }
+    /// Saves whether Bezel Light looks for a newer release; Light reads the
+    /// settings before each check (D-2026-11-09-update-check-1).
+    pub fn set_update_check(&self, on: bool) {
+        self.settings
+            .update(|s| s.update_check = crate::settings::DefaultOn(on));
     }
     /// Saves the idle option and hands it to the runtime, so a running
     /// Bezel Light applies it at once (D-2026-11-06-display-idle-saver-4).
@@ -558,6 +567,12 @@ impl Backend {
         PreferencesDto {
             audio_capture: settings.audio_capture.0,
             idle_saver: settings.idle_saver.0,
+            update_check: settings.update_check.0,
+            update_available: bezel_runtime::update::available(
+                self.settings.path(),
+                crate::EVO_VERSION,
+                settings.update_check.0,
+            ),
             debug: settings.debug,
             debug_show_readings: settings.debug_show_readings,
             debug_corner: settings.debug_corner,
@@ -2659,6 +2674,41 @@ mod tests {
     }
 
     #[test]
+    fn update_check_is_on_by_default_and_names_the_newer_release() {
+        let f = fixture("update-check");
+        let prefs = f.backend.preferences();
+        assert!(prefs.update_check, "on by default");
+        assert_eq!(prefs.update_available, None, "Light has not checked yet");
+
+        bezel_runtime::update::write(
+            f.backend.settings.path(),
+            &bezel_runtime::update::Record {
+                checked_at: 1,
+                latest: Some("999.0.0".into()),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            f.backend.preferences().update_available.as_deref(),
+            Some("999.0.0")
+        );
+
+        f.backend.set_update_check(false);
+        let prefs = f.backend.preferences();
+        assert!(!prefs.update_check);
+        assert_eq!(prefs.update_available, None, "nothing shown while off");
+        let json = std::fs::read_to_string(f.backend.settings.path()).unwrap();
+        assert!(json.contains("\"updateCheck\": false"), "{json}");
+
+        f.backend.set_update_check(true);
+        assert!(f.backend.preferences().update_check);
+        assert_eq!(
+            link_url("releases").unwrap(),
+            bezel_core::domain::update::RELEASES_PAGE
+        );
+    }
+
+    #[test]
     fn idle_saver_reaches_the_engine_options() {
         /// The runtime behind the pipe: Bezel Light's engine.
         struct Light(std::sync::Mutex<bezel_runtime::Engine>);
@@ -2872,14 +2922,21 @@ mod tests {
 
     /// D-2026-10-01-gif-sticker-search-3: KLIPY's Partner Panel is the one
     /// link the UI may open besides the guide's pages (the GIF guide among
-    /// them); the app's code names no other address and the window gets no
+    /// them) and, since D-2026-11-09-update-check-3, the fixed releases
+    /// page; the app's code names no other address and the window gets no
     /// permission to open one itself.
     #[test]
-    fn partner_panel_is_the_only_new_link() {
+    fn partner_panel_and_releases_are_the_only_new_links() {
         assert_eq!(
             LINKS,
-            [("klipyPartnerPanel", "https://partner.klipy.com")],
-            "one link"
+            [
+                ("klipyPartnerPanel", "https://partner.klipy.com"),
+                (
+                    "releases",
+                    "https://github.com/jripper77/bezel-evo/releases/latest"
+                )
+            ],
+            "two links"
         );
         assert_eq!(
             link_url("klipyPartnerPanel").unwrap(),

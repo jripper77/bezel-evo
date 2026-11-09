@@ -25,6 +25,9 @@ pub struct Settings {
     /// Windows has the monitors off; on unless the user turned it off
     /// (D-2026-11-06-display-idle-saver-4). Bezel Light reads it too.
     pub idle_saver: DefaultOn,
+    /// Bezel Light's daily look at the latest published release; on unless
+    /// the user turned it off (D-2026-11-09-update-check-1). Light reads it.
+    pub update_check: DefaultOn,
     pub debug: bool,
     pub debug_show_readings: bool,
     pub debug_corner: crate::performance::Corner,

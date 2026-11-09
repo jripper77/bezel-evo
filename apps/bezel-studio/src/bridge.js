@@ -625,6 +625,7 @@ function tauriBridge(invoke, tauri = {}) {
     setDebug: (on, showReadings, corner) => invoke('set_debug', { on, showReadings, corner }),
     setAudioCapture: (on) => invoke('set_audio_capture', { on }),
     setIdleSaver: (on) => invoke('set_idle_saver', { on }),
+    setUpdateCheck: (on) => invoke('set_update_check', { on }),
     setLanguage: (language) => invoke('set_language', { language }),
     setSensorOptions: (pingHost) => invoke('set_sensor_options', { pingHost }),
     pickFolder: () => invoke('pick_folder'),

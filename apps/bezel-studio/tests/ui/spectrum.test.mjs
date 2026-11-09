@@ -64,6 +64,12 @@ test('the idle saver is a local preference, on by default', async () => {
   await demo.setIdleSaver(false); assert.equal((await demo.preferences()).idleSaver, false);
   await demo.setIdleSaver(true); assert.equal((await demo.preferences()).idleSaver, true);
 });
+test('the update check is a local preference, on by default, with nothing found in the demo', async () => {
+  const demo = createDemoBackend('turing88'); const prefs = await demo.preferences();
+  assert.equal(prefs.updateCheck, true); assert.equal(prefs.updateAvailable, null);
+  await demo.setUpdateCheck(false); assert.equal((await demo.preferences()).updateCheck, false);
+  await demo.setUpdateCheck(true); assert.equal((await demo.preferences()).updateCheck, true);
+});
 test('peak hold, unlit LEDs and neon waves stay within the file format', () => {
   assert.deepEqual([spectrumOf({}).peakHold, spectrumOf({}).unlit, spectrumOf({}).waves], [0.35, null, true]);
   assert.deepEqual([spectrumPatch({}, { peakHold: -1 }).peakHold, spectrumPatch({}, { peakHold: 99 }).peakHold, spectrumPatch({}, { peakHold: NaN }).peakHold], [0, 10, 0.35]);

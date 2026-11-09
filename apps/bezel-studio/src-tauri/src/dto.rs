@@ -520,6 +520,10 @@ pub struct PreferencesDto {
     pub audio_capture: bool,
     /// The screens idle while the monitors are off.
     pub idle_saver: bool,
+    /// Bezel Light looks for a newer release once a day.
+    pub update_check: bool,
+    /// The newer release Light found (`0.2.26`), while checking is on.
+    pub update_available: Option<String>,
     pub debug: bool,
     pub debug_show_readings: bool,
     pub debug_corner: crate::performance::Corner,
