@@ -227,6 +227,9 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         Arc::new(bezel_devices::SystemBus)
     };
     let owner = bezel_power::owner::Owner::new(physical);
+    for (screen, level) in saved_levels(&settings_file) {
+        owner.remember_level(&screen, level);
+    }
     let _ = OWNER_CONNECTOR.set(owner.client(true));
     let mut screen_guard = handoff::light_screen(&runtime_directory)?;
     owner.set_enabled(screen_guard.is_some());
@@ -245,14 +248,12 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         engine.set_idle_saver(idle_saver);
     }
     let resumed = Arc::new(AtomicBool::new(false));
-    let resume_idle = Arc::new(AtomicBool::new(false));
     // Kept for the whole run: dropping it stops the power notifications.
     let (_power_watch, power) = watch_power(
         LightTargets {
             engine: Arc::clone(&engine),
             owner: owner.clone(),
             resumed: Arc::clone(&resumed),
-            resume_idle: Arc::clone(&resume_idle),
         },
         idle_saver,
     );
@@ -369,8 +370,9 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
     let mut retry_at = Instant::now();
     let mut reload_saved = false;
     let mut reopen_after_pause = false;
-    // Set by the wake: whether the monitors are still off.
-    let mut after_wake: Option<bool> = None;
+    // Set by the wake: the owner's idle follows the runtime's once the
+    // screens are reopened.
+    let mut after_wake = false;
     let studio_exe = directory.join("bezel-studio.exe");
     let mut fatal = None;
     let mut pause_watch = bezel_cli::light_recovery::PauseWatch::new(std::time::SystemTime::now());
@@ -433,9 +435,7 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
         // long pause does (the rev C may be asleep by its shutdown choice).
         let paused = pause_watch.poll(std::time::SystemTime::now());
         let woke = resumed.swap(false, Ordering::SeqCst);
-        if woke {
-            after_wake = Some(resume_idle.load(Ordering::SeqCst));
-        }
+        after_wake |= woke;
         if ((paused && !simulate && !finite) || woke)
             && !quit_requested.load(Ordering::SeqCst)
         {
@@ -575,15 +575,9 @@ pub(super) fn run(arguments: Vec<OsString>) -> anyhow::Result<String> {
                 fatal = Some(anyhow::Error::from(error));
                 quit_requested.store(true, Ordering::SeqCst);
             }
-            // The sleep's shutdown choice refused new links; with none kept,
-            // the idle state only changes its flag (nothing is written).
-            if let Some(idle) = after_wake.take() {
+            if std::mem::take(&mut after_wake) {
                 owner.set_enabled(screen_guard.is_some());
-                for on in [false, idle] {
-                    if let Err(error) = owner.idle(on, &start_level) {
-                        eprintln!("bezel light: idle brightness after the wake: {error}");
-                    }
-                }
+                owner_after_wake(&owner, &engine, &start_level);
             }
             reopen_after_pause = false;
         }
@@ -874,6 +868,28 @@ fn idle_saver_on(settings: &Path) -> bool {
         .is_none_or(|value| value["idleSaver"].as_bool() != Some(false))
 }
 
+/// The brightness chosen for each screen in Studio (`screenBrightness` in
+/// `settings`, percent by screen key): the owner sends it when it opens a
+/// screen and restores it when idle ends. Invalid entries are skipped.
+fn saved_levels(settings: &Path) -> Vec<(String, Brightness)> {
+    let settings = std::fs::read(settings)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
+    let Some(levels) = settings
+        .as_ref()
+        .and_then(|value| value["screenBrightness"].as_object())
+    else {
+        return Vec::new();
+    };
+    levels
+        .iter()
+        .filter_map(|(screen, percent)| {
+            let percent = u8::try_from(percent.as_u64()?).ok()?;
+            Some((screen.clone(), Brightness::new(percent)?))
+        })
+        .collect()
+}
+
 /// What a power [`Transition`] acts on in Light: the runtime and the
 /// screen owner.
 trait PowerTargets {
@@ -890,9 +906,8 @@ trait PowerTargets {
     fn owner_idle(&mut self, on: bool);
     /// The rev C shutdown choice is applied through the kept links.
     fn finish_kept(&mut self, deadline: Instant);
-    /// The screens are reopened as after a long pause; `idle` is whether
-    /// the monitors are still off.
-    fn reopen(&mut self, idle: bool);
+    /// The screens are reopened as after a long pause.
+    fn reopen(&mut self);
 }
 
 /// Applies `transition` (from [`IdleState`]) at `now`. Idle and sleep are
@@ -917,7 +932,7 @@ fn on_power_event(targets: &mut dyn PowerTargets, transition: Transition, now: I
         Transition::Resume { idle } => {
             targets.engine_suspend(false, now + SUSPEND_BUDGET);
             targets.engine_idle(idle);
-            targets.reopen(idle);
+            targets.reopen();
         }
     }
 }
@@ -957,8 +972,6 @@ struct LightTargets {
     owner: bezel_power::owner::Owner,
     /// Set on a wake: the event loop reopens the screens.
     resumed: Arc<AtomicBool>,
-    /// Whether the monitors were still off at the last wake.
-    resume_idle: Arc<AtomicBool>,
 }
 
 impl LightTargets {
@@ -1027,10 +1040,31 @@ impl PowerTargets for LightTargets {
             eprintln!("bezel light: shutdown choice at sleep: {error}");
         }
     }
-    fn reopen(&mut self, idle: bool) {
-        self.resume_idle.store(idle, Ordering::SeqCst);
+    fn reopen(&mut self) {
         self.resumed.store(true, Ordering::SeqCst);
     }
+}
+
+/// Puts the owner's idle back after the screens are reopened at a wake.
+/// The sleep's shutdown choice refused new links; with none kept, the idle
+/// state only changes its flag (nothing is written). The idle in force is
+/// the runtime's now, not the one at the wake: the monitors may have come
+/// back meanwhile, and a stale one left the screens dimmed with the
+/// brightness ignored. The power worker sets the runtime's idle before the
+/// owner's, so holding the runtime's lock here keeps both in step.
+fn owner_after_wake(
+    owner: &bezel_power::owner::Owner,
+    engine: &std::sync::Mutex<bezel_runtime::Engine>,
+    fallback: &(dyn Fn(&ScreenIdentity) -> Brightness + Sync),
+) {
+    let engine = engine.lock();
+    let idle = engine.as_ref().is_ok_and(|engine| engine.is_idle());
+    for on in [false, idle] {
+        if let Err(error) = owner.idle(on, fallback) {
+            eprintln!("bezel light: idle brightness after the wake: {error}");
+        }
+    }
+    drop(engine);
 }
 
 /// The level a screen goes back to when idle ends and none was set through
@@ -1118,6 +1152,30 @@ mod tests {
     }
 
     #[test]
+    fn saved_levels_are_read_from_the_settings() {
+        let directory =
+            std::env::temp_dir().join(format!("bezel-light-levels-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&directory);
+        std::fs::create_dir_all(&directory).unwrap();
+        let settings = directory.join("settings.json");
+        assert!(saved_levels(&settings).is_empty(), "no file");
+        std::fs::write(
+            &settings,
+            br#"{"screenBrightness":{"COM6":70,"COM3":0,"COM9":101,"COM7":"x"}}"#,
+        )
+        .unwrap();
+        let levels = saved_levels(&settings);
+        let _ = std::fs::remove_dir_all(&directory);
+        assert_eq!(
+            levels,
+            [
+                ("COM3".to_owned(), Brightness::new(0).unwrap()),
+                ("COM6".to_owned(), Brightness::new(70).unwrap()),
+            ]
+        );
+    }
+
+    #[test]
     fn idle_saver_is_on_unless_turned_off() {
         let directory =
             std::env::temp_dir().join(format!("bezel-light-idle-{}", std::process::id()));
@@ -1178,8 +1236,8 @@ mod tests {
             );
             self.log.push("owner.finish".into());
         }
-        fn reopen(&mut self, idle: bool) {
-            self.log.push(format!("reopen({idle})"));
+        fn reopen(&mut self) {
+            self.log.push("reopen".into());
         }
     }
 
@@ -1242,7 +1300,7 @@ mod tests {
                 "owner.finish",
                 "engine.suspend(false)",
                 "engine.idle(true)",
-                "reopen(true)",
+                "reopen",
                 "engine.idle(false)",
                 "owner.idle(false)",
                 "engine.saver(false)",
@@ -1321,7 +1379,6 @@ mod tests {
             engine: Arc::clone(&engine),
             owner,
             resumed: Arc::new(AtomicBool::new(false)),
-            resume_idle: Arc::new(AtomicBool::new(false)),
         };
         Light {
             targets,
@@ -1356,7 +1413,6 @@ mod tests {
         assert_eq!(applied.try_recv(), Ok(()));
         on_power_message(&mut state, &mut targets, event(PowerEvent::Resume));
         assert!(targets.resumed.load(Ordering::SeqCst), "the screens reopen");
-        assert!(targets.resume_idle.load(Ordering::SeqCst));
         assert!(idle(&engine), "the monitors are still off");
         on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOn));
         assert!(!idle(&engine));
@@ -1364,6 +1420,34 @@ mod tests {
         on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOff));
         assert!(!idle(&engine), "the option is off");
         assert!(!engine.lock().unwrap().idle_saver());
+    }
+
+    /// The wake arrives with the monitors still off and they come back
+    /// before the event loop reopens the screens: the owner follows the
+    /// runtime out of idle instead of the state seen at the wake, which
+    /// left the screens dimmed and the brightness ignored.
+    #[test]
+    fn idle_owner_after_wake_follows_the_runtime_now() {
+        let Light {
+            mut targets,
+            engine,
+            _cache,
+        } = light("after-wake");
+        let owner = targets.owner.clone();
+        let mut state = IdleState::new(true);
+        on_power_message(&mut state, &mut targets, PowerMessage::Saver(true));
+        on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOff));
+        assert!(owner.is_idle());
+        let (done, _applied) = std::sync::mpsc::sync_channel(1);
+        let suspend = PowerMessage::Event(PowerEvent::Suspend, Some(done));
+        on_power_message(&mut state, &mut targets, suspend);
+        on_power_message(&mut state, &mut targets, event(PowerEvent::Resume));
+        owner_after_wake(&owner, &engine, &|_| Brightness::MAX);
+        assert!(owner.is_idle(), "the monitors are still off");
+        on_power_message(&mut state, &mut targets, event(PowerEvent::DisplayOn));
+        owner_after_wake(&owner, &engine, &|_| Brightness::MAX);
+        assert!(!idle(&engine));
+        assert!(!owner.is_idle(), "the monitors came back before the reopen");
     }
 
     /// The sleep cannot wait for a runtime that stays busy: the option is

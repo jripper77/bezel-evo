@@ -70,7 +70,7 @@ impl Fixture {
         let physical = FakeConnector::with_storage(
             FakeStorage::default().with_file(path.clone(), vec![1, 2, 3]),
         );
-        let owner = Owner::new(Arc::new(physical.clone()));
+        let owner = Owner::new(Arc::new(physical.clone())).with_fade(std::time::Duration::ZERO);
         Self {
             owner,
             physical,
@@ -377,11 +377,76 @@ fn idle_dims_every_kept_screen_and_restores_the_last_level() {
     f.owner.idle(false, &fallback).unwrap();
     assert!(!f.owner.is_idle());
     let dim = bezel_core::domain::idle::IDLE_BRIGHTNESS;
+    // The screens fade together: their order is free.
+    let mut sent = f.physical.log().brightness;
+    sent[1..3].sort_by_key(|l| l.percent());
+    sent[3..].sort_by_key(|l| l.percent());
+    assert_eq!(sent, [level(70), dim, dim, level(40), level(70)]);
+    assert_eq!(f.physical.log().connects, 2);
+}
+
+/// The level chosen for a screen outlives its link: a screen opened again
+/// (after a wake or a restart of Light) gets it at once, found by either
+/// port of a rev C, and idle ends on it.
+#[test]
+fn level_is_sent_when_a_screen_opens_again() {
+    let f = Fixture::new();
+    let fallback = |_: &bezel_core::domain::screen::ScreenIdentity| Brightness::MAX;
+    let screen = &f.screens[0];
+    let display = screen.display.as_ref().unwrap().address.0.to_uppercase();
+    f.owner.remember_level(&display, level(55));
+    let mut light = f.owner.client(false).connect(screen).unwrap();
     assert_eq!(
         f.physical.log().brightness,
-        [level(70), dim, dim, level(70), level(40)]
+        [level(55)],
+        "sent at the opening"
     );
-    assert_eq!(f.physical.log().connects, 2);
+    light.set_brightness(level(70)).unwrap();
+    drop(light);
+    f.owner.clear().unwrap();
+    let _light = f.owner.client(false).connect(screen).unwrap();
+    assert_eq!(f.physical.log().brightness.last(), Some(&level(70)));
+    f.owner.idle(true, &fallback).unwrap();
+    f.owner.clear().unwrap();
+    let _light = f.owner.client(false).connect(screen).unwrap();
+    let dim = bezel_core::domain::idle::IDLE_BRIGHTNESS;
+    assert_eq!(
+        f.physical.log().brightness.last(),
+        Some(&dim),
+        "dim while idle"
+    );
+    f.owner.idle(false, &fallback).unwrap();
+    assert_eq!(f.physical.log().brightness.last(), Some(&level(70)));
+}
+
+/// A screen with no level chosen keeps the one it has when it opens.
+#[test]
+fn a_screen_without_a_level_is_left_as_it_is() {
+    let f = Fixture::new();
+    let _light = f.owner.client(false).connect(&f.screens[0]).unwrap();
+    assert!(f.physical.log().brightness.is_empty());
+}
+
+/// A change of level goes through the levels between, and a newer one
+/// takes over the fade in progress.
+#[test]
+fn level_changes_fade() {
+    let physical = FakeConnector::default();
+    let owner = Owner::new(Arc::new(physical.clone()));
+    let screen = discover_screens(&FakeBus::turing_88()).unwrap().remove(0);
+    let mut light = owner.client(false).connect(&screen).unwrap();
+    light.set_brightness(level(10)).unwrap();
+    light.set_brightness(level(70)).unwrap();
+    let sent: Vec<u8> = physical
+        .log()
+        .brightness
+        .iter()
+        .map(|l| l.percent())
+        .collect();
+    assert_eq!(sent.first(), Some(&10), "the first level jumps: {sent:?}");
+    assert_eq!(sent.last(), Some(&70), "{sent:?}");
+    assert!(sent.len() > 3, "levels between are sent: {sent:?}");
+    assert!(sent.windows(2).all(|w| w[0] < w[1]), "{sent:?}");
 }
 
 #[test]

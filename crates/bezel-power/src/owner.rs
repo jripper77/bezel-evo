@@ -2,13 +2,13 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::{Duration, Instant};
 
-use bezel_core::app::idle;
 use bezel_core::domain::{
     discovery::Screen,
     frame::Frame,
     geometry::Orientation,
-    idle::IdleBrightness,
+    idle::{FADE, FADE_STEP, IDLE_BRIGHTNESS, fade_level},
     job::Job,
     screen::{Brightness, ScreenIdentity},
     standby::PlanB,
@@ -31,8 +31,14 @@ struct Kept {
     video: Option<(RemotePath, Repeat)>,
     edited: bool,
     failed: bool,
-    /// The levels set through this link, to restore when idle ends.
-    levels: IdleBrightness,
+    /// Every port the screen answers to (lowercase): its level is
+    /// remembered under each, as Studio and Light know it by either.
+    addresses: Vec<String>,
+    /// The level last sent through this link; unknown until one is.
+    shown: Option<Brightness>,
+    /// Counts the fades started on this link: a fade stops as soon as a
+    /// newer one starts.
+    fading: u64,
 }
 
 impl Kept {
@@ -68,6 +74,12 @@ pub struct Owner {
     disabled: Arc<AtomicBool>,
     reload: Arc<AtomicBool>,
     idle: Arc<AtomicBool>,
+    /// The level chosen for each screen, by port (lowercase): from the
+    /// settings and every level set since. Kept when the links close, so
+    /// that a screen opened again gets it back.
+    levels: Arc<Mutex<BTreeMap<String, Brightness>>>,
+    /// How long a change of level takes ([`FADE`]).
+    fade: Duration,
 }
 
 impl Owner {
@@ -80,41 +92,144 @@ impl Owner {
             disabled: Arc::default(),
             reload: Arc::default(),
             idle: Arc::default(),
+            levels: Arc::default(),
+            fade: FADE,
+        }
+    }
+
+    /// The same owner with every change of level lasting `fade`
+    /// (`Duration::ZERO`: the level jumps).
+    #[must_use]
+    pub fn with_fade(mut self, fade: Duration) -> Self {
+        self.fade = fade;
+        self
+    }
+
+    /// Remembers `level` as the one chosen for the screen at `address`
+    /// (the settings' key, either port of the screen): it is sent when the
+    /// screen opens and restored when idle ends.
+    pub fn remember_level(&self, address: &str, level: Brightness) {
+        if let Ok(mut levels) = self.levels.lock() {
+            levels.insert(address.to_lowercase(), level);
+        }
+    }
+
+    /// The level chosen for the screen with `addresses`, if any.
+    fn level_of(&self, addresses: &[String]) -> Option<Brightness> {
+        let levels = self.levels.lock().ok()?;
+        addresses.iter().find_map(|a| levels.get(a).copied())
+    }
+
+    /// Remembers `level` under every port of a screen.
+    fn record(&self, addresses: &[String], level: Brightness) {
+        if let Ok(mut levels) = self.levels.lock() {
+            for address in addresses {
+                levels.insert(address.clone(), level);
+            }
         }
     }
 
     /// Enters (`true`) or leaves (`false`) idle while the computer's
     /// monitors are off (D-2026-11-06-display-idle-saver-1): every link
-    /// kept open is dimmed with [`idle::dim`], then restored with
-    /// [`idle::restore`] to the last level set through it, else to
-    /// `fallback` of its screen (the start level a rev C record keeps, or
-    /// [`Brightness::MAX`]). Closed links and screens put to sleep are never
-    /// opened; asking for the state already in place sends nothing. Levels
-    /// set while idle are only remembered for the restore. The first error
-    /// is returned after every screen was tried.
-    pub fn idle(&self, on: bool, fallback: &dyn Fn(&ScreenIdentity) -> Brightness) -> Result<()> {
+    /// kept open fades to [`IDLE_BRIGHTNESS`], then back to the level chosen
+    /// for its screen ([`Self::remember_level`] and every level set since),
+    /// else to `fallback` of its screen (the start level a rev C record
+    /// keeps, or [`Brightness::MAX`]). The screens fade together. Closed
+    /// links and screens put to sleep are never opened; asking for the
+    /// state already in place sends nothing. Levels set while idle are only
+    /// remembered for the restore. The first error is returned after every
+    /// screen was tried.
+    pub fn idle(
+        &self,
+        on: bool,
+        fallback: &(dyn Fn(&ScreenIdentity) -> Brightness + Sync),
+    ) -> Result<()> {
         if self.idle.swap(on, Ordering::SeqCst) == on {
             return Ok(());
         }
         let links: Vec<_> = lock(&self.links)?.values().cloned().collect();
-        let mut first_error = None;
-        for link in links {
-            let mut kept = lock(&link)?;
-            if kept.failed {
-                continue;
+        let results: Vec<Result<()>> = std::thread::scope(|scope| {
+            let fades: Vec<_> = links
+                .iter()
+                .map(|kept| scope.spawn(move || self.idle_one(kept, on, fallback)))
+                .collect();
+            fades
+                .into_iter()
+                .map(|fade| fade.join().unwrap_or_else(|_| Err(gone())))
+                .collect()
+        });
+        results.into_iter().find(Result::is_err).unwrap_or(Ok(()))
+    }
+
+    /// [`Self::idle`] on one kept link.
+    fn idle_one(
+        &self,
+        kept: &Mutex<Kept>,
+        on: bool,
+        fallback: &(dyn Fn(&ScreenIdentity) -> Brightness + Sync),
+    ) -> Result<()> {
+        let target = {
+            let k = lock(kept)?;
+            if k.failed || !k.link.identity().model.capabilities.brightness {
+                return Ok(());
             }
-            let result = kept.call(|kept| {
-                if on {
-                    return idle::dim(kept.link.as_mut()).map(drop);
+            if on {
+                IDLE_BRIGHTNESS
+            } else {
+                self.level_of(&k.addresses)
+                    .unwrap_or_else(|| fallback(k.link.identity()))
+            }
+        };
+        // A later change of idle takes over this fade.
+        let idle = Arc::clone(&self.idle);
+        self.fade_to(kept, target, &move |_| idle.load(Ordering::SeqCst) == on)
+    }
+
+    /// Takes the screen behind `kept` from the level it shows to `to` in
+    /// [`Self::with_fade`]'s time ([`fade_level`], one level every
+    /// [`FADE_STEP`]), the link locked only to send each one, so that
+    /// frames go on meanwhile. Jumps when the level shown is unknown.
+    /// Stops, without an error, as soon as a newer fade starts on the link,
+    /// the link fails or `still` says no (checked under the link's lock,
+    /// also before starting). Sends `to` at least once.
+    fn fade_to(
+        &self,
+        kept: &Mutex<Kept>,
+        to: Brightness,
+        still: &dyn Fn(&Kept) -> bool,
+    ) -> Result<()> {
+        let (from, generation) = {
+            let mut k = lock(kept)?;
+            if k.failed || !still(&k) {
+                return Ok(());
+            }
+            k.fading += 1;
+            (k.shown.unwrap_or(to), k.fading)
+        };
+        let start = Instant::now();
+        let mut sent = false;
+        loop {
+            let level = fade_level(from, to, start.elapsed(), self.fade);
+            {
+                let mut k = lock(kept)?;
+                if k.fading != generation
+                    || k.failed
+                    || !still(&k)
+                    || self.disabled.load(Ordering::SeqCst)
+                {
+                    return Ok(());
                 }
-                let fallback = fallback(kept.link.identity());
-                idle::restore(kept.link.as_mut(), &kept.levels, fallback).map(drop)
-            });
-            if let Err(error) = result {
-                first_error.get_or_insert(error);
+                if k.shown != Some(level) || (level == to && !sent) {
+                    k.call(|k| k.link.set_brightness(level))?;
+                    k.shown = Some(level);
+                    sent = true;
+                }
             }
+            if level == to {
+                return Ok(());
+            }
+            std::thread::sleep(FADE_STEP);
         }
-        first_error.map_or(Ok(()), Err)
     }
 
     /// Whether the screens are dimmed for idle ([`Owner::idle`]).
@@ -250,14 +365,38 @@ impl ScreenConnector for OwnerConnector {
         let kept = if let Some(link) = existing {
             Arc::clone(link)
         } else {
-            let link = Arc::new(Mutex::new(Kept {
+            let addresses: Vec<String> = [&screen.display, &screen.wake]
+                .into_iter()
+                .flatten()
+                .map(|endpoint| endpoint.address.0.to_lowercase())
+                .collect();
+            let mut kept = Kept {
                 link: self.owner.connector.connect(screen)?,
                 orientation: None,
                 video: None,
                 edited: false,
                 failed: false,
-                levels: IdleBrightness::default(),
-            }));
+                addresses,
+                shown: None,
+                fading: 0,
+            };
+            // A screen opened (again: after a wake, a restart of Light) gets
+            // its level at once: the idle one while idle, else the one
+            // chosen for it. Without one it keeps the level it has.
+            let level = if self.owner.is_idle() {
+                Some(IDLE_BRIGHTNESS)
+            } else {
+                self.owner.level_of(&kept.addresses)
+            };
+            if let Some(level) = level
+                && kept.link.identity().model.capabilities.brightness
+            {
+                match kept.call(|k| k.link.set_brightness(level)) {
+                    Ok(()) => kept.shown = Some(level),
+                    Err(error) => tracing::warn!(%error, "level not sent at the opening"),
+                }
+            }
+            let link = Arc::new(Mutex::new(kept));
             links.insert(key, Arc::clone(&link));
             link
         };
@@ -371,15 +510,24 @@ impl ScreenLink for OwnedLink {
         lock(&self.kept).ok()?.link.last_transfer()
     }
     fn set_brightness(&mut self, value: Brightness) -> Result<()> {
-        let idle = Arc::clone(&self.owner.idle);
-        self.write(|k| {
-            k.levels.record(value);
-            // Checked under the link's lock, like `Owner::idle` dims it:
-            // while idle the level waits for the restore.
-            if idle.load(Ordering::SeqCst) {
-                return Ok(());
-            }
-            k.link.set_brightness(value)
+        if !self.allowed() {
+            return Ok(());
+        }
+        if self.owner.disabled.load(Ordering::SeqCst) {
+            return Err(gone());
+        }
+        let addresses = lock(&self.kept)?.addresses.clone();
+        self.owner.record(&addresses, value);
+        // Checked under the link's lock, like `Owner::idle` fades it: while
+        // idle the level waits for the restore, and a paused runtime sends
+        // nothing (as in `write`).
+        let owner = self.owner.clone();
+        let editor = self.editor;
+        self.owner.fade_to(&self.kept, value, &move |k| {
+            !owner.is_idle()
+                && (editor
+                    || crate::session_ending()
+                    || !(owner.reload_pending() || (owner.editing() && k.edited)))
         })
     }
     fn set_orientation(&mut self, value: Orientation) -> Result<()> {
