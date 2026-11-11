@@ -5,6 +5,17 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.28] - 2026-11-11
+
+0.2.27 was a local build; this entry and the ones below cover it.
+
+### Studio
+- **Automatic scales show their range.** With *Automatic*, a graph's greyed
+  min and max follow the lowest and highest readings in its window: the
+  series' own, or both series of a mirrored graph when they share a scale (a
+  mirrored series always starts at 0). The shared current peak now looks at
+  both sensors.
+
 ## [0.2.27] - 2026-11-11
 
 0.2.26 was a local build; this entry and the one below cover it.
