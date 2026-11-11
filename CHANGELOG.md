@@ -5,6 +5,16 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.2.27] - 2026-11-11
+
+0.2.26 was a local build; this entry and the one below cover it.
+
+### Studio
+- A mirrored graph's Data now reads top to bottom: **Source** lists the upper
+  and lower series' sensors, **Vertical scale** has one block per series and
+  the "Same scale for both series" switch below them. Changing one series'
+  scale leaves the other as it is.
+
 ## [0.2.26] - 2026-11-11
 
 ### Updates
