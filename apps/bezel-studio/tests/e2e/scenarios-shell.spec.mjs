@@ -321,7 +321,8 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await openPreferences(page, t);
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const language = dialog.getByRole('combobox', { name: t('prefs.language') });
-  await expect(language).toBeFocused();
+  // The dialog opens on General, its entry in the column focused.
+  await expect(dialog.getByRole('tab', { name: t('prefs.page.general'), exact: true })).toBeFocused();
   await expect(language).toHaveValue('');
   await expect(language.locator('option:checked')).toHaveText(t('prefs.languageSystem', { language: t(`language.${lang}`) }));
   await expectAccessible(page);
@@ -330,7 +331,7 @@ test('the language follows the system until one is chosen', async ({ page, t, la
   await language.selectOption(other);
   await expect(html).toHaveAttribute('lang', other);
   await expect(page.getByRole('dialog', { name: u('prefs.title') })).toBeVisible();
-  await expect(page.getByRole('tab', { name: u('common.sensors') })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('tab', { name: u('common.sensors') })).toBeVisible();
   await expect(page.locator('#status-main')).toHaveText(u('status.saved'));
   await expect(page.locator('#inspector').getByRole('heading', { name: u('common.background'), exact: true })).toBeVisible();
   await expectAccessible(page);
@@ -351,7 +352,7 @@ test('the ping target is set in the preferences', async ({ page, t }) => {
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  await openPreferences(page, t);
+  await openPreferences(page, t, 'common.sensors');
   const dialog = page.getByRole('dialog', { name: t('prefs.title') });
   const host = dialog.getByRole('textbox', { name: t('prefs.pingHost') });
   await expect(host).toHaveValue('8.8.8.8');
@@ -379,7 +380,7 @@ test('closing always hands over to Light and protects unsaved live edits', async
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
   // No close preference: Light always keeps the screen once Studio closes.
-  await openPreferences(page, t);
+  await openPreferences(page, t, 'prefs.page.diagnostics');
   const prefs = page.getByRole('dialog', { name: t('prefs.title') });
   await expect(prefs.getByRole('switch', { name: t('prefs.debugEnable') })).toBeVisible();
   await expect(prefs.locator('#prefs-light-on-close')).toHaveCount(0);

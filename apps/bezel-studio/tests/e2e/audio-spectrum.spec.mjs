@@ -40,7 +40,7 @@ test('missing Player is explicit and audio capture is on until turned off locall
   const errors=watchErrors(page), inspector=await setup(page,t,false);
   await expect(inspector.getByRole('status')).toHaveText(t('spectrum.playerMissing'));
   await expect(inspector.getByText(t('spectrum.browser'),{exact:true})).toBeVisible();
-  await openPreferences(page,t);const dialog=page.getByRole('dialog',{name:t('prefs.title')});
+  await openPreferences(page,t,'sensorsPanel.group.audio');const dialog=page.getByRole('dialog',{name:t('prefs.title')});
   const consent=dialog.getByRole('switch',{name:t('spectrum.consent'),exact:true});await expect(consent).toBeChecked();await expect(dialog.getByText(t('spectrum.privacy'),{exact:true})).toBeVisible();
   await consent.uncheck();await expect(consent).not.toBeChecked();await expectAccessible(page);
   await dialog.getByRole('button',{name:t('common.done'),exact:true}).click();await openPreferences(page,t);

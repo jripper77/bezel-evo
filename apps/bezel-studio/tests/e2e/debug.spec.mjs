@@ -4,7 +4,7 @@ test('Debug owns logging and its screen-readings suboption independently', async
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   await expect(page.locator('#theme-name')).toHaveValue('Demo');
-  await openPreferences(page, t);
+  await openPreferences(page, t, 'prefs.page.diagnostics');
   const logs = page.getByRole('region', { name: t('prefs.logsTitle'), exact: true });
   const openLogs = logs.getByRole('button', { name: t('prefs.openLogs'), exact: true });
   await expect(openLogs).toBeVisible();

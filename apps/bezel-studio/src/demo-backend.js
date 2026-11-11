@@ -79,6 +79,8 @@ export function demoOrientation(model, remembered) {
 
 /** The host `net.ping` measures unless the user picks another. */
 export const DEMO_PING_HOST = '8.8.8.8';
+/** The version the demo's Preferences say is running. */
+export const DEMO_VERSION = '0.2.28';
 /** The folder the demo's folder picker returns. */
 export const DEMO_FOLDER = 'C:/Users/Demo/Documents';
 
@@ -1415,6 +1417,10 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
   let audioCapture = true;
   let idleSaver = true;
   let updateCheck = true;
+  // The demo's last update check: none until Check now, which finds the
+  // demo's own version (or `globalThis.demoLatestRelease`, for tests).
+  let updateCheckedAt = null;
+  let updateLatest = null;
   const systemLanguage = pickLocale(hooks.languages ?? []);
   const sensorOptions = { pingHost: null };
   const closeListeners = new Set();
@@ -1754,6 +1760,11 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
     setAudioCapture: (on) => { audioCapture = Boolean(on); return Promise.resolve(); },
     setIdleSaver: (on) => { idleSaver = Boolean(on); return Promise.resolve(); },
     setUpdateCheck: (on) => { updateCheck = Boolean(on); return Promise.resolve(); },
+    checkUpdateNow() {
+      updateCheckedAt = Math.floor(Date.now() / 1000);
+      updateLatest = globalThis.demoLatestRelease ?? DEMO_VERSION;
+      return this.preferences();
+    },
     profiles: () => {
       const seconds = now(), date = new Date(seconds * 1000);
       const status = profileSelection.evaluate(profileConfig, { readings: sampleReadings(seconds), activity: DEMO_ACTIVITY,
@@ -1803,7 +1814,10 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       audioCapture,
       idleSaver,
       updateCheck,
-      updateAvailable: null,
+      updateAvailable: updateCheck && updateLatest && updateLatest !== DEMO_VERSION ? updateLatest : null,
+      updateCheckedAt,
+      updateLatest,
+      version: DEMO_VERSION,
       lightRuntime: true,
       screenBrightness: {},
       language,

@@ -193,10 +193,18 @@ export async function sendFileTo(page, t, medium) {
   await page.getByRole('menuitem', { name: t(`storage.medium.${medium}`), exact: true }).click();
 }
 
-/** Opens Preferences from the top bar's ⋯ menu (`t` may be another language's translator). */
-export async function openPreferences(page, t) {
+/**
+ * Opens Preferences from the top bar's ⋯ menu (`t` may be another
+ * language's translator) and, given the key of a page's label, that page.
+ */
+export async function openPreferences(page, t, pageLabel = null) {
   await page.locator('#more-menu').click();
   await page.getByRole('menuitem', { name: t('prefs.title'), exact: true }).click();
+  if (pageLabel) {
+    const tab = page.getByRole('dialog', { name: t('prefs.title') }).getByRole('tab', { name: t(pageLabel), exact: true });
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+  }
 }
 
 
