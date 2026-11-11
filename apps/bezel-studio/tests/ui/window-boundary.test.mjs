@@ -34,8 +34,9 @@ const RULES = Object.freeze([
   {
     what: 'asks KLIPY or opens a link',
     names: { searchGifs: 'search_gifs', gifPreview: 'gif_preview', collectGif: 'collect_gif', openLink: 'open_link' },
-    // The bridge defines them; the GIF search dialog and the collection panel use them.
-    allowed: ['src/bridge.js', 'src/ui/gif-search.js', 'src/ui/collection.js'],
+    // The bridge defines them; the GIF search dialog and the collection panel use them;
+    // the Preferences open the fixed releases page when an update is out.
+    allowed: ['src/bridge.js', 'src/ui/gif-search.js', 'src/ui/collection.js', 'src/ui/preferences.js'],
     covers: notTheBridge,
   },
   {
@@ -361,7 +362,7 @@ function pageProblems(page, source, known) {
   return problems.sort((a, b) => a.offset - b.offset).map(({ offset, ...problem }) => problem);
 }
 
-test('only the bridge talks to the backend; only the GIF and collection UI asks KLIPY or opens a link', () => {
+test('only the bridge talks to the backend; only the GIF, collection and Preferences UI asks KLIPY or opens a link', () => {
   const files = modules();
   for (const file of ['src/app.js', 'src/bridge.js', 'src/ui/gif-search.js', 'src/ui/collection.js', 'src/ui/library.js', 'src/demo-backend.js']) {
     assert.ok(files.includes(file), `${file} is read`);
@@ -377,6 +378,7 @@ test('only the bridge talks to the backend; only the GIF and collection UI asks 
     assert.ok(seen('src/bridge.js', KLIPY.what).includes(`${name}: `), `the bridge's ${name}`);
     assert.ok(seen('src/ui/gif-search.js', KLIPY.what).includes(`bridge.${name}(`), `the GIF search's ${name}`);
   }
+  assert.ok(seen('src/ui/preferences.js', KLIPY.what).includes("bridge.openLink('releases')"));
   assert.ok(seen('src/app.js', GUIDES.what).includes("bridge.openGuide('ffmpeg'"));
   assert.ok(seen('src/ui/gif-search.js', GUIDES.what).includes('bridge.openGuide(GUIDE_PAGE'));
 
