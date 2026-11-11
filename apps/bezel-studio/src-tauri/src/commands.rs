@@ -752,6 +752,17 @@ pub async fn set_update_check(state: State<'_, Shared>, on: bool) -> UiResult<()
     .await
 }
 
+/// **Check now** in Preferences › Updates: the latest release at once; the
+/// preferences again, with what it found.
+#[tauri::command]
+pub async fn check_update_now(state: State<'_, Shared>) -> UiResult<PreferencesDto> {
+    blocking(&state, move |b| {
+        b.check_update_now(&|| bezel_runtime::update::fetch_latest_tag(crate::EVO_VERSION))
+            .map_err(UiError::system)
+    })
+    .await
+}
+
 /// Whether the screens idle while Windows has the monitors off.
 #[tauri::command]
 pub async fn set_idle_saver(state: State<'_, Shared>, on: bool) -> UiResult<()> {

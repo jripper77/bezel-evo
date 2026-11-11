@@ -524,6 +524,13 @@ pub struct PreferencesDto {
     pub update_check: bool,
     /// The newer release Light found (`0.2.26`), while checking is on.
     pub update_available: Option<String>,
+    /// When the last check ran (Light's daily one or **Check now**), in
+    /// seconds since the epoch; none before the first.
+    pub update_checked_at: Option<u64>,
+    /// The latest published release that check saw (`0.2.28`).
+    pub update_latest: Option<String>,
+    /// The version running (`0.2.28`).
+    pub version: String,
     pub debug: bool,
     pub debug_show_readings: bool,
     pub debug_corner: crate::performance::Corner,

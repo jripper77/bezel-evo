@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
-use bezel_core::domain::update::{LATEST_RELEASE_API, RELEASES_PAGE, Version, due};
-use bezel_runtime::update::{Record, available, read, write};
+use bezel_core::domain::update::{RELEASES_PAGE, due};
+use bezel_runtime::update::{available, check, fetch_latest_tag, read};
 
 /// How long after Light starts the first check runs, and how often the
 /// settings are looked at again.
@@ -39,49 +39,17 @@ pub(super) fn step(
         return None;
     }
     let last = read(settings);
-    if due(last.as_ref().map(|record| record.checked_at), now) {
-        match fetch() {
-            Ok(tag) => {
-                let record = Record {
-                    checked_at: now,
-                    latest: Version::parse(&tag).map(|v| v.to_string()),
-                };
-                if let Err(error) = write(settings, &record) {
-                    eprintln!("bezel light: the update check was not saved: {error}");
-                }
-            }
-            Err(error) => eprintln!("bezel light: update check failed: {error}"),
-        }
+    if due(last.as_ref().map(|record| record.checked_at), now)
+        && let Err(error) = check(settings, now, fetch)
+    {
+        eprintln!("bezel light: update check failed: {error}");
     }
     available(settings, current, true)
 }
 
-/// The latest release's tag, from the GitHub API.
+/// The latest release's tag, asked as this Light's version.
 fn fetch() -> Result<String, String> {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .https_only(true)
-        .max_redirects(0)
-        .timeout_global(Some(Duration::from_secs(10)))
-        .build()
-        .into();
-    let mut response = agent
-        .get(LATEST_RELEASE_API)
-        .header("Accept", "application/vnd.github+json")
-        .header("User-Agent", format!("Bezel-Evo/{}", bezel_cli::VERSION))
-        .call()
-        .map_err(|error| error.to_string())?;
-    let bytes = response
-        .body_mut()
-        .with_config()
-        .limit(1_048_576)
-        .read_to_vec()
-        .map_err(|error| error.to_string())?;
-    let value: serde_json::Value =
-        serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
-    value["tag_name"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer names no release".into())
+    fetch_latest_tag(bezel_cli::VERSION)
 }
 
 /// Starts the checks on a thread of their own; the tray reads `Found`.

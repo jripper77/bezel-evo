@@ -370,6 +370,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::set_audio_capture,
             commands::set_idle_saver,
             commands::set_update_check,
+            commands::check_update_now,
             commands::set_debug,
             commands::set_language,
             commands::set_sensor_options,

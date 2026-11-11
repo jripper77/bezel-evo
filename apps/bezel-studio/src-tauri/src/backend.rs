@@ -301,6 +301,20 @@ impl Backend {
     }
     /// Saves whether Bezel Light looks for a newer release; Light reads the
     /// settings before each check (D-2026-11-09-update-check-1).
+    /// **Check now**: asks `fetch` for the latest release at once and keeps
+    /// the answer where Light's daily check keeps its own, so the tray sees
+    /// it too (D-2026-11-11-preferences-layout-2).
+    pub fn check_update_now(
+        &self,
+        fetch: &dyn Fn() -> Result<String, String>,
+    ) -> Result<PreferencesDto, String> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |since| since.as_secs());
+        bezel_runtime::update::check(self.settings.path(), now, fetch)?;
+        Ok(self.preferences())
+    }
+
     pub fn set_update_check(&self, on: bool) {
         self.settings
             .update(|s| s.update_check = crate::settings::DefaultOn(on));
@@ -564,6 +578,7 @@ impl Backend {
 
     pub fn preferences(&self) -> PreferencesDto {
         let settings = self.settings.load();
+        let last_check = bezel_runtime::update::read(self.settings.path());
         PreferencesDto {
             audio_capture: settings.audio_capture.0,
             idle_saver: settings.idle_saver.0,
@@ -573,6 +588,9 @@ impl Backend {
                 crate::EVO_VERSION,
                 settings.update_check.0,
             ),
+            update_checked_at: last_check.as_ref().map(|record| record.checked_at),
+            update_latest: last_check.and_then(|record| record.latest),
+            version: crate::EVO_VERSION.to_owned(),
             debug: settings.debug,
             debug_show_readings: settings.debug_show_readings,
             debug_corner: settings.debug_corner,
@@ -2706,6 +2724,33 @@ mod tests {
             link_url("releases").unwrap(),
             bezel_core::domain::update::RELEASES_PAGE
         );
+    }
+
+    #[test]
+    fn check_now_keeps_the_answer_for_light_and_the_preferences() {
+        let f = fixture("update-check-now");
+        let prefs = f.backend.preferences();
+        assert_eq!(prefs.update_checked_at, None);
+        assert_eq!(prefs.version, crate::EVO_VERSION);
+        let offline = || -> Result<String, String> { Err("offline".into()) };
+        assert_eq!(f.backend.check_update_now(&offline), Err("offline".into()));
+        let newer = || -> Result<String, String> { Ok("v999.0.0".into()) };
+        let prefs = f.backend.check_update_now(&newer).unwrap();
+        assert!(prefs.update_checked_at.is_some());
+        assert_eq!(prefs.update_latest.as_deref(), Some("999.0.0"));
+        assert_eq!(prefs.update_available.as_deref(), Some("999.0.0"));
+        // Light reads the same record.
+        assert_eq!(
+            bezel_runtime::update::read(f.backend.settings.path())
+                .unwrap()
+                .latest
+                .as_deref(),
+            Some("999.0.0")
+        );
+        let same = || -> Result<String, String> { Ok(format!("v{}", crate::EVO_VERSION)) };
+        let prefs = f.backend.check_update_now(&same).unwrap();
+        assert_eq!(prefs.update_available, None, "up to date");
+        assert_eq!(prefs.update_latest.as_deref(), Some(crate::EVO_VERSION));
     }
 
     #[test]

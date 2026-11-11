@@ -17,6 +17,7 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 
 image = { version = "0.25.10", default-features = false, features = ["png"] }
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 tempfile = "3.27.0"

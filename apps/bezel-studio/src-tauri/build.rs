@@ -74,6 +74,7 @@ const COMMANDS: &[&str] = &[
     "set_audio_capture",
     "set_idle_saver",
     "set_update_check",
+    "check_update_now",
     "set_debug",
     "set_sensor_options",
     "pick_folder",
