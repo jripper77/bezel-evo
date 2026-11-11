@@ -5,6 +5,15 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [Unreleased]
+
+### Themes
+- **Each series of a mirrored graph has its own scale.** The lower series can
+  be automatic or fixed on its own. When both are automatic, "Same scale for
+  both series" keeps one peak so they stay comparable; turned off, each series
+  fits its own highest value. Choosing the sensors turns it on only when they
+  share a unit. Existing themes look the same.
+
 ## [0.2.25] - 2026-11-09
 
 ### Screens
