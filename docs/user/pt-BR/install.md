@@ -61,6 +61,12 @@ Get-FileHash .\Bezel-Evo-<versão>-windows-x64-setup.exe
 
 ## Atualizar
 
+Uma vez por dia o Light pergunta ao GitHub qual é a última versão publicada
+(envia só a própria versão, nada mais). Quando existe uma mais nova, o menu da
+bandeja mostra **Atualização disponível: X.Y.Z** e o Studio mostra em
+**Preferências › Atualizações**, com um botão para a página de download. Nada é
+baixado nem instalado por você; a chave no mesmo lugar desliga a verificação.
+
 Salve o seu tema e feche o Studio, depois feche o Light pelo ícone da bandeja
 (**Quit**). Rode o novo Setup, ou extraia o novo ZIP por cima da pasta antiga. O
 Setup se recusa a atualizar com o Studio ou o Light abertos; ele nunca os fecha

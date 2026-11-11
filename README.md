@@ -24,9 +24,23 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.25
+## What's new in 0.2.28
 
 See the [changelog](CHANGELOG.md) for the complete history.
+
+- **Each series of a mirrored graph has its own scale.** The upper and lower
+  series can each be automatic or fixed. With both automatic, **Same scale for
+  both series** keeps one peak so download and upload stay comparable; turned
+  off, each series fills its own half. Choosing the sensors turns it on only
+  when they share a unit. [How it works](docs/user/visualizations.md).
+- **Automatic scales show their range.** The greyed min and max follow the
+  readings the graph is drawn with.
+- **Bezel tells you when a new version is out.** Once a day Light checks
+  GitHub; when a newer release exists, the tray menu and **Preferences ›
+  Updates** say so, with a button to the download page. Nothing is downloaded
+  or installed, and the switch in Preferences turns it off.
+
+### In 0.2.25
 
 - **Each screen keeps its brightness.** The level set with the slider is saved
   for every screen and comes back when Light starts, when a screen is

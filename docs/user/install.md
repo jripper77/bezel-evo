@@ -58,6 +58,12 @@ Get-FileHash .\Bezel-Evo-<version>-windows-x64-setup.exe
 
 ## Updating
 
+Once a day Light asks GitHub for the latest published release (it sends only
+its version, nothing else). When a newer one exists, the tray menu shows
+**Update available: X.Y.Z** and Studio shows it in **Preferences › Updates**,
+with a button to the download page. Nothing is downloaded or installed for
+you; the switch in the same place turns the check off.
+
 Save your theme and quit Studio, then quit Light from its tray icon (**Quit**).
 Run the new Setup, or extract the new ZIP over the old folder. Setup refuses to
 update while Studio or Light is running; it never closes them for you.

@@ -28,11 +28,22 @@ appearance and is the default for existing themes.
   decorative reflection or a negative reading. Without a lower source it stays
   empty. Missing readings break their respective series.
 
-With automatic scaling, both mirrored series use the same zero and peak. Choose
-sensors with matching units for a meaningful comparison, such as download and
-upload. With fixed scaling each source has its own minimum and maximum. The
-sample interval and history window remain shared; frame pacing remains specific
-to each display. This does not require H.264 support.
+In a mirrored graph, **Source** lists the upper and lower series' sensors and
+**Vertical scale** has one block per series, each **Automatic** or **Fixed**:
+
+- **Fixed** uses that series' own minimum and maximum.
+- **Automatic** starts at 0 and reaches the highest reading in the window.
+  The greyed min and max show the range in use.
+- With both automatic, **Same scale for both series** gives them one peak, the
+  higher of the two, so their sizes stay comparable (download and upload).
+  Turned off, each series fills its own half (temperature above, load below).
+  Choosing a sensor turns it on when both series share a unit and off when
+  they do not; you can change it afterwards.
+
+Themes made before this keep their look: the lower series follows the upper
+one's choice and both share the peak. The sample interval and history window
+remain shared; frame pacing remains specific to each display. This does not
+require H.264 support.
 
 Value labels and captions remain ordinary text objects, so they can use any
 font, placement or formatting. Group them with the visualization when useful.
