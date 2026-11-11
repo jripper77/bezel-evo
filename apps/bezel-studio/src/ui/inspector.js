@@ -481,10 +481,22 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     }
     for (const node of root.querySelectorAll('[data-live-key]')) node.textContent = sample.readings?.[node.dataset.liveKey]?.display ?? '…';
     refreshSensorPicker();
+    // A peak or an automatic range reads one sensor, or both series of a linked mirrored graph.
+    const watch = (keys) => {
+      const list = keys.split(',');
+      for (const key of list) peaks.observe(key, sample.readings?.[key], seenAt);
+      return list;
+    };
     for (const peak of root.querySelectorAll('[data-peak-key]')) {
-      const key = peak.dataset.peakKey;
-      peaks.observe(key, sample.readings?.[key], seenAt);
-      peak.textContent = peaks.peak(key, Number(peak.dataset.windowMs), seenAt)?.display ?? '—';
+      const range = peaks.range(watch(peak.dataset.peakKey), Number(peak.dataset.windowMs), seenAt);
+      peak.textContent = range?.max.display ?? '—';
+    }
+    for (const grid of root.querySelectorAll('[data-live-range]')) {
+      const range = peaks.range(watch(grid.dataset.liveRange), Number(grid.dataset.windowMs), seenAt);
+      if (!range) continue;
+      const [min, max] = grid.querySelectorAll('input');
+      if (min) min.value = 'liveFromZero' in grid.dataset ? '0' : String(Number(range.min.value.toPrecision(6)));
+      if (max) max.value = String(Number(range.max.value.toPrecision(6)));
     }
     const chips = root.querySelector('.app-chips');
     if (chips && shownElement && chips.dataset.signature !== appSignature(sample.activity)) {

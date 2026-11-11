@@ -138,6 +138,19 @@ export function createPeakWatch(limit = PEAK_LIMIT, sensors = PEAK_SENSORS) {
       entries.push({ at, value: reading.value, display: reading.display ?? String(reading.value) });
       if (entries.length > limit) entries.splice(0, entries.length - limit);
     },
+    /**
+     * The lowest and highest readings of `sensors` together since
+     * `now - windowMs`, as `{ min, max }` entries (null: none).
+     */
+    range(sensors, windowMs, now) {
+      let min = null, max = null;
+      for (const sensor of sensors) for (const entry of watched.get(sensor) ?? []) {
+        if (entry.at < now - windowMs) continue;
+        if (!min || entry.value < min.value) min = entry;
+        if (!max || entry.value > max.value) max = entry;
+      }
+      return max && { min, max };
+    },
     /** The highest reading of `sensor` since `now - windowMs` (null: none). */
     peak(sensor, windowMs, now) {
       let best = null;

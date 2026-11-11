@@ -83,6 +83,18 @@ export function panels(ctx) {
   /** The live peak of a sensor over the graph's window. */
   const peakHint = (e, key, text = null) => el('p', { class: 'hint' }, [...(text ? [text, ' '] : []), t('insp.peak'), ' ', el('span', { class: 'mono graph-peak', dataset: { peakKey: key, windowMs: String(graphWindowMs(e)) }, text: '—' })]);
 
+  /**
+   * Min and max of a series: its own bounds when fixed; when automatic,
+   * greyed and showing the lowest and highest readings of `liveKeys` (its
+   * sensor, or both series when they share a scale) over the window. A
+   * mirrored series grows from its zero baseline, so its minimum stays 0.
+   */
+  const scaleRange = (e, binding, auto, liveKeys, options = {}) => {
+    const grid = rangeFields(e.id, binding, { ...options, muted: auto });
+    if (auto) Object.assign(grid.dataset, { liveRange: liveKeys.join(','), windowMs: String(graphWindowMs(e)), ...(graphSeriesOf(e) === 'mirrored' ? { liveFromZero: '' } : {}) });
+    return grid;
+  };
+
   /** Automatic or fixed, as a bare segmented control named `label`. */
   const scaleChoice = (label, auto, onChange) => segmented(label, auto ? 'auto' : 'fixed', [['auto', t('insp.automatic')], ['fixed', t('insp.fixed')]], (v) => onChange(v === 'auto'), { bare: true });
 
@@ -93,7 +105,7 @@ export function panels(ctx) {
       sourceSection(e, k.binding.key, (key) => ({ kind: { binding: { key } } }), { range: false }),
       section('scale', t('insp.scale'), [
         scaleChoice(t('insp.scale'), k.autoscale, (autoscale) => update(e.id, { kind: { autoscale } })),
-        rangeFields(e.id, k.binding, { muted: Boolean(k.autoscale) }),
+        scaleRange(e, k.binding, Boolean(k.autoscale), [k.binding.key]),
         k.autoscale ? peakHint(e, k.binding.key, t('insp.autoscaleHint')) : null,
       ], { caption: true }),
     ];
@@ -122,16 +134,16 @@ export function panels(ctx) {
       section('scale', t('insp.scale'), [
         block(t('insp.upperSeries'), [
           scaleChoice(t('visual.primaryScale'), upperAuto, setUpper),
-          rangeFields(e.id, k.binding, { muted: upperAuto }),
+          scaleRange(e, k.binding, upperAuto, shared ? [k.binding.key, b.key] : [k.binding.key]),
           upperAuto && !shared && peakHint(e, k.binding.key),
         ]),
         b && block(t('insp.lowerSeries'), [
           scaleChoice(t('visual.secondaryScale'), lowerAuto, (secondaryAutoscale) => update(e.id, { visualization: { secondaryAutoscale } })),
-          rangeFields(e.id, b, { muted: lowerAuto, patch: (bounds) => ({ visualization: { ...v, secondary: { ...b, ...bounds } } }), labels: [t('visual.secondaryMin'), t('visual.secondaryMax')] }),
+          scaleRange(e, b, lowerAuto, shared ? [k.binding.key, b.key] : [b.key], { patch: (bounds) => ({ visualization: { ...v, secondary: { ...b, ...bounds } } }), labels: [t('visual.secondaryMin'), t('visual.secondaryMax')] }),
           lowerAuto && !shared && peakHint(e, b.key),
         ]),
         bothAuto && toggleField(t('visual.sharedScale'), shared, (sharedScale) => update(e.id, { visualization: { sharedScale } }), { iconName: 'link' }),
-        bothAuto && (shared ? peakHint(e, k.binding.key, t('visual.sharedScaleHint')) : el('p', { class: 'hint', text: t('visual.ownScaleHint') })),
+        bothAuto && (shared ? peakHint(e, `${k.binding.key},${b.key}`, t('visual.sharedScaleHint')) : el('p', { class: 'hint', text: t('visual.ownScaleHint') })),
       ].filter(Boolean), { caption: true }),
     ];
   }

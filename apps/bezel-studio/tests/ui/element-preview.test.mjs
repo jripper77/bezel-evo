@@ -170,6 +170,18 @@ test('the peak is the highest reading of the sensor within the window', () => {
   assert.equal(watch.peak('cpu.usage', 10_000, 3000), null);
 });
 
+test('the range of one or two sensors spans their lowest and highest readings in the window', () => {
+  const watch = createPeakWatch();
+  watch.observe('down', { value: 40, display: '40' }, 1000);
+  watch.observe('up', { value: 2, display: '2' }, 1000);
+  watch.observe('down', { value: 10, display: '10' }, 2000);
+  watch.observe('up', { value: 90, display: '90' }, 2000);
+  assert.deepEqual([watch.range(['down'], 10_000, 2000).min.value, watch.range(['down'], 10_000, 2000).max.value], [10, 40]);
+  assert.deepEqual([watch.range(['down', 'up'], 10_000, 2000).min.value, watch.range(['down', 'up'], 10_000, 2000).max.value], [2, 90]);
+  assert.equal(watch.range(['down'], 500, 2000).max.value, 10);
+  assert.equal(watch.range(['nothing'], 10_000, 2000), null);
+});
+
 test('the same sample twice, unavailable readings and other sensors do not count', () => {
   const watch = createPeakWatch();
   watch.observe('a', { value: 5 }, 10);

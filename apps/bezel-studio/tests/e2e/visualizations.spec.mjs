@@ -55,6 +55,12 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeDisabled();
   const shared=toggleButton(detail,t('visual.sharedScale'));
   await expect(shared).toHaveAttribute('aria-pressed','true');
+  // Automatic bounds show the readings: linked, both series reach the same
+  // maximum; a mirrored series starts at 0.
+  const upperMax=detail.getByRole('spinbutton',{name:t('inspector.max'),exact:true}),lowerMax=detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true});
+  await expect.poll(async()=>(await upperMax.inputValue())!=='100'||(await lowerMax.inputValue())!=='100').toBe(true);
+  await expect.poll(async()=>[await upperMax.inputValue()===await lowerMax.inputValue()]).toEqual([true]);
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMin'),exact:true})).toHaveValue('0');
   await setToggle(shared,false);
   await expect(detail.getByText(t('visual.ownScaleHint'),{exact:true})).toBeVisible();
   await detail.locator('[data-section="source"]').screenshot({path:info.outputPath('mirrored-source.png')});
