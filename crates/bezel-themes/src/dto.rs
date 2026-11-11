@@ -442,6 +442,12 @@ pub struct VisualizationDto {
     pub secondary: Option<BindingDto>,
     /// Lower history color.
     pub secondary_color: String,
+    /// Autoscale of the lower series; absent follows the upper graph.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secondary_autoscale: Option<bool>,
+    /// One peak for both autoscaled series; absent keeps it shared.
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub shared_scale: bool,
 }
 impl Default for VisualizationDto {
     fn default() -> Self {
@@ -460,6 +466,8 @@ impl Default for VisualizationDto {
             marker: true,
             secondary: None,
             secondary_color: "#e879a4ff".into(),
+            secondary_autoscale: None,
+            shared_scale: true,
         }
     }
 }
@@ -488,6 +496,8 @@ fn visualization(d: &VisualizationDto) -> R<bezel_core::domain::visualization::V
         marker: d.marker,
         secondary: d.secondary.as_ref().map(binding).transpose()?,
         secondary_color: color(&d.secondary_color)?,
+        secondary_autoscale: d.secondary_autoscale,
+        shared_scale: d.shared_scale,
     };
     if !v.valid() {
         return err("visualization settings out of range");
@@ -518,6 +528,8 @@ fn visualization_dto(v: &bezel_core::domain::visualization::Visualization) -> Vi
         marker: v.marker,
         secondary: v.secondary.as_ref().map(binding_dto),
         secondary_color: to_hex(v.secondary_color),
+        secondary_autoscale: v.secondary_autoscale,
+        shared_scale: v.shared_scale,
     }
 }
 
@@ -585,6 +597,19 @@ mod graph_options_tests {
         assert!(original.get("seriesGap").is_none());
         assert!(original.get("pixelBars").is_none());
         assert!(original.get("unlitColor").is_none());
+        assert!(original.get("secondaryAutoscale").is_none());
+        assert!(original.get("sharedScale").is_none());
+        assert_eq!(native.secondary_autoscale, None);
+        assert!(native.shared_scale);
+        let mut own = legacy.clone();
+        own.secondary_autoscale = Some(false);
+        own.shared_scale = false;
+        let native = visualization(&own).unwrap();
+        assert_eq!(native.secondary_autoscale, Some(false));
+        assert!(!native.shared_scale);
+        let written = serde_json::to_value(visualization_dto(&native)).unwrap();
+        assert_eq!(written["secondaryAutoscale"], false);
+        assert_eq!(written["sharedScale"], false);
         let mut pixel = legacy.clone();
         pixel.pixel_bars = true;
         pixel.unlit_color = Some("#2a2a2aff".into());

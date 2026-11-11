@@ -329,6 +329,64 @@ mod tests {
     }
 
     #[test]
+    fn mirrored_series_share_one_peak_or_scale_on_their_own() {
+        let mut e = element(
+            BoxF::new(0., 0., 100., 80.),
+            ElementKind::Graph {
+                binding: binding("a"),
+                history: 4,
+                interval_seconds: None,
+                style: GraphStyle::Bars,
+                color: Rgba::WHITE,
+                fill: None,
+                line_width: 2.,
+                autoscale: true,
+            },
+        );
+        let mut visual = Visualization::new(VisualStyle::Mirrored);
+        visual.secondary = Some(bezel_core::domain::theme::Binding {
+            key: key("b"),
+            min: 0.,
+            max: 2.,
+        });
+        e.visualization = Some(visual);
+        let base = theme(100, 80, Background::Color(Rgba::BLACK), vec![e]);
+        let mut scene = Scene::empty();
+        scene.histories = Histories::new(&base.graph_series());
+        for _ in 0..4 {
+            let mut sample = Snapshot::default();
+            sample.insert(key("a"), Reading::Value(100.));
+            sample.insert(key("b"), Reading::Value(1.));
+            scene.histories.push(&sample, Tick::Untimed);
+        }
+        let mut renderer = testkit::renderer();
+        let mut lower = |change: &dyn Fn(&mut Visualization)| {
+            let mut t = base.clone();
+            change(t.elements[0].visualization.as_mut().unwrap());
+            let image = render(&mut renderer, &t, &scene);
+            (
+                count(&image, (0, 0, 100, 39), |p| p.g > 200),
+                count(&image, (0, 41, 100, 80), |p| p.r > 30 && p.g < 200),
+            )
+        };
+        // Legacy: the lower series follows the upper one and both share the peak of 100.
+        let (upper, shared) = lower(&|_| {});
+        assert!(upper > 2000, "the upper series fills its half: {upper}");
+        assert!(
+            shared < 200,
+            "1 against a peak of 100 is a sliver: {shared}"
+        );
+        // Its own peak: 1 fills the lower half like 100 fills the upper one.
+        let (own_upper, own) = lower(&|v| v.shared_scale = false);
+        assert_eq!(own_upper, upper);
+        assert!(own > 2000, "the lower series scales to itself: {own}");
+        // Fixed 0..2 while the upper one autoscales: half of the lower half.
+        let (fixed_upper, fixed) = lower(&|v| v.secondary_autoscale = Some(false));
+        assert_eq!(fixed_upper, upper);
+        assert!(fixed > shared && fixed < own, "{shared} < {fixed} < {own}");
+    }
+
+    #[test]
     fn mirrored_bars_choose_square_or_rounded_corners_and_keep_the_series_gap() {
         let mut e = element(
             BoxF::new(0., 0., 100., 80.),

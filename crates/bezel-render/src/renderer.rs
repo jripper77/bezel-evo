@@ -2142,15 +2142,26 @@ fn draw_graph(layer: &mut Layer<'_>, element: &Element, context: &RenderContext<
             lower_spec.min = b.min;
             lower_spec.max = b.max;
         }
-        if spec.autoscale {
+        let upper_auto = spec.autoscale;
+        let lower_auto = v.lower_autoscale(upper_auto);
+        // A mirrored series autoscales from its zero baseline to its peak.
+        let zero_peak = |s: &[Option<f64>]| {
+            graph::scrolling_range(s, &spec, |s| {
+                let peak = s.iter().flatten().copied().fold(0_f64, f64::max).max(1.) * 1.1;
+                Some((0., peak))
+            })
+            .map_or(1.1, |(_, peak)| peak)
+        };
+        if upper_auto && lower_auto && v.shared_scale {
             // Both series share the same zero baseline and peak; preserve their relative magnitudes.
             // The two series are aligned sample by sample, so the shared peak
             // glides with the scroll exactly like a single graph's range.
-            let pairs: Vec<Option<f64>> = (0..values.len().max(lower.len()))
+            let n = values.len().max(lower.len());
+            let pairs: Vec<Option<f64>> = (0..n)
                 .map(|i| {
                     let at = |s: &[Option<f64>]| {
                         s.len()
-                            .checked_sub(values.len().max(lower.len()) - i)
+                            .checked_sub(n - i)
                             .and_then(|j| s[j])
                             .filter(|v| v.is_finite())
                     };
@@ -2160,18 +2171,19 @@ fn draw_graph(layer: &mut Layer<'_>, element: &Element, context: &RenderContext<
                     }
                 })
                 .collect();
-            let (_, peak) = graph::scrolling_range(&pairs, &spec, |s| {
-                let peak = s.iter().flatten().copied().fold(0_f64, f64::max).max(1.) * 1.1;
-                Some((0., peak))
-            })
-            .unwrap_or((0., 1.1));
-            upper_spec.autoscale = false;
-            upper_spec.min = 0.;
-            upper_spec.max = peak;
-            lower_spec.autoscale = false;
-            lower_spec.min = 0.;
-            lower_spec.max = peak;
+            let peak = zero_peak(&pairs);
+            (upper_spec.min, upper_spec.max) = (0., peak);
+            (lower_spec.min, lower_spec.max) = (0., peak);
+        } else {
+            if upper_auto {
+                (upper_spec.min, upper_spec.max) = (0., zero_peak(&values));
+            }
+            if lower_auto {
+                (lower_spec.min, lower_spec.max) = (0., zero_peak(&lower));
+            }
         }
+        upper_spec.autoscale = false;
+        lower_spec.autoscale = false;
         graph::draw(layer, top, &values, &upper_spec);
         graph::draw(layer, bottom, &lower, &lower_spec);
     } else {

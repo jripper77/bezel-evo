@@ -47,6 +47,11 @@ pub struct Visualization {
     pub secondary: Option<Binding>,
     /// Lower graph color.
     pub secondary_color: Rgba,
+    /// Autoscale of the lower series; absent follows the upper graph's.
+    pub secondary_autoscale: Option<bool>,
+    /// When both series autoscale, one peak for both keeps their magnitudes
+    /// comparable; false gives each series its own peak.
+    pub shared_scale: bool,
 }
 
 impl Visualization {
@@ -56,6 +61,11 @@ impl Visualization {
         (self.style == VisualStyle::Mirrored)
             .then_some(self.secondary.as_ref())
             .flatten()
+    }
+
+    /// Whether the lower series autoscales, given the upper graph's choice.
+    pub fn lower_autoscale(&self, upper: bool) -> bool {
+        self.secondary_autoscale.unwrap_or(upper)
     }
 
     /// Bounded defaults for a preset.
@@ -75,6 +85,8 @@ impl Visualization {
             marker: true,
             secondary: None,
             secondary_color: Rgba::opaque(232, 121, 164),
+            secondary_autoscale: None,
+            shared_scale: true,
         }
     }
 
