@@ -34,7 +34,7 @@ import { closeSensorPicker, refreshSensorPicker } from './sensor-picker.js';
 
 import { el, icon, svgEl as node } from './dom.js';
 import { ICONS } from './icons.js';
-import { fieldAction, accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, bindButton, numberField, prefixedField, rangeField, propertySection as section, segmented, iconChoice, selectField } from './fields.js';
+import { fieldAction, accordionSection, sizeField, objectHeader, typeRow, previewChoice as optionTiles, colorPicker, fieldGrid, adoptControl, iconButton, bindButton, numberField, prefixedField, rangeField, propertySection as section, segmented, iconChoice, selectField, toggleField } from './fields.js';
 import { withChildren } from '../editor/cards.js';
 import { splitColor } from '../color-math.js';
 
@@ -481,8 +481,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     }
     for (const node of root.querySelectorAll('[data-live-key]')) node.textContent = sample.readings?.[node.dataset.liveKey]?.display ?? '…';
     refreshSensorPicker();
-    const peak = root.querySelector('[data-peak-key]');
-    if (peak) {
+    for (const peak of root.querySelectorAll('[data-peak-key]')) {
       const key = peak.dataset.peakKey;
       peaks.observe(key, sample.readings?.[key], seenAt);
       peak.textContent = peaks.peak(key, Number(peak.dataset.windowMs), seenAt)?.display ?? '—';
@@ -551,12 +550,16 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
       const v = e.visualization;
       const set = patch => update(e.id, { visualization: { ...v, ...patch } });
       const b = v.secondary;
+      const upperAuto = Boolean(e.kind.autoscale), lowerAuto = v.secondaryAutoscale ?? upperAuto;
+      const sameUnit = key => common.sensorUnit(key) === common.sensorUnit(e.kind.binding.key);
       (specific.data ??= []).splice(specific.data.findIndex(group => group?.dataset.section === 'source') + 1, 0, section('secondary-source', t('visual.secondary'), [
-        sourceCard(e.id, b?.key ?? '', key => ({ visualization: { ...v, secondary: { key, min: b?.min ?? 0, max: b?.max ?? 100 } } }), { numeric: true, label: t('visual.secondary'), scope: 'secondary-source' }),
-        b && !e.kind.autoscale && fieldGrid([
-          prefixedField(t('insp.minPrefix'), t('visual.secondaryMin'), b.min, min => set({ secondary: { ...b, min: Math.min(min,b.max-0.001) } }), { step:'any' }),
-          prefixedField(t('insp.maxPrefix'), t('visual.secondaryMax'), b.max, max => set({ secondary: { ...b, max: Math.max(max,b.min+0.001) } }), { step:'any' }),
-        ]),
+        sourceCard(e.id, b?.key ?? '', key => ({ visualization: { ...v, secondary: { key, min: b?.min ?? 0, max: b?.max ?? 100 }, sharedScale: sameUnit(key) } }), { numeric: true, label: t('visual.secondary'), scope: 'secondary-source' }),
+        b && segmented(t('visual.secondaryScale'), lowerAuto ? 'auto' : 'fixed', [['auto', t('insp.automatic')], ['fixed', t('insp.fixed')]], mode => set({ secondaryAutoscale: mode === 'auto' })),
+        b && common.rangeFields(e.id, b, { muted: lowerAuto, patch: bounds => ({ visualization: { ...v, secondary: { ...b, ...bounds } } }), labels: [t('visual.secondaryMin'), t('visual.secondaryMax')] }),
+        b && upperAuto && lowerAuto && toggleField(t('visual.sharedScale'), v.sharedScale !== false, sharedScale => set({ sharedScale })),
+        b && lowerAuto && (upperAuto && v.sharedScale !== false
+          ? el('p', { class: 'hint', text: t('visual.sharedScaleHint') })
+          : el('p', { class: 'hint' }, [t(upperAuto ? 'visual.ownScaleHint' : 'insp.autoscaleHint'), ' ', t('insp.peak'), ' ', el('span', { class: 'mono graph-peak', dataset: { peakKey: b.key, windowMs: String(common.graphWindowMs(e)) }, text: '—' })])),
         !b && el('p', { class:'hint', text:t('visual.mirroredHint') }),
       ], { caption: true }));
       look.find(group => group.dataset.section === 'color')?.querySelector('.property-section-body').append(colorField(t('visual.secondaryColor'), v.secondaryColor, secondaryColor => set({ secondaryColor })));

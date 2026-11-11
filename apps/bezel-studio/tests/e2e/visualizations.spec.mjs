@@ -38,5 +38,23 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toHaveAttribute('data-sensor-key','gpu.usage');
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMin'),exact:true})).toHaveCount(1);
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toHaveCount(1);
+  // Each series has its own scale; both automatic share one peak until told otherwise.
+  const scale=name=>detail.getByRole('group',{name,exact:true});
+  const lowerScale=scale(t('visual.secondaryScale'));
+  await expect(lowerScale.getByRole('button',{name:t('insp.fixed'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await scale(t('insp.scale')).getByRole('button',{name:t('insp.automatic'),exact:true}).click();
+  await expect(lowerScale.getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeDisabled();
+  const shared=toggleButton(detail,t('visual.sharedScale'));
+  await expect(shared).toHaveAttribute('aria-pressed','true');
+  await setToggle(shared,false);
+  await expect(detail.getByText(t('visual.ownScaleHint'))).toBeVisible();
+  await detail.locator('[data-section="secondary-source"]').screenshot({path:info.outputPath('mirrored-scales.png')});
+  await lowerScale.getByRole('button',{name:t('insp.fixed'),exact:true}).click();
+  await expect(scale(t('insp.scale')).getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeEnabled();
+  await expect(toggleButton(detail,t('visual.sharedScale'))).toHaveCount(0);
+  await page.locator('#undo').click();
+  await expect(lowerScale.getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
   await expectAccessible(page);expect(errors).toEqual([]);
 });

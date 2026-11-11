@@ -178,10 +178,13 @@ test('the same sample twice, unavailable readings and other sensors do not count
   watch.observe('a', null, 30);
   watch.observe('a', { value: Number.NaN }, 40);
   assert.deepEqual(watch.peak('a', 100, 50), { at: 10, value: 5, display: '5' });
-  // Watching another sensor starts over.
+  // Two sensors at once (a mirrored graph); a third forgets the least recent.
   watch.observe('b', { value: 1, display: '1' }, 60);
-  assert.equal(watch.peak('a', 100, 60), null);
+  assert.equal(watch.peak('a', 100, 60).value, 5);
   assert.equal(watch.peak('b', 100, 60).value, 1);
+  watch.observe('c', { value: 2, display: '2' }, 70);
+  assert.equal(watch.peak('a', 100, 70), null);
+  assert.equal(watch.peak('b', 100, 70).value, 1);
 });
 
 test('the peak keeps at most its limit of readings', () => {

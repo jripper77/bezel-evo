@@ -114,21 +114,25 @@ export function createPreviewScheduler({ render, show, fail = () => {} }) {
 /** How many readings the peak keeps, at most: a graph's longest history. */
 export const PEAK_LIMIT = 3600;
 
+/** How many sensors the peak follows at once: the two series of a mirrored graph. */
+export const PEAK_SENSORS = 2;
+
 /**
- * The readings of one sensor, to tell its peak over a window of time. It
- * follows one key: watching another starts over. A sample is recorded once
- * (the same `at` twice is one reading); unavailable readings are skipped.
+ * The readings of the sensors shown, to tell each one's peak over a window
+ * of time. It follows the last `sensors` keys observed: watching another
+ * forgets the one observed least recently. A sample is recorded once (the
+ * same `at` twice is one reading); unavailable readings are skipped.
  */
-export function createPeakWatch(limit = PEAK_LIMIT) {
-  let key = null;
-  let entries = [];
+export function createPeakWatch(limit = PEAK_LIMIT, sensors = PEAK_SENSORS) {
+  const watched = new Map();
   return {
     /** Records `reading` (`{value, display}`) of `sensor` read at `at` ms. */
     observe(sensor, reading, at) {
-      if (sensor !== key) {
-        key = sensor;
-        entries = [];
-      }
+      const entries = watched.get(sensor) ?? [];
+      // Most recently observed last, so the first key is the one to forget.
+      watched.delete(sensor);
+      watched.set(sensor, entries);
+      if (watched.size > sensors) watched.delete(watched.keys().next().value);
       if (!reading || typeof reading.value !== 'number' || !Number.isFinite(reading.value)) return;
       if (entries.length && entries[entries.length - 1].at >= at) return;
       entries.push({ at, value: reading.value, display: reading.display ?? String(reading.value) });
@@ -136,9 +140,8 @@ export function createPeakWatch(limit = PEAK_LIMIT) {
     },
     /** The highest reading of `sensor` since `now - windowMs` (null: none). */
     peak(sensor, windowMs, now) {
-      if (sensor !== key) return null;
       let best = null;
-      for (const entry of entries) {
+      for (const entry of watched.get(sensor) ?? []) {
         if (entry.at < now - windowMs) continue;
         if (!best || entry.value > best.value) best = entry;
       }
