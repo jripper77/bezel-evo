@@ -38,23 +38,31 @@ test('native visualization presets, scoped controls, second sensor and Undo',asy
   await expect(detail.getByRole('combobox',{name:t('visual.secondary'),exact:true})).toHaveAttribute('data-sensor-key','gpu.usage');
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMin'),exact:true})).toHaveCount(1);
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toHaveCount(1);
-  // Each series has its own scale; both automatic share one peak until told otherwise.
+  // Each series has its own scale, side by side in Vertical scale; both
+  // automatic share one peak until told otherwise.
   const scale=name=>detail.getByRole('group',{name,exact:true});
-  const lowerScale=scale(t('visual.secondaryScale'));
-  await expect(lowerScale.getByRole('button',{name:t('insp.fixed'),exact:true})).toHaveAttribute('aria-pressed','true');
-  await scale(t('insp.scale')).getByRole('button',{name:t('insp.automatic'),exact:true}).click();
-  await expect(lowerScale.getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
+  const upperScale=scale(t('visual.primaryScale')),lowerScale=scale(t('visual.secondaryScale'));
+  const pick=(group,mode)=>group.getByRole('button',{name:t(`insp.${mode}`),exact:true});
+  await expect(pick(upperScale,'fixed')).toHaveAttribute('aria-pressed','true');
+  await expect(pick(lowerScale,'fixed')).toHaveAttribute('aria-pressed','true');
+  // Changing one series leaves the other as it was.
+  await pick(upperScale,'automatic').click();
+  await expect(pick(upperScale,'automatic')).toHaveAttribute('aria-pressed','true');
+  await expect(pick(lowerScale,'fixed')).toHaveAttribute('aria-pressed','true');
+  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeEnabled();
+  await expect(toggleButton(detail,t('visual.sharedScale'))).toHaveCount(0);
+  await pick(lowerScale,'automatic').click();
   await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeDisabled();
   const shared=toggleButton(detail,t('visual.sharedScale'));
   await expect(shared).toHaveAttribute('aria-pressed','true');
   await setToggle(shared,false);
-  await expect(detail.getByText(t('visual.ownScaleHint'))).toBeVisible();
-  await detail.locator('[data-section="secondary-source"]').screenshot({path:info.outputPath('mirrored-scales.png')});
-  await lowerScale.getByRole('button',{name:t('insp.fixed'),exact:true}).click();
-  await expect(scale(t('insp.scale')).getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(detail.getByRole('spinbutton',{name:t('visual.secondaryMax'),exact:true})).toBeEnabled();
-  await expect(toggleButton(detail,t('visual.sharedScale'))).toHaveCount(0);
+  await expect(detail.getByText(t('visual.ownScaleHint'),{exact:true})).toBeVisible();
+  await detail.locator('[data-section="source"]').screenshot({path:info.outputPath('mirrored-source.png')});
+  await detail.locator('[data-section="scale"]').screenshot({path:info.outputPath('mirrored-scales.png')});
   await page.locator('#undo').click();
-  await expect(lowerScale.getByRole('button',{name:t('insp.automatic'),exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(toggleButton(detail,t('visual.sharedScale'))).toHaveAttribute('aria-pressed','true');
+  await page.locator('#undo').click();
+  await expect(pick(lowerScale,'fixed')).toHaveAttribute('aria-pressed','true');
+  await expect(pick(upperScale,'automatic')).toHaveAttribute('aria-pressed','true');
   await expectAccessible(page);expect(errors).toEqual([]);
 });

@@ -296,3 +296,6 @@
 
 .theme-model { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-size { flex: none; white-space: pre; }
+/* A mirrored graph's two series inside Source and Vertical scale: a titled block each. */
+.inspector .graph-series-block > .field-label { color: var(--text); font-weight: 600; font-size: var(--fs-small); }
+.inspector .graph-series-block + .graph-series-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }

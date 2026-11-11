@@ -12,7 +12,7 @@ import { ART } from './art.js';
 const precisionViews = new WeakMap();
 
 export function panels(ctx) {
-  const { store, t, update, colorField, rangeFields, sensorUnit, sourceSection, timingOf, graphWindowMs, durationText, optionTiles } = ctx;
+  const { store, t, update, colorField, rangeFields, sensorUnit, sourceCard, sourceSection, timingOf, graphWindowMs, durationText, optionTiles } = ctx;
   if (!precisionViews.has(store)) precisionViews.set(store, new Map());
   const precision = precisionViews.get(store);
   /**
@@ -77,18 +77,71 @@ export function panels(ctx) {
     ], { caption: true });
   }
 
+  /** A labelled block of a section: its caption over its controls. */
+  const block = (label, nodes) => el('div', { class: 'field graph-series-block' }, [el('span', { class: 'field-label', text: label }), ...nodes.filter(Boolean)]);
+
+  /** The live peak of a sensor over the graph's window. */
+  const peakHint = (e, key, text = null) => el('p', { class: 'hint' }, [...(text ? [text, ' '] : []), t('insp.peak'), ' ', el('span', { class: 'mono graph-peak', dataset: { peakKey: key, windowMs: String(graphWindowMs(e)) }, text: '—' })]);
+
+  /** Automatic or fixed, as a bare segmented control named `label`. */
+  const scaleChoice = (label, auto, onChange) => segmented(label, auto ? 'auto' : 'fixed', [['auto', t('insp.automatic')], ['fixed', t('insp.fixed')]], (v) => onChange(v === 'auto'), { bare: true });
+
+  /** One graph: its sensor, then its vertical scale. */
+  function singleData(e) {
+    const k = e.kind;
+    return [
+      sourceSection(e, k.binding.key, (key) => ({ kind: { binding: { key } } }), { range: false }),
+      section('scale', t('insp.scale'), [
+        scaleChoice(t('insp.scale'), k.autoscale, (autoscale) => update(e.id, { kind: { autoscale } })),
+        rangeFields(e.id, k.binding, { muted: Boolean(k.autoscale) }),
+        k.autoscale ? peakHint(e, k.binding.key, t('insp.autoscaleHint')) : null,
+      ], { caption: true }),
+    ];
+  }
+
+  /**
+   * Two mirrored series: both sensors in Source, then each series' own
+   * scale in Vertical scale, and whether two automatic ones share a peak
+   * (D-2026-11-11-mirrored-graph-scales-1).
+   */
+  function mirroredData(e) {
+    const k = e.kind, v = e.visualization, b = v.secondary;
+    const sameUnit = (a, c) => sensorUnit(a) === sensorUnit(c);
+    const upperAuto = Boolean(k.autoscale), lowerAuto = v.secondaryAutoscale ?? upperAuto;
+    const bothAuto = Boolean(b) && upperAuto && lowerAuto, shared = bothAuto && v.sharedScale !== false;
+    // The lower scale stays put when the upper one changes: they read as two controls.
+    const setUpper = (autoscale) => update(e.id, { kind: { autoscale }, ...(v.secondaryAutoscale == null ? { visualization: { secondaryAutoscale: lowerAuto } } : {}) });
+    return [
+      section('source', t('insp.source'), [
+        block(t('insp.upperSeries'), [sourceCard(e.id, k.binding.key, (key) => ({ kind: { binding: { key } }, ...(b ? { visualization: { sharedScale: sameUnit(key, b.key) } } : {}) }), { numeric: true, label: t('insp.upperSensor') })]),
+        block(t('insp.lowerSeries'), [
+          sourceCard(e.id, b?.key ?? '', (key) => ({ visualization: { ...v, secondary: { key, min: b?.min ?? 0, max: b?.max ?? 100 }, sharedScale: sameUnit(key, k.binding.key) } }), { numeric: true, label: t('visual.secondary'), scope: 'secondary-source' }),
+          !b && el('p', { class: 'hint', text: t('visual.mirroredHint') }),
+        ]),
+      ], { caption: true }),
+      section('scale', t('insp.scale'), [
+        block(t('insp.upperSeries'), [
+          scaleChoice(t('visual.primaryScale'), upperAuto, setUpper),
+          rangeFields(e.id, k.binding, { muted: upperAuto }),
+          upperAuto && !shared && peakHint(e, k.binding.key),
+        ]),
+        b && block(t('insp.lowerSeries'), [
+          scaleChoice(t('visual.secondaryScale'), lowerAuto, (secondaryAutoscale) => update(e.id, { visualization: { secondaryAutoscale } })),
+          rangeFields(e.id, b, { muted: lowerAuto, patch: (bounds) => ({ visualization: { ...v, secondary: { ...b, ...bounds } } }), labels: [t('visual.secondaryMin'), t('visual.secondaryMax')] }),
+          lowerAuto && !shared && peakHint(e, b.key),
+        ]),
+        bothAuto && toggleField(t('visual.sharedScale'), shared, (sharedScale) => update(e.id, { visualization: { sharedScale } }), { iconName: 'link' }),
+        bothAuto && (shared ? peakHint(e, k.binding.key, t('visual.sharedScaleHint')) : el('p', { class: 'hint', text: t('visual.ownScaleHint') })),
+      ].filter(Boolean), { caption: true }),
+    ];
+  }
+
   function graphForm(e) {
     const k = e.kind;
     // Data (artboard GraphData): what it plots, its vertical scale and how far back it looks.
     const data = [
       section('series', t('insp.graphSeries'), [iconChoice(t('insp.graphSeries'), graphSeriesOf(e), [['single', t('insp.graphSingle'), 'graph-single'], ['mirrored', t('insp.graphMirrored'), 'graph-mirrored']], series => update(e.id, graphSeriesPatch(e, series)), { wide: true, bare: true })], { caption: true }),
-      // A mirrored graph keeps one peak for both series only while they share a unit.
-      sourceSection(e, k.binding.key, (key) => ({ kind: { binding: { key } }, ...(graphSeriesOf(e) === 'mirrored' && e.visualization.secondary ? { visualization: { sharedScale: sensorUnit(key) === sensorUnit(e.visualization.secondary.key) } } : {}) }), { range: false }),
-      section('scale', t('insp.scale'), [
-        segmented(t('insp.scale'), k.autoscale ? 'auto' : 'fixed', [['auto', t('insp.automatic')], ['fixed', t('insp.fixed')]], (v) => update(e.id, { kind: { autoscale: v === 'auto' } }), { bare: true }),
-        rangeFields(e.id, k.binding, { muted: Boolean(k.autoscale) }),
-        k.autoscale ? el('p', { class: 'hint' }, [t('insp.autoscaleHint'), ' ', t('insp.peak'), ' ', el('span', { class: 'mono graph-peak', dataset: { peakKey: k.binding.key, windowMs: String(graphWindowMs(e)) }, text: '—' })]) : null,
-      ], { caption: true }),
+      ...(graphSeriesOf(e) === 'mirrored' ? mirroredData(e) : singleData(e)),
       graphWindow(e),
     ];
     // Look (artboard GraphLook): the style, the color, the fill of an area and the line.
