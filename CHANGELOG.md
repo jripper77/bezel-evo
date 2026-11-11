@@ -5,7 +5,14 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
-## [Unreleased]
+## [0.2.26] - 2026-11-11
+
+### Updates
+- **Bezel tells you when a new version is out.** Once a day Bezel Light asks
+  GitHub for the latest published release; when it is newer, the tray menu shows
+  *Update available: X.Y.Z* and Studio shows it in Preferences › Updates, with a
+  button to the download page. Nothing is downloaded or installed, and the
+  switch in Preferences turns the check off.
 
 ### Themes
 - **Each series of a mirrored graph has its own scale.** The lower series can
