@@ -9,6 +9,8 @@ latest message, the tool in use and your account usage.
 > in the next releases. Ideas and feedback are welcome in the
 > [issues](https://github.com/jripper77/bezel-evo/issues).
 
+![Codex and Claude Code panels: projects with status dots, states, tools and ages above five-hour and weekly usage bars](../images/agents-screen.png)
+
 ## Where the data comes from
 
 Bezel reads two new local data sources:
@@ -47,6 +49,8 @@ Select the widget to see its general options:
   whose state changed, for two seconds. Reduce motion turns it off.
 
 ## Editing one part
+
+![The widget's Parts list next to the Project rows part opened in the inspector](../images/agents-studio.png)
 
 Double-click a part on the canvas, or open it from **Parts**. It is outlined in
 orange and the inspector shows only that part:

@@ -38,6 +38,10 @@ Two new data sources and two new widgets keep an eye on **Codex** and
 > the next releases. Ideas and feedback are welcome in the
 > [issues](https://github.com/jripper77/bezel-evo/issues).
 
+![Codex and Claude Code panels on a 1920x480 screen: each lists three projects with a status dot, the state, the tool in use and how long ago it changed, above segmented five-hour and weekly usage bars; one weekly bar is red below its warning threshold](docs/images/agents-screen.png)
+
+<p align="center"><sub>The Codex and Claude Code widgets in a Pixel-style layout, drawn by Bezel's renderer. Projects, states and usage are simulated.</sub></p>
+
 - **Every project at a glance.** The **Codex** and **Claude Code** widgets list
   your projects with a status dot: green while the agent works, red when it
   waits for you, has finished or hit an error. What needs you comes first;
@@ -53,6 +57,10 @@ Two new data sources and two new widgets keep an eye on **Codex** and
   rows, a usage bar) to edit only that part, with its own font, colour and
   size, then drag it or resize it inside the widget. Every state and bar has its
   own colour. [How it works](docs/user/agents.md).
+
+![Studio inspector, dark: on the left the Claude Code widget with its Parts list (title, project rows, five-hour and weekly usage, each with an eye and an arrow); on the right the Project rows part opened, with In each row tiles, status position, row height and status colours](docs/images/agents-studio.png)
+
+<p align="center"><sub>Left: the widget and its parts. Right: one part opened, with only its own controls.</sub></p>
 
 ### Also new
 

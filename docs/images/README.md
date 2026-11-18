@@ -22,6 +22,8 @@ are simulated, not measurements.
 | `studio-themes.png` | Dark Studio: the Themes gallery with every demo theme and Ember selected |
 | `studio-profiles.png` | Dark Studio: Profiles and automation with two example profiles (Night by schedule, Music when media plays) created in the page only, and the Curtain transition |
 | `studio-light.png` | Light Studio: Layers with a Card, the ring's colour-by-value thresholds |
+| `agents-screen.png` | Native renderer: the Codex and Claude Code panels of a Pixel-style 1920 x 480 layout, cropped; six simulated sessions with fictional projects, states and usage, no sensors or agents of the capturing PC |
+| `agents-studio.png` | Dark Studio: the Claude Code widget's Parts list beside its Project rows part opened, two inspector captures side by side |
 | `screen-render.png` | Generic illustrative device, composed with HTML/CSS around the exact demo canvas frame; not a product photograph or hardware validation |
 
 Capture at 1440 x 900 (Studio) and 1200 x 900 (device illustration), English UI,
