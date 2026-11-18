@@ -1343,10 +1343,367 @@ impl SpectrumDto {
     }
 }
 
+fn default_agent() -> String {
+    "codex".into()
+}
+fn default_agent_quota_size() -> u32 {
+    100
+}
+
+fn default_agent_interval() -> u32 {
+    10
+}
+
+fn default_agent_warning() -> u32 {
+    20
+}
+
+fn default_agent_lines() -> usize {
+    3
+}
+
+#[cfg(test)]
+mod agent_tests {
+    use super::*;
+
+    fn read(content: serde_json::Value) -> R<ElementKind> {
+        let dto: KindDto = serde_json::from_value(serde_json::json!({
+            "type":"text", "content":content,
+            "style":{"font":{"family":"Inter","weight":400},"size":16,"paint":"#ffffffff","align":"left","valign":"top"}
+        })).unwrap();
+        kind(&dto)
+    }
+
+    #[test]
+    fn automatic_project_settings_round_trip_and_validate_bounds() {
+        let domain = read(serde_json::json!({"type":"agent","agent":"codex","projectList":true,"pixelStyle":true,"blinkOnChange":true,"quotaSizePercent":70,"recentMinutes":0,"pageSeconds":15,"excludedProjects":["F:/dev/hidden"]})).unwrap();
+        let written = serde_json::to_value(kind_dto(&domain)).unwrap();
+        assert_eq!(written["content"]["projectList"], true);
+        assert_eq!(written["content"]["quotaSizePercent"], 70);
+        assert_eq!(written["content"]["pixelStyle"], true);
+        assert_eq!(written["content"]["blinkOnChange"], true);
+        assert_eq!(written["content"]["recentMinutes"], 0);
+        assert_eq!(written["content"]["pageSeconds"], 15);
+        assert_eq!(written["content"]["excludedProjects"][0], "F:/dev/hidden");
+        assert_eq!(read(written["content"].clone()).unwrap(), domain);
+        for extra in [
+            serde_json::json!({"quotaSizePercent":49}),
+            serde_json::json!({"quotaSizePercent":101}),
+            serde_json::json!({"pageSeconds":0}),
+            serde_json::json!({"pageSeconds":301}),
+            serde_json::json!({"recentMinutes":1441}),
+            serde_json::json!({"excludedProjects":["x".repeat(4097)]}),
+        ] {
+            let mut content = serde_json::json!({"type":"agent"});
+            content
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            assert!(read(content).is_err());
+        }
+        let ElementKind::Text {
+            content: TextContent::Agent(legacy),
+            ..
+        } = read(serde_json::json!({"type":"agent","project":"F:/dev/legacy"})).unwrap()
+        else {
+            panic!("agent")
+        };
+        assert!(!legacy.project_list);
+        assert_eq!(legacy.project, "F:/dev/legacy");
+    }
+
+    #[test]
+    fn agent_settings_round_trip_and_invalid_sources_are_rejected() {
+        let content = serde_json::json!({"type":"agent","agent":"claude","session":"pinned","messageLines":5,"showWeekly":false});
+        let domain = read(content).unwrap();
+        let written = serde_json::to_value(kind_dto(&domain)).unwrap();
+        assert_eq!(written["content"]["agent"], "claude");
+        assert_eq!(written["content"]["session"], "pinned");
+        assert_eq!(written["content"]["showWeekly"], false);
+        assert_eq!(written["content"]["messageLines"], 5);
+        assert_eq!(read(written["content"].clone()).unwrap(), domain);
+        assert!(read(serde_json::json!({"type":"agent","agent":"unknown"})).is_err());
+        assert!(read(serde_json::json!({"type":"agent","messageLines":0})).is_err());
+        assert!(read(serde_json::json!({"type":"agent","session":"x".repeat(129)})).is_err());
+        assert!(read(serde_json::json!({"type":"agent"})).is_ok());
+    }
+
+    #[test]
+    fn agent_look_round_trips_and_legacy_files_keep_the_built_in_palette() {
+        let domain = read(serde_json::json!({"type":"agent","completedColor":"#3060ff","quotaTrackColor":"#22222080","warningPercent":35,"title":"Lavoro","showHeader":false,"showPage":false,"showDividers":false,"showStateText":false,"showAge":true,"showRowActivity":true,"quotaValue":"used","showDot":false,"showPath":true,"stateBelow":true,"rowHeight":40,"barHeight":8,"segmentGap":2})).unwrap();
+        let written = serde_json::to_value(kind_dto(&domain)).unwrap();
+        let content = &written["content"];
+        assert_eq!(content["completedColor"], "#3060ffff");
+        assert_eq!(content["quotaTrackColor"], "#22222080");
+        assert!(content.get("workingColor").is_none());
+        assert_eq!(content["warningPercent"], 35);
+        assert_eq!(content["title"], "Lavoro");
+        assert_eq!(content["showAge"], true);
+        assert_eq!(content["quotaValue"], "used");
+        assert_eq!(content["showDot"], false);
+        assert_eq!(content["stateBelow"], true);
+        assert_eq!(content["rowHeight"], 40);
+        assert_eq!(content["barHeight"], 8);
+        assert_eq!(content["segmentGap"], 2);
+        assert!(
+            content.get("layout").is_none(),
+            "automatic layout is not written"
+        );
+        let placed = read(serde_json::json!({"type":"agent","layout":{"fiveHour":{"x":0.1,"y":0.5,"width":0.4,"height":0.2}}})).unwrap();
+        let written = serde_json::to_value(kind_dto(&placed)).unwrap();
+        assert_eq!(
+            written["content"]["layout"]["fiveHour"]["width"],
+            0.4f32 as f64
+        );
+        assert!(written["content"]["layout"].get("rows").is_none());
+        assert_eq!(read(written["content"].clone()).unwrap(), placed);
+        assert_eq!(read(content.clone()).unwrap(), domain);
+        let ElementKind::Text {
+            content: TextContent::Agent(legacy),
+            ..
+        } = read(serde_json::json!({"type":"agent","workingColor":null})).unwrap()
+        else {
+            panic!("agent")
+        };
+        assert_eq!(legacy.colors, Default::default());
+        assert_eq!(legacy.warning_percent, 20);
+        assert_eq!(legacy.quota_value, None);
+        assert!(legacy.show_dot && !legacy.show_path && !legacy.state_below);
+        assert_eq!(
+            (legacy.row_height, legacy.bar_height, legacy.segment_gap),
+            (None, None, None)
+        );
+        assert!(legacy.show_header && legacy.show_state_text && !legacy.show_age);
+        for extra in [
+            serde_json::json!({"warningPercent":51}),
+            serde_json::json!({"title":"x".repeat(65)}),
+            serde_json::json!({"attentionColor":"red"}),
+            serde_json::json!({"quotaValue":"half"}),
+            serde_json::json!({"rowHeight":4}),
+            serde_json::json!({"barHeight":0}),
+            serde_json::json!({"segmentGap":13}),
+            serde_json::json!({"layout":{"rows":{"x":0.5,"y":0,"width":0.6,"height":0.5}}}),
+            serde_json::json!({"layout":{"title":{"x":0,"y":0,"width":0,"height":0.5}}}),
+        ] {
+            let mut content = serde_json::json!({"type":"agent"});
+            content
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            assert!(read(content).is_err());
+        }
+    }
+}
+
+/// A part's place inside its widget, as shares of its size.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PartRectDto {
+    /// Left edge, 0..=1.
+    pub x: f32,
+    /// Top edge, 0..=1.
+    pub y: f32,
+    /// Width, 0..=1.
+    pub width: f32,
+    /// Height, 0..=1.
+    pub height: f32,
+}
+
+/// Parts of an agent widget placed by hand.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentLayoutDto {
+    /// Header of the project list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<PartRectDto>,
+    /// Project rows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rows: Option<PartRectDto>,
+    /// Five-hour usage window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub five_hour: Option<PartRectDto>,
+    /// Weekly usage window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weekly: Option<PartRectDto>,
+    /// Single-session text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content: Option<PartRectDto>,
+}
+
+fn agent_layout_dto(l: &bezel_core::domain::agent::AgentLayout) -> Option<Box<AgentLayoutDto>> {
+    let rect = |r: &Option<bezel_core::domain::agent::PartRect>| {
+        r.map(|r| PartRectDto {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+        })
+    };
+    let dto = AgentLayoutDto {
+        title: rect(&l.title),
+        rows: rect(&l.rows),
+        five_hour: rect(&l.five_hour),
+        weekly: rect(&l.weekly),
+        content: rect(&l.content),
+    };
+    (dto != AgentLayoutDto::default()).then(|| Box::new(dto))
+}
+
+fn agent_layout(d: Option<&AgentLayoutDto>) -> R<bezel_core::domain::agent::AgentLayout> {
+    use bezel_core::domain::agent::{AgentLayout, PartRect};
+    let Some(d) = d else {
+        return Ok(AgentLayout::default());
+    };
+    let rect = |r: &Option<PartRectDto>| -> R<Option<PartRect>> {
+        r.map(|r| {
+            let rect = PartRect {
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+            };
+            if rect.is_valid() {
+                Ok(rect)
+            } else {
+                err("agent part outside its widget")
+            }
+        })
+        .transpose()
+    };
+    Ok(AgentLayout {
+        title: rect(&d.title)?,
+        rows: rect(&d.rows)?,
+        five_hour: rect(&d.five_hour)?,
+        weekly: rect(&d.weekly)?,
+        content: rect(&d.content)?,
+    })
+}
+
 /// Text content.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ContentDto {
+    Agent {
+        #[serde(default = "default_agent")]
+        agent: String,
+        #[serde(default)]
+        session: String,
+        #[serde(default)]
+        project: String,
+        #[serde(default, rename = "projectList")]
+        project_list: bool,
+        #[serde(default = "default_agent_interval", rename = "recentMinutes")]
+        recent_minutes: u32,
+        #[serde(default = "default_agent_interval", rename = "pageSeconds")]
+        page_seconds: u32,
+        #[serde(default, rename = "excludedProjects")]
+        excluded_projects: Vec<String>,
+        #[serde(default, rename = "statusOnly")]
+        status_only: bool,
+        #[serde(default = "default_agent_quota_size", rename = "quotaSizePercent")]
+        quota_size_percent: u32,
+        #[serde(default, rename = "pixelStyle")]
+        pixel_style: bool,
+        #[serde(default, rename = "blinkOnChange")]
+        blink_on_change: bool,
+        #[serde(default, rename = "compactQuotas")]
+        compact_quotas: bool,
+        #[serde(default = "yes", rename = "showMessage")]
+        show_message: bool,
+        #[serde(default = "yes", rename = "showActivity")]
+        show_activity: bool,
+        #[serde(default = "yes", rename = "showStatus")]
+        show_status: bool,
+        #[serde(default = "yes", rename = "showFiveHour")]
+        show_five_hour: bool,
+        #[serde(default = "yes", rename = "showWeekly")]
+        show_weekly: bool,
+        #[serde(default = "yes", rename = "showReset")]
+        show_reset: bool,
+        #[serde(default = "default_agent_lines", rename = "messageLines")]
+        message_lines: usize,
+        #[serde(
+            default,
+            rename = "workingColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        working_color: Option<String>,
+        #[serde(
+            default,
+            rename = "attentionColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        attention_color: Option<String>,
+        #[serde(
+            default,
+            rename = "completedColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        completed_color: Option<String>,
+        #[serde(
+            default,
+            rename = "unknownColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        unknown_color: Option<String>,
+        #[serde(
+            default,
+            rename = "quotaColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        quota_color: Option<String>,
+        #[serde(
+            default,
+            rename = "quotaTrackColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        track_color: Option<String>,
+        #[serde(
+            default,
+            rename = "warningColor",
+            skip_serializing_if = "Option::is_none"
+        )]
+        warning_color: Option<String>,
+        #[serde(default = "default_agent_warning", rename = "warningPercent")]
+        warning_percent: u32,
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        title: String,
+        #[serde(default = "yes", rename = "showHeader")]
+        show_header: bool,
+        #[serde(default = "yes", rename = "showPage")]
+        show_page: bool,
+        #[serde(default = "yes", rename = "showDividers")]
+        show_dividers: bool,
+        #[serde(default = "yes", rename = "showStateText")]
+        show_state_text: bool,
+        #[serde(default, rename = "showAge")]
+        show_age: bool,
+        #[serde(default, rename = "showRowActivity")]
+        show_row_activity: bool,
+        #[serde(
+            default,
+            rename = "quotaValue",
+            skip_serializing_if = "Option::is_none"
+        )]
+        quota_value: Option<String>,
+        #[serde(default = "yes", rename = "showDot")]
+        show_dot: bool,
+        #[serde(default, rename = "showPath")]
+        show_path: bool,
+        #[serde(default, rename = "stateBelow")]
+        state_below: bool,
+        #[serde(default, rename = "rowHeight", skip_serializing_if = "Option::is_none")]
+        row_height: Option<u32>,
+        #[serde(default, rename = "barHeight", skip_serializing_if = "Option::is_none")]
+        bar_height: Option<u32>,
+        #[serde(
+            default,
+            rename = "segmentGap",
+            skip_serializing_if = "Option::is_none"
+        )]
+        segment_gap: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        layout: Option<Box<AgentLayoutDto>>,
+    },
     Spectrum {
         #[serde(flatten)]
         spectrum: SpectrumDto,
@@ -1759,10 +2116,22 @@ pub struct PartsDto {
     /// Weather: the condition.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub condition: Option<PartDto>,
+    /// Agent: the header of the project list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_title: Option<PartDto>,
+    /// Agent: the project name of each row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_name: Option<PartDto>,
+    /// Agent: the state of each row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_state: Option<PartDto>,
+    /// Agent: the usage text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_quota: Option<PartDto>,
 }
 
 impl PartsDto {
-    fn slots(&self) -> [(TextPart, &Option<PartDto>); 11] {
+    fn slots(&self) -> [(TextPart, &Option<PartDto>); 15] {
         [
             (TextPart::Prefix, &self.prefix),
             (TextPart::Number, &self.number),
@@ -1775,6 +2144,10 @@ impl PartsDto {
             (TextPart::City, &self.city),
             (TextPart::Temperature, &self.temperature),
             (TextPart::Condition, &self.condition),
+            (TextPart::AgentTitle, &self.agent_title),
+            (TextPart::AgentName, &self.agent_name),
+            (TextPart::AgentState, &self.agent_state),
+            (TextPart::AgentQuota, &self.agent_quota),
         ]
     }
 
@@ -1791,6 +2164,10 @@ impl PartsDto {
             TextPart::City => &mut self.city,
             TextPart::Temperature => &mut self.temperature,
             TextPart::Condition => &mut self.condition,
+            TextPart::AgentTitle => &mut self.agent_title,
+            TextPart::AgentName => &mut self.agent_name,
+            TextPart::AgentState => &mut self.agent_state,
+            TextPart::AgentQuota => &mut self.agent_quota,
         }
     }
 }
@@ -2508,6 +2885,28 @@ mod text_case_tests {
     }
 
     #[test]
+    fn agent_parts_round_trip() {
+        let mut json = base();
+        json["parts"] = serde_json::json!({
+            "agentTitle": {"weight": 700, "sizePercent": 120.0},
+            "agentName": {"font": "IBM Plex Mono"},
+            "agentState": {"color": "#3060ffff"},
+            "agentQuota": {"weight": 300}
+        });
+        let (restored, written) = round_trip(json);
+        assert_eq!(
+            restored.parts.style(TextPart::AgentTitle).unwrap().weight,
+            Some(700)
+        );
+        assert_eq!(
+            restored.parts.style(TextPart::AgentState).unwrap().color,
+            Some(Rgba::opaque(0x30, 0x60, 0xff))
+        );
+        assert_eq!(written["parts"]["agentName"]["font"], "IBM Plex Mono");
+        assert_eq!(written["parts"]["agentQuota"]["weight"], 300);
+    }
+
+    #[test]
     fn parts_round_trip_and_empty_ones_are_omitted() {
         let mut json = base();
         json["parts"] = serde_json::json!({
@@ -2602,6 +3001,62 @@ fn kind_dto(k: &ElementKind) -> KindDto {
     match k {
         ElementKind::Text { content, style } => KindDto::Text {
             content: match content {
+                TextContent::Agent(a) => ContentDto::Agent {
+                    agent: match a.agent {
+                        bezel_core::domain::agent::AgentKind::Codex => "codex",
+                        bezel_core::domain::agent::AgentKind::Claude => "claude",
+                    }
+                    .into(),
+                    session: a.session.clone(),
+                    project: a.project.clone(),
+                    project_list: a.project_list,
+                    recent_minutes: a.recent_minutes,
+                    page_seconds: a.page_seconds,
+                    excluded_projects: a.excluded_projects.clone(),
+                    status_only: a.status_only,
+                    quota_size_percent: a.quota_size_percent,
+                    pixel_style: a.pixel_style,
+                    blink_on_change: a.blink_on_change,
+                    compact_quotas: a.compact_quotas,
+                    show_message: a.show_message,
+                    show_activity: a.show_activity,
+                    show_status: a.show_status,
+                    show_five_hour: a.show_five_hour,
+                    show_weekly: a.show_weekly,
+                    show_reset: a.show_reset,
+                    message_lines: a.message_lines,
+                    working_color: a.colors.working.map(to_hex),
+                    attention_color: a.colors.attention.map(to_hex),
+                    completed_color: a.colors.completed.map(to_hex),
+                    unknown_color: a.colors.unknown.map(to_hex),
+                    quota_color: a.colors.quota.map(to_hex),
+                    track_color: a.colors.track.map(to_hex),
+                    warning_color: a.colors.warning.map(to_hex),
+                    warning_percent: a.warning_percent,
+                    title: a.title.clone(),
+                    show_header: a.show_header,
+                    show_page: a.show_page,
+                    show_dividers: a.show_dividers,
+                    show_state_text: a.show_state_text,
+                    show_age: a.show_age,
+                    show_row_activity: a.show_row_activity,
+                    quota_value: a.quota_value.map(|v| {
+                        use bezel_core::domain::agent::QuotaValue;
+                        match v {
+                            QuotaValue::Remaining => "remaining",
+                            QuotaValue::Used => "used",
+                            QuotaValue::Both => "both",
+                        }
+                        .into()
+                    }),
+                    show_dot: a.show_dot,
+                    show_path: a.show_path,
+                    state_below: a.state_below,
+                    row_height: a.row_height.map(u32::from),
+                    bar_height: a.bar_height.map(u32::from),
+                    segment_gap: a.segment_gap.map(u32::from),
+                    layout: agent_layout_dto(&a.layout),
+                },
                 TextContent::Spectrum(s) => ContentDto::Spectrum { spectrum: s.into() },
                 TextContent::Player(p) => ContentDto::Player {
                     source: p.source.clone(),
@@ -2845,6 +3300,127 @@ fn kind(k: &KindDto) -> R<ElementKind> {
     Ok(match k {
         KindDto::Text { content, style: s } => ElementKind::Text {
             content: match content {
+                ContentDto::Agent {
+                    agent,
+                    session,
+                    project,
+                    project_list,
+                    recent_minutes,
+                    page_seconds,
+                    excluded_projects,
+                    status_only,
+                    quota_size_percent,
+                    pixel_style,
+                    blink_on_change,
+                    compact_quotas,
+                    show_message,
+                    show_activity,
+                    show_status,
+                    show_five_hour,
+                    show_weekly,
+                    show_reset,
+                    message_lines,
+                    working_color,
+                    attention_color,
+                    completed_color,
+                    unknown_color,
+                    quota_color,
+                    track_color,
+                    warning_color,
+                    warning_percent,
+                    title,
+                    show_header,
+                    show_page,
+                    show_dividers,
+                    show_state_text,
+                    show_age,
+                    show_row_activity,
+                    quota_value,
+                    show_dot,
+                    show_path,
+                    state_below,
+                    row_height,
+                    bar_height,
+                    segment_gap,
+                    layout,
+                } => {
+                    use bezel_core::domain::agent::{
+                        AgentColors, AgentKind, AgentWidget, QuotaValue,
+                    };
+                    let paint = |c: &Option<String>| c.as_deref().map(color).transpose();
+                    if !(50..=100).contains(quota_size_percent)
+                        || *recent_minutes > 1440
+                        || !(1..=300).contains(page_seconds)
+                        || excluded_projects.len() > 256
+                        || excluded_projects.iter().any(|p| p.len() > 4096)
+                        || project.len() > 4096
+                        || session.len() > 128
+                        || !(1..=12).contains(message_lines)
+                        || *warning_percent > 50
+                        || title.chars().count() > 64
+                        || row_height.is_some_and(|h| !(8..=400).contains(&h))
+                        || bar_height.is_some_and(|h| !(1..=24).contains(&h))
+                        || segment_gap.is_some_and(|g| g > 12)
+                    {
+                        return err("invalid agent display configuration");
+                    }
+                    TextContent::Agent(AgentWidget {
+                        agent: match agent.as_str() {
+                            "codex" => AgentKind::Codex,
+                            "claude" => AgentKind::Claude,
+                            _ => return err("unknown agent"),
+                        },
+                        session: session.clone(),
+                        project: project.clone(),
+                        project_list: *project_list,
+                        recent_minutes: *recent_minutes,
+                        page_seconds: *page_seconds,
+                        excluded_projects: excluded_projects.clone(),
+                        status_only: *status_only,
+                        quota_size_percent: *quota_size_percent,
+                        pixel_style: *pixel_style,
+                        blink_on_change: *blink_on_change,
+                        compact_quotas: *compact_quotas,
+                        show_message: *show_message,
+                        show_activity: *show_activity,
+                        show_status: *show_status,
+                        show_five_hour: *show_five_hour,
+                        show_weekly: *show_weekly,
+                        show_reset: *show_reset,
+                        message_lines: *message_lines,
+                        colors: AgentColors {
+                            working: paint(working_color)?,
+                            attention: paint(attention_color)?,
+                            completed: paint(completed_color)?,
+                            unknown: paint(unknown_color)?,
+                            quota: paint(quota_color)?,
+                            track: paint(track_color)?,
+                            warning: paint(warning_color)?,
+                        },
+                        warning_percent: *warning_percent,
+                        title: title.clone(),
+                        show_header: *show_header,
+                        show_page: *show_page,
+                        show_dividers: *show_dividers,
+                        show_state_text: *show_state_text,
+                        show_age: *show_age,
+                        show_row_activity: *show_row_activity,
+                        quota_value: match quota_value.as_deref() {
+                            None => None,
+                            Some("remaining") => Some(QuotaValue::Remaining),
+                            Some("used") => Some(QuotaValue::Used),
+                            Some("both") => Some(QuotaValue::Both),
+                            Some(_) => return err("unknown quota value"),
+                        },
+                        show_dot: *show_dot,
+                        show_path: *show_path,
+                        state_below: *state_below,
+                        row_height: row_height.map(|h| h as u16),
+                        bar_height: bar_height.map(|h| h as u8),
+                        segment_gap: segment_gap.map(|g| g as u8),
+                        layout: Box::new(agent_layout(layout.as_deref())?),
+                    })
+                }
                 ContentDto::Spectrum { spectrum } => TextContent::Spectrum(spectrum.domain()?),
                 ContentDto::Player {
                     source,

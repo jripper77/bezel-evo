@@ -128,7 +128,7 @@ impl Trial {
                     snapshot.media_available = true;
                 }
                 TextContent::Spectrum(spectrum) => spectrum.demo = true,
-                TextContent::Static(_) => {}
+                TextContent::Static(_) | TextContent::Agent(_) => {}
             },
             _ => {}
         }

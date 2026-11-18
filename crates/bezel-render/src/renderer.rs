@@ -141,6 +141,7 @@ pub struct SkiaRenderer {
     /// Weather icons: the family shown and, while it fades in, the one it
     /// replaces and when the change began.
     icons: HashMap<(u64, ElementId), IconFade>,
+    agent_attention: HashMap<(u64, ElementId), crate::agent_attention::Attention>,
 }
 
 /// The condition family a weather icon shows and the fade from the last one.
@@ -245,6 +246,7 @@ impl SkiaRenderer {
             text_due: None,
             peaks: HashMap::new(),
             icons: HashMap::new(),
+            agent_attention: HashMap::new(),
         }
     }
 }
@@ -364,6 +366,59 @@ impl FrameRenderer for SkiaRenderer {
                 };
                 let furniture = TextFurniture::new(content, style, &context);
                 let fitted = match content {
+                    TextContent::Agent(a) => measured.map(|(mut w, mut h)| {
+                        if a.project_list {
+                            let metrics = AgentListMetrics::of(a, style);
+                            h = metrics.header
+                                + a.projects(context.snapshot).len().max(1) as f32 * metrics.row;
+                        }
+                        if a.status_only {
+                            w += style.size * 0.9;
+                        }
+                        let mut quota_style = style.clone();
+                        quota_style.size *= a.quota_size_percent as f32 / 100.;
+                        let session = a.account(context.snapshot);
+                        let mut count = 0;
+                        for (show, title, quota) in [
+                            (
+                                a.show_five_hour,
+                                "5h",
+                                session.and_then(|s| s.five_hour.as_ref()),
+                            ),
+                            (
+                                a.show_weekly,
+                                bezel_core::domain::agent::labels(context.language).weekly,
+                                session.and_then(|s| s.weekly.as_ref()),
+                            ),
+                        ] {
+                            if !show {
+                                continue;
+                            }
+                            count += 1;
+                            let text = a.quota_text(
+                                quota,
+                                title,
+                                context.snapshot.agents_sampled_at,
+                                context.language,
+                            );
+                            if let Some((width, _)) = self.text.measure(
+                                &TextJob {
+                                    text: &text,
+                                    style: &quota_style,
+                                    area: old,
+                                },
+                                assets,
+                                &mut self.diagnostics,
+                            ) {
+                                w = w.max(width);
+                            }
+                        }
+                        (
+                            w,
+                            h + agent_row_height(a, style) * count as f32
+                                + if count > 0 { 4. } else { 0. },
+                        )
+                    }),
                     TextContent::Player(p) => {
                         self.fit_player(p, style, old, measured, &furniture, assets, &context)
                     }
@@ -464,6 +519,11 @@ impl FrameRenderer for SkiaRenderer {
         if self.rotors.len() > 4096 {
             self.rotors
                 .retain(|(scene, _), _| *scene == self.card_scene);
+        }
+        if self.agent_attention.len() > 4096 {
+            self.agent_attention.retain(|(scene, id), _| {
+                *scene == self.card_scene && theme.elements.iter().any(|e| e.id == *id)
+            });
         }
         let changed = self.text.refresh_user_fonts();
         if self.text.retain_assets(&theme.assets()) || changed {
@@ -577,9 +637,187 @@ fn value_fraction(id: ElementId, binding: &Binding, context: &RenderContext<'_>)
     fraction(value, binding.min, binding.max)
 }
 
+fn draw_agent_pulse(layer: &mut Layer<'_>, area: BoxF, color: Rgba, strength: f32) {
+    use bezel_core::domain::theme::{Paint, ShapeKind};
+    if strength <= 0. {
+        return;
+    }
+    let tint = |alpha: f32| Rgba {
+        a: (alpha * strength).round() as u8,
+        ..color
+    };
+    shape::draw(
+        layer,
+        area,
+        ShapeKind::Rect { radius: 6. },
+        Some(&Paint::Linear {
+            angle: 0.,
+            stops: vec![(0., tint(38.)), (0.75, tint(8.)), (1., tint(0.))],
+        }),
+        None,
+    );
+    shape::draw(
+        layer,
+        BoxF::new(area.x, area.y + 4., 5., (area.height - 8.).max(0.)),
+        ShapeKind::Rect { radius: 2.5 },
+        Some(&Paint::solid(tint(40.))),
+        None,
+    );
+    shape::draw(
+        layer,
+        BoxF::new(area.x + 1., area.y + 4., 2., (area.height - 8.).max(0.)),
+        ShapeKind::Rect { radius: 1. },
+        Some(&Paint::solid(tint(190.))),
+        None,
+    );
+}
+
+/// Heights of an automatic project list, shared by drawing and measuring.
+struct AgentListMetrics {
+    /// The header row, 0 when hidden.
+    header: f32,
+    /// Each project row.
+    row: f32,
+    /// Size of the project name.
+    name: f32,
+    /// Size of the state text.
+    state: f32,
+}
+
+impl AgentListMetrics {
+    fn of(agent: &bezel_core::domain::agent::AgentWidget, style: &TextStyle) -> Self {
+        use bezel_core::domain::theme::TextPart;
+        let size = |part, fallback: f32| {
+            style
+                .parts
+                .style(part)
+                .and_then(|p| p.size_percent.map(|_| p.size(style.size)))
+                .unwrap_or(fallback)
+        };
+        let name = size(TextPart::AgentName, style.size);
+        let state = size(TextPart::AgentState, style.size * 0.68);
+        let header = if agent.show_header {
+            size(TextPart::AgentTitle, style.size) * 1.65
+        } else {
+            0.
+        };
+        let row = agent.row_height.map_or_else(
+            || {
+                if agent.state_below {
+                    name * 1.3 + state * 1.4 + 6.
+                } else {
+                    name.max(state) * 1.65
+                }
+            },
+            f32::from,
+        );
+        Self {
+            header,
+            row,
+            name,
+            state,
+        }
+    }
+}
+
+/// Where each part of an agent widget goes: its own place when set by hand,
+/// otherwise the automatic layout (usage windows at the bottom, the header
+/// and project rows or the single-session text above them).
+struct AgentPlaces {
+    title: Option<BoxF>,
+    rows: BoxF,
+    quotas: [Option<BoxF>; 2],
+    content: BoxF,
+}
+
+impl AgentPlaces {
+    fn of(agent: &bezel_core::domain::agent::AgentWidget, style: &TextStyle, area: BoxF) -> Self {
+        let placed = |rect: Option<bezel_core::domain::agent::PartRect>| {
+            rect.filter(|r| r.is_valid()).map(|r| {
+                BoxF::new(
+                    area.x + r.x * area.width,
+                    area.y + r.y * area.height,
+                    r.width * area.width,
+                    r.height * area.height,
+                )
+            })
+        };
+        let layout = &agent.layout;
+        let row = agent_row_height(agent, style);
+        let wanted = [
+            (agent.show_five_hour, placed(layout.five_hour)),
+            (agent.show_weekly, placed(layout.weekly)),
+        ];
+        let automatic = wanted
+            .iter()
+            .filter(|(show, own)| *show && own.is_none())
+            .count();
+        let total = row * automatic as f32;
+        let mut y = area.y + (area.height - total).max(0.);
+        let mut quotas = [None, None];
+        for (slot, (show, own)) in quotas.iter_mut().zip(wanted) {
+            if !show {
+                continue;
+            }
+            *slot = Some(own.unwrap_or_else(|| {
+                let place = BoxF::new(area.x, y, area.width, row);
+                y += row;
+                place
+            }));
+        }
+        let body = BoxF::new(
+            area.x,
+            area.y,
+            area.width,
+            (area.height - total - if automatic > 0 { 4. } else { 0. }).max(0.),
+        );
+        let own_title = placed(layout.title);
+        let header = if agent.show_header && own_title.is_none() {
+            AgentListMetrics::of(agent, style).header.min(body.height)
+        } else {
+            0.
+        };
+        let title = agent
+            .show_header
+            .then(|| own_title.unwrap_or(BoxF::new(body.x, body.y, body.width, header)));
+        let rows = placed(layout.rows).unwrap_or(BoxF::new(
+            body.x,
+            body.y + header,
+            body.width,
+            (body.height - header).max(0.),
+        ));
+        Self {
+            title,
+            rows,
+            quotas,
+            content: placed(layout.content).unwrap_or(body),
+        }
+    }
+}
+
+/// Quota meter thickness and how much it grows past the built-in one.
+fn agent_bar(agent: &bezel_core::domain::agent::AgentWidget) -> (f32, f32) {
+    let built_in = if agent.pixel_style { 5. } else { 4. };
+    let height = agent.bar_height.map_or(built_in, f32::from);
+    (height, (height - built_in).max(0.))
+}
+
+/// What a text element prints now.
+fn agent_row_height(agent: &bezel_core::domain::agent::AgentWidget, style: &TextStyle) -> f32 {
+    style.size * agent.quota_size_percent as f32 / 100.
+        * if agent.show_reset && !agent.compact_quotas {
+            2.8
+        } else {
+            1.6
+        }
+        + 8.
+        + agent_bar(agent).1
+}
+
 /// What a text element prints now.
 fn text_of(id: ElementId, content: &TextContent, context: &RenderContext<'_>) -> String {
     match content {
+        TextContent::Agent(a) => a.text(context.snapshot, context.language),
         TextContent::Spectrum(_) => String::new(),
         TextContent::Player(p) => {
             let Some(m) = bezel_core::domain::playback::session(context.snapshot, &p.source) else {
@@ -636,7 +874,7 @@ fn rich_job<'a>(
     let mut blink = None;
     let pieces = match content {
         TextContent::Static(text) if style.overflow.is_some() => vec![Piece::plain(text.clone())],
-        TextContent::Player(_) if style.overflow.is_some() => {
+        TextContent::Player(_) | TextContent::Agent(_) if style.overflow.is_some() => {
             vec![Piece::plain(text_of(id, content, context))]
         }
         TextContent::Weather(w) => w
@@ -722,7 +960,10 @@ fn rich_job<'a>(
         style,
         area,
         tabular: style.tabular_digits
-            && !matches!(content, TextContent::Static(_) | TextContent::Player(_)),
+            && !matches!(
+                content,
+                TextContent::Static(_) | TextContent::Player(_) | TextContent::Agent(_)
+            ),
         clock: motion.then_some(context.animation),
     };
     Some((job, blink))
@@ -1033,6 +1274,10 @@ impl SkiaRenderer {
                 let animated = selected.iter().any(|(_, e)| {
                     e.sensor_motion.is_some()
                         || match &e.kind {
+                            ElementKind::Text {
+                                content: TextContent::Agent(a),
+                                ..
+                            } => self.cards.motion && (a.project_list || a.blink_on_change),
                             ElementKind::Graph {
                                 binding,
                                 interval_seconds,
@@ -1415,6 +1660,76 @@ impl SkiaRenderer {
             ElementKind::Text { content, style } => {
                 let furniture = TextFurniture::new(content, style, context);
                 let mut area = area;
+                if let TextContent::Agent(agent) = content {
+                    let attention = self
+                        .agent_attention
+                        .entry((self.card_scene, element.id))
+                        .or_default();
+                    let (pulse, due) = attention.update(
+                        agent,
+                        context.snapshot,
+                        context.animation,
+                        self.cards.motion,
+                    );
+                    self.text_due = self.text_due.into_iter().chain(due).min();
+                    let places = AgentPlaces::of(agent, style, area);
+                    self.draw_agent_quotas(layer, agent, style, places.quotas, assets, context);
+                    if agent.project_list {
+                        self.draw_agent_projects(
+                            layer,
+                            (agent, &pulse),
+                            style,
+                            (places.title, places.rows),
+                            assets,
+                            context,
+                        );
+                        return;
+                    }
+                    area = places.content;
+                    if pulse.strength > 0. {
+                        let color = agent.colors.state(
+                            agent
+                                .selected(context.snapshot)
+                                .map(|s| s.state)
+                                .unwrap_or_default(),
+                        );
+                        draw_agent_pulse(
+                            layer,
+                            BoxF::new(
+                                area.x,
+                                area.y,
+                                area.width,
+                                area.height.min(style.size * 3.3),
+                            ),
+                            color,
+                            pulse.strength,
+                        );
+                    }
+                    if agent.status_only {
+                        use bezel_core::domain::theme::{Paint, ShapeKind};
+                        let color = agent.colors.state(
+                            agent
+                                .selected(context.snapshot)
+                                .map(|s| s.state)
+                                .unwrap_or_default(),
+                        );
+                        let size = style.size * 0.55;
+                        shape::draw(
+                            layer,
+                            BoxF::new(area.x, area.y + style.size * 0.25, size, size),
+                            ShapeKind::Ellipse,
+                            Some(&Paint::solid(color)),
+                            None,
+                        );
+                        let gap = style.size * 0.9;
+                        area = BoxF::new(
+                            area.x + gap,
+                            area.y,
+                            (area.width - gap).max(0.),
+                            area.height,
+                        );
+                    }
+                }
                 if let TextContent::Player(p) = content {
                     let media = bezel_core::domain::playback::session(context.snapshot, &p.source);
                     if p.hide_when_stopped && media.is_none_or(|m| !m.playing) {
@@ -1633,6 +1948,362 @@ impl SkiaRenderer {
             ElementKind::Ring { .. } => draw_ring(layer, element, context),
             ElementKind::Needle { .. } => self.draw_needle(layer, element, assets, context),
             ElementKind::Graph { .. } => draw_graph(layer, element, context, self.cards.motion),
+        }
+    }
+
+    fn draw_agent_projects(
+        &mut self,
+        layer: &mut Layer<'_>,
+        (agent, pulse): (
+            &bezel_core::domain::agent::AgentWidget,
+            &crate::agent_attention::Pulse,
+        ),
+        style: &TextStyle,
+        (title_place, area): (Option<BoxF>, BoxF),
+        assets: &BTreeMap<AssetRef, Vec<u8>>,
+        context: &RenderContext<'_>,
+    ) {
+        use bezel_core::domain::{
+            agent::labels,
+            theme::{HAlign, Paint, ShapeKind, TextPart, VAlign},
+        };
+        let projects = agent.projects(context.snapshot);
+        let metrics = AgentListMetrics::of(agent, style);
+        let row_height = metrics.row;
+        if area.height < row_height.min(metrics.name) || area.width <= 0. {
+            return;
+        }
+        let capacity = ((area.height / row_height).floor() as usize).max(1);
+        let pages = projects.len().div_ceil(capacity).max(1);
+        let seconds = u64::from(agent.page_seconds.max(1));
+        let mut page = if self.cards.motion {
+            (context.animation.as_secs() / seconds) as usize % pages
+        } else {
+            0
+        };
+        if let Some(index) = projects.iter().position(|s| {
+            pulse
+                .projects
+                .contains_key(&crate::agent_attention::project_key(s))
+        }) {
+            page = index / capacity;
+        } else if let Some(state) = pulse.projects.values().next() {
+            draw_agent_pulse(
+                layer,
+                title_place.unwrap_or(BoxF::new(area.x, area.y, area.width, row_height)),
+                agent.colors.state(*state),
+                pulse.strength,
+            );
+        }
+        if pages > 1 && self.cards.motion {
+            let due = std::time::Duration::from_secs(
+                (context.animation.as_secs() / seconds + 1) * seconds,
+            );
+            self.text_due = self.text_due.into_iter().chain(Some(due)).min();
+        }
+        let mut row_style = style.clone();
+        row_style.valign = VAlign::Top;
+        row_style.overflow = Some(TextOverflow::Shrink);
+        let parts = &style.parts;
+        if let Some(title_place) = title_place {
+            let header = if pages > 1 && agent.show_page {
+                format!("{}    {}/{}", agent.header(), page + 1, pages)
+            } else {
+                agent.header().to_string()
+            };
+            self.text.draw_rich(
+                layer,
+                &RichJob {
+                    pieces: vec![Piece {
+                        part: parts.style(TextPart::AgentTitle),
+                        ..Piece::plain(header)
+                    }],
+                    style: &row_style,
+                    area: title_place,
+                    tabular: false,
+                    clock: None,
+                },
+                assets,
+                &mut self.diagnostics,
+            );
+        }
+        let top = area.y;
+        if projects.is_empty() {
+            self.text.draw_rich(
+                layer,
+                &RichJob {
+                    pieces: vec![Piece {
+                        part: parts.style(TextPart::AgentName),
+                        ..Piece::plain(labels(context.language).no_session.into())
+                    }],
+                    style: &row_style,
+                    area: BoxF::new(area.x, top, area.width, row_height),
+                    tabular: false,
+                    clock: None,
+                },
+                assets,
+                &mut self.diagnostics,
+            );
+            return;
+        }
+        let state_part = parts.style(TextPart::AgentState);
+        for (index, session) in projects
+            .iter()
+            .skip(page * capacity)
+            .take(capacity)
+            .enumerate()
+        {
+            let y = top + index as f32 * row_height;
+            if y + metrics.name > area.y + area.height {
+                break;
+            }
+            let duplicate = projects.iter().any(|other| {
+                other.project == session.project && other.project_path != session.project_path
+            });
+            let name = if agent.show_path || duplicate || session.project.is_empty() {
+                &session.project_path
+            } else {
+                &session.project
+            };
+            let color = agent.colors.state(session.state);
+            if pulse
+                .projects
+                .contains_key(&crate::agent_attention::project_key(session))
+            {
+                draw_agent_pulse(
+                    layer,
+                    BoxF::new(area.x, y - 3., area.width, row_height - 2.),
+                    color,
+                    pulse.strength,
+                );
+            }
+            let mut x = area.x + 4.;
+            if agent.show_dot {
+                shape::draw(
+                    layer,
+                    BoxF::new(
+                        area.x + 8.,
+                        y + metrics.name * 0.3,
+                        metrics.name * 0.4,
+                        metrics.name * 0.4,
+                    ),
+                    ShapeKind::Ellipse,
+                    Some(&Paint::solid(color)),
+                    None,
+                );
+                x = area.x + metrics.name * 0.9 + 8.;
+            }
+            let mut status_style = row_style.clone();
+            if state_part.and_then(|p| p.size_percent).is_none() {
+                status_style.size *= 0.68;
+            }
+            status_style.paint = Paint::solid(color);
+            let detail = agent.row_detail(
+                session,
+                context.snapshot.agents_sampled_at,
+                context.language,
+            );
+            let mut width = (area.x + area.width - x - 8.).max(0.);
+            if !detail.is_empty() {
+                let detail_area = if agent.state_below {
+                    status_style.align = HAlign::Left;
+                    BoxF::new(x, y + metrics.name * 1.25, width, metrics.state * 1.4)
+                } else {
+                    status_style.align = HAlign::Right;
+                    let status_width = (area.width * 0.32)
+                        .max(style.size * 3.)
+                        .min(area.width * 0.5);
+                    width = (area.width - status_width - (x - area.x) - 10.).max(0.);
+                    BoxF::new(
+                        area.x + area.width - status_width,
+                        y + (metrics.name - metrics.state).max(0.) * 0.55,
+                        status_width - 8.,
+                        row_height,
+                    )
+                };
+                self.text.draw_rich(
+                    layer,
+                    &RichJob {
+                        pieces: vec![Piece {
+                            part: state_part,
+                            ..Piece::plain(detail)
+                        }],
+                        style: &status_style,
+                        area: detail_area,
+                        tabular: false,
+                        clock: None,
+                    },
+                    assets,
+                    &mut self.diagnostics,
+                );
+            }
+            if agent.show_dividers {
+                shape::draw(
+                    layer,
+                    BoxF::new(
+                        area.x + 8.,
+                        y + row_height - 4.,
+                        (area.width - 16.).max(0.),
+                        1.,
+                    ),
+                    ShapeKind::Rect { radius: 0. },
+                    Some(&Paint::solid(Rgba {
+                        r: 255,
+                        g: 255,
+                        b: 255,
+                        a: 10,
+                    })),
+                    None,
+                );
+            }
+            self.text.draw_rich(
+                layer,
+                &RichJob {
+                    pieces: vec![Piece {
+                        part: parts.style(TextPart::AgentName),
+                        ..Piece::plain(name.to_string())
+                    }],
+                    style: &row_style,
+                    area: BoxF::new(
+                        x,
+                        y,
+                        width,
+                        if agent.state_below {
+                            metrics.name * 1.3
+                        } else {
+                            row_height
+                        },
+                    ),
+                    tabular: false,
+                    clock: None,
+                },
+                assets,
+                &mut self.diagnostics,
+            );
+        }
+    }
+
+    fn draw_agent_quotas(
+        &mut self,
+        layer: &mut Layer<'_>,
+        agent: &bezel_core::domain::agent::AgentWidget,
+        style: &TextStyle,
+        places: [Option<BoxF>; 2],
+        assets: &BTreeMap<AssetRef, Vec<u8>>,
+        context: &RenderContext<'_>,
+    ) {
+        use bezel_core::domain::{
+            agent::labels,
+            frame::Rgba,
+            theme::{Direction, Paint, VAlign},
+        };
+        let session = agent.account(context.snapshot);
+        let rows = [
+            (places[0], "5h", session.and_then(|s| s.five_hour.as_ref())),
+            (
+                places[1],
+                labels(context.language).weekly,
+                session.and_then(|s| s.weekly.as_ref()),
+            ),
+        ];
+        let mut quota_style = style.clone();
+        quota_style.size *= agent.quota_size_percent as f32 / 100.;
+        quota_style.valign = VAlign::Top;
+        quota_style.overflow = Some(bezel_core::domain::theme::TextOverflow::Shrink);
+        let quota_part = style
+            .parts
+            .style(bezel_core::domain::theme::TextPart::AgentQuota);
+        let (bar_height, bar_extra) = agent_bar(agent);
+        let gap = agent.segment_gap.map_or(3., f32::from);
+        let track = Paint::solid(Rgba {
+            r: 100,
+            g: 100,
+            b: 100,
+            a: 100,
+        });
+        let track = match agent.colors.track {
+            Some(color) => Paint::solid(color),
+            None if agent.pixel_style => Paint::solid(Rgba::opaque(34, 34, 32)),
+            None => track,
+        };
+        for (place, title, quota) in rows {
+            let Some(place) = place else {
+                continue;
+            };
+            let (y, row_height, area) = (place.y, place.height, place);
+            let now = context.snapshot.agents_sampled_at;
+            let quota = quota.filter(|q| q.resets_at > now && q.used_percent.is_finite());
+            let low = quota.is_some_and(|q| agent.quota_low(q));
+            let fill = if low {
+                Paint::solid(agent.colors.warning())
+            } else if let Some(color) = agent.colors.quota {
+                Paint::solid(color)
+            } else if agent.pixel_style {
+                Paint::solid(Rgba::opaque(255, 146, 72))
+            } else {
+                style.paint.clone()
+            };
+            quota_style.paint = if low {
+                fill.clone()
+            } else {
+                style.paint.clone()
+            };
+            // Near exhaustion the warning color wins over the part's own color.
+            let warned = quota_part.map(|p| bezel_core::domain::theme::PartStyle {
+                color: if low { None } else { p.color },
+                ..p.clone()
+            });
+            let mut text = agent.quota_text(quota, title, now, context.language);
+            if quota.is_some()
+                && let Some(observed) = session.filter(|s| {
+                    s.quota_updated_at > 0 && now.saturating_sub(s.quota_updated_at) >= 180
+                })
+            {
+                text.push_str(&format!(
+                    "  \u{00b7} {} {}",
+                    labels(context.language).updated,
+                    bezel_core::domain::agent::duration(
+                        now.saturating_sub(observed.quota_updated_at)
+                    )
+                ));
+            }
+            self.text.draw_rich(
+                layer,
+                &RichJob {
+                    pieces: vec![Piece {
+                        part: warned.as_ref(),
+                        ..Piece::plain(text)
+                    }],
+                    style: &quota_style,
+                    area: BoxF::new(area.x, y, area.width, row_height - 8. - bar_extra),
+                    tabular: false,
+                    clock: None,
+                },
+                assets,
+                &mut self.diagnostics,
+            );
+            gauges::draw_bar(
+                layer,
+                BoxF::new(
+                    area.x,
+                    y + row_height - 6. - bar_extra,
+                    area.width,
+                    bar_height,
+                ),
+                quota.map(|q| agent.meter_fraction(q)),
+                &BarStyle {
+                    direction: Direction::LeftToRight,
+                    fill: &fill,
+                    track: Some(&track),
+                    radius: if agent.pixel_style { 0. } else { 2. },
+                    segments: agent
+                        .pixel_style
+                        .then_some(bezel_core::domain::theme::Segments {
+                            count: (area.width / (7. + gap)).round().clamp(1., 120.) as u16,
+                            gap,
+                        }),
+                },
+            );
         }
     }
 

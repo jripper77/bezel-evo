@@ -14,6 +14,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod agent_attention;
 mod analog_clock;
 mod cards;
 mod catalog;
@@ -97,3 +98,6 @@ mod weather_motion_tests;
 
 #[cfg(test)]
 mod graph_width_tests;
+
+#[cfg(test)]
+mod agent_tests;

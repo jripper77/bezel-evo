@@ -442,6 +442,14 @@ pub enum TextPart {
     Temperature,
     /// Weather: the condition.
     Condition,
+    /// Agent: the header of the project list.
+    AgentTitle,
+    /// Agent: the project name of each row.
+    AgentName,
+    /// Agent: the state, age and tool of each row.
+    AgentState,
+    /// Agent: the text of the usage windows.
+    AgentQuota,
 }
 
 /// Where a part sits on the line.
@@ -524,6 +532,8 @@ pub struct Binding {
 /// What a text element prints.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TextContent {
+    /// A local coding-agent session and account quotas.
+    Agent(super::agent::AgentWidget),
     /// Standalone mirrored audio spectrum.
     Spectrum(super::spectrum::Spectrum),
     /// Operating-system media session display.
@@ -1143,6 +1153,25 @@ impl Theme {
                 }
             ) {
                 keys.extend(SensorKey::new("media.sessions"));
+            }
+            if let ElementKind::Text {
+                content: TextContent::Agent(agent),
+                ..
+            } = &e.kind
+            {
+                keys.extend(SensorKey::new(match agent.agent {
+                    super::agent::AgentKind::Codex => "agent.codex",
+                    super::agent::AgentKind::Claude => "agent.claude",
+                }));
+            }
+            if matches!(
+                &e.kind,
+                ElementKind::Text {
+                    content: TextContent::Agent(_),
+                    ..
+                }
+            ) {
+                keys.extend(SensorKey::new("agent.sessions"));
             }
             if let Some(card) = &e.card {
                 for rule in &card.triggers {
