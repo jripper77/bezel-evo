@@ -15,11 +15,11 @@ test('the widget groups hold every widget once, plus the Group tile', () => {
   assert.deepEqual(WIDGET_GROUPS.map((g) => g.id), ['values', 'timeMedia', 'textShapes', 'containers']);
   assert.deepEqual([...all].sort(), [...WIDGETS, 'group'].sort());
   assert.equal(new Set(all).size, all.length);
-  assert.equal(WIDGET_COUNT, 14);
+  assert.equal(WIDGET_COUNT, 16);
 });
 
 test('the widget search matches names and ids, ignoring case and accents, and drops empty groups', () => {
-  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [5, 4, 3, 2]);
+  assert.deepEqual(widgetGroups(labelOf).map((g) => g.widgets.length), [5, 6, 3, 2]);
   assert.deepEqual(widgetGroups(labelOf, ' BARRA '), [{ id: 'values', widgets: ['bar'] }]);
   assert.deepEqual(widgetGroups(labelOf, 'player'), [{ id: 'timeMedia', widgets: ['player'] }]);
   assert.deepEqual(widgetGroups(labelOf, 'media pl'), [{ id: 'timeMedia', widgets: ['player'] }]);

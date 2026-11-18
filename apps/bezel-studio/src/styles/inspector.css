@@ -299,3 +299,37 @@
 /* A mirrored graph's two series inside Source and Vertical scale: a titled block each. */
 .inspector .graph-series-block > .field-label { color: var(--text); font-weight: 600; font-size: var(--fs-small); }
 .inspector .graph-series-block + .graph-series-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Agent widget, as in the canvas boards: parts, project chips, swatches, opened part. */
+.agent-part-list { display: flex; flex-direction: column; gap: 6px; }
+.agent-part-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.agent-part-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); color: var(--text); font: inherit; font-size: var(--fs-field); text-align: left; cursor: pointer; }
+.agent-part-open:hover, .agent-part-open:focus-visible { border-color: var(--accent-line); }
+.agent-part-open > .ic:first-child { color: var(--muted); }
+.agent-part-name { flex: none; }
+.agent-part-sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-compact); color: var(--muted); }
+.agent-part-open > .ic:last-child { flex: none; color: var(--muted); }
+.agent-part-row.is-hidden .agent-part-name { color: var(--muted); text-decoration: line-through; }
+.agent-part-eye-gap { flex: none; width: 34px; }
+.agent-auto-layout { align-self: flex-start; }
+.agent-state-dot { background: var(--faint); }
+.agent-state-dot[data-state="working"] { background: var(--signal-ok); }
+.agent-state-dot[data-state="waiting"], .agent-state-dot[data-state="error"] { background: var(--signal-error); }
+.agent-refresh { width: 100%; justify-content: flex-start; font-family: var(--font-sans); cursor: pointer; }
+.agent-refresh .ic { color: var(--muted); }
+.agent-swatches { display: grid; gap: 8px; }
+.agent-swatches.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.agent-swatches.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.agent-swatch { display: flex; align-items: center; gap: 8px; min-width: 0; height: 36px; padding: 0 8px 0 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--well); font-size: var(--fs-field); }
+.agent-swatch .color-field { flex: none; }
+.agent-swatch-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-swatch-value { margin-left: auto; flex: none; font-family: var(--font-mono); font-size: var(--fs-caps); color: var(--muted); }
+.agent-row-tiles.option-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.agent-row-tiles .option-tile span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.agent-part-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.agent-part-titles { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+.agent-part-titles strong { font-size: var(--fs-title); }
+.agent-part-path { display: flex; align-items: center; gap: 4px; font-size: var(--fs-compact); color: var(--muted); }
+.agent-part-crumb { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.agent-part-crumb:hover { color: var(--text); }
+.agent-part-kind { color: var(--accent-ink); }
+.agent-part-art { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-ink); }

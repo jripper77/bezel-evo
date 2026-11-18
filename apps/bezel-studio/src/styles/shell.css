@@ -281,3 +281,6 @@ body.resizing { cursor: col-resize; user-select: none; }
 @media (prefers-reduced-motion: reduce) {
   .live-toggle.live-attention { animation: none; }
 }
+/* An agent widget's opened part, over its widget. */
+.sel-box.agent-part-box { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.agent-part-tag { position: absolute; top: -18px; right: -1px; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: var(--accent-text); font: 600 10.5px/16px var(--font-sans); white-space: nowrap; }

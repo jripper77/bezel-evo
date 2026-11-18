@@ -360,6 +360,7 @@ function tauriBridge(invoke, tauri = {}) {
     memoryUsage: () => invoke('memory_usage'),
     restartLibre: () => invoke('restart_libre_reader'),
     searchWeatherCities: (query) => invoke('search_weather_cities', { query }),
+    connectClaudeAgent: () => invoke('connect_claude_agent'),
     session: () => invoke('editor_session'),
     /**
      * Renders the theme for the preview: `render_preview {theme, motion}`.

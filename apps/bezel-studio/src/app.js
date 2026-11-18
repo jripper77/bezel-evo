@@ -42,6 +42,8 @@ import { libreStatus } from './libre-status.js';
 import { timeAgo } from './relative-time.js';
 import { wirePanelResizers } from './ui/panel-resizer.js';
 import { createPickers } from './ui/pickers.js';
+import { agentPartOwner, focusAgentPart } from './editor/agent-part.js';
+import { agentPartLabel } from './ui/inspector/agent.js';
 
 const bridge = createBridge(window);
 const $ = (id) => document.getElementById(id);
@@ -155,6 +157,7 @@ const minRefresh = () => session?.minRefreshSeconds ?? 1;
 const fitContent = createFitContent({ store, bridge, onError: error => fail(error) });
 const canvasView = createCanvasView({
   onFitContent: fitContent,
+  agentPartLabel: part => agentPartLabel(t, part),
   store,
   scroll: $('stage-scroll'),
   box: $('canvas-box'),
@@ -1568,7 +1571,13 @@ document.addEventListener('keydown', (evt) => {
     case 'groupSelection': case 'ungroup': if (ids.length) store.dispatch(action.type, { ids }); break;
     case 'duplicate': if (ids.length) store.dispatch('duplicate', { ids }); break;
     case 'selectAll': store.select(store.getState().theme.elements.map((e) => e.id)); break;
-    case 'deselect': store.select([]); break;
+    case 'deselect': {
+      // An opened agent part closes first; the next Escape deselects.
+      const owner = agentPartOwner();
+      if (owner !== null && ids.length === 1 && ids[0] === owner) { focusAgentPart(null, null); }
+      else store.select([]);
+      break;
+    }
     case 'nudge': if (ids.length) store.dispatch('move', { ids, dx: action.dx, dy: action.dy }); break;
     default: break;
   }

@@ -1,11 +1,12 @@
 // Canonical groups of the existing controls. Unknown controls stay visible.
 const GROUPS = {
-  layout: ['position', 'membership', 'actions', 'rotation-binding'],
-  data: ['source', 'content', 'scale', 'series', 'window', 'secondary-source', 'spectrum-source', 'spectrum-bands', 'apps', 'time', 'stopped'],
-  shape: ['show', 'shape', 'visualization', 'style', 'clock-dial', 'clock-parts', 'cover-fade', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'needle-center', 'needle-picture', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance'],
-  text: ['font'],
-  color: ['picture', 'color', 'spectrum-paint', 'fill', 'track', 'shadow', 'transparency', 'visibility', 'background'],
-  behavior: ['clock-seconds', 'clock-blink', 'weather-motion', 'image-playback', 'spectrum-motion', 'transition', 'sensor-motion', 'preview', 'refresh', 'overflow', 'peak'],
+  parts: ['agent-parts'],
+  layout: ['position', 'membership', 'actions', 'rotation-binding', 'agent-part-place'],
+  data: ['source', 'content', 'scale', 'series', 'window', 'secondary-source', 'spectrum-source', 'spectrum-bands', 'apps', 'time', 'stopped', 'agent-projects', 'agent-usage', 'agent-quota-data'],
+  shape: ['show', 'shape', 'visualization', 'style', 'clock-dial', 'clock-parts', 'cover-fade', 'spectrum-bars', 'arc', 'scale-marks', 'needle-shape', 'needle-center', 'needle-picture', 'spacing', 'progress', 'segments', 'corners', 'outline', 'appearance', 'agent-header', 'agent-rows', 'agent-quotas'],
+  text: ['font', 'agent-state-font'],
+  color: ['picture', 'color', 'spectrum-paint', 'fill', 'track', 'shadow', 'transparency', 'visibility', 'background', 'agent-state-colors', 'agent-quota-colors'],
+  behavior: ['clock-seconds', 'clock-blink', 'weather-motion', 'image-playback', 'spectrum-motion', 'transition', 'sensor-motion', 'preview', 'refresh', 'overflow', 'peak', 'agent-motion'],
 };
 export function sectionFor(key, fallback = 'data') {
   return Object.entries(GROUPS).find(([, keys]) => keys.includes(key))?.[0] ?? fallback;

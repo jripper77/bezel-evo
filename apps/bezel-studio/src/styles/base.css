@@ -258,7 +258,7 @@ input[aria-invalid="true"] { border-color: var(--danger) !important; }
 .pill-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pill[data-tone="ok"], .live-toggle:has(input:checked) { border-color: var(--ok-line); background: var(--ok-soft); color: var(--ok-ink); }
 .pill[data-tone="ok"] .pill-dot { background: var(--signal-ok); }
-.pill[data-tone="accent"], .pf-rule .sentence input.sentence-token, .pf-rule .sentence select { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+.pill[data-tone="accent"], .agent-part-eye[aria-pressed="true"], .pf-rule .sentence input.sentence-token, .pf-rule .sentence select { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
 .pill[data-tone="warn"] { border-color: color-mix(in srgb, var(--signal-warn) 35%, var(--border-2)); background: color-mix(in srgb, var(--signal-warn) 8%, var(--surface-2)); color: var(--warn); }
 .pill[data-tone="danger"] { border-color: color-mix(in srgb, var(--signal-error) 35%, var(--border-2)); background: color-mix(in srgb, var(--signal-error) 8%, var(--surface-2)); color: var(--danger); }
 .pill[data-tone="info"] { border-color: color-mix(in srgb, var(--info) 35%, var(--border-2)); background: color-mix(in srgb, var(--info) 8%, var(--surface-2)); color: var(--info); }
@@ -441,7 +441,7 @@ button.pill:hover { border-color: var(--accent); }
 
 .bound-field { display: flex; align-items: center; gap: 6px; }
 .bound-field > :first-child { flex: 1 1 auto; min-width: 0; }
-.bound-field > .icon-button { flex: none; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; }
+.bound-field > .icon-button, .agent-part-eye, .agent-part-back { flex: none; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; }
 .bound-field > .color-field { flex: 1 1 auto; min-width: 0; }
 .bound-field > .color-field, .bound-field > .field-choice { margin: 0; }
 .paint-fields, .gradient-field { display: grid; gap: 10px; min-width: 0; }

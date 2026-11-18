@@ -14,7 +14,7 @@ import { isShown, owners } from './editor/cards.js';
  */
 export const WIDGET_GROUPS = Object.freeze([
   Object.freeze({ id: 'values', widgets: Object.freeze(['value', 'ring', 'bar', 'needle', 'graph']) }),
-  Object.freeze({ id: 'timeMedia', widgets: Object.freeze(['clock', 'weather', 'player', 'spectrum']) }),
+  Object.freeze({ id: 'timeMedia', widgets: Object.freeze(['clock', 'weather', 'player', 'codex', 'claude', 'spectrum']) }),
   Object.freeze({ id: 'textShapes', widgets: Object.freeze(['text', 'image', 'shape']) }),
   Object.freeze({ id: 'containers', widgets: Object.freeze(['card', 'group']) }),
 ]);

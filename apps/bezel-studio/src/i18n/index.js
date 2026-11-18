@@ -16,6 +16,10 @@ import pickers, { PREFIXES as PICKERS } from './areas/pickers.js';
 // resolve to the same canonical text as static callers. Only the canonical
 // keys below have translations; this map contains no copies of prose.
 export const SHARED_LABELS = Object.freeze({
+  'widget.codex': 'agent.codex',
+  'widget.claude': 'agent.claude',
+  'agent.source': 'widget.agent',
+  'agent.showStatus': 'sensorsPanel.status',
   'insp.image.anchor.topLeft': 'prefs.debugCorner.top-left',
   'insp.image.anchor.topRight': 'prefs.debugCorner.top-right',
   'insp.image.anchor.bottomLeft': 'prefs.debugCorner.bottom-left',

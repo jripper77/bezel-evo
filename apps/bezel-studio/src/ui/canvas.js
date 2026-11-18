@@ -14,6 +14,8 @@ import { el, icon } from './dom.js';
 import { segmented, iconButton } from './fields.js';
 import { NATURAL_REPEATS } from './inspector/art.js';
 import { ICONS } from './icons.js';
+import { agentPartAt, agentPartRects, agentPlacePatch } from '../agent-widget.js';
+import { agentPart, agentPartOwner, focusAgentPart, onAgentPart } from '../editor/agent-part.js';
 import { boxFromPoints, hitTest, marqueeSelect, resize, unionBox } from '../editor/geometry.js';
 import { alignmentDistances, snapEdge, snapMove } from '../editor/snap.js';
 import { applyFramingKey, createBurst, framingKey, framingOf, panned, pictureBox, reframed, resolvedRotation, wheelPixels, wheelZoom, zoomedAt } from '../editor/video-framing.js';
@@ -39,7 +41,7 @@ const BAR_HALF_WIDTH = 120;
  * @param {(label:string) => string} [opts.describe] accessible label of an element box
  * @param {() => void} [opts.onFrameRequest] a double click on the video background, off any element
  */
-export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {}, onGesture = () => {} }) {
+export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom = () => {}, describe = (n) => n, onFrameRequest = () => {}, onFitContent = () => {}, rotationLabel = () => '', handleLabel = key => key, handleLocale = () => navigator.language, handleMotion = () => true, onHandleEdit = () => {}, textParts = () => null, onTextPart = () => {}, onBarSensor = () => {}, onBarTry = () => {}, onBarMenu = () => {}, onTrialHold = () => {}, onGesture = () => {}, agentPartLabel = part => part }) {
   const ctx = canvas.getContext('2d');
   const bezel = box.closest('.bezel') ?? box;
   const stageFrame = bezel.closest('.stage-frame') ?? bezel;
@@ -275,6 +277,19 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     for (const e of chosen) {
       nodes.push(el('div', { class: `sel-box${e.locked ? ' locked' : ''}`, style: { ...boxStyle(e.frame), transform: `rotate(${appliedRotation(e)}deg)` }, role: 'img', 'aria-label': describe(e.name) }));
     }
+    // An agent widget's opened part: outlined and named over the widget.
+    if (agentPartOwner() !== null && (chosen.length !== 1 || chosen[0].id !== agentPartOwner())) focusAgentPart(null, null);
+    const focusPart = chosen.length === 1 ? agentPart(chosen[0].id) : null;
+    const partRect = focusPart ? agentPartRects(chosen[0])[focusPart] : null;
+    if (partRect) {
+      nodes.push(el('div', { class: 'sel-box agent-part-box', style: boxStyle(partRect), 'data-agent-part-box': focusPart }, [el('span', { class: 'agent-part-tag', text: agentPartLabel(focusPart) })]));
+      if (!owners(t, chosen[0]).some(owner => owner.locked)) {
+        const { x, y, width: w, height: h } = partRect;
+        for (const [id, hx, hy] of [['nw', x, y], ['n', x + w / 2, y], ['ne', x + w, y], ['e', x + w, y + h / 2], ['se', x + w, y + h], ['s', x + w / 2, y + h], ['sw', x, y + h], ['w', x, y + h / 2]]) {
+          nodes.push(el('button', { type: 'button', class: 'handle agent-part-handle', 'aria-label': handleLabel(`shell.handle.resize.${id}`), dataset: { partH: id }, style: { left: px(hx), top: px(hy) } }));
+        }
+      }
+    }
     const entered = t.elements.find(e => e.id === editingCard && e.card);
     if (editingCard !== null && (!entered || !isShown(t, entered) || !chosen.length || chosen.some(e => !owners(t, e).some(p => p.id === editingCard)))) editingCard = null;
     const card = editingCard !== null ? entered : chosen.length === 1 && chosen[0].card ? chosen[0] : null;
@@ -304,7 +319,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     ]));
     const roots = selectionRoots(t, chosen.map(e => e.id));
     const editable = chosen.length > 0 && chosen.every(e => !owners(t, e).some(owner => owner.locked));
-    const common = editable && !fill ? frameHandles(roots, zoom) : [];
+    const common = editable && !fill && !partRect ? frameHandles(roots, zoom) : [];
     const commonFrame = unionBox(roots.map(e => e.frame));
     const angle = roots.length === 1 ? appliedRotation(roots[0]) : 0;
     if (chosen.length > 1) nodes.push(el('div', { class: 'sel-box selection-union', style: boxStyle(commonFrame) }));
@@ -465,6 +480,21 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       press = { mode: 'property', element: structuredClone(element), handle: property, client: [evt.clientX, evt.clientY], started: false };
       return;
     }
+    // An opened agent part: its handles resize it, a press inside moves it,
+    // a press on another part of the same widget opens that one.
+    const owner = state.selection.length === 1 ? state.theme.elements.find(e => e.id === state.selection[0]) : null;
+    const opened = owner ? agentPart(owner.id) : null;
+    if (opened && !owners(state.theme, owner).some(e => e.locked)) {
+      const rects = agentPartRects(owner);
+      const inside = r => r && start.x >= r.x && start.x <= r.x + r.width && start.y >= r.y && start.y <= r.y + r.height;
+      const partHandle = evt.target?.dataset?.partH;
+      const target = partHandle || inside(rects[opened]) ? opened : agentPartAt(owner, start.x, start.y);
+      if (target) {
+        if (target !== opened) focusAgentPart(owner.id, target);
+        press = { mode: partHandle ? 'part-resize' : 'part-move', element: structuredClone(owner), part: target, rect: { ...rects[target] }, handle: partHandle, start, client: [evt.clientX, evt.clientY], started: false };
+        return;
+      }
+    }
     const chosen = state.theme.elements.filter(e => state.selection.includes(e.id));
     const editable = chosen.length > 0 && chosen.every(e => !owners(state.theme, e).some(owner => owner.locked));
     const roots = selectionRoots(state.theme, state.selection);
@@ -588,6 +618,11 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       const next = editedFill(press.element.kind.image, { dx: local.x - press.start.x, dy: local.y - press.start.y });
       applyFill(press.element, next);
       showHandleValue(p, [next.offsetX, next.offsetY], 'px', 'shape.imageOffsetX');
+    }
+    else if (press.mode === 'part-move' || press.mode === 'part-resize') {
+      const dx = p.x - press.start.x, dy = p.y - press.start.y;
+      const box = press.mode === 'part-move' ? { ...press.rect, x: press.rect.x + dx, y: press.rect.y + dy } : resize(press.rect, press.handle, dx, dy, evt.shiftKey);
+      store.dispatch('patchElements', { patches: [{ id: press.element.id, patch: { kind: { content: agentPlacePatch(press.element.frame, press.part, box) } } }] });
     }
     else if (press.mode === 'property') applyProperty(press.element, press.handle, p, { shift: evt.shiftKey, alt: evt.altKey });
     else if (press.mode === 'rotate') {
@@ -817,6 +852,10 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
       const member = hit !== target.id && owners(state.theme, element).some(e => e.id === target.id);
       store.select([member ? groupTarget(state.theme, hit) : target.id]); drawOverlay(); return;
     }
+    if (element?.kind.type === 'text' && element.kind.content.type === 'agent' && !owners(state.theme, element).some(e => e.locked)) {
+      const part = agentPartAt(element, p.x, p.y);
+      if (part) { store.select([element.id]); focusAgentPart(element.id, part); drawOverlay(); return; }
+    }
     if (element?.kind.type === 'shape' && element.kind.image?.asset && NATURAL_REPEATS.includes(element.kind.image.repeat) && !owners(state.theme, element).some(e => e.locked)) {
       store.select([element.id]); editingFill = element.id; drawOverlay(); return;
     }
@@ -898,6 +937,7 @@ export function createCanvasView({ store, scroll, box, canvas, overlay, onZoom =
     if (evt.key === 'Escape' && editingCard !== null && !textEditor) { evt.preventDefault(); evt.stopPropagation(); leaveCard(); }
   });
   scroll.addEventListener('dblclick', onDoubleClick);
+  onAgentPart(() => drawOverlay());
   scroll.addEventListener('wheel', onViewWheel, { passive: false });
   new ResizeObserver(() => { if (fitting) fit(); }).observe(scroll);
 

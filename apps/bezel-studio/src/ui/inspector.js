@@ -21,6 +21,10 @@ import { sections as needlePanels } from './inspector/needle.js';
 import { sections as graphPanels } from './inspector/graph.js';
 import { sections as spectrumPanels } from './inspector/spectrum.js';
 import { sections as playerPanels } from './inspector/player.js';
+import { sections as agentPanels } from './inspector/agent.js';
+import { sections as codexPanels } from './inspector/codex.js';
+import { sections as claudePanels } from './inspector/claude.js';
+import { agentProjectOptions, agentSessionOptions } from '../agent-widget.js';
 import { sections as shapePanels } from './inspector/shape.js';
 import { sections as imagePanels } from './inspector/image.js';
 import { canRotate, appliedRotation } from '../editor/rotation.js';
@@ -49,8 +53,10 @@ import { createPreviewAnimation } from '../preview-animation.js';
 import { sections as cardSections } from './inspector/card.js';
 import { createPickers } from './pickers.js';
 import { createBackgroundPanel } from './inspector-background.js';
+import { agentPart, onAgentPart } from '../editor/agent-part.js';
+import { partHeader as agentPartHeader } from './inspector/agent.js';
 
-const FORMS = Object.freeze({ card: cardSections, clock: clockPanels, weather: weatherPanels, value: valuePanels, ring: ringPanels, bar: barPanels, needle: needlePanels, graph: graphPanels, spectrum: spectrumPanels, player: playerPanels, shape: shapePanels, image: imagePanels, text: valuePanels });
+const FORMS = Object.freeze({ card: cardSections, clock: clockPanels, weather: weatherPanels, value: valuePanels, ring: ringPanels, bar: barPanels, needle: needlePanels, graph: graphPanels, spectrum: spectrumPanels, player: playerPanels, agent: agentPanels, codex: codexPanels, claude: claudePanels, shape: shapePanels, image: imagePanels, text: valuePanels });
 const BOUND = ['value', 'bar', 'ring', 'needle', 'graph'];
 /** The tallest the preview is drawn, CSS pixels. */
 const PREVIEW_HEIGHT = 72;
@@ -165,6 +171,7 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
   // What the form was last drawn with: a video background is drawn again
   // when the screen, live mode, its video or ffmpeg change.
   let shown = { assets: [], signature: '' };
+  onAgentPart(() => render(shown.assets));
   let themePreview = null;
   const common = createCommonFields({ t, store, update, root, sensors, host, pickers, colorField, video, barCornerModes, sourceState, shownValue, optionTiles, redraw: () => render(shown.assets) });
   const { sourceCard, appChipGroup, durationText, valueColorSection, sensorMotionSection, visualizationFields, appSignature, manualSource, timingOf, button } = common;
@@ -466,6 +473,29 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
 
   /** The values read now: on the source card and preview, a graph's peak, a player's apps. */
   function refreshLive() {
+    root.querySelector('[data-agent-inclusions]')?.refresh?.();
+    const projectSelect = root.querySelector('[data-agent-projects] select');
+    if (projectSelect && shownElement?.kind.content?.type === 'agent' && document.activeElement !== projectSelect) {
+      const c = shownElement.kind.content;
+      const options = agentProjectOptions(c, host.lastSample()?.activity?.agents, t);
+      const signature = JSON.stringify(options);
+      if (projectSelect.dataset.signature !== signature) {
+        projectSelect.replaceChildren(...options.map(([value, text]) => el('option', { value, text })));
+        projectSelect.value = c.project ?? '';
+        projectSelect.dataset.signature = signature;
+      }
+    }
+    const agentSelect = root.querySelector('[data-agent-sessions] select');
+    if (agentSelect && shownElement?.kind.content?.type === 'agent' && document.activeElement !== agentSelect) {
+      const c = shownElement.kind.content;
+      const options = agentSessionOptions(c, host.lastSample()?.activity?.agents, t);
+      const signature = JSON.stringify(options);
+      if (agentSelect.dataset.signature !== signature) {
+        agentSelect.replaceChildren(...options.map(([value, text]) => el('option', { value, text })));
+        agentSelect.value = c.session ?? '';
+        agentSelect.dataset.signature = signature;
+      }
+    }
     const sample = host.lastSample();
     const live = root.querySelector('.inspector-live');
     if (live) {
@@ -625,6 +655,9 @@ export function createInspector({ root, store, t, sensors, minRefresh, pickers: 
     const context = { element: e, assets, ...common, t, store, update, root, sensors, host, pickers, colorField, video, bridge, section, editIcon, searchCities, optionTiles, arcPreview, redraw: () => render(shown.assets), customSource: sourceState.custom,
       completePanels: specific => panelsOf(e, theme, assets, specific, layout) };
     const descriptors = e.isGroup ? describeSections(context, context.completePanels({})) : FORMS[e.card ? 'card' : widget]?.(context) ?? [];
+    // An opened part of an agent widget shows only that part's details.
+    const part = e.kind.content?.type === 'agent' ? agentPart(e.id) : null;
+    if (part) return [agentPartHeader(context), ...sectioned(`agent-part-${part}`, descriptors, e)];
     return [header(e, widget, theme), showAs(e, theme), ...sectioned(kind, descriptors, e)];
   }
 

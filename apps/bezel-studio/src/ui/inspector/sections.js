@@ -1,7 +1,7 @@
 import { SECTION_ORDER, summaryOf } from '../../inspector-sections.js';
 import { sectionFor, summaryParts } from '../../inspector-model.js';
 
-const ICONS = { layout: 'section-layout', data: 'data', shape: 'shape', text: 'text', color: 'drop', behavior: 'behav', faces: 'layers', motion: 'play', triggers: 'sliders' };
+const ICONS = { layout: 'section-layout', data: 'data', parts: 'grid', shape: 'shape', text: 'text', color: 'drop', behavior: 'behav', faces: 'layers', motion: 'play', triggers: 'sliders' };
 
 /** All kinds share the order and descriptor contract; no controls are discarded. */
 export function describeSections(ctx, panels) {

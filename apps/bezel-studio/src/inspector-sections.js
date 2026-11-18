@@ -2,11 +2,11 @@
 // This module has no DOM dependency; opening a section never edits the theme.
 
 export const SECTION_ORDER = Object.freeze([
-  'layout', 'data', 'shape', 'text', 'color', 'behavior', 'faces', 'motion', 'triggers',
+  'layout', 'data', 'parts', 'shape', 'text', 'color', 'behavior', 'faces', 'motion', 'triggers',
 ]);
 
 export const SECTION_STORAGE_KEY = 'bezel.inspectorSections';
-const DEFAULT_OPEN = Object.freeze(['data', 'faces']);
+const DEFAULT_OPEN = Object.freeze(['data', 'parts', 'faces']);
 const own = (object, key) => Object.hasOwn(object, key);
 
 /**

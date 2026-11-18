@@ -9,6 +9,7 @@ import { formatValue } from './value-format.js';
 import { demoColorValue, withValueColor } from './value-color.js';
 import { NEON, demoPeaks, demoSpectrum, spectrumOf } from './spectrum.js';
 import { translator } from './i18n/index.js';
+import { agentColor } from './agent-widget.js';
 import { colorAt } from './value-color.js';
 import { cardPoses, drawCardProjection } from './editor/card-motion.js';
 import { isShown, effectiveOpacity, visibleWithoutFace } from './editor/cards.js';
@@ -448,7 +449,10 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   const k = e.kind;
   const s = k.style;
   let text = k.content.text ?? '';
-  if (k.content.type === 'clock') {
+  if (k.content.type === 'agent') {
+    const tr = translator(globalThis.document?.documentElement?.lang ?? 'en');
+    text = `${k.content.title?.trim() || tr(k.content.agent === 'claude' ? 'agent.claude' : 'agent.codex')}\n${tr('agent.noSession')}`;
+  } else if (k.content.type === 'clock') {
     const d = new Date((t + (trial?.clockOffsetSeconds ?? 0)) * 1000);
     text = formatClock(k.content.pattern, d, k.content.language, k.content.casing);
   } else if (k.content.type === 'weather') {
@@ -469,7 +473,7 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
     return fitPlayer(k.content, shown, block, m, e.frame, s.size);
   }
   const pieces = laidInPieces(k) || k.content.type === 'static';
-  const tabular = s.tabularDigits !== false && !['static', 'player'].includes(k.content.type);
+  const tabular = s.tabularDigits !== false && !['static', 'player', 'agent'].includes(k.content.type);
   if (measure && pieces) {
     const size = measureText(textPieces(e, text, t, value, refresh, false, trial), s, canvasMeasure(ctx), { tabular });
     return size && textFurniture(k).fit(size.width, size.height);
@@ -483,6 +487,32 @@ function drawText(ctx, e, t, value, measure = false, trial = null, refresh = 1, 
   ctx.textAlign = s.align === 'center' ? 'center' : s.align === 'right' ? 'right' : 'left';
   ctx.textBaseline = s.valign === 'top' ? 'top' : s.valign === 'bottom' ? 'bottom' : 'middle';
   let f = e.frame;
+  if (k.content.type === 'agent') {
+    const tr = translator(globalThis.document?.documentElement?.lang ?? 'en');
+    const rows = [['showFiveHour', '5h'], ['showWeekly', tr('agent.showWeekly')]].filter(([key]) => k.content[key] !== false);
+    const quotaSize = s.size * (k.content.quotaSizePercent ?? 100) / 100;
+    const rowHeight = quotaSize * (k.content.showReset === false || k.content.compactQuotas ? 1.6 : 2.8) + 8;
+    const total = rows.length * rowHeight;
+    let y = f.y + Math.max(0, f.height - total);
+    ctx.save(); ctx.font = fontOf({ ...s.font, size: quotaSize }); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = paint(s.paint);
+    for (const [, title] of rows) {
+      ctx.fillText(`${title} · ${tr('agent.unavailable')}`, f.x, y, f.width);
+      ctx.fillStyle = paint(agentColor(k.content, 'quotaTrackColor'));
+      if (k.content.pixelStyle) {
+        const count = Math.max(1, Math.min(80, Math.round(f.width / 10))), segment = (f.width - (count - 1) * 3) / count;
+        for (let i = 0; i < count; i++) ctx.fillRect(f.x + i * (segment + 3), y + rowHeight - 6, segment, 5);
+      } else ctx.fillRect(f.x, y + rowHeight - 6, f.width, 4);
+      ctx.fillStyle = paint(s.paint);
+      y += rowHeight;
+    }
+    ctx.restore();
+    f = { ...f, height: Math.max(0, f.height - total - 4) };
+    if (k.content.statusOnly && !k.content.projectList) {
+      const size = s.size * .55;
+      ctx.save(); ctx.fillStyle = paint(agentColor(k.content, 'unknownColor')); ctx.beginPath(); ctx.arc(f.x + size / 2, f.y + s.size * .25 + size / 2, size / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      f = { ...f, x: f.x + s.size * .9, width: Math.max(0, f.width - s.size * .9) };
+    }
+  }
   if (k.content.type === 'weather' && k.content.showIcon !== false) {
     const { side, gap } = textFurniture(k).layout(f);
     const code = trial?.weatherCode ?? DEMO_WEATHER.code;

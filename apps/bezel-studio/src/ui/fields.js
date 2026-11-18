@@ -468,6 +468,8 @@ const SECTION_ICONS = Object.freeze({
   apps: 'player', stopped: 'pause', time: 'clock', show: 'eye', spacing: 'spacing',
   progress: 'bar', fill: 'brush', preview: 'eye', faces: 'layers', objects: 'widgets',
   motion: 'play', triggers: 'sliders', actions: 'more', refresh: 'refresh',
+  'agent-header': 'widgets', 'agent-rows': 'grid', 'agent-quotas': 'bar', 'agent-projects': 'layers', 'agent-usage': 'refresh',
+  'agent-state-colors': 'brush', 'agent-quota-colors': 'brush', 'agent-motion': 'play',
 });
 
 export function propertySection(key, label, nodes, { count: n = null, tool = null, showIcon = true, caption = false, heading = true } = {}) {

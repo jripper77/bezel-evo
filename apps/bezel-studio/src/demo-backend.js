@@ -1454,6 +1454,7 @@ export function createDemoBackend(scenario, clock = {}, hooks = {}) {
       libreOffline = false;
     },
     searchWeatherCities: async (query) => [{ name: query.trim(), region: 'Lazio', country: 'Italia', latitude: 41.9, longitude: 12.5 }],
+    connectClaudeAgent: async () => {},
     // Explicitly demo-only memory diagnostics; never derived from browser RAM.
     memoryUsage: () => Promise.resolve({ demo: true, totalBytes: 312_000_000, processes: [
       { pid: 100, role: 'studio', bytes: 90_000_000 },

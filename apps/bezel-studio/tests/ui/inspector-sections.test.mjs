@@ -8,7 +8,7 @@ function storageWith(value = null) {
 }
 
 test('section order is fixed, unique and immutable, including Card sections', () => {
-  assert.deepEqual(SECTION_ORDER, ['layout', 'data', 'shape', 'text', 'color', 'behavior', 'faces', 'motion', 'triggers']);
+  assert.deepEqual(SECTION_ORDER, ['layout', 'data', 'parts', 'shape', 'text', 'color', 'behavior', 'faces', 'motion', 'triggers']);
   assert.equal(new Set(SECTION_ORDER).size, SECTION_ORDER.length);
   assert.ok(Object.isFrozen(SECTION_ORDER));
 });

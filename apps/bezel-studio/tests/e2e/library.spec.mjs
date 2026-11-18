@@ -12,10 +12,10 @@ test('widgets come in four foldable groups with a count, a search and the hint a
   const errors = watchErrors(page);
   await page.goto('/index.html?demo=turing88');
   const panel = page.locator('#panel-widgets');
-  await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 14 }));
+  await expect(panel.locator('.panel-head .count')).toHaveText(t('widgets.count', { count: 16 }));
   await expect(panel.locator('.accordion-title')).toHaveText(['values', 'timeMedia', 'textShapes', 'containers'].map(id => t(`widgets.group.${id}`)));
-  await expect(panel.locator('.accordion-summary')).toHaveText(['5', '4', '3', '2']);
-  await expect(panel.locator('.widget-tile')).toHaveCount(14);
+  await expect(panel.locator('.accordion-summary')).toHaveText(['5', '6', '3', '2']);
+  await expect(panel.locator('.widget-tile')).toHaveCount(16);
   await expect(panel.locator('.dashed-hint kbd')).toHaveText(t('widgets.enterKey'));
   await expectAccessible(page);
 
@@ -28,12 +28,12 @@ test('widgets come in four foldable groups with a count, a search and the hint a
   await expect(panel.locator('.widget-tile')).toHaveCount(0);
   await expect(panel).toContainText(t('widgets.none'));
   await search.fill('');
-  await expect(panel.locator('.widget-tile')).toHaveCount(14);
+  await expect(panel.locator('.widget-tile')).toHaveCount(16);
 
   // A group folds with its count still in sight, and stays folded after a reload.
   const values = panel.getByRole('button', { name: t('widgets.group.values'), exact: true });
   await values.click(); await expect(values).toHaveAttribute('aria-expanded', 'false');
-  await expect(panel.locator('.widget-tile:visible')).toHaveCount(9);
+  await expect(panel.locator('.widget-tile:visible')).toHaveCount(11);
   await expect(panel.locator('.accordion-summary').first()).toBeVisible();
   await expectAccessible(page);
   await page.reload();

@@ -226,6 +226,7 @@ export default {
     'insp.live': 'Live',
     'insp.linkSize': 'Link width and height',
     'insp.section.layout': 'Layout',
+    'insp.section.parts': 'Parts',
     'insp.section.behavior': 'Behavior',
     'insp.section.triggers': 'Triggers',
 
@@ -613,6 +614,7 @@ export default {
     'insp.live': 'Ao vivo',
     'insp.linkSize': 'Vincular largura e altura',
     'insp.section.layout': 'Layout',
+    'insp.section.parts': 'Partes',
     'insp.section.behavior': 'Comportamento',
     'insp.section.triggers': 'Gatilhos',
 
@@ -1000,6 +1002,7 @@ export default {
     'insp.live': 'dal vivo',
     'insp.linkSize': 'Collega larghezza e altezza',
     'insp.section.layout': 'Disposizione',
+    'insp.section.parts': 'Parti',
     'insp.section.behavior': 'Comportamento',
     'insp.section.triggers': 'Attivazioni',
 

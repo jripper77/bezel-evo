@@ -34,7 +34,7 @@ export function defaultRange(quantity) {
 }
 
 /** Widget ids in palette order. */
-export const WIDGETS = Object.freeze(['text', 'value', 'clock', 'weather', 'player', 'spectrum', 'image', 'shape', 'card', 'bar', 'ring', 'needle', 'graph']);
+export const WIDGETS = Object.freeze(['text', 'value', 'clock', 'weather', 'player', 'codex', 'claude', 'spectrum', 'image', 'shape', 'card', 'bar', 'ring', 'needle', 'graph']);
 
 /**
  * The kind object and default size of a new widget.
@@ -69,6 +69,14 @@ export function createWidget(widget, canvas, sensor = {}) {
       return { kind: { type: 'text', content: { type: 'spectrum', ...structuredClone(SPECTRUM_DEFAULTS) }, style: { ...textStyle(Math.max(10, Math.round(fontSize * .5))), paint: ACCENT } }, width: short * .9, height: short * .3 };
     case 'player':
       return { kind: {type:'text', content:{type:'player',source:'',showCover:true,showProgress:true,showSource:false,hideWhenStopped:false,emptyText:'No media session'},style:textStyle(Math.max(10,Math.round(fontSize*.65)))},width:short*.95,height:short*.4 };
+    case 'codex':
+    case 'claude':
+    case 'agent':
+      return {
+        kind: { type: 'text', content: { type: 'agent', agent: widget === 'claude' ? 'claude' : 'codex', session: '', project: '', projectList: widget !== 'agent', recentMinutes: 10, pageSeconds: 10, excludedProjects: [], statusOnly: widget !== 'agent', compactQuotas: widget !== 'agent', quotaSizePercent: 100, pixelStyle: false, blinkOnChange: widget !== 'agent', showMessage: true, showActivity: true, showStatus: true, showFiveHour: true, showWeekly: true, showReset: true, messageLines: 3, warningPercent: 20, showHeader: true, showPage: true, showDividers: true, showStateText: true, showAge: widget !== 'agent', showRowActivity: false },
+          style: { ...textStyle(Math.max(10, Math.round(fontSize * .55))), valign: 'top', overflow: 'ellipsis' } },
+        width: short * .95, height: short * .8,
+      };
     case 'weather':
       return { kind: { type: 'text', content: { type: 'weather', city: 'Roma', latitude: 41.9028, longitude: 12.4964, language: null, fahrenheit: false, showIcon: true, iconMotion: 'gentle' }, style: textStyle(Math.max(10, Math.round(fontSize * 0.6))) }, width: short * 0.9, height: fontSize * 3.5 };
     case 'clock':
@@ -121,6 +129,7 @@ export function widgetOf(element) {
     if (k.content.type === 'sensor') return 'value';
     if (k.content.type === 'weather') return 'weather';
     if (k.content.type === 'player') return 'player';
+    if (k.content.type === 'agent') return k.content.agent === 'claude' ? 'claude' : 'codex';
     if (k.content.type === 'spectrum') return 'spectrum';
     if (k.content.type === 'clock') return 'clock';
     return 'text';
