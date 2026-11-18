@@ -301,6 +301,9 @@ pub struct SampleDto {
 #[derive(Debug, Clone, PartialEq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityDto {
+    /// Discovered local coding sessions, without transcript contents.
+    #[serde(default)]
+    pub agents: Vec<AgentSessionDto>,
     /// Whether the running applications were read (the process scan
     /// succeeded); without it `applications` is empty and `foreground` unknown.
     pub available: bool,
@@ -310,6 +313,17 @@ pub struct ActivityDto {
     pub applications: Vec<String>,
     /// The operating system's media sessions (never their cover).
     pub media: Vec<MediaSessionDto>,
+}
+
+/// Session choice for an agent widget.
+#[derive(Debug, Clone, PartialEq, Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentSessionDto {
+    pub agent: String,
+    pub id: String,
+    pub project: String,
+    #[serde(default)]
+    pub project_path: String,
 }
 
 /// A media session as the inspector lists it.
@@ -330,10 +344,27 @@ impl ActivityDto {
     /// What `snapshot` says of the applications and media sessions; `None`
     /// when it read neither.
     pub fn of(snapshot: &Snapshot) -> Option<Self> {
-        if !snapshot.activity_available && !snapshot.media_available {
+        if !snapshot.activity_available
+            && !snapshot.media_available
+            && snapshot.agents_sampled_at == 0
+        {
             return None;
         }
         Some(Self {
+            agents: snapshot
+                .agents
+                .iter()
+                .map(|s| AgentSessionDto {
+                    agent: match s.agent {
+                        bezel_core::domain::agent::AgentKind::Codex => "codex",
+                        bezel_core::domain::agent::AgentKind::Claude => "claude",
+                    }
+                    .into(),
+                    id: s.id.clone(),
+                    project: s.project.clone(),
+                    project_path: s.project_path.clone(),
+                })
+                .collect(),
             available: snapshot.activity_available,
             foreground: snapshot.foreground.clone(),
             applications: snapshot.applications.iter().cloned().collect(),
@@ -1282,6 +1313,7 @@ mod tests {
                 "available": true,
                 "foreground": "chrome",
                 "applications": ["chrome", "spotify"],
+                "agents": [],
                 "media": [{"source": "Spotify.exe", "title": "Song", "artist": "Band", "playing": true}],
             })
         );

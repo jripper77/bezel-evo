@@ -471,6 +471,7 @@ name = "bezel-sensors"
 version = "0.0.0"
 dependencies = [
  "bezel-core",
+ "chrono",
  "image",
  "nvml-wrapper",
  "serde",

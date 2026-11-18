@@ -16,6 +16,7 @@
     "allow-memory-usage",
     "allow-restart-libre-reader",
     "allow-search-weather-cities",
+    "allow-connect-claude-agent",
     "allow-editor-session",
     "allow-render-preview",
     "allow-render-element-preview",

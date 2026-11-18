@@ -311,6 +311,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::memory_usage,
             commands::restart_libre_reader,
             commands::search_weather_cities,
+            commands::connect_claude_agent,
             commands::editor_session,
             commands::render_preview,
             commands::render_element_preview,
@@ -3995,7 +3996,10 @@ mod tests {
                     // endpoint, with proxies and redirects disabled. The
                     // studio's external requests still go through KLIPY.
                     let local_sensors = from == "bezel-sensors" && to == "ureq";
-                    if !network(pulled) || klipy || local_sensors {
+                    // The existing runtime update checker reads the fork's
+                    // public release metadata through its own HTTP adapter.
+                    let release_updates = from == "bezel-runtime" && to == "ureq";
+                    if !network(pulled) || klipy || local_sensors || release_updates {
                         continue;
                     }
                     let through = if parent == direct {

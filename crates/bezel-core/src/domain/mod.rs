@@ -5,6 +5,7 @@
 //! shuts down, what the screens do while the monitors are off, and the frame
 //! handed from one Bezel program to another.
 
+pub mod agent;
 pub mod animation;
 pub mod archive;
 pub mod catalog;

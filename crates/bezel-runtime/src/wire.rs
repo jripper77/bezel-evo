@@ -473,9 +473,10 @@ fn dispatch_inner(
                 engine.schedule_sensors();
             }
             let scene = engine.scenes.get(key);
-            let activity=scene.map(|s|s.runtime.snapshot()).filter(|s|s.activity_available || s.media_available).map(|s| {
+            let activity=scene.map(|s|s.runtime.snapshot()).filter(|s|s.activity_available || s.media_available || s.agents_sampled_at > 0).map(|s| {
                 let media:Vec<_>=s.media.iter().map(|m|json!({"source":m.source,"title":m.title,"artist":m.artist,"playing":m.playing})).collect();
-                json!({"available":s.activity_available,"foreground":s.foreground,"applications":s.applications,"media":media})
+                let agents: Vec<_> = s.agents.iter().map(|a| json!({"agent": match a.agent { bezel_core::domain::agent::AgentKind::Codex => "codex", bezel_core::domain::agent::AgentKind::Claude => "claude" }, "id":a.id,"project":a.project,"projectPath":a.project_path})).collect();
+                json!({"available":s.activity_available,"foreground":s.foreground,"applications":s.applications,"media":media,"agents":agents})
             });
             let video = scene.and_then(|s| match s.runtime.video() {
                 VideoState::NoVideo => None,

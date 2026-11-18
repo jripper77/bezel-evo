@@ -514,6 +514,10 @@ impl Reading {
 /// Readings taken together.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Snapshot {
+    /// Local coding-agent sessions, sampled only when requested.
+    pub agents: Vec<super::agent::AgentSession>,
+    /// Wall-clock time of the agent sample as Unix seconds.
+    pub agents_sampled_at: u64,
     /// Independently sampled audio display results, keyed by widget.
     pub spectra: BTreeMap<super::theme::ElementId, super::spectrum::SpectrumFrame>,
     /// Operating-system media sessions; empty when unavailable.

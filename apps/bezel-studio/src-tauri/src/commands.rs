@@ -49,6 +49,15 @@ use crate::tray::{LiveItem, TrayMenu};
 /// State managed by Tauri.
 pub type Shared = Arc<Backend>;
 
+/// Refreshes account usage through the signed-in Claude native client.
+#[tauri::command]
+pub async fn connect_claude_agent() -> UiResult<()> {
+    tauri::async_runtime::spawn_blocking(bezel_sensors::agent::refresh_claude_usage)
+        .await
+        .map_err(UiError::system)?
+        .map_err(UiError::system)
+}
+
 /// Picks one desktop pixel through Windows, independently of WebView2 support.
 #[tauri::command]
 pub async fn pick_screen_color(window: WebviewWindow) -> UiResult<Option<String>> {

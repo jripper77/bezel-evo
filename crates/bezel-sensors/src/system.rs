@@ -63,6 +63,7 @@ impl SystemSensors {
         providers.push(Box::new(crate::fps::provider(&options)));
         providers.push(Box::new(crate::ping::Ping::new(&options.ping_host)));
         providers.push(Box::new(crate::weather::WeatherProvider::default()));
+        providers.push(Box::new(crate::agent::AgentProvider::default()));
         Self::assemble(providers, gpus)
     }
 
@@ -154,6 +155,8 @@ impl SensorSource for SystemSensors {
         });
         let mut out = Snapshot::default();
         for part in &parts {
+            out.agents.extend(part.agents.iter().cloned());
+            out.agents_sampled_at = out.agents_sampled_at.max(part.agents_sampled_at);
             out.media.extend(part.media.iter().cloned());
             out.media_available |= part.media_available;
             if part.activity_available {

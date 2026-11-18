@@ -14,6 +14,7 @@ const COMMANDS: &[&str] = &[
     "memory_usage",
     "restart_libre_reader",
     "search_weather_cities",
+    "connect_claude_agent",
     "editor_session",
     "render_preview",
     "render_element_preview",
