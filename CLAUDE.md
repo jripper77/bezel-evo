@@ -3,8 +3,9 @@
 ## Ripresa operativa — 22 ottobre 2026 (notte)
 
 Leggere AGENTS.md, .jdi/STATE.md e [il passaggio](.jdi/HANDOFF-CLAUDE.md).
-Versioni: pubblicata **0.2.28** (Latest su GitHub, tag `v0.2.28`, 2026-11-11: scale
-separate dei grafici specchiati e controllo aggiornamenti).
+Versioni: pubblicata **0.3.0** (Latest su GitHub, tag `v0.3.0`, 2026-11-18: widget Codex e
+Claude Code con le nuove fonti dati delle sessioni e delle quote, parti selezionabili,
+spostabili e ridimensionabili, Preferenze a pagine con Controlla ora).
 I tag di upstream stanno in `refs/tags/upstream/*` (`remote.upstream.tagOpt --no-tags`):
 i `v0.x` appartengono a Bezel Evo. Push e release solo su richiesta.
 Design: canvas https://claude.ai/artifact/7muP7mTQAwBH8diy2AWZ6p.
