@@ -23,6 +23,8 @@ so this entry and the ones below, down to 0.2.29, cover them.
   or stores credentials.
 
 ### Widgets
+- The agent widgets are a first take: the best way to show coding agents on a
+  small screen is still being explored, so their look and options may change.
 - **Codex and Claude Code widgets.** Two new entries in the widget library list
   every project with its status dot, sorted so that work waiting for you comes
   first, and rotate pages when they do not fit. Usage bars show what is left or

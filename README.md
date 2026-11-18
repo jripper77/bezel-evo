@@ -33,6 +33,11 @@ See the [changelog](CHANGELOG.md) for the complete history.
 Two new data sources and two new widgets keep an eye on **Codex** and
 **Claude Code** while you work in another window.
 
+> **A first take.** I'm still looking for the best way to show coding agents
+> on a small screen, so the look and the options of these widgets may change in
+> the next releases. Ideas and feedback are welcome in the
+> [issues](https://github.com/jripper77/bezel-evo/issues).
+
 - **Every project at a glance.** The **Codex** and **Claude Code** widgets list
   your projects with a status dot: green while the agent works, red when it
   waits for you, has finished or hit an error. What needs you comes first;

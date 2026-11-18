@@ -4,6 +4,11 @@ The **Codex** and **Claude Code** widgets show what your coding agents are
 doing while you work in another window: every project with its status, the
 latest message, the tool in use and your account usage.
 
+> **A first take.** The best way to show coding agents on a small screen is
+> still being explored, so the look and the options of these widgets may change
+> in the next releases. Ideas and feedback are welcome in the
+> [issues](https://github.com/jripper77/bezel-evo/issues).
+
 ## Where the data comes from
 
 Bezel reads two new local data sources:
