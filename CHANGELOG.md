@@ -5,6 +5,136 @@ All notable changes to Bezel Evo are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The version is the one in the
 `VERSION` file, set when a Windows release is built.
 
+## [0.3.0] - 2026-11-18
+
+The first published release since 0.2.28: 0.2.29 to 0.2.39 were local builds,
+so this entry and the ones below, down to 0.2.29, cover them.
+
+### Sensors
+- **New data source: local coding agents.** Bezel reads the local session logs
+  of **Codex** and **Claude Code**: for every project, its latest session,
+  state (working, waiting for you, finished, error), last message, current tool
+  and how long ago it changed. Logs are read incrementally in a separate worker,
+  only while a widget needs them, and nothing is sent anywhere.
+- **New data source: account usage.** The five-hour and weekly usage windows of
+  each provider, with the time left until they reset. Codex reads the limits
+  its sessions record; Claude Code asks its own signed-in client, including the
+  VS Code extension, once a minute while a widget shows them. Bezel never reads
+  or stores credentials.
+
+### Widgets
+- **Codex and Claude Code widgets.** Two new entries in the widget library list
+  every project with its status dot, sorted so that work waiting for you comes
+  first, and rotate pages when they do not fit. Usage bars show what is left or
+  what was used, and turn to a warning colour below a threshold you choose.
+- **Click a part to edit only that part.** Double-click the title, the project
+  rows or a usage bar on the canvas, or open it from the new **Parts** list:
+  the inspector shows only that part, with its own font, colour and size.
+  Escape or the back arrow returns to the whole widget.
+- **Move and resize the parts.** An opened part has its own handles: drag it
+  anywhere inside the widget and resize it, in one undo step. Places scale with
+  the widget; **Back to the automatic place** restores the default layout.
+- **Shape every detail.** Colours for each state and for the bars, a custom
+  title, header and page number, status on the right, below the name or as a
+  dot only, time since the last update, the tool in use, full paths, row
+  height, bar thickness and Pixel segment spacing.
+
+### Studio
+- **Preferences as pages.** General, Screens, Audio, Sensors, Updates and
+  Diagnostics sit in a column beside the page you open.
+- **Check for updates now.** Preferences › Updates shows the running version,
+  when the last check ran and what it found, with a **Check now** button. Light's
+  daily check and Studio share the same request and record.
+
+### Fixes
+- Portuguese texts of the agent widgets showed question marks in place of
+  accented letters.
+
+## [0.2.35] - 2026-11-16
+
+0.2.34 was a local build; this entry and the ones below cover it.
+
+### Widgets
+- Status changes use a smooth two-second highlight on the affected project row,
+  replacing the blinking panel border. Text stays still, and the highlight
+  follows the project when rows reorder or occupy another page.
+- Project names and lifecycle labels now occupy separate aligned columns,
+  with a smaller status label and subtle row separators.
+
+## [0.2.34] - 2026-11-16
+
+0.2.33 was a local build; this entry and the ones below cover it.
+
+### Widgets
+- Quota text has an independent size setting, from 50% to 100% of project text.
+- Claude usage no longer overwrites valid account windows with empty responses.
+  Studio and Light share one refresh attempt per minute. Last known windows
+  remain visible for up to 15 minutes with their update age after three minutes;
+  expired windows remain unavailable.
+
+## [0.2.33] - 2026-11-16
+
+0.2.32 was a local build; this entry and the ones below cover it.
+
+### Widgets
+- Optional Pixel quota meters use square orange segments matching Pixel themes.
+  Agent quota bars and labels turn red at 20% remaining or less.
+- Optional status-change highlighting blinks an agent widget for two seconds
+  when one of its projects changes state. Initial data, new projects and quota
+  refreshes do not trigger a blink; disabling motion suppresses the effect.
+
+## [0.2.32] - 2026-11-16
+
+0.2.31 was a local build; this entry and the ones below cover it.
+
+### Widgets
+- Separate Codex and Claude Code widgets provide provider-specific details.
+- Automatic project lists follow the latest session of every project, prioritize
+  attention and running work, and rotate pages to fit the available space.
+  Choose which projects to include, how long completed projects remain visible,
+  and the page duration. Account quotas appear once per provider.
+- Existing agent widgets and pinned project/session settings remain compatible.
+
+## [0.2.31] - 2026-11-16
+
+0.2.29 and 0.2.30 were local builds; this entry and the two below cover them.
+
+### Widgets
+- Agent widgets can follow a project and automatically select its latest
+  session, keeping workspaces separate when multiple VS Code windows are open.
+- Optional status-only mode shows a green indicator while working and a red
+  indicator when finished, waiting for input or reporting an error. Compact
+  quota mode shows the remaining percentage and reset on one line per window.
+
+### Fixes
+- Claude subscription usage refreshes through the signed-in native Claude
+  client, including the VS Code extension. This replaces the status-line-only
+  connection that could not collect usage from VS Code panels. Account quotas
+  remain shared across projects and refresh once a minute while requested.
+
+## [0.2.30] - 2026-11-16
+
+0.2.29 was a local build; this entry and the one below cover it.
+
+### Fixes
+- Agent widgets use timestamps recorded inside transcript events to identify
+  the latest session and show its activity age. On Windows, an open transcript
+  can retain an older file modification time while the agent keeps writing.
+
+## [0.2.29] - 2026-11-16
+
+### Widgets
+- **Follow a coding agent from your display.** The Agent widget follows one
+  local Codex or Claude Code session, showing its latest message, tool activity
+  and observed status. Select a session or follow the most recently updated one.
+  Add another widget to follow another agent independently.
+- Optional five-hour and weekly usage bars show consumed and remaining quota
+  with reset countdowns. Codex reads the limits recorded by its local sessions.
+  Claude Code has a one-time status-line connection in the widget inspector,
+  with a settings backup and preservation of the previous status-line command.
+  Quotas are shared across sessions in the same agent configuration directory.
+  Missing and expired limits are shown as unavailable.
+
 ## [0.2.28] - 2026-11-11
 
 0.2.27 was a local build; this entry and the ones below cover it.
