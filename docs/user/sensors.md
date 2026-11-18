@@ -110,3 +110,12 @@ Otherwise nothing is sent to the ping target, and `net.ping` reads unavailable
 
 Change the target in **Preferences → Sensors** in Studio, or with `--ping-host`
 on the command line (`bezel run --ping-host 1.1.1.1 ...`).
+
+## Coding agents
+
+New in 0.3.0: besides the hardware, Bezel reads two local sources for the
+**Codex** and **Claude Code** widgets: the agents' sessions (each project's
+state, last message, tool in use and age) and the account usage windows (five
+hours and weekly, with their resets). Like the ping, they are read only while a
+widget that shows them is on screen, and nothing leaves your PC. See
+[Coding agents on the screen](agents.md).

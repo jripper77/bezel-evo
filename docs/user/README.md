@@ -34,6 +34,8 @@ has three parts:
   fonts packed inside a theme.
 - [Sensors](sensors.md): what Bezel measures, the sensor status, and why a value
   can show `—`.
+- [Coding agents](agents.md): the Codex and Claude Code widgets, their local
+  data sources, editing, moving and resizing their parts.
 - [Game FPS](fps.md): RivaTuner Statistics Server.
 - [Screen storage and video](storage-and-video.md): pictures and videos kept on
   the screen, what it shows at power-up, and

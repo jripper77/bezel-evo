@@ -24,9 +24,37 @@ https://github.com/user-attachments/assets/92eaa3a0-b369-4ae0-96b4-934210d99f47
 
 </details>
 
-## What's new in 0.2.28
+## What's new in 0.3.0
 
 See the [changelog](CHANGELOG.md) for the complete history.
+
+### Your coding agents on the screen
+
+Two new data sources and two new widgets keep an eye on **Codex** and
+**Claude Code** while you work in another window.
+
+- **Every project at a glance.** The **Codex** and **Claude Code** widgets list
+  your projects with a status dot: green while the agent works, red when it
+  waits for you, has finished or hit an error. What needs you comes first;
+  long lists turn pages on their own. Show the last message, the tool in use and
+  how long ago it changed.
+- **Usage you can see.** The five-hour and weekly windows of your account, as
+  bars with the share left (or used) and the time to the reset. Below the
+  threshold you choose they turn to a warning colour.
+- **Read locally.** Bezel reads the agents' own session logs on your PC, only
+  while a widget shows them. Claude Code usage comes from its signed-in client
+  (the VS Code extension works too); credentials are never read or stored.
+- **Edit it like a layout.** Double-click a part of the widget (title, project
+  rows, a usage bar) to edit only that part, with its own font, colour and
+  size, then drag it or resize it inside the widget. Every state and bar has its
+  own colour. [How it works](docs/user/agents.md).
+
+### Also new
+
+- **Preferences as pages**, with **Check now** for updates and the time and
+  result of the last check.
+
+### In 0.2.28
 
 - **Each series of a mirrored graph has its own scale.** The upper and lower
   series can each be automatic or fixed. With both automatic, **Same scale for
@@ -132,6 +160,9 @@ Studio has been redesigned from the ground up, in dark and light.
   one sample interval of visual delay and preserves unavailable-reading gaps.
 - **Colour by value.** Turn a gauge, a graph, a text or an icon orange above 70
   and red above 90, with as many thresholds as you like.
+- **Codex and Claude Code widgets** list your projects with their status,
+  messages and account usage, and their parts can be edited, moved and resized
+  one by one. [Coding agents guide](docs/user/agents.md).
 - **A media player you compose.** Choose the parts (cover, title, artist, time,
   progress, app name) and style the progress bar: continuous, segments or dots,
   round or square ends, a knob, times at the sides or above. A title too long
@@ -218,6 +249,8 @@ turns it on or off.
 - **See your PC's stats.** CPU, GPU, memory, disks, network, fans and power, with
   a bundled hardware sensor reader instead of a separate monitoring app to keep
   open. A value that cannot be read shows why; Bezel never makes one up.
+- **Follow your coding agents.** Codex and Claude Code sessions and account
+  usage, read locally from the agents' own logs and clients.
 - **Go beyond gauges.** Clocks and dates, weather, now-playing, history graphs
   with their own time window, offline icons, images, animated GIFs and video
   backgrounds.
@@ -260,7 +293,7 @@ The Setup and the programs are not code-signed, so Windows SmartScreen may warn 
 ## Documentation
 
 - [User guide](docs/user/README.md) / [Your first theme](docs/user/first-theme.md) / [Editing in Studio](docs/user/studio-editing.md) / [Fonts](docs/user/fonts.md)
-- [Sensors](docs/user/sensors.md) / [Storage and video](docs/user/storage-and-video.md) / [Troubleshooting and logs](docs/user/troubleshooting.md)
+- [Sensors](docs/user/sensors.md) / [Coding agents](docs/user/agents.md) / [Storage and video](docs/user/storage-and-video.md) / [Troubleshooting and logs](docs/user/troubleshooting.md)
 - [What's new](CHANGELOG.md) / [Technical documentation](docs/) / [Windows builds](docs/build-windows.md) / [Fork changes and validation](FORK.md)
 - [Whole-scene H.264 experiment](docs/experiments/scene-streaming.md): a developer prototype with mixed independent outputs; not a Studio setting or a hardware-verified frame-rate claim.
 
